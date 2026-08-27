@@ -1,0 +1,231 @@
+@import url("https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500&display=swap");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+* {
+  font-family: "Inter Tight", Inter, system-ui, -apple-system, sans-serif;
+}
+
+:root,
+[data-theme="dark"] {
+  --bg-base: #070a0f;
+  --bg-grad-1: radial-gradient(900px 700px at 0% 0%, rgba(139, 92, 246, 0.18) 0%, transparent 60%);
+  --bg-grad-2: radial-gradient(1100px 900px at 100% 100%, rgba(56, 189, 248, 0.12) 0%, transparent 60%);
+  --bg-grad-3: radial-gradient(600px 600px at 50% 0%, rgba(139, 92, 246, 0.08) 0%, transparent 70%);
+  --glass-bg: rgba(255, 255, 255, 0.05);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-blur: blur(22px) saturate(1.3);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --text: #f8fafc;
+  --text-muted: rgba(248, 250, 252, 0.55);
+  --text-faint: rgba(248, 250, 252, 0.32);
+  --line: rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.14);
+  --btn-from: #ffffff;
+  --btn-to: #e2e8f0;
+  --btn-text: #070a0f;
+  --sidebar-bg: rgba(8, 10, 16, 0.72);
+  --card-hover: rgba(255, 255, 255, 0.07);
+  --input-bg: rgba(255, 255, 255, 0.04);
+  --input-border: rgba(255, 255, 255, 0.1);
+  --pill-bg: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme="light"] {
+  --bg-base: #f8fafc;
+  --bg-grad-1: radial-gradient(900px 700px at 0% 0%, rgba(139, 92, 246, 0.08) 0%, transparent 60%);
+  --bg-grad-2: radial-gradient(1000px 800px at 100% 100%, rgba(59, 130, 246, 0.07) 0%, transparent 60%);
+  --bg-grad-3: radial-gradient(700px 600px at 50% -10%, rgba(255, 255, 255, 0.9) 0%, transparent 60%);
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.8);
+  --glass-blur: blur(20px) saturate(1.2);
+  --glass-shadow: 0 8px 32px rgba(15, 23, 42, 0.06), 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+  --text: #0f172a;
+  --text-muted: rgba(15, 23, 42, 0.55);
+  --text-faint: rgba(15, 23, 42, 0.35);
+  --line: rgba(15, 23, 42, 0.08);
+  --line-strong: rgba(15, 23, 42, 0.12);
+  --btn-from: #0f172a;
+  --btn-to: #1e293b;
+  --btn-text: #ffffff;
+  --sidebar-bg: rgba(255, 255, 255, 0.68);
+  --card-hover: rgba(15, 23, 42, 0.03);
+  --input-bg: rgba(255, 255, 255, 0.8);
+  --input-border: rgba(15, 23, 42, 0.1);
+  --pill-bg: rgba(15, 23, 42, 0.06);
+}
+
+* {
+  border-color: var(--line);
+}
+
+html {
+  scrollbar-gutter: stable;
+}
+
+body {
+  background-color: var(--bg-base);
+  background-image: var(--bg-grad-1), var(--bg-grad-2), var(--bg-grad-3);
+  background-attachment: fixed;
+  color: var(--text);
+  transition: background-color 420ms ease, color 300ms ease;
+}
+
+.mono {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+}
+
+.glass {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-shadow);
+  border-radius: 32px;
+  transition: background 320ms ease, border-color 320ms ease, box-shadow 320ms ease, transform 200ms ease;
+}
+
+.glass-flat {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--glass-shadow);
+}
+
+.sidebar {
+  background: var(--sidebar-bg);
+  backdrop-filter: blur(28px) saturate(1.4);
+  -webkit-backdrop-filter: blur(28px) saturate(1.4);
+  border-right: 1px solid var(--glass-border);
+}
+
+.btn-primary {
+  background: linear-gradient(180deg, var(--btn-from) 0%, var(--btn-to) 100%);
+  color: var(--btn-text);
+  border-radius: 9999px;
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.04) inset;
+  transition: all 220ms ease;
+}
+.btn-primary:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.02);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+.btn-primary:active {
+  transform: translateY(0px) scale(0.98);
+}
+
+.pill {
+  background: var(--pill-bg);
+  border: 1px solid var(--line);
+  border-radius: 9999px;
+}
+
+.theme-toggle {
+  width: 52px;
+  height: 32px;
+  border-radius: 9999px;
+  background: var(--pill-bg);
+  border: 1px solid var(--line);
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  cursor: pointer;
+  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.theme-toggle-knob {
+  width: 26px;
+  height: 26px;
+  border-radius: 9999px;
+  background: var(--text);
+  color: var(--bg-base);
+  display: grid;
+  place-items: center;
+  transition: transform 380ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
+}
+[data-theme="light"] .theme-toggle-knob {
+  transform: translateX(20px);
+}
+[data-theme="dark"] .theme-toggle-knob {
+  transform: translateX(0px);
+}
+
+.stat-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--line);
+}
+
+.glow-dot {
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+  animation: glow 2s ease-in-out infinite;
+}
+
+.card-hover-row:hover {
+  background: var(--card-hover);
+}
+
+.input-glass {
+  background: var(--input-bg);
+  border: 1px solid var(--input-border);
+  border-radius: 14px;
+  color: var(--text);
+  transition: border-color 200ms ease, background 200ms ease;
+}
+.input-glass:focus {
+  outline: none;
+  border-color: rgba(139, 92, 246, 0.5);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.12);
+}
+
+/* Toast */
+#toast {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 100;
+  padding: 12px 20px;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 500;
+  opacity: 0;
+  transform: translateY(12px);
+  pointer-events: none;
+  transition: opacity 220ms ease, transform 220ms ease;
+}
+#toast.show {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+/* Deploy step list */
+.deploy-step {
+  opacity: 0.4;
+  transition: opacity 200ms ease;
+}
+.deploy-step.done {
+  opacity: 1;
+}
+
+/* Hero mockup 3D tilt */
+.hero-mockup {
+  transform: perspective(1400px) rotateY(-6deg) rotateX(2deg) rotateZ(-2deg);
+  transition: transform 500ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+.hero-mockup:hover {
+  transform: perspective(1400px) rotateY(-2deg) rotateX(0deg) rotateZ(-1deg);
+}
+
+::selection {
+  background: rgba(139, 92, 246, 0.3);
+}
