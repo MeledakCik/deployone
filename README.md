@@ -1,31 +1,40 @@
 # DeployOne
 
-Next.js 14 (App Router) + TypeScript + Tailwind CSS project with two parts:
+**DeployOne** adalah landing page + dashboard untuk mengelola deployment Vercel dan Cloudflare
+Pages dari satu tempat — dibangun dengan Next.js 14 (App Router), TypeScript, dan Tailwind CSS.
 
-- `/` — Company landing page (Linear/Vercel-style glassmorphism)
-- `/dashboard` — Deploy management dashboard (rebuilt 1:1 from the original HTML artifact's logic)
+## Halaman
 
-## Getting started
+- **`/` — Landing Page**
+  Company profile bergaya Linear/Vercel dengan glassmorphism: hero section, social proof, grid
+  fitur, alur "How it Works", dan CTA. Termasuk flow "Login with Google" (dummy) untuk masuk ke
+  dashboard.
 
-```bash
-npm install
-npm run dev
-```
+- **`/dashboard` — Deploy Dashboard**
+  Aplikasi manajemen deployment dengan sidebar responsif (mobile: off-canvas drawer, desktop:
+  sidebar statis) dan beberapa halaman:
+  - **Dashboard** — ringkasan total deployment, status Ready/Failed, dan riwayat deploy terbaru.
+  - **Projects** — daftar project unik yang dikelompokkan dari riwayat deploy, lengkap dengan
+    tombol Visit & Redeploy.
+  - **Deploy** — form untuk deploy project baru (nama, platform, domain custom, token, catatan)
+    dengan validasi URL repo GitHub dan simulasi proses deploy 5 langkah.
+  - **Domains** — kelola custom domain per project.
+  - **Environment** — kelola environment variable/secret dengan value yang bisa disembunyikan.
+  - **Docs** — panduan singkat (token Vercel, GitHub PAT, setup CNAME domain).
+  - **Settings** — token platform global (Vercel, Cloudflare, GitHub PAT).
 
-Open http://localhost:3000.
+## Desain
 
-## Notes
+Dual theme (dark/light) dengan token warna dan glassmorphism yang konsisten — blur dipakai secara
+selektif (hanya sidebar & stat card) supaya UI tetap ringan di perangkat mobile, sementara elemen
+lain (tabel, form, modal) memakai permukaan solid untuk performa.
 
-- **Auth is a dummy flow.** No NextAuth/real OAuth — "Login with Google" opens an account
-  chooser with two fake accounts, simulates an 800ms load, then stores `{name, email, avatar, color}`
-  in `localStorage` under `deployone-user`. Logout clears it and returns to `/`.
-- **Theme** persists in `localStorage` under `deployone-theme` via `next-themes`, driving the
-  `data-theme="dark" | "light"` attribute and the CSS variables in `app/globals.css`.
-- **Dashboard state** (`lib/deploy-context.tsx`) mirrors the original artifact exactly:
-  - Seed stats: `total=3, ready=2, failed=1`
-  - GitHub repo validation regex: `^https:\/\/github\.com\/[^/]+\/[^/]+`
-  - History caps at 10 entries (oldest dropped); a confirm modal appears when you deploy while
-    already at the cap
-  - Deploy simulation: 5 steps, one every 700ms, progress bar `step/5 * 100%`, then a 300ms
-    delay before showing the result panel
-  - Slugify + domain resolution: `.pages.dev` for Cloudflare, `.vercel.app` otherwise
+## Catatan
+
+- **Auth adalah dummy flow.** Tidak memakai NextAuth/OAuth asli — "Login with Google" membuka
+  pemilih akun dengan dua akun contoh, mensimulasikan proses login, lalu menyimpan sesi di
+  `localStorage`. Logout akan menghapus sesi tersebut dan kembali ke halaman utama.
+- **Riwayat deploy** dibatasi maksimal 10 entri — entri terlama otomatis terhapus saat penuh, dan
+  akan muncul konfirmasi sebelum itu terjadi.
+- **Domain deployment** di-generate otomatis dari nama project: `*.pages.dev` untuk Cloudflare,
+  `*.vercel.app` untuk platform lainnya.
