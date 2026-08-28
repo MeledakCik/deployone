@@ -1,7 +1,7 @@
 "use client";
 
 import { AlertTriangle } from "lucide-react";
-import { GlassPanel } from "@/components/ui/GlassPanel";
+import { Surface } from "@/components/ui/Surface";
 import { useDeploy } from "@/lib/deploy-context";
 
 export function ConfirmModal() {
@@ -10,8 +10,8 @@ export function ConfirmModal() {
   if (!confirmOpen) return null;
 
   return (
-    <div id="confirmModal" className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-      <GlassPanel className="w-full max-w-sm p-6">
+    <div id="confirmModal" className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 px-4">
+      <Surface className="w-full max-w-sm p-6">
         <span className="stat-icon text-amber-400 mb-4">
           <AlertTriangle size={18} />
         </span>
@@ -36,7 +36,7 @@ export function ConfirmModal() {
             Lanjutkan
           </button>
         </div>
-      </GlassPanel>
+      </Surface>
     </div>
   );
 }

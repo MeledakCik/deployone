@@ -1,5 +1,4 @@
 import type * as React from "react";
-import { GlassPanel } from "@/components/ui/GlassPanel";
 
 export function StatCard({
   id,
@@ -21,7 +20,9 @@ export function StatCard({
   }[tone];
 
   return (
-    <GlassPanel className="p-5">
+    // Only the sidebar and these 3 stat cards use backdrop-blur (kept light, 12px) — everything
+    // else in the dashboard uses solid surfaces so the app stays smooth on mobile.
+    <div className="stat-card-glass p-5">
       <div className="flex items-center justify-between">
         <span className={`stat-icon ${toneClass}`}>
           <Icon size={18} />
@@ -31,6 +32,6 @@ export function StatCard({
         {value}
       </p>
       <p className="text-[13px] text-text-muted">{label}</p>
-    </GlassPanel>
+    </div>
   );
 }

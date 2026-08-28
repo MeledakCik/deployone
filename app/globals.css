@@ -31,6 +31,10 @@
   --input-bg: rgba(255, 255, 255, 0.04);
   --input-border: rgba(255, 255, 255, 0.1);
   --pill-bg: rgba(255, 255, 255, 0.06);
+  --surface-solid: #12151e;
+  --surface-solid-2: #1a1d29;
+  --surface-line: rgba(255, 255, 255, 0.06);
+  --row-hover: rgba(255, 255, 255, 0.04);
 }
 
 [data-theme="light"] {
@@ -55,6 +59,10 @@
   --input-bg: rgba(255, 255, 255, 0.8);
   --input-border: rgba(15, 23, 42, 0.1);
   --pill-bg: rgba(15, 23, 42, 0.06);
+  --surface-solid: #ffffff;
+  --surface-solid-2: #ffffff;
+  --surface-line: rgba(15, 23, 42, 0.08);
+  --row-hover: rgba(15, 23, 42, 0.035);
 }
 
 * {
@@ -97,9 +105,70 @@ body {
 
 .sidebar {
   background: var(--sidebar-bg);
-  backdrop-filter: blur(28px) saturate(1.4);
-  -webkit-backdrop-filter: blur(28px) saturate(1.4);
+  backdrop-filter: blur(12px) saturate(1.2);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
   border-right: 1px solid var(--glass-border);
+}
+
+.sidebar-topbar {
+  border-right: none;
+  border-bottom: 1px solid var(--glass-border);
+}
+
+/* Lightweight glass reserved ONLY for the sidebar and the 3 top stat cards.
+   Everything else in the dashboard uses the solid surfaces below for perf. */
+.stat-card-glass {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(12px) saturate(1.2);
+  -webkit-backdrop-filter: blur(12px) saturate(1.2);
+  box-shadow: var(--glass-shadow);
+  border-radius: 24px;
+  transition: transform 200ms ease;
+}
+.stat-card-glass:hover {
+  transform: translateY(-1px);
+}
+
+/* Explicit exception: the 3 Docs items use a very light glass touch, per spec. */
+.docs-item-glass {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(10px) saturate(1.15);
+  -webkit-backdrop-filter: blur(10px) saturate(1.15);
+  border-radius: 20px;
+  transition: transform 180ms ease, background 180ms ease;
+}
+.docs-item-glass:hover {
+  transform: translateY(-1px);
+  background: var(--card-hover);
+}
+
+/* Solid, blur-free surfaces for tables, forms, modals, cards */
+.surface-solid {
+  background: var(--surface-solid);
+  border: 1px solid var(--surface-line);
+  border-radius: 24px;
+}
+.surface-solid-row:hover {
+  background: var(--row-hover);
+}
+
+.input-solid {
+  background: var(--surface-solid-2);
+  border: 1px solid var(--surface-line);
+  border-radius: 16px;
+  color: var(--text);
+  transition: border-color 160ms ease;
+}
+.input-solid:focus {
+  outline: none;
+  border-color: rgba(139, 92, 246, 0.5);
+}
+
+/* Status dot without glow/animation, for dashboard use */
+.dot-flat {
+  display: inline-block;
 }
 
 .btn-primary {

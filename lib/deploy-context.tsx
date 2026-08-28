@@ -3,7 +3,8 @@
 import * as React from "react";
 import { useToast } from "@/components/ui/Toast";
 import { resolveDomain, formatDate } from "@/lib/utils";
-import type { DashboardView, DeployFormValues, HistoryItem, Platform } from "@/types";
+import { useLocalStorage } from "@/lib/useLocalStorage";
+import type { DashboardView, DeployFormValues, DomainItem, EnvItem, HistoryItem, Platform } from "@/types";
 
 export const DEPLOY_STEPS = [
   "Menghubungkan ke GitHub",
@@ -98,6 +99,15 @@ interface DeployContextValue {
   closeModal: () => void;
   handleCloseAfterDeploy: () => void;
   redeploy: (name: string) => void;
+  // Domains
+  domains: DomainItem[];
+  addDomain: (domain: string, project: string) => void;
+  removeDomain: (id: string) => void;
+  // Environment variables
+  envVars: EnvItem[];
+  addEnvVar: (key: string, value: string, environment: "Production" | "Preview") => void;
+  removeEnvVar: (id: string) => void;
+  toggleEnvVisible: (id: string) => void;
 }
 
 const DeployContext = React.createContext<DeployContextValue | null>(null);
@@ -117,6 +127,9 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
   const [form, setForm] = React.useState<DeployFormValues>(emptyForm);
   const [modal, setModal] = React.useState<ModalState>(defaultModal);
   const [confirmOpen, setConfirmOpen] = React.useState(false);
+
+  const [domains, setDomains] = useLocalStorage<DomainItem[]>("deployone-domains", []);
+  const [envVars, setEnvVars] = useLocalStorage<EnvItem[]>("deployone-env", []);
 
   const pendingFormRef = React.useRef<DeployFormValues | null>(null);
   const intervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
@@ -260,6 +273,49 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     [showToast]
   );
 
+  const addDomain = React.useCallback(
+    (domain: string, project: string) => {
+      setDomains((prev) => [
+        { id: `${Date.now()}`, domain, project, status: "Pending" as const },
+        ...prev,
+      ]);
+      showToast("Domain berhasil ditambahkan");
+    },
+    [setDomains, showToast]
+  );
+
+  const removeDomain = React.useCallback(
+    (id: string) => {
+      setDomains((prev) => prev.filter((d) => d.id !== id));
+    },
+    [setDomains]
+  );
+
+  const addEnvVar = React.useCallback(
+    (key: string, value: string, environment: "Production" | "Preview") => {
+      setEnvVars((prev) => [
+        { id: `${Date.now()}`, key, value, environment, visible: false },
+        ...prev,
+      ]);
+      showToast("Secret berhasil disimpan");
+    },
+    [setEnvVars, showToast]
+  );
+
+  const removeEnvVar = React.useCallback(
+    (id: string) => {
+      setEnvVars((prev) => prev.filter((v) => v.id !== id));
+    },
+    [setEnvVars]
+  );
+
+  const toggleEnvVisible = React.useCallback(
+    (id: string) => {
+      setEnvVars((prev) => prev.map((v) => (v.id === id ? { ...v, visible: !v.visible } : v)));
+    },
+    [setEnvVars]
+  );
+
   const value: DeployContextValue = {
     view,
     setView,
@@ -276,6 +332,13 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     closeModal,
     handleCloseAfterDeploy,
     redeploy,
+    domains,
+    addDomain,
+    removeDomain,
+    envVars,
+    addEnvVar,
+    removeEnvVar,
+    toggleEnvVisible,
   };
 
   return <DeployContext.Provider value={value}>{children}</DeployContext.Provider>;

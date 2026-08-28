@@ -27,6 +27,27 @@ export interface DeployFormValues {
   note: string;
 }
 
+export interface DomainItem {
+  id: string;
+  domain: string;
+  project: string;
+  status: "Active" | "Pending";
+}
+
+export interface EnvItem {
+  id: string;
+  key: string;
+  value: string;
+  environment: "Production" | "Preview";
+  visible: boolean;
+}
+
+export interface SettingsTokens {
+  vercelToken: string;
+  cloudflareToken: string;
+  githubPat: string;
+}
+
 export type DashboardView =
   | "dashboard"
   | "deploy"
@@ -35,3 +56,4 @@ export type DashboardView =
   | "env"
   | "docs"
   | "settings";
+

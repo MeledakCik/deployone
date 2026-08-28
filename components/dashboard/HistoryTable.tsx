@@ -1,15 +1,15 @@
 "use client";
 
 import { CheckCircle2, XCircle } from "lucide-react";
-import { GlassPanel } from "@/components/ui/GlassPanel";
+import { Surface } from "@/components/ui/Surface";
 import { useDeploy } from "@/lib/deploy-context";
 
 export function HistoryTable() {
   const { history, redeploy } = useDeploy();
 
   return (
-    <GlassPanel className="overflow-hidden">
-      <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--line)]">
+    <Surface className="overflow-hidden">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--surface-line)]">
         <h3 className="text-[14px] font-semibold">Riwayat Deploy</h3>
         <span className="mono text-[11px] text-text-faint">{history.length}/10</span>
       </div>
@@ -37,8 +37,8 @@ export function HistoryTable() {
               return (
                 <tr
                   key={item.id}
-                  className="card-hover-row group border-b last:border-0 transition"
-                  style={{ borderColor: "var(--line)" }}
+                  className="surface-solid-row border-b last:border-0 transition-colors"
+                  style={{ borderColor: "var(--surface-line)" }}
                 >
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
@@ -65,11 +65,11 @@ export function HistoryTable() {
                     <span
                       className={`inline-flex items-center gap-1.5 rounded-pill border px-2.5 py-0.5 text-[11px] font-medium ${
                         isReady
-                          ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-500"
+                          ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
                           : "border-red-500/20 bg-red-500/10 text-red-400"
                       }`}
                     >
-                      <span className={`h-1.5 w-1.5 rounded-full ${isReady ? "bg-emerald-500" : "bg-red-400"} glow-dot`} />
+                      <span className={`dot-flat h-1.5 w-1.5 rounded-full ${isReady ? "bg-emerald-400" : "bg-red-400"}`} />
                       {isReady ? "Ready" : "Failed"}
                     </span>
                   </td>
@@ -88,6 +88,6 @@ export function HistoryTable() {
           </tbody>
         </table>
       </div>
-    </GlassPanel>
+    </Surface>
   );
 }

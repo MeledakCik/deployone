@@ -1,7 +1,7 @@
 "use client";
 
 import { CheckCircle2, Circle, ExternalLink } from "lucide-react";
-import { GlassPanel } from "@/components/ui/GlassPanel";
+import { Surface } from "@/components/ui/Surface";
 import { useDeploy, DEPLOY_STEPS } from "@/lib/deploy-context";
 
 export function DeployModal() {
@@ -10,8 +10,8 @@ export function DeployModal() {
   if (!modal.open) return null;
 
   return (
-    <div id="modal" className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-      <GlassPanel className="w-full max-w-md p-6">
+    <div id="modal" className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 px-4">
+      <Surface className="w-full max-w-md p-6">
         <h3 id="deployTitle" className="text-[17px] font-semibold mb-1">
           {modal.title}
         </h3>
@@ -85,7 +85,7 @@ export function DeployModal() {
             </button>
           )}
         </div>
-      </GlassPanel>
+      </Surface>
     </div>
   );
 }
