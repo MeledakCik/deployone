@@ -23,8 +23,11 @@ export function slugify(input: string): string {
 /** Resolve the deployed domain from project name + platform, same rule as the original. */
 export function resolveDomain(projectName: string, platform: string): string {
   const slug = slugify(projectName);
-  const isCloudflare = platform.toLowerCase().includes("cloudflare") || platform.toLowerCase().includes("pages");
-  return isCloudflare ? `${slug}.pages.dev` : `${slug}.vercel.app`;
+  const p = platform.toLowerCase();
+  if (p.includes("cloudflare") || p.includes("pages")) return `${slug}.pages.dev`;
+  if (p.includes("railway")) return `${slug}.up.railway.app`;
+  if (p.includes("render")) return `${slug}.onrender.com`;
+  return `${slug}.vercel.app`;
 }
 
 export function formatDate(date: Date): string {

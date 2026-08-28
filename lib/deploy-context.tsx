@@ -25,11 +25,17 @@ const DEFAULT_MODAL_SUBTITLE = "Import repository dan deploy ke edge network dal
 
 const emptyForm: DeployFormValues = {
   projectName: "",
-  platform: "vercel",
+  platform: "cloudflare",
   domain: "",
   platformToken: "",
-  githubToken: "",
+  githubUrl: "",
+  githubPat: "",
   note: "",
+  accountId: "",
+  buildCommand: "",
+  outputDir: "",
+  startCommand: "",
+  envText: "",
 };
 
 function seedHistory(): HistoryItem[] {
@@ -217,7 +223,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
   const submitDeploy = React.useCallback(
     (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
-      const repoCandidate = (form.githubToken || form.projectName || "").trim();
+      const repoCandidate = (form.githubUrl || form.projectName || "").trim();
 
       if (!GITHUB_REPO_RE.test(repoCandidate)) {
         showToast("Format URL GitHub belum benar");

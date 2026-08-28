@@ -1,4 +1,4 @@
-export type Platform = "vercel" | "cloudflare";
+export type Platform = "vercel" | "cloudflare" | "railway" | "render";
 
 export type DeployStatus = "ready" | "failed" | "building";
 
@@ -23,8 +23,16 @@ export interface DeployFormValues {
   platform: Platform;
   domain: string;
   platformToken: string;
-  githubToken: string;
+  githubUrl: string;
+  githubPat: string; // optional GitHub PAT (used on the Vercel form)
   note: string;
+  // Cloudflare Pages specific
+  accountId: string;
+  buildCommand: string;
+  outputDir: string;
+  // Railway / Render specific
+  startCommand: string;
+  envText: string;
 }
 
 export interface DomainItem {
