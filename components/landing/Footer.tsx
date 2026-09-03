@@ -9,7 +9,7 @@ export function Footer() {
           <span className="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-br from-violet-500 to-cyan-400 text-white">
             <Rocket size={14} />
           </span>
-          <span className="text-[13px] font-semibold">DeployOne</span>
+          <span className="text-[13px] font-semibold">Depush</span>
           <span className="text-[12px] text-text-faint">© {new Date().getFullYear()}</span>
         </div>
         <div className="flex items-center gap-6 text-[13px] text-text-muted">

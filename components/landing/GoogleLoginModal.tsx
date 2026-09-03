@@ -53,7 +53,7 @@ export function GoogleLoginModal({ open, onClose }: { open: boolean; onClose: ()
           </button>
         </div>
         <p className="text-[13px] text-text-muted mb-5">
-          untuk melanjutkan ke <span className="font-medium">DeployOne</span>
+          untuk melanjutkan ke <span className="font-medium">Depush</span>
         </p>
 
         <div className="space-y-2">

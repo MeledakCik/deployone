@@ -2,6 +2,7 @@
 
 import { CheckCircle2, XCircle } from "lucide-react";
 import { Surface } from "@/components/ui/Surface";
+import { VercelSyncBadge } from "@/components/dashboard/VercelSyncBadge";
 import { useDeploy } from "@/lib/deploy-context";
 
 export function HistoryTable() {
@@ -59,7 +60,12 @@ export function HistoryTable() {
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-[12px] capitalize">{item.platform}</td>
+                  <td className="px-6 py-4 text-[12px] capitalize">
+                    <div className="flex flex-col items-start gap-1.5">
+                      <span>{item.platform}</span>
+                      {item.platform === "vercel" && <VercelSyncBadge projectName={item.name} />}
+                    </div>
+                  </td>
                   <td className="px-6 py-4 mono text-[12px] opacity-70">{item.domain}</td>
                   <td className="px-6 py-4">
                     <span

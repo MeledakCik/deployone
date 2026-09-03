@@ -4,7 +4,23 @@ import * as React from "react";
 import { useToast } from "@/components/ui/Toast";
 import { resolveDomain, formatDate } from "@/lib/utils";
 import { useLocalStorage } from "@/lib/useLocalStorage";
-import type { DashboardView, DeployFormValues, DomainItem, EnvItem, HistoryItem, Platform } from "@/types";
+import { parseAndValidateEnvText } from "@/lib/env-validate";
+import type {
+  ApiResponse,
+  CreateDeployResult,
+  DashboardView,
+  DeployFormValues,
+  DeployStatusResult,
+  DomainItem,
+  EnvItem,
+  GithubValidation,
+  HistoryItem,
+  Platform,
+  SettingsTokens,
+  SyncStatus,
+  VercelDomainResult,
+  VercelProjectStatusResult,
+} from "@/types";
 
 export const DEPLOY_STEPS = [
   "Menghubungkan ke GitHub",
@@ -17,8 +33,25 @@ export const DEPLOY_STEPS = [
 const MAX_HISTORY = 10;
 const STEP_INTERVAL_MS = 700;
 const FINISH_DELAY_MS = 300;
+const POLL_INTERVAL_MS = 2000;
 
 const GITHUB_REPO_RE = /^https:\/\/github\.com\/[^/]+\/[^/]+/;
+
+const DEFAULT_SETTINGS_TOKENS: SettingsTokens = {
+  vercelToken: "",
+  cloudflareToken: "",
+  githubPat: "",
+};
+
+/** Small fetch wrapper for our own /api routes — throws with the server's error message. */
+async function callApi<T>(url: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(url, init);
+  const body = (await res.json().catch(() => null)) as ApiResponse<T> | null;
+  if (!body || !body.ok) {
+    throw new Error(body?.error ?? `Request gagal (${res.status})`);
+  }
+  return body.data;
+}
 
 const DEFAULT_MODAL_TITLE = "Deploy Project";
 const DEFAULT_MODAL_SUBTITLE = "Import repository dan deploy ke edge network dalam satu klik.";
@@ -42,9 +75,9 @@ function seedHistory(): HistoryItem[] {
   return [
     {
       id: "seed-3",
-      name: "deployone-marketing",
+      name: "depush-marketing",
       platform: "vercel",
-      domain: "deployone-marketing.vercel.app",
+      domain: "depush-marketing.vercel.app",
       date: formatDate(new Date(Date.now() - 1000 * 60 * 60 * 20)),
       status: "ready",
     },
@@ -75,7 +108,9 @@ interface ModalState {
   subtitle: string;
   resultVisible: boolean;
   closeVisible: boolean;
-  result: { name: string; domain: string } | null;
+  result: { name: string; domain: string; inspectorUrl?: string } | null;
+  /** Set when a real deploy (Vercel) fails — DeployModal renders this instead of the result block. */
+  error: string | null;
 }
 
 const defaultModal: ModalState = {
@@ -87,6 +122,7 @@ const defaultModal: ModalState = {
   resultVisible: false,
   closeVisible: false,
   result: null,
+  error: null,
 };
 
 interface DeployContextValue {
@@ -105,10 +141,17 @@ interface DeployContextValue {
   closeModal: () => void;
   handleCloseAfterDeploy: () => void;
   redeploy: (name: string) => void;
+  removeHistoryItem: (name: string) => void;
+  // Global tokens saved on the Settings page — used as defaults for sync/domain checks
+  settingsTokens: SettingsTokens;
+  // Vercel <-> local sync ("kalau di Vercel udah dihapus, di sini otomatis kehapus juga?")
+  projectSync: Record<string, SyncStatus>;
+  checkProjectStatus: (name: string, vercelToken: string) => Promise<void>;
   // Domains
   domains: DomainItem[];
-  addDomain: (domain: string, project: string) => void;
-  removeDomain: (id: string) => void;
+  addDomain: (domain: string, project: string, vercelToken?: string) => Promise<void>;
+  removeDomain: (id: string, vercelToken?: string) => void;
+  refreshDomainStatus: (id: string, vercelToken: string) => Promise<void>;
   // Environment variables
   envVars: EnvItem[];
   addEnvVar: (key: string, value: string, environment: "Production" | "Preview") => void;
@@ -134,8 +177,13 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
   const [modal, setModal] = React.useState<ModalState>(defaultModal);
   const [confirmOpen, setConfirmOpen] = React.useState(false);
 
-  const [domains, setDomains] = useLocalStorage<DomainItem[]>("deployone-domains", []);
-  const [envVars, setEnvVars] = useLocalStorage<EnvItem[]>("deployone-env", []);
+  const [domains, setDomains] = useLocalStorage<DomainItem[]>("depush-domains", []);
+  const [envVars, setEnvVars] = useLocalStorage<EnvItem[]>("depush-env", []);
+  const [settingsTokens] = useLocalStorage<SettingsTokens>(
+    "depush-settings-tokens",
+    DEFAULT_SETTINGS_TOKENS
+  );
+  const [projectSync, setProjectSync] = React.useState<Record<string, SyncStatus>>({});
 
   const pendingFormRef = React.useRef<DeployFormValues | null>(null);
   const intervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
@@ -155,22 +203,30 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
 
   const platformTokenLabel = `${form.platform.charAt(0).toUpperCase()}${form.platform.slice(1)} Token`;
 
-  const addHistory = React.useCallback((name: string, platform: Platform, domain: string) => {
-    const item: HistoryItem = {
-      id: `${Date.now()}`,
-      name,
-      platform,
-      domain,
-      date: formatDate(new Date()),
-      status: "ready",
-    };
-    setHistory((prev) => {
-      const next = [item, ...prev];
-      // Keep max 10: drop the oldest (last) entry once the cap is exceeded.
-      return next.length > MAX_HISTORY ? next.slice(0, MAX_HISTORY) : next;
-    });
-    setStats((prev) => ({ ...prev, total: prev.total + 1, ready: prev.ready + 1 }));
-  }, []);
+  const addHistory = React.useCallback(
+    (name: string, platform: Platform, domain: string, status: HistoryItem["status"] = "ready") => {
+      const item: HistoryItem = {
+        id: `${Date.now()}`,
+        name,
+        platform,
+        domain,
+        date: formatDate(new Date()),
+        status,
+      };
+      setHistory((prev) => {
+        const next = [item, ...prev];
+        // Keep max 10: drop the oldest (last) entry once the cap is exceeded.
+        return next.length > MAX_HISTORY ? next.slice(0, MAX_HISTORY) : next;
+      });
+      setStats((prev) => ({
+        ...prev,
+        total: prev.total + 1,
+        ready: prev.ready + (status === "ready" ? 1 : 0),
+        failed: prev.failed + (status === "failed" ? 1 : 0),
+      }));
+    },
+    []
+  );
 
   const finishDeploy = React.useCallback(
     (data: DeployFormValues) => {
@@ -192,20 +248,40 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     [addHistory]
   );
 
-  const startDeploy = React.useCallback(
+  const openModal = React.useCallback(() => {
+    setModal({
+      open: true,
+      stepIndex: 0,
+      barWidth: 0,
+      title: DEFAULT_MODAL_TITLE,
+      subtitle: DEFAULT_MODAL_SUBTITLE,
+      resultVisible: false,
+      closeVisible: false,
+      result: null,
+      error: null,
+    });
+  }, []);
+
+  const failDeploy = React.useCallback(
+    (data: DeployFormValues, message: string) => {
+      const projectName = (data.projectName || "my-project").trim() || "my-project";
+      setModal((prev) => ({
+        ...prev,
+        title: "Deploy Gagal",
+        subtitle: message,
+        closeVisible: true,
+        error: message,
+      }));
+      addHistory(projectName, data.platform, "-", "failed");
+    },
+    [addHistory]
+  );
+
+  /** Simulated 5-step progress bar, used for platforms without a real backend yet (CF/Railway/Render). */
+  const startSimulatedDeploy = React.useCallback(
     (data: DeployFormValues) => {
       if (intervalRef.current) clearInterval(intervalRef.current);
-
-      setModal({
-        open: true,
-        stepIndex: 0,
-        barWidth: 0,
-        title: DEFAULT_MODAL_TITLE,
-        subtitle: DEFAULT_MODAL_SUBTITLE,
-        resultVisible: false,
-        closeVisible: false,
-        result: null,
-      });
+      openModal();
 
       let step = 0;
       intervalRef.current = setInterval(() => {
@@ -217,7 +293,103 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         }
       }, STEP_INTERVAL_MS);
     },
-    [finishDeploy]
+    [finishDeploy, openModal]
+  );
+
+  /**
+   * Real deploy flow for Vercel: validates the GitHub repo server-side
+   * (public/private + structure check), creates an actual Vercel
+   * deployment, then polls it until it's READY or ERROR.
+   */
+  const startVercelDeploy = React.useCallback(
+    async (data: DeployFormValues) => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      openModal();
+
+      const projectName = (data.projectName || "my-project").trim() || "my-project";
+
+      let validation: GithubValidation;
+      try {
+        validation = await callApi<GithubValidation>("/api/github/validate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ githubUrl: data.githubUrl, githubPat: data.githubPat }),
+        });
+      } catch (err) {
+        failDeploy(data, err instanceof Error ? err.message : "Validasi GitHub gagal.");
+        return;
+      }
+
+      setModal((prev) => ({
+        ...prev,
+        stepIndex: 1,
+        barWidth: 20,
+        subtitle: `Repo ${validation.fullName} (${validation.visibility}) terverifikasi.`,
+      }));
+      validation.warnings.forEach((w) => showToast(w));
+
+      let created: CreateDeployResult;
+      try {
+        created = await callApi<CreateDeployResult>("/api/deploy", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            projectName,
+            githubUrl: data.githubUrl,
+            vercelToken: data.platformToken,
+            githubPat: data.githubPat,
+          }),
+        });
+      } catch (err) {
+        failDeploy(data, err instanceof Error ? err.message : "Gagal membuat deployment di Vercel.");
+        return;
+      }
+
+      setModal((prev) => ({ ...prev, stepIndex: 2, barWidth: 40 }));
+
+      intervalRef.current = setInterval(async () => {
+        let status: DeployStatusResult;
+        try {
+          status = await callApi<DeployStatusResult>(`/api/deploy/${created.deploymentId}`, {
+            headers: { "x-vercel-token": data.platformToken },
+          });
+        } catch (err) {
+          if (intervalRef.current) clearInterval(intervalRef.current);
+          failDeploy(data, err instanceof Error ? err.message : "Gagal memantau status deploy.");
+          return;
+        }
+
+        if (status.readyState === "BUILDING" || status.readyState === "INITIALIZING") {
+          setModal((prev) => (prev.stepIndex < 3 ? { ...prev, stepIndex: 3, barWidth: 70 } : prev));
+          return;
+        }
+
+        if (status.readyState === "READY") {
+          if (intervalRef.current) clearInterval(intervalRef.current);
+          setModal((prev) => ({
+            ...prev,
+            stepIndex: 5,
+            barWidth: 100,
+            title: "Deploy Berhasil!",
+            subtitle: `Project ${projectName} siap di ${status.url}`,
+            resultVisible: true,
+            closeVisible: true,
+            result: { name: projectName, domain: status.url, inspectorUrl: status.inspectorUrl },
+          }));
+          addHistory(projectName, "vercel", status.url, "ready");
+          return;
+        }
+
+        if (status.readyState === "ERROR" || status.readyState === "CANCELED") {
+          if (intervalRef.current) clearInterval(intervalRef.current);
+          failDeploy(
+            data,
+            status.errorMessage ?? "Build gagal di Vercel. Cek inspector url untuk detail log."
+          );
+        }
+      }, POLL_INTERVAL_MS);
+    },
+    [addHistory, failDeploy, openModal, showToast]
   );
 
   const submitDeploy = React.useCallback(
@@ -230,24 +402,41 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
+      if ((form.platform === "railway" || form.platform === "render") && form.envText.trim()) {
+        const { hasErrors, issues } = parseAndValidateEnvText(form.envText);
+        if (hasErrors) {
+          showToast(issues.find((i) => i.level === "error")?.message ?? "Ada error di Environment Variables.");
+          return;
+        }
+      }
+
       if (history.length >= MAX_HISTORY) {
         pendingFormRef.current = form;
         setConfirmOpen(true);
         return;
       }
 
-      startDeploy(form);
+      if (form.platform === "vercel") {
+        void startVercelDeploy(form);
+      } else {
+        startSimulatedDeploy(form);
+      }
     },
-    [form, history.length, showToast, startDeploy]
+    [form, history.length, showToast, startSimulatedDeploy, startVercelDeploy]
   );
 
   const proceedDeploy = React.useCallback(() => {
     setConfirmOpen(false);
-    if (pendingFormRef.current) {
-      startDeploy(pendingFormRef.current);
+    const pending = pendingFormRef.current;
+    if (pending) {
+      if (pending.platform === "vercel") {
+        void startVercelDeploy(pending);
+      } else {
+        startSimulatedDeploy(pending);
+      }
       pendingFormRef.current = null;
     }
-  }, [startDeploy]);
+  }, [startSimulatedDeploy, startVercelDeploy]);
 
   const closeConfirm = React.useCallback(() => {
     setConfirmOpen(false);
@@ -260,15 +449,21 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       open: false,
       title: DEFAULT_MODAL_TITLE,
       subtitle: DEFAULT_MODAL_SUBTITLE,
+      error: null,
     }));
   }, []);
 
   const handleCloseAfterDeploy = React.useCallback(() => {
+    const failed = Boolean(modal.error);
     closeModal();
+    if (failed) {
+      showToast("Deploy gagal — cek pesan error dan coba lagi.");
+      return;
+    }
     setView("dashboard");
     setForm(emptyForm);
     showToast("Deploy berhasil — cek dashboard!");
-  }, [closeModal, showToast]);
+  }, [closeModal, modal.error, showToast]);
 
   const redeploy = React.useCallback(
     (name: string) => {
@@ -279,22 +474,127 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     [showToast]
   );
 
-  const addDomain = React.useCallback(
-    (domain: string, project: string) => {
-      setDomains((prev) => [
-        { id: `${Date.now()}`, domain, project, status: "Pending" as const },
-        ...prev,
-      ]);
-      showToast("Domain berhasil ditambahkan");
+  /** Drops a project from the local history/projects list — e.g. after confirming it was deleted on Vercel. */
+  const removeHistoryItem = React.useCallback((name: string) => {
+    setHistory((prev) => prev.filter((h) => h.name !== name));
+    setProjectSync((prev) => {
+      if (!(name in prev)) return prev;
+      const next = { ...prev };
+      delete next[name];
+      return next;
+    });
+  }, []);
+
+  /**
+   * Answers "kalau di Vercel udah dihapus, di sini otomatis kehapus juga?"
+   * — no, so this actively asks Vercel whether the project still exists and
+   * updates the badge shown next to it (Projects/History views can then
+   * offer to remove the now-stale local entry).
+   */
+  const checkProjectStatus = React.useCallback(
+    async (name: string, vercelToken: string) => {
+      setProjectSync((prev) => ({ ...prev, [name]: "checking" }));
+      try {
+        const result = await callApi<VercelProjectStatusResult>("/api/vercel/project-status", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ projectName: name, vercelToken }),
+        });
+        setProjectSync((prev) => ({ ...prev, [name]: result.exists ? "exists" : "deleted" }));
+        showToast(
+          result.exists
+            ? `Project "${name}" masih ada di Vercel.`
+            : `Project "${name}" sudah dihapus di Vercel.`
+        );
+      } catch (err) {
+        setProjectSync((prev) => ({ ...prev, [name]: "error" }));
+        showToast(err instanceof Error ? err.message : "Gagal mengecek status project di Vercel.");
+      }
     },
-    [setDomains, showToast]
+    [showToast]
   );
 
-  const removeDomain = React.useCallback(
-    (id: string) => {
-      setDomains((prev) => prev.filter((d) => d.id !== id));
+  /** Adds a domain locally, and — for Vercel projects with a token available — attaches it for real via the Vercel API. */
+  const addDomain = React.useCallback(
+    async (domain: string, project: string, vercelToken?: string) => {
+      const platform = history.find((h) => h.name === project)?.platform;
+      const id = `${Date.now()}`;
+      setDomains((prev) => [{ id, domain, project, status: "Pending" as const, platform }, ...prev]);
+
+      if (platform !== "vercel" || !vercelToken) {
+        showToast("Domain berhasil ditambahkan");
+        return;
+      }
+
+      try {
+        const result = await callApi<VercelDomainResult>("/api/vercel/domains", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ projectName: project, domain, vercelToken }),
+        });
+        setDomains((prev) =>
+          prev.map((d) =>
+            d.id === id
+              ? { ...d, status: result.verified ? "Active" : "Pending", misconfigured: result.misconfigured }
+              : d
+          )
+        );
+        showToast(
+          result.verified
+            ? "Domain berhasil ditambahkan & terverifikasi di Vercel."
+            : "Domain ditambahkan ke Vercel — arahkan DNS-nya dulu supaya terverifikasi."
+        );
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : "Gagal menambahkan domain ke Vercel.");
+      }
     },
-    [setDomains]
+    [history, setDomains, showToast]
+  );
+
+  /** Re-checks a Vercel domain's live verification/misconfiguration status. */
+  const refreshDomainStatus = React.useCallback(
+    async (id: string, vercelToken: string) => {
+      const domain = domains.find((d) => d.id === id);
+      if (!domain || domain.platform !== "vercel") return;
+      try {
+        const result = await callApi<VercelDomainResult>(
+          `/api/vercel/domains?projectName=${encodeURIComponent(domain.project)}&domain=${encodeURIComponent(
+            domain.domain
+          )}`,
+          { headers: { "x-vercel-token": vercelToken } }
+        );
+        setDomains((prev) =>
+          prev.map((d) =>
+            d.id === id
+              ? { ...d, status: result.verified ? "Active" : "Pending", misconfigured: result.misconfigured }
+              : d
+          )
+        );
+        showToast(result.verified ? "Domain sudah terverifikasi." : "Domain masih pending verifikasi DNS.");
+      } catch (err) {
+        showToast(err instanceof Error ? err.message : "Gagal mengecek status domain.");
+      }
+    },
+    [domains, setDomains, showToast]
+  );
+
+  /** Removes a domain locally, and best-effort detaches it from Vercel too when a token is available. */
+  const removeDomain = React.useCallback(
+    (id: string, vercelToken?: string) => {
+      const domain = domains.find((d) => d.id === id);
+      setDomains((prev) => prev.filter((d) => d.id !== id));
+      if (domain?.platform === "vercel" && vercelToken) {
+        callApi(
+          `/api/vercel/domains?projectName=${encodeURIComponent(domain.project)}&domain=${encodeURIComponent(
+            domain.domain
+          )}`,
+          { method: "DELETE", headers: { "x-vercel-token": vercelToken } }
+        ).catch(() => {
+          /* best-effort — domain may already be gone from Vercel */
+        });
+      }
+    },
+    [domains, setDomains]
   );
 
   const addEnvVar = React.useCallback(
@@ -338,9 +638,14 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     closeModal,
     handleCloseAfterDeploy,
     redeploy,
+    removeHistoryItem,
+    settingsTokens,
+    projectSync,
+    checkProjectStatus,
     domains,
     addDomain,
     removeDomain,
+    refreshDomainStatus,
     envVars,
     addEnvVar,
     removeEnvVar,

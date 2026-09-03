@@ -3,6 +3,7 @@
 import { FolderOpen, ExternalLink, RotateCw, Globe2 } from "lucide-react";
 import { Surface } from "@/components/ui/Surface";
 import { ViewFade } from "@/components/ui/ViewFade";
+import { VercelSyncBadge } from "@/components/dashboard/VercelSyncBadge";
 import { useDeploy } from "@/lib/deploy-context";
 import type { HistoryItem } from "@/types";
 
@@ -66,6 +67,12 @@ export function ProjectsView() {
                     <Globe2 size={13} className="shrink-0" />
                     <span className="mono truncate">{project.domain}</span>
                   </div>
+
+                  {project.platform === "vercel" && (
+                    <div className="mt-3">
+                      <VercelSyncBadge projectName={project.name} />
+                    </div>
+                  )}
 
                   <div className="mt-5 flex items-center gap-2">
                     <a

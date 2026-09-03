@@ -55,7 +55,7 @@ function TokenField({
 }
 
 export function SettingsView() {
-  const [tokens, setTokens, ready] = useLocalStorage<SettingsTokens>("deployone-settings-tokens", DEFAULT_TOKENS);
+  const [tokens, setTokens, ready] = useLocalStorage<SettingsTokens>("depush-settings-tokens", DEFAULT_TOKENS);
   const [draft, setDraft] = React.useState<SettingsTokens>(DEFAULT_TOKENS);
   const { showToast } = useToast();
 

@@ -26,7 +26,7 @@ export function Navbar() {
             <span className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-violet-500 to-cyan-400 text-white">
               <Rocket size={16} />
             </span>
-            <span className="text-[15px] font-semibold tracking-tight">DeployOne</span>
+            <span className="text-[15px] font-semibold tracking-tight">Depush</span>
           </Link>
 
           <div className="hidden md:flex items-center gap-1">

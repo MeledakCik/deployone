@@ -3,7 +3,7 @@
 import * as React from "react";
 import type { DummyUser } from "@/types";
 
-const STORAGE_KEY = "deployone-user";
+const STORAGE_KEY = "depush-user";
 
 interface AuthContextValue {
   user: DummyUser | null;

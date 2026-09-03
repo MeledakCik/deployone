@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, Circle, ExternalLink } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Circle, ExternalLink } from "lucide-react";
 import { Surface } from "@/components/ui/Surface";
 import { useDeploy, DEPLOY_STEPS } from "@/lib/deploy-context";
 
@@ -22,31 +22,45 @@ export function DeployModal() {
         <div className="mb-5 h-1.5 w-full overflow-hidden rounded-pill bg-[var(--pill-bg)]">
           <div
             id="bar"
-            className="h-full rounded-pill bg-gradient-to-r from-violet-500 to-cyan-400 transition-[width] duration-500 ease-out"
+            className={`h-full rounded-pill transition-[width] duration-500 ease-out bg-gradient-to-r ${
+              modal.error ? "from-red-500 to-red-400" : "from-violet-500 to-cyan-400"
+            }`}
             style={{ width: `${modal.barWidth}%` }}
           />
         </div>
 
-        <ul className="space-y-2.5 mb-2">
-          {DEPLOY_STEPS.map((label, i) => {
-            const done = modal.stepIndex > i;
-            return (
-              <li
-                key={label}
-                id={`s${i + 1}`}
-                data-text={label}
-                className={`deploy-step flex items-center gap-2.5 text-[13px] ${done ? "done text-text" : "text-text-muted"}`}
-              >
-                {done ? (
-                  <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />
-                ) : (
-                  <Circle size={16} className="text-text-faint shrink-0" />
-                )}
-                {done ? `✓ ${label}` : label}
-              </li>
-            );
-          })}
-        </ul>
+        {!modal.error && (
+          <ul className="space-y-2.5 mb-2">
+            {DEPLOY_STEPS.map((label, i) => {
+              const done = modal.stepIndex > i;
+              return (
+                <li
+                  key={label}
+                  id={`s${i + 1}`}
+                  data-text={label}
+                  className={`deploy-step flex items-center gap-2.5 text-[13px] ${done ? "done text-text" : "text-text-muted"}`}
+                >
+                  {done ? (
+                    <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />
+                  ) : (
+                    <Circle size={16} className="text-text-faint shrink-0" />
+                  )}
+                  {done ? `✓ ${label}` : label}
+                </li>
+              );
+            })}
+          </ul>
+        )}
+
+        {modal.error && (
+          <div
+            id="deployError"
+            className="mt-1 flex items-start gap-2.5 rounded-xl border border-red-500/30 bg-red-500/10 p-3.5 text-[13px] text-red-300"
+          >
+            <AlertTriangle size={16} className="mt-0.5 shrink-0" />
+            <span className="break-words">{modal.error}</span>
+          </div>
+        )}
 
         {modal.resultVisible && modal.result && (
           <div id="result" className="mt-5 pt-5 border-t border-[var(--line)]">
@@ -61,6 +75,19 @@ export function DeployModal() {
             >
               {modal.result.domain} <ExternalLink size={12} />
             </a>
+            {modal.result.inspectorUrl && (
+              <>
+                <p className="mt-3 mono text-[12px] opacity-60">BUILD LOGS</p>
+                <a
+                  href={modal.result.inspectorUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 text-violet-400 underline break-all"
+                >
+                  Lihat di Vercel <ExternalLink size={12} />
+                </a>
+              </>
+            )}
           </div>
         )}
 

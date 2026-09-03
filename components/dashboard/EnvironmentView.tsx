@@ -7,25 +7,44 @@ import { ViewFade } from "@/components/ui/ViewFade";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDeploy } from "@/lib/deploy-context";
 import { useToast } from "@/components/ui/Toast";
+import { validateEnvKey } from "@/lib/env-validate";
 
 function AddSecretModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { addEnvVar } = useDeploy();
+  const { addEnvVar, envVars } = useDeploy();
   const { showToast } = useToast();
   const [key, setKey] = React.useState("");
   const [value, setValue] = React.useState("");
   const [environment, setEnvironment] = React.useState<"Production" | "Preview">("Production");
+  const [touched, setTouched] = React.useState(false);
+
+  const keyError = touched ? validateEnvKey(key) : null;
+  const isDuplicate =
+    touched && !keyError && envVars.some((v) => v.key === key.trim() && v.environment === environment);
 
   if (!open) return null;
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!key.trim() || !value.trim()) {
-      showToast("Key dan value tidak boleh kosong");
+    setTouched(true);
+
+    const error = validateEnvKey(key);
+    if (error) {
+      showToast(error);
       return;
     }
+    if (!value.trim()) {
+      showToast("Value tidak boleh kosong");
+      return;
+    }
+    if (envVars.some((v) => v.key === key.trim() && v.environment === environment)) {
+      showToast(`Key "${key.trim()}" sudah ada di environment ${environment}`);
+      return;
+    }
+
     addEnvVar(key.trim(), value.trim(), environment);
     setKey("");
     setValue("");
+    setTouched(false);
     onClose();
   }
 
@@ -55,8 +74,17 @@ function AddSecretModal({ open, onClose }: { open: boolean; onClose: () => void 
               placeholder="DATABASE_URL"
               value={key}
               onChange={(e) => setKey(e.target.value)}
-              className="input-solid mono h-11 w-full px-3.5 text-[13px]"
+              onBlur={() => setTouched(true)}
+              className={`input-solid mono h-11 w-full px-3.5 text-[13px] ${
+                keyError || isDuplicate ? "border-red-500/50" : ""
+              }`}
             />
+            {keyError && <p className="mt-1.5 text-[11px] text-red-400">{keyError}</p>}
+            {isDuplicate && (
+              <p className="mt-1.5 text-[11px] text-red-400">
+                Key ini sudah ada di environment {environment}.
+              </p>
+            )}
           </div>
           <div>
             <label htmlFor="envValue" className="block text-[12px] font-medium text-text-muted mb-1.5">

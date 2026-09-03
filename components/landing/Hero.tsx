@@ -102,7 +102,7 @@ export function Hero() {
                 <circle cx="46" cy="22" r="5" fill="#fbbf24" opacity="0.8" />
                 <circle cx="64" cy="22" r="5" fill="#34d399" opacity="0.8" />
                 <text x="770" y="26" fill="currentColor" opacity="0.5" fontFamily="sans-serif" fontSize="11" textAnchor="end" fontWeight="500">
-                  deployone.app/dashboard
+                  depush.app/dashboard
                 </text>
               </g>
 
