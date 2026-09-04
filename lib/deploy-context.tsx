@@ -4,7 +4,6 @@ import * as React from "react";
 import { useToast } from "@/components/ui/Toast";
 import { resolveDomain, formatDate } from "@/lib/utils";
 import { useLocalStorage } from "@/lib/useLocalStorage";
-import { parseAndValidateEnvText } from "@/lib/env-validate";
 import type {
   ApiResponse,
   CreateDeployResult,
@@ -16,10 +15,9 @@ import type {
   GithubValidation,
   HistoryItem,
   Platform,
+  ProjectStatusResult,
   SettingsTokens,
-  SyncStatus,
   VercelDomainResult,
-  VercelProjectStatusResult,
 } from "@/types";
 
 export const DEPLOY_STEPS = [
@@ -36,12 +34,9 @@ const FINISH_DELAY_MS = 300;
 const POLL_INTERVAL_MS = 2000;
 
 const GITHUB_REPO_RE = /^https:\/\/github\.com\/[^/]+\/[^/]+/;
-
-const DEFAULT_SETTINGS_TOKENS: SettingsTokens = {
-  vercelToken: "",
-  cloudflareToken: "",
-  githubPat: "",
-};
+const ENV_KEY_RE = /^[A-Z][A-Z0-9_]*$/;
+const SETTINGS_TOKENS_KEY = "depush-settings-tokens";
+const DEFAULT_SETTINGS_TOKENS: SettingsTokens = { vercelToken: "", cloudflareToken: "", githubPat: "" };
 
 /** Small fetch wrapper for our own /api routes — throws with the server's error message. */
 async function callApi<T>(url: string, init?: RequestInit): Promise<T> {
@@ -70,35 +65,6 @@ const emptyForm: DeployFormValues = {
   startCommand: "",
   envText: "",
 };
-
-function seedHistory(): HistoryItem[] {
-  return [
-    {
-      id: "seed-3",
-      name: "depush-marketing",
-      platform: "vercel",
-      domain: "depush-marketing.vercel.app",
-      date: formatDate(new Date(Date.now() - 1000 * 60 * 60 * 20)),
-      status: "ready",
-    },
-    {
-      id: "seed-2",
-      name: "docs-portal",
-      platform: "cloudflare",
-      domain: "docs-portal.pages.dev",
-      date: formatDate(new Date(Date.now() - 1000 * 60 * 60 * 44)),
-      status: "ready",
-    },
-    {
-      id: "seed-1",
-      name: "internal-api-gateway",
-      platform: "vercel",
-      domain: "internal-api-gateway.vercel.app",
-      date: formatDate(new Date(Date.now() - 1000 * 60 * 60 * 70)),
-      status: "failed",
-    },
-  ];
-}
 
 interface ModalState {
   open: boolean;
@@ -141,21 +107,24 @@ interface DeployContextValue {
   closeModal: () => void;
   handleCloseAfterDeploy: () => void;
   redeploy: (name: string) => void;
-  removeHistoryItem: (name: string) => void;
-  // Global tokens saved on the Settings page — used as defaults for sync/domain checks
-  settingsTokens: SettingsTokens;
-  // Vercel <-> local sync ("kalau di Vercel udah dihapus, di sini otomatis kehapus juga?")
-  projectSync: Record<string, SyncStatus>;
-  checkProjectStatus: (name: string, vercelToken: string) => Promise<void>;
+  // Vercel account sync
+  vercelToken: string;
+  syncingProjects: boolean;
+  syncProjectStatus: (name: string) => Promise<"exists" | "deleted" | "skipped" | "error">;
+  syncAllProjects: () => Promise<void>;
   // Domains
   domains: DomainItem[];
-  addDomain: (domain: string, project: string, vercelToken?: string) => Promise<void>;
-  removeDomain: (id: string, vercelToken?: string) => void;
-  refreshDomainStatus: (id: string, vercelToken: string) => Promise<void>;
+  addDomain: (domain: string, project: string) => Promise<void>;
+  removeDomain: (id: string) => Promise<void>;
   // Environment variables
   envVars: EnvItem[];
-  addEnvVar: (key: string, value: string, environment: "Production" | "Preview") => void;
-  removeEnvVar: (id: string) => void;
+  addEnvVar: (
+    key: string,
+    value: string,
+    environment: "Production" | "Preview",
+    options?: { project?: string; pushToVercel?: boolean }
+  ) => Promise<void>;
+  removeEnvVar: (id: string) => Promise<void>;
   toggleEnvVisible: (id: string) => void;
 }
 
@@ -171,19 +140,24 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
   const { showToast } = useToast();
 
   const [view, setView] = React.useState<DashboardView>("dashboard");
-  const [stats, setStats] = React.useState({ total: 3, ready: 2, failed: 1 });
-  const [history, setHistory] = React.useState<HistoryItem[]>(() => seedHistory());
+  const [history, setHistory] = useLocalStorage<HistoryItem[]>("depush-history", []);
+  const stats = React.useMemo(
+    () => ({
+      total: history.length,
+      ready: history.filter((h) => h.status === "ready").length,
+      failed: history.filter((h) => h.status === "failed").length,
+    }),
+    [history]
+  );
   const [form, setForm] = React.useState<DeployFormValues>(emptyForm);
   const [modal, setModal] = React.useState<ModalState>(defaultModal);
   const [confirmOpen, setConfirmOpen] = React.useState(false);
 
   const [domains, setDomains] = useLocalStorage<DomainItem[]>("depush-domains", []);
   const [envVars, setEnvVars] = useLocalStorage<EnvItem[]>("depush-env", []);
-  const [settingsTokens] = useLocalStorage<SettingsTokens>(
-    "depush-settings-tokens",
-    DEFAULT_SETTINGS_TOKENS
-  );
-  const [projectSync, setProjectSync] = React.useState<Record<string, SyncStatus>>({});
+  const [settingsTokens] = useLocalStorage<SettingsTokens>(SETTINGS_TOKENS_KEY, DEFAULT_SETTINGS_TOKENS);
+  const vercelToken = settingsTokens.vercelToken;
+  const [syncingProjects, setSyncingProjects] = React.useState(false);
 
   const pendingFormRef = React.useRef<DeployFormValues | null>(null);
   const intervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
@@ -218,14 +192,8 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         // Keep max 10: drop the oldest (last) entry once the cap is exceeded.
         return next.length > MAX_HISTORY ? next.slice(0, MAX_HISTORY) : next;
       });
-      setStats((prev) => ({
-        ...prev,
-        total: prev.total + 1,
-        ready: prev.ready + (status === "ready" ? 1 : 0),
-        failed: prev.failed + (status === "failed" ? 1 : 0),
-      }));
     },
-    []
+    [setHistory]
   );
 
   const finishDeploy = React.useCallback(
@@ -402,14 +370,6 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      if ((form.platform === "railway" || form.platform === "render") && form.envText.trim()) {
-        const { hasErrors, issues } = parseAndValidateEnvText(form.envText);
-        if (hasErrors) {
-          showToast(issues.find((i) => i.level === "error")?.message ?? "Ada error di Environment Variables.");
-          return;
-        }
-      }
-
       if (history.length >= MAX_HISTORY) {
         pendingFormRef.current = form;
         setConfirmOpen(true);
@@ -474,55 +434,70 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     [showToast]
   );
 
-  /** Drops a project from the local history/projects list — e.g. after confirming it was deleted on Vercel. */
-  const removeHistoryItem = React.useCallback((name: string) => {
-    setHistory((prev) => prev.filter((h) => h.name !== name));
-    setProjectSync((prev) => {
-      if (!(name in prev)) return prev;
-      const next = { ...prev };
-      delete next[name];
-      return next;
-    });
-  }, []);
-
   /**
-   * Answers "kalau di Vercel udah dihapus, di sini otomatis kehapus juga?"
-   * — no, so this actively asks Vercel whether the project still exists and
-   * updates the badge shown next to it (Projects/History views can then
-   * offer to remove the now-stale local entry).
+   * Checks a single project against the real Vercel account. If it no
+   * longer exists there (deleted directly on vercel.com), every history
+   * entry for that name is dropped locally too, so Projects/Dashboard
+   * stays in sync instead of showing a project that's actually gone.
    */
-  const checkProjectStatus = React.useCallback(
-    async (name: string, vercelToken: string) => {
-      setProjectSync((prev) => ({ ...prev, [name]: "checking" }));
+  const syncProjectStatus = React.useCallback(
+    async (name: string): Promise<"exists" | "deleted" | "skipped" | "error"> => {
+      if (!vercelToken) return "skipped";
       try {
-        const result = await callApi<VercelProjectStatusResult>("/api/vercel/project-status", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ projectName: name, vercelToken }),
-        });
-        setProjectSync((prev) => ({ ...prev, [name]: result.exists ? "exists" : "deleted" }));
-        showToast(
-          result.exists
-            ? `Project "${name}" masih ada di Vercel.`
-            : `Project "${name}" sudah dihapus di Vercel.`
+        const status = await callApi<ProjectStatusResult>(
+          `/api/vercel/status?project=${encodeURIComponent(name)}`,
+          { headers: { "x-vercel-token": vercelToken } }
         );
-      } catch (err) {
-        setProjectSync((prev) => ({ ...prev, [name]: "error" }));
-        showToast(err instanceof Error ? err.message : "Gagal mengecek status project di Vercel.");
+        if (!status.exists) {
+          setHistory((prev) => prev.filter((h) => h.name !== name));
+          return "deleted";
+        }
+        return "exists";
+      } catch {
+        return "error";
       }
     },
-    [showToast]
+    [vercelToken]
   );
 
-  /** Adds a domain locally, and — for Vercel projects with a token available — attaches it for real via the Vercel API. */
-  const addDomain = React.useCallback(
-    async (domain: string, project: string, vercelToken?: string) => {
-      const platform = history.find((h) => h.name === project)?.platform;
-      const id = `${Date.now()}`;
-      setDomains((prev) => [{ id, domain, project, status: "Pending" as const, platform }, ...prev]);
+  /** Runs syncProjectStatus for every unique Vercel-platform project — used on Projects view mount. */
+  const syncAllProjects = React.useCallback(async () => {
+    if (!vercelToken) return;
+    const names = Array.from(
+      new Set(history.filter((h) => h.platform === "vercel").map((h) => h.name))
+    );
+    if (names.length === 0) return;
 
-      if (platform !== "vercel" || !vercelToken) {
-        showToast("Domain berhasil ditambahkan");
+    setSyncingProjects(true);
+    let deletedCount = 0;
+    for (const name of names) {
+      // eslint-disable-next-line no-await-in-loop
+      const result = await syncProjectStatus(name);
+      if (result === "deleted") deletedCount += 1;
+    }
+    setSyncingProjects(false);
+    if (deletedCount > 0) {
+      showToast(
+        `${deletedCount} project sudah dihapus di Vercel — dihapus juga dari daftar di sini.`
+      );
+    }
+  }, [history, syncProjectStatus, vercelToken, showToast]);
+
+  const addDomain = React.useCallback(
+    async (domain: string, project: string) => {
+      const targetItem = history.find((h) => h.name === project);
+      const canSync = Boolean(vercelToken) && targetItem?.platform === "vercel";
+
+      if (!canSync) {
+        setDomains((prev) => [
+          { id: `${Date.now()}`, domain, project, status: "Pending" as const, syncedToVercel: false },
+          ...prev,
+        ]);
+        showToast(
+          vercelToken
+            ? "Domain disimpan lokal (project ini bukan platform Vercel)."
+            : "Domain disimpan lokal — isi Vercel Token di Settings untuk push otomatis ke Vercel."
+        );
         return;
       }
 
@@ -530,89 +505,119 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         const result = await callApi<VercelDomainResult>("/api/vercel/domains", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ projectName: project, domain, vercelToken }),
+          body: JSON.stringify({ project, domain, vercelToken }),
         });
-        setDomains((prev) =>
-          prev.map((d) =>
-            d.id === id
-              ? { ...d, status: result.verified ? "Active" : "Pending", misconfigured: result.misconfigured }
-              : d
-          )
-        );
+        setDomains((prev) => [
+          {
+            id: `${Date.now()}`,
+            domain: result.name,
+            project,
+            status: result.verified ? "Active" : "Pending",
+            syncedToVercel: true,
+          },
+          ...prev,
+        ]);
         showToast(
           result.verified
             ? "Domain berhasil ditambahkan & terverifikasi di Vercel."
-            : "Domain ditambahkan ke Vercel — arahkan DNS-nya dulu supaya terverifikasi."
+            : "Domain ditambahkan di Vercel — arahkan DNS sesuai instruksi untuk verifikasi."
         );
       } catch (err) {
         showToast(err instanceof Error ? err.message : "Gagal menambahkan domain ke Vercel.");
       }
     },
-    [history, setDomains, showToast]
+    [history, setDomains, showToast, vercelToken]
   );
 
-  /** Re-checks a Vercel domain's live verification/misconfiguration status. */
-  const refreshDomainStatus = React.useCallback(
-    async (id: string, vercelToken: string) => {
-      const domain = domains.find((d) => d.id === id);
-      if (!domain || domain.platform !== "vercel") return;
-      try {
-        const result = await callApi<VercelDomainResult>(
-          `/api/vercel/domains?projectName=${encodeURIComponent(domain.project)}&domain=${encodeURIComponent(
-            domain.domain
-          )}`,
-          { headers: { "x-vercel-token": vercelToken } }
-        );
-        setDomains((prev) =>
-          prev.map((d) =>
-            d.id === id
-              ? { ...d, status: result.verified ? "Active" : "Pending", misconfigured: result.misconfigured }
-              : d
-          )
-        );
-        showToast(result.verified ? "Domain sudah terverifikasi." : "Domain masih pending verifikasi DNS.");
-      } catch (err) {
-        showToast(err instanceof Error ? err.message : "Gagal mengecek status domain.");
-      }
-    },
-    [domains, setDomains, showToast]
-  );
-
-  /** Removes a domain locally, and best-effort detaches it from Vercel too when a token is available. */
   const removeDomain = React.useCallback(
-    (id: string, vercelToken?: string) => {
-      const domain = domains.find((d) => d.id === id);
-      setDomains((prev) => prev.filter((d) => d.id !== id));
-      if (domain?.platform === "vercel" && vercelToken) {
-        callApi(
-          `/api/vercel/domains?projectName=${encodeURIComponent(domain.project)}&domain=${encodeURIComponent(
-            domain.domain
-          )}`,
-          { method: "DELETE", headers: { "x-vercel-token": vercelToken } }
-        ).catch(() => {
-          /* best-effort — domain may already be gone from Vercel */
-        });
+    async (id: string) => {
+      const item = domains.find((d) => d.id === id);
+      if (item?.syncedToVercel && vercelToken) {
+        try {
+          await callApi(
+            `/api/vercel/domains/${encodeURIComponent(item.domain)}?project=${encodeURIComponent(item.project)}`,
+            { method: "DELETE", headers: { "x-vercel-token": vercelToken } }
+          );
+        } catch (err) {
+          showToast(err instanceof Error ? err.message : "Gagal menghapus domain di Vercel.");
+          return;
+        }
       }
+      setDomains((prev) => prev.filter((d) => d.id !== id));
     },
-    [domains, setDomains]
+    [domains, setDomains, showToast, vercelToken]
   );
 
   const addEnvVar = React.useCallback(
-    (key: string, value: string, environment: "Production" | "Preview") => {
+    async (
+      key: string,
+      value: string,
+      environment: "Production" | "Preview",
+      options?: { project?: string; pushToVercel?: boolean }
+    ) => {
+      const trimmedKey = key.trim();
+
+      if (!ENV_KEY_RE.test(trimmedKey)) {
+        showToast('Key harus UPPER_SNAKE_CASE, contoh: DATABASE_URL (huruf besar & underscore).');
+        return;
+      }
+      if (envVars.some((v) => v.key === trimmedKey && v.environment === environment)) {
+        showToast(`Key "${trimmedKey}" sudah ada untuk environment ${environment}.`);
+        return;
+      }
+
+      let syncedProject: string | undefined;
+
+      if (options?.pushToVercel && options.project) {
+        if (!vercelToken) {
+          showToast("Isi Vercel Token di Settings dulu untuk push env ke Vercel.");
+          return;
+        }
+        try {
+          await callApi("/api/vercel/env", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              project: options.project,
+              key: trimmedKey,
+              value,
+              target: environment === "Production" ? ["production"] : ["preview"],
+              vercelToken,
+            }),
+          });
+          syncedProject = options.project;
+        } catch (err) {
+          showToast(err instanceof Error ? err.message : "Gagal push env var ke Vercel.");
+          return;
+        }
+      }
+
       setEnvVars((prev) => [
-        { id: `${Date.now()}`, key, value, environment, visible: false },
+        { id: `${Date.now()}`, key: trimmedKey, value, environment, visible: false, syncedProject },
         ...prev,
       ]);
-      showToast("Secret berhasil disimpan");
+      showToast(syncedProject ? `Secret disimpan & di-push ke Vercel (${syncedProject}).` : "Secret berhasil disimpan");
     },
-    [setEnvVars, showToast]
+    [envVars, setEnvVars, showToast, vercelToken]
   );
 
   const removeEnvVar = React.useCallback(
-    (id: string) => {
+    async (id: string) => {
+      const item = envVars.find((v) => v.id === id);
+      if (item?.syncedProject && vercelToken) {
+        try {
+          await callApi(
+            `/api/vercel/env?project=${encodeURIComponent(item.syncedProject)}&key=${encodeURIComponent(item.key)}`,
+            { method: "DELETE", headers: { "x-vercel-token": vercelToken } }
+          );
+        } catch (err) {
+          showToast(err instanceof Error ? err.message : "Gagal menghapus env var di Vercel.");
+          return;
+        }
+      }
       setEnvVars((prev) => prev.filter((v) => v.id !== id));
     },
-    [setEnvVars]
+    [envVars, setEnvVars, showToast, vercelToken]
   );
 
   const toggleEnvVisible = React.useCallback(
@@ -638,14 +643,13 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     closeModal,
     handleCloseAfterDeploy,
     redeploy,
-    removeHistoryItem,
-    settingsTokens,
-    projectSync,
-    checkProjectStatus,
+    vercelToken,
+    syncingProjects,
+    syncProjectStatus,
+    syncAllProjects,
     domains,
     addDomain,
     removeDomain,
-    refreshDomainStatus,
     envVars,
     addEnvVar,
     removeEnvVar,

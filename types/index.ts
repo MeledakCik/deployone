@@ -11,11 +11,11 @@ export interface HistoryItem {
   status: DeployStatus;
 }
 
-export interface DummyUser {
+/** Real Google profile fields, decoded from the signed session cookie. */
+export interface AuthUser {
   name: string;
   email: string;
-  avatar: string;
-  color: "violet" | "blue";
+  picture: string | null;
 }
 
 export interface DeployFormValues {
@@ -40,9 +40,8 @@ export interface DomainItem {
   domain: string;
   project: string;
   status: "Active" | "Pending";
-  /** Set when the domain belongs to a Vercel-deployed project — enables real sync with the Vercel API. */
-  platform?: Platform;
-  misconfigured?: boolean;
+  /** true once this was successfully pushed to a real Vercel project. */
+  syncedToVercel?: boolean;
 }
 
 export interface EnvItem {
@@ -51,6 +50,8 @@ export interface EnvItem {
   value: string;
   environment: "Production" | "Preview";
   visible: boolean;
+  /** Project this secret was pushed to on Vercel, if any. */
+  syncedProject?: string;
 }
 
 export interface SettingsTokens {
@@ -144,27 +145,38 @@ export interface DeployStatusResult {
   errorMessage: string | null;
 }
 
-/** Result of POST /api/vercel/project-status — used to detect a project deleted directly on Vercel. */
-export interface VercelProjectStatusResult {
+/** Result of GET /api/vercel/status */
+export interface ProjectStatusResult {
   exists: boolean;
   linkedRepoFullName: string | null;
+  latestDeploymentReadyState: VercelReadyState | null;
 }
 
-/** Client-side sync state for a history/project entry against the real Vercel account. */
-export type SyncStatus = "idle" | "checking" | "exists" | "deleted" | "error";
-
-/** Result of POST/GET /api/vercel/domains — real domain state from the Vercel API. */
+/** A single domain as returned by /api/vercel/domains */
 export interface VercelDomainResult {
   name: string;
   verified: boolean;
-  misconfigured?: boolean;
-  verification: { type: string; domain: string; value: string; reason?: string }[];
+  verification: { type: string; domain: string; value: string; reason: string }[] | null;
 }
 
-/** One parsed+validated issue from a `KEY=value` env block or a single env key field. */
-export interface EnvValidationIssue {
-  line: number;
-  level: "error" | "warning";
-  message: string;
+/** Body of POST /api/vercel/env */
+export interface UpsertEnvRequest {
+  project: string;
+  key: string;
+  value: string;
+  target: ("production" | "preview")[];
+  vercelToken: string;
+}
+
+/** Result of GET /api/vercel/whoami — used by Settings to prove a token actually works. */
+export interface VercelUserInfo {
+  username: string;
+  email: string | null;
+}
+
+/** Result of GET /api/github/whoami */
+export interface GithubUserInfo {
+  login: string;
+  name: string | null;
 }
 

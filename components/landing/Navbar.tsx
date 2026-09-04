@@ -2,9 +2,11 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Rocket } from "lucide-react";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { useAuth } from "@/lib/auth-context";
+import { useToast } from "@/components/ui/Toast";
 import { GoogleLoginModal } from "./GoogleLoginModal";
 
 const NAV_LINKS = [
@@ -16,7 +18,19 @@ const NAV_LINKS = [
 
 export function Navbar() {
   const { user, ready } = useAuth();
+  const { showToast } = useToast();
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [loginOpen, setLoginOpen] = React.useState(false);
+
+  React.useEffect(() => {
+    const error = searchParams.get("login_error");
+    if (error) {
+      showToast(error);
+      router.replace("/");
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   return (
     <>

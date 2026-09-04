@@ -1,15 +1,15 @@
 "use client";
 
 import * as React from "react";
-import type { DummyUser } from "@/types";
-
-const STORAGE_KEY = "depush-user";
+import type { AuthUser } from "@/types";
 
 interface AuthContextValue {
-  user: DummyUser | null;
+  user: AuthUser | null;
   ready: boolean;
-  login: (user: DummyUser) => void;
-  logout: () => void;
+  /** Full-page redirect into the real Google OAuth consent screen. */
+  login: () => void;
+  logout: () => Promise<void>;
+  refresh: () => Promise<void>;
 }
 
 const AuthContext = React.createContext<AuthContextValue | null>(null);
@@ -21,32 +21,39 @@ export function useAuth() {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = React.useState<DummyUser | null>(null);
+  const [user, setUser] = React.useState<AuthUser | null>(null);
   const [ready, setReady] = React.useState(false);
 
-  React.useEffect(() => {
+  const refresh = React.useCallback(async () => {
     try {
-      const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (raw) setUser(JSON.parse(raw));
+      const res = await fetch("/api/auth/session", { cache: "no-store" });
+      const body = await res.json().catch(() => null);
+      setUser(body?.ok ? body.data.user : null);
     } catch {
-      // ignore malformed storage
+      setUser(null);
     } finally {
       setReady(true);
     }
   }, []);
 
-  const login = React.useCallback((next: DummyUser) => {
-    setUser(next);
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+  React.useEffect(() => {
+    void refresh();
+  }, [refresh]);
+
+  const login = React.useCallback(() => {
+    window.location.href = "/api/auth/google";
   }, []);
 
-  const logout = React.useCallback(() => {
-    setUser(null);
-    window.localStorage.removeItem(STORAGE_KEY);
+  const logout = React.useCallback(async () => {
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } finally {
+      setUser(null);
+    }
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, ready, login, logout }}>
+    <AuthContext.Provider value={{ user, ready, login, logout, refresh }}>
       {children}
     </AuthContext.Provider>
   );

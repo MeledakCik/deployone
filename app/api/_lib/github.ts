@@ -33,6 +33,19 @@ async function githubFetch(url: string, pat?: string) {
   return res;
 }
 
+/** Confirms a GitHub PAT actually works and returns whose account it is. */
+export async function getGithubUser(pat: string): Promise<{ login: string; name: string | null }> {
+  const res = await githubFetch("https://api.github.com/user", pat);
+  if (res.status === 401) {
+    throw new GithubApiError("GitHub token tidak valid.", "github_auth_required");
+  }
+  if (!res.ok) {
+    throw new GithubApiError(`GitHub API error (${res.status})`, "bad_request");
+  }
+  const data = await res.json();
+  return { login: data.login, name: data.name ?? null };
+}
+
 /** Detects the framework from a package.json's dependencies, best-effort. */
 function detectFramework(pkg: Record<string, unknown>): string | null {
   const deps = {

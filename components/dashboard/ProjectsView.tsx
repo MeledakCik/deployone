@@ -1,9 +1,9 @@
 "use client";
 
-import { FolderOpen, ExternalLink, RotateCw, Globe2 } from "lucide-react";
+import * as React from "react";
+import { FolderOpen, ExternalLink, RotateCw, Globe2, RefreshCw, ShieldAlert } from "lucide-react";
 import { Surface } from "@/components/ui/Surface";
 import { ViewFade } from "@/components/ui/ViewFade";
-import { VercelSyncBadge } from "@/components/dashboard/VercelSyncBadge";
 import { useDeploy } from "@/lib/deploy-context";
 import type { HistoryItem } from "@/types";
 
@@ -17,17 +17,49 @@ function groupByProject(history: HistoryItem[]) {
 }
 
 export function ProjectsView() {
-  const { history, redeploy } = useDeploy();
+  const { history, redeploy, vercelToken, syncingProjects, syncAllProjects, syncProjectStatus } = useDeploy();
   const projects = groupByProject(history);
+  const [checkingName, setCheckingName] = React.useState<string | null>(null);
+  const didAutoSync = React.useRef(false);
+
+  React.useEffect(() => {
+    if (didAutoSync.current || !vercelToken) return;
+    didAutoSync.current = true;
+    void syncAllProjects();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vercelToken]);
+
+  async function handleCheck(name: string) {
+    setCheckingName(name);
+    await syncProjectStatus(name);
+    setCheckingName(null);
+  }
 
   return (
     <ViewFade>
       <div className="space-y-6">
-        <div>
-          <h2 className="text-[22px] font-semibold">Projects</h2>
-          <p className="text-[13px] text-text-muted">
-            {projects.length} project unik dari riwayat deployment kamu.
-          </p>
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-[22px] font-semibold">Projects</h2>
+            <p className="text-[13px] text-text-muted">
+              {projects.length} project unik dari riwayat deployment kamu.
+            </p>
+          </div>
+          {vercelToken ? (
+            <button
+              type="button"
+              onClick={() => void syncAllProjects()}
+              disabled={syncingProjects}
+              className="pill inline-flex items-center gap-2 px-4 py-2 text-[12px] font-medium hover:brightness-110 disabled:opacity-50"
+            >
+              <RefreshCw size={13} className={syncingProjects ? "animate-spin" : ""} />
+              {syncingProjects ? "Sinkronisasi..." : "Sinkronkan dengan Vercel"}
+            </button>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 text-[11.5px] text-text-faint">
+              <ShieldAlert size={13} /> Isi Vercel Token di Settings untuk sinkronisasi otomatis
+            </span>
+          )}
         </div>
 
         {projects.length === 0 ? (
@@ -42,6 +74,7 @@ export function ProjectsView() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {projects.map((project) => {
               const isReady = project.status === "ready";
+              const isChecking = checkingName === project.name;
               return (
                 <Surface key={project.name} className="p-5">
                   <div className="flex items-start justify-between gap-2">
@@ -68,12 +101,6 @@ export function ProjectsView() {
                     <span className="mono truncate">{project.domain}</span>
                   </div>
 
-                  {project.platform === "vercel" && (
-                    <div className="mt-3">
-                      <VercelSyncBadge projectName={project.name} />
-                    </div>
-                  )}
-
                   <div className="mt-5 flex items-center gap-2">
                     <a
                       href={`https://${project.domain}`}
@@ -91,6 +118,18 @@ export function ProjectsView() {
                       <RotateCw size={13} /> Redeploy
                     </button>
                   </div>
+
+                  {project.platform === "vercel" && vercelToken && (
+                    <button
+                      type="button"
+                      onClick={() => void handleCheck(project.name)}
+                      disabled={isChecking}
+                      className="mt-2 w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-[11px] font-medium text-text-faint hover:text-text disabled:opacity-50"
+                    >
+                      <RefreshCw size={11} className={isChecking ? "animate-spin" : ""} />
+                      {isChecking ? "Mengecek..." : "Cek status di Vercel"}
+                    </button>
+                  )}
                 </Surface>
               );
             })}

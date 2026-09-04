@@ -68,6 +68,36 @@ var `GITHUB_TOKEN` (opsional, server-side only, tidak wajib).
 dikerjakan, tambahkan helper baru di `app/api/_lib/` (mis. `cloudflare.ts`) dan route baru di
 `app/api/deploy/` mengikuti pola yang sama seperti Vercel — supaya backend tetap satu folder.
 
+Domains (`app/api/vercel/domains/*`) dan Environment Variables (`app/api/vercel/env/*`) pakai
+pola yang sama persis: validasi input → panggil Vercel REST API asli → tidak ada data statis.
+Settings punya tombol **Test Koneksi** yang benar-benar memanggil `GET /v2/user` (Vercel) dan
+`GET /user` (GitHub) untuk membuktikan token valid, bukan sekadar cek format.
+
+## Login Google (OAuth2 asli)
+
+Depush pakai OAuth2 Google beneran — bukan simulasi/akun dummy. Alurnya standar Authorization
+Code flow, session disimpan sebagai cookie `httpOnly` yang ditandatangani HMAC (lihat
+`app/api/_lib/session.ts`), tanpa dependency tambahan (`next-auth`, dll).
+
+**Environment variable yang wajib di-set** (di Vercel Project Settings → Environment Variables,
+lalu redeploy):
+
+| Env var | Keterangan |
+|---|---|
+| `GOOGLE_CLIENT_ID` | Dari Google Cloud Console → Credentials → OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | Pasangan secret dari client ID di atas — **jangan pernah** ditaruh di kode atau dikirim ke chat manapun |
+| `AUTH_SECRET` | String acak bebas (minimal 16 karakter) untuk menandatangani session cookie |
+
+Redirect URI yang harus didaftarkan di Google Cloud Console (Authorized redirect URIs):
+`https://<domain-vercel-kamu>/api/auth/google/callback`. Panduan lengkap langkah-demi-langkah ada
+di halaman **Docs** dalam aplikasi (juga mencakup cara bikin Vercel Token & GitHub PAT).
+
+Alur teknis: `GET /api/auth/google` redirect ke consent screen Google asli →
+`GET /api/auth/google/callback` menukar `code` jadi access token, ambil profil asli
+(`name`, `email`, `picture`) dari Google, lalu set cookie session → `GET /api/auth/session`
+dipakai `auth-context.tsx` untuk hydrate status login di client → `/dashboard` dikunci lewat
+`AuthGuard` yang redirect ke `/` kalau belum ada session valid.
+
 ## Desain
 
 Dual theme (dark/light) dengan token warna dan glassmorphism yang konsisten — blur dipakai secara

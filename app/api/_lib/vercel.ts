@@ -18,10 +18,17 @@ interface CreateDeploymentParams {
   vercelToken: string;
 }
 
-export interface ExistingProjectInfo {
+export interface VercelDomainInfo {
+  name: string;
+  verified: boolean;
+  /** Present when the domain needs a DNS record before it's live. */
+  verification: { type: string; domain: string; value: string; reason: string }[] | null;
+}
+
+export interface ProjectStatus {
   exists: boolean;
-  /** "owner/repo" that this project is already linked to, if it's git-connected. */
   linkedRepoFullName: string | null;
+  latestDeploymentReadyState: VercelReadyState | null;
 }
 
 interface VercelDeploymentResponse {
@@ -72,6 +79,21 @@ async function parseVercelError(res: Response): Promise<VercelApiError> {
 }
 
 /**
+ * Confirms a Vercel token actually works and returns whose account it is —
+ * used by the Settings page's "Test koneksi" button, not the deploy flow.
+ */
+export async function getVercelUser(vercelToken: string): Promise<{ username: string; email: string | null }> {
+  const res = await fetch(`${VERCEL_API}/v2/user`, {
+    headers: { Authorization: `Bearer ${vercelToken}` },
+    cache: "no-store",
+  });
+  if (!res.ok) throw await parseVercelError(res);
+  const data = await res.json();
+  const u = data?.user ?? {};
+  return { username: u.username ?? u.name ?? "unknown", email: u.email ?? null };
+}
+
+/**
  * Looks up a project by name in the caller's Vercel account so we can tell,
  * before creating a deployment, whether that name is already taken by a
  * project linked to a *different* GitHub repo (a real conflict) versus the
@@ -80,14 +102,14 @@ async function parseVercelError(res: Response): Promise<VercelApiError> {
 export async function getVercelProject(
   projectName: string,
   vercelToken: string
-): Promise<ExistingProjectInfo> {
+): Promise<ProjectStatus> {
   const res = await fetch(`${VERCEL_API}/v9/projects/${encodeURIComponent(projectName)}`, {
     headers: { Authorization: `Bearer ${vercelToken}` },
     cache: "no-store",
   });
 
   if (res.status === 404) {
-    return { exists: false, linkedRepoFullName: null };
+    return { exists: false, linkedRepoFullName: null, latestDeploymentReadyState: null };
   }
   if (!res.ok) throw await parseVercelError(res);
 
@@ -95,8 +117,10 @@ export async function getVercelProject(
   const link = data?.link;
   const linkedRepoFullName =
     link?.type === "github" && link.org && link.repo ? `${link.org}/${link.repo}` : null;
+  const latestDeploymentReadyState: VercelReadyState | null =
+    data?.latestDeployments?.[0]?.readyState ?? null;
 
-  return { exists: true, linkedRepoFullName };
+  return { exists: true, linkedRepoFullName, latestDeploymentReadyState };
 }
 
 /**
@@ -136,55 +160,6 @@ export async function createVercelDeployment(
   };
 }
 
-interface VercelDomainApiResponse {
-  name: string;
-  verified?: boolean;
-  misconfigured?: boolean;
-  verification?: { type: string; domain: string; value: string; reason?: string }[];
-}
-
-function toDomainResult(d: VercelDomainApiResponse) {
-  return {
-    name: d.name,
-    verified: Boolean(d.verified),
-    misconfigured: Boolean(d.misconfigured),
-    verification: d.verification ?? [],
-  };
-}
-
-/** Attaches a domain to a Vercel project. Returns its verification state immediately. */
-export async function addVercelDomain(projectName: string, domain: string, vercelToken: string) {
-  const res = await fetch(`${VERCEL_API}/v10/projects/${encodeURIComponent(projectName)}/domains`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${vercelToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({ name: domain }),
-  });
-  if (!res.ok) throw await parseVercelError(res);
-  return toDomainResult((await res.json()) as VercelDomainApiResponse);
-}
-
-/** Re-checks a domain already attached to a project — used by the "Cek Status" refresh action. */
-export async function getVercelDomainStatus(projectName: string, domain: string, vercelToken: string) {
-  const res = await fetch(
-    `${VERCEL_API}/v9/projects/${encodeURIComponent(projectName)}/domains/${encodeURIComponent(domain)}`,
-    { headers: { Authorization: `Bearer ${vercelToken}` }, cache: "no-store" }
-  );
-  if (!res.ok) throw await parseVercelError(res);
-  return toDomainResult((await res.json()) as VercelDomainApiResponse);
-}
-
-/** Detaches a domain from a Vercel project. A 404 (already gone) is treated as success. */
-export async function removeVercelDomain(projectName: string, domain: string, vercelToken: string) {
-  const res = await fetch(
-    `${VERCEL_API}/v9/projects/${encodeURIComponent(projectName)}/domains/${encodeURIComponent(domain)}`,
-    { method: "DELETE", headers: { Authorization: `Bearer ${vercelToken}` } }
-  );
-  if (!res.ok && res.status !== 404) throw await parseVercelError(res);
-}
-
 /** Polls a deployment's current build status. */
 export async function getVercelDeployment(
   deploymentId: string,
@@ -208,4 +183,140 @@ export async function getVercelDeployment(
     readyState: data.readyState,
     errorMessage: data.errorMessage ?? null,
   };
+}
+
+/* ---------------------------------------------------------------------- */
+/*  Domains                                                                */
+/* ---------------------------------------------------------------------- */
+
+export async function listProjectDomains(
+  projectName: string,
+  vercelToken: string
+): Promise<VercelDomainInfo[]> {
+  const res = await fetch(
+    `${VERCEL_API}/v9/projects/${encodeURIComponent(projectName)}/domains`,
+    { headers: { Authorization: `Bearer ${vercelToken}` }, cache: "no-store" }
+  );
+  if (!res.ok) throw await parseVercelError(res);
+  const data = await res.json();
+  return (data.domains ?? []).map((d: { name: string; verified: boolean }) => ({
+    name: d.name,
+    verified: d.verified,
+    verification: null,
+  }));
+}
+
+export async function addProjectDomain(
+  projectName: string,
+  domain: string,
+  vercelToken: string
+): Promise<VercelDomainInfo> {
+  const res = await fetch(
+    `${VERCEL_API}/v10/projects/${encodeURIComponent(projectName)}/domains`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${vercelToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ name: domain }),
+    }
+  );
+  if (!res.ok) throw await parseVercelError(res);
+  const data = await res.json();
+  return { name: data.name, verified: data.verified, verification: data.verification ?? null };
+}
+
+export async function removeProjectDomain(
+  projectName: string,
+  domain: string,
+  vercelToken: string
+): Promise<void> {
+  const res = await fetch(
+    `${VERCEL_API}/v9/projects/${encodeURIComponent(projectName)}/domains/${encodeURIComponent(domain)}`,
+    { method: "DELETE", headers: { Authorization: `Bearer ${vercelToken}` } }
+  );
+  if (!res.ok) throw await parseVercelError(res);
+}
+
+/* ---------------------------------------------------------------------- */
+/*  Environment variables                                                  */
+/* ---------------------------------------------------------------------- */
+
+interface VercelEnvVar {
+  id: string;
+  key: string;
+}
+
+async function findProjectEnvId(
+  projectName: string,
+  key: string,
+  vercelToken: string
+): Promise<string | null> {
+  const res = await fetch(`${VERCEL_API}/v9/projects/${encodeURIComponent(projectName)}/env`, {
+    headers: { Authorization: `Bearer ${vercelToken}` },
+    cache: "no-store",
+  });
+  if (!res.ok) throw await parseVercelError(res);
+  const data = await res.json();
+  const match = (data.envs as VercelEnvVar[] | undefined)?.find((e) => e.key === key);
+  return match?.id ?? null;
+}
+
+/** Removes an environment variable from a real Vercel project, looked up by key. */
+export async function deleteProjectEnv(
+  projectName: string,
+  key: string,
+  vercelToken: string
+): Promise<void> {
+  const id = await findProjectEnvId(projectName, key, vercelToken);
+  if (!id) return; // already gone — nothing to do
+  const res = await fetch(
+    `${VERCEL_API}/v9/projects/${encodeURIComponent(projectName)}/env/${id}`,
+    { method: "DELETE", headers: { Authorization: `Bearer ${vercelToken}` } }
+  );
+  if (!res.ok) throw await parseVercelError(res);
+}
+
+/**
+ * Creates (or updates, if the key already exists) a Production+Preview
+ * environment variable on a real Vercel project.
+ */
+export async function upsertProjectEnv(
+  projectName: string,
+  key: string,
+  value: string,
+  target: ("production" | "preview")[],
+  vercelToken: string
+): Promise<void> {
+  const createRes = await fetch(
+    `${VERCEL_API}/v10/projects/${encodeURIComponent(projectName)}/env`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${vercelToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ key, value, target, type: "encrypted" }),
+    }
+  );
+
+  if (createRes.ok) return;
+
+  // Key already exists on this project — look it up and PATCH the value instead.
+  const existingId = await findProjectEnvId(projectName, key, vercelToken);
+  if (!existingId) throw await parseVercelError(createRes);
+
+  const patchRes = await fetch(
+    `${VERCEL_API}/v9/projects/${encodeURIComponent(projectName)}/env/${existingId}`,
+    {
+      method: "PATCH",
+      headers: {
+        Authorization: `Bearer ${vercelToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ value, target }),
+    }
+  );
+  if (!patchRes.ok) throw await parseVercelError(patchRes);
 }

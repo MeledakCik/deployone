@@ -1,106 +1,110 @@
 "use client";
 
 import * as React from "react";
-import { HelpCircle, ArrowUpRight, ChevronDown } from "lucide-react";
+import { ChevronDown, ExternalLink, KeyRound, Github, ShieldCheck } from "lucide-react";
 import { ViewFade } from "@/components/ui/ViewFade";
-import { cn } from "@/lib/utils";
+import { Surface } from "@/components/ui/Surface";
 
-interface DocEntry {
+interface Guide {
+  icon: React.ElementType;
   title: string;
   desc: string;
-  href: string;
-  linkLabel: string;
+  link: { label: string; href: string };
   steps: string[];
 }
 
-const DOCS: DocEntry[] = [
+const GUIDES: Guide[] = [
   {
-    title: "Cara mendapatkan Vercel Token",
-    desc: "Buat token akses personal dari dashboard Vercel untuk dipakai saat deploy dari Depush.",
-    href: "https://vercel.com/account/tokens",
-    linkLabel: "Buka vercel.com/account/tokens",
+    icon: KeyRound,
+    title: "Cara dapetin Vercel Token",
+    desc: "Token ini dipakai Depush untuk deploy langsung dari repo GitHub kamu ke Vercel.",
+    link: { label: "Buka Vercel Tokens", href: "https://vercel.com/account/tokens" },
     steps: [
       "Login ke akun Vercel kamu di vercel.com.",
-      'Buka Settings, lalu pilih tab "Tokens" (atau langsung ke vercel.com/account/tokens).',
-      'Klik "Create Token", kasih nama bebas — misalnya "depush".',
-      "Atur scope & masa berlaku token sesuai kebutuhan, lalu klik Create.",
-      "Salin token yang muncul (hanya ditampilkan sekali) dan tempel di form Deploy atau Settings Depush.",
+      'Buka menu Account Settings → tab "Tokens" (atau langsung ke vercel.com/account/tokens).',
+      'Klik "Create Token", kasih nama bebas (misal "depush"), pilih scope sesuai akun/tim yang mau dipakai.',
+      "Atur masa berlaku (No Expiration lebih praktis untuk dipakai berulang, tapi lebih aman kalau dikasih expiry).",
+      'Klik "Create", lalu salin token yang muncul — token ini cuma ditampilkan sekali, jadi langsung simpan.',
+      "Tempel token itu ke field Vercel Token di form Deploy atau di halaman Settings Depush.",
     ],
   },
   {
-    title: "Membuat GitHub PAT",
-    desc: "Generate Personal Access Token GitHub dengan scope repo agar Depush bisa menarik source code kamu.",
-    href: "https://github.com/settings/tokens",
-    linkLabel: "Buka github.com/settings/tokens",
+    icon: Github,
+    title: "Cara bikin GitHub Token (PAT)",
+    desc: "Token ini opsional untuk repo public, tapi wajib kalau repo yang mau di-deploy itu private.",
+    link: { label: "Buka GitHub Tokens", href: "https://github.com/settings/tokens?type=beta" },
     steps: [
-      "Login ke GitHub, buka Settings akun kamu.",
-      'Pilih "Developer settings" di paling bawah sidebar.',
-      'Buka "Personal access tokens" → "Tokens (classic)", lalu klik "Generate new token".',
-      'Centang scope "repo" supaya Depush bisa mengakses repo private kamu.',
-      "Klik Generate token, lalu salin (hanya tampil sekali) dan tempel di Depush.",
+      "Login ke GitHub, buka Settings (klik foto profil kanan atas → Settings).",
+      'Scroll ke bawah ke "Developer settings" (paling bawah sidebar kiri).',
+      'Pilih "Personal access tokens" → "Fine-grained tokens" → "Generate new token".',
+      "Kasih nama token, atur masa berlaku, dan pilih repository access — bisa semua repo atau pilih repo tertentu saja.",
+      'Di bagian "Repository permissions", pastikan "Contents" di-set ke "Read-only" minimal (biar Depush bisa baca source code & package.json).',
+      'Klik "Generate token", salin, lalu tempel ke field GitHub Token di form Deploy atau Settings.',
     ],
   },
   {
-    title: "Panduan Custom Domain CNAME",
-    desc: "Langkah-langkah mengarahkan DNS CNAME domain kamu ke project yang sudah di-deploy.",
-    href: "#",
-    linkLabel: "Dokumentasi DNS penyedia domain kamu",
+    icon: ShieldCheck,
+    title: "Setup Login Google (untuk admin/deployer Depush)",
+    desc: "Depush pakai OAuth2 Google asli — bukan simulasi. Ini perlu di-setup sekali di Google Cloud Console oleh yang deploy Depush.",
+    link: { label: "Buka Google Cloud Console", href: "https://console.cloud.google.com/apis/credentials" },
     steps: [
-      "Buka menu Domains di Depush, klik Add Domain, pilih project & masukkan nama domain.",
-      "Untuk project Vercel, Depush akan langsung memasangnya lewat Vercel API dan menunjukkan status Pending/Active.",
-      "Kalau statusnya masih Pending, buka pengaturan DNS domain kamu di penyedia domain (Niagahoster, Cloudflare, dll).",
-      "Tambahkan record CNAME yang mengarah ke cname.vercel-dns.com (untuk subdomain) — untuk root domain, ikuti petunjuk A record dari Vercel.",
-      'Tunggu propagasi DNS (bisa beberapa menit sampai jam), lalu klik "Cek Status" di halaman Domains untuk verifikasi ulang.',
+      "Buka Google Cloud Console → pilih/buat sebuah project.",
+      'Buka "APIs & Services" → "OAuth consent screen", isi info dasar aplikasi (nama, email support), publish ke "External" kalau untuk banyak user.',
+      'Buka "Credentials" → "Create Credentials" → "OAuth client ID" → pilih tipe "Web application".',
+      "Di bagian Authorized redirect URIs, tambahkan persis: https://<domain-vercel-kamu>/api/auth/google/callback",
+      "Simpan, lalu salin Client ID dan Client Secret yang muncul.",
+      'Di project Vercel Depush, buka Settings → Environment Variables, tambahkan GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, dan AUTH_SECRET (string acak bebas, minimal 16 karakter) — lalu redeploy.',
     ],
   },
 ];
 
-function DocCard({ doc }: { doc: DocEntry }) {
+function GuideCard({ guide }: { guide: Guide }) {
   const [open, setOpen] = React.useState(false);
+  const Icon = guide.icon;
 
   return (
-    <div className="docs-item-glass p-5">
-      <div className="flex items-start gap-4">
-        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full text-violet-400">
-          <HelpCircle size={28} />
+    <Surface className="overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-start gap-4 p-5 text-left"
+      >
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-violet-500/10 text-violet-400">
+          <Icon size={20} />
         </span>
         <div className="min-w-0 flex-1">
-          <h3 className="text-[14px] font-semibold">{doc.title}</h3>
-          <p className="mt-1 text-[13px] leading-relaxed text-text-muted">{doc.desc}</p>
+          <h3 className="text-[14px] font-semibold">{guide.title}</h3>
+          <p className="mt-1 text-[13px] leading-relaxed text-text-muted">{guide.desc}</p>
+        </div>
+        <ChevronDown
+          size={18}
+          className={`mt-1 shrink-0 text-text-faint transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
 
-          <button
-            type="button"
-            onClick={() => setOpen((v) => !v)}
-            className="mt-3 inline-flex items-center gap-1 text-[12.5px] font-medium text-violet-400 hover:text-violet-300"
-          >
-            <ChevronDown size={13} className={cn("transition-transform duration-200", open && "rotate-180")} />
-            {open ? "Sembunyikan langkah-langkah" : "Lihat langkah-langkah"}
-          </button>
-
-          {open && (
-            <ol className="mt-3 space-y-2 border-t border-[var(--line)] pt-3">
-              {doc.steps.map((step, i) => (
-                <li key={i} className="flex gap-2.5 text-[12.5px] leading-relaxed text-text-muted">
-                  <span className="mt-0.5 flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full bg-violet-500/15 text-[10px] font-semibold text-violet-400">
-                    {i + 1}
-                  </span>
-                  <span>{step}</span>
-                </li>
-              ))}
-            </ol>
-          )}
-
+      {open && (
+        <div className="border-t px-5 pb-5 pt-4" style={{ borderColor: "var(--surface-line)" }}>
+          <ol className="space-y-3">
+            {guide.steps.map((step, i) => (
+              <li key={i} className="flex gap-3 text-[13px] leading-relaxed">
+                <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[var(--pill-bg)] text-[11px] font-semibold text-text-muted">
+                  {i + 1}
+                </span>
+                <span className="text-text-muted">{step}</span>
+              </li>
+            ))}
+          </ol>
           <a
-            href={doc.href}
+            href={guide.link.href}
             target="_blank"
             rel="noopener noreferrer"
-            className="mt-3 flex items-center gap-1.5 text-[12.5px] font-medium text-text hover:text-violet-400"
+            className="pill mt-4 inline-flex items-center gap-1.5 px-3.5 py-1.5 text-[12px] font-medium hover:brightness-110"
           >
-            {doc.linkLabel} <ArrowUpRight size={13} className="text-text-faint" />
+            {guide.link.label} <ExternalLink size={12} />
           </a>
         </div>
-      </div>
-    </div>
+      )}
+    </Surface>
   );
 }
 
@@ -110,12 +114,14 @@ export function DocsView() {
       <div className="space-y-6">
         <div>
           <h2 className="text-[22px] font-semibold">Docs</h2>
-          <p className="text-[13px] text-text-muted">Panduan singkat untuk setup deployment kamu.</p>
+          <p className="text-[13px] text-text-muted">
+            Panduan lengkap setup token & OAuth yang dipakai Depush — semuanya real, tidak ada simulasi.
+          </p>
         </div>
 
         <div className="space-y-3">
-          {DOCS.map((doc) => (
-            <DocCard key={doc.title} doc={doc} />
+          {GUIDES.map((guide) => (
+            <GuideCard key={guide.title} guide={guide} />
           ))}
         </div>
       </div>

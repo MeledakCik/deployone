@@ -17,6 +17,7 @@ import {
 import { useAuth } from "@/lib/auth-context";
 import { useDeploy } from "@/lib/deploy-context";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { getInitials, avatarColorFor } from "@/lib/utils";
 import type { DashboardView } from "@/types";
 
 const NAV_ITEMS: { id: DashboardView; label: string; icon: React.ElementType }[] = [
@@ -42,8 +43,7 @@ export function Sidebar() {
 
   function handleLogout() {
     setOpen(false);
-    logout();
-    router.push("/");
+    void logout().then(() => router.push("/"));
   }
 
   return (
@@ -124,13 +124,23 @@ export function Sidebar() {
           </div>
           {user && (
             <div className="pill flex items-center gap-3 px-3 py-2.5 mb-2">
-              <span
-                className={`grid h-8 w-8 shrink-0 place-items-center rounded-full text-[12px] font-semibold text-white ${
-                  user.color === "violet" ? "bg-violet-500" : "bg-blue-500"
-                }`}
-              >
-                {user.avatar}
-              </span>
+              {user.picture ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={user.picture}
+                  alt={user.name}
+                  referrerPolicy="no-referrer"
+                  className="h-8 w-8 shrink-0 rounded-full object-cover"
+                />
+              ) : (
+                <span
+                  className={`grid h-8 w-8 shrink-0 place-items-center rounded-full text-[12px] font-semibold text-white ${avatarColorFor(
+                    user.email
+                  )}`}
+                >
+                  {getInitials(user.name)}
+                </span>
+              )}
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[13px] font-medium">{user.name}</span>
                 <span className="block truncate text-[11px] text-text-muted">{user.email}</span>

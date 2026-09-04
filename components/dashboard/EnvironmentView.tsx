@@ -7,44 +7,45 @@ import { ViewFade } from "@/components/ui/ViewFade";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDeploy } from "@/lib/deploy-context";
 import { useToast } from "@/components/ui/Toast";
-import { validateEnvKey } from "@/lib/env-validate";
+
+function useVercelProjectNames() {
+  const { history } = useDeploy();
+  return React.useMemo(
+    () => Array.from(new Set(history.filter((h) => h.platform === "vercel").map((h) => h.name))),
+    [history]
+  );
+}
 
 function AddSecretModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { addEnvVar, envVars } = useDeploy();
+  const { addEnvVar, vercelToken } = useDeploy();
   const { showToast } = useToast();
+  const projectNames = useVercelProjectNames();
   const [key, setKey] = React.useState("");
   const [value, setValue] = React.useState("");
   const [environment, setEnvironment] = React.useState<"Production" | "Preview">("Production");
-  const [touched, setTouched] = React.useState(false);
+  const [project, setProject] = React.useState(projectNames[0] ?? "");
+  const [pushToVercel, setPushToVercel] = React.useState(true);
 
-  const keyError = touched ? validateEnvKey(key) : null;
-  const isDuplicate =
-    touched && !keyError && envVars.some((v) => v.key === key.trim() && v.environment === environment);
+  React.useEffect(() => {
+    if (open) setProject(projectNames[0] ?? "");
+  }, [open, projectNames]);
 
   if (!open) return null;
 
+  const canPush = Boolean(vercelToken) && projectNames.length > 0;
+
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setTouched(true);
-
-    const error = validateEnvKey(key);
-    if (error) {
-      showToast(error);
+    if (!key.trim() || !value.trim()) {
+      showToast("Key dan value tidak boleh kosong");
       return;
     }
-    if (!value.trim()) {
-      showToast("Value tidak boleh kosong");
-      return;
-    }
-    if (envVars.some((v) => v.key === key.trim() && v.environment === environment)) {
-      showToast(`Key "${key.trim()}" sudah ada di environment ${environment}`);
-      return;
-    }
-
-    addEnvVar(key.trim(), value.trim(), environment);
+    addEnvVar(key.trim(), value.trim(), environment, {
+      project: canPush && pushToVercel ? project : undefined,
+      pushToVercel: canPush && pushToVercel,
+    });
     setKey("");
     setValue("");
-    setTouched(false);
     onClose();
   }
 
@@ -74,17 +75,8 @@ function AddSecretModal({ open, onClose }: { open: boolean; onClose: () => void 
               placeholder="DATABASE_URL"
               value={key}
               onChange={(e) => setKey(e.target.value)}
-              onBlur={() => setTouched(true)}
-              className={`input-solid mono h-11 w-full px-3.5 text-[13px] ${
-                keyError || isDuplicate ? "border-red-500/50" : ""
-              }`}
+              className="input-solid mono h-11 w-full px-3.5 text-[13px]"
             />
-            {keyError && <p className="mt-1.5 text-[11px] text-red-400">{keyError}</p>}
-            {isDuplicate && (
-              <p className="mt-1.5 text-[11px] text-red-400">
-                Key ini sudah ada di environment {environment}.
-              </p>
-            )}
           </div>
           <div>
             <label htmlFor="envValue" className="block text-[12px] font-medium text-text-muted mb-1.5">
@@ -111,6 +103,41 @@ function AddSecretModal({ open, onClose }: { open: boolean; onClose: () => void 
               </SelectContent>
             </Select>
           </div>
+
+          {canPush ? (
+            <div className="space-y-2 rounded-2xl border border-[var(--surface-line)] p-3.5">
+              <label className="flex items-center gap-2.5 text-[12.5px] font-medium">
+                <input
+                  type="checkbox"
+                  checked={pushToVercel}
+                  onChange={(e) => setPushToVercel(e.target.checked)}
+                  className="h-4 w-4 accent-violet-500"
+                />
+                Push otomatis ke project Vercel
+              </label>
+              {pushToVercel && (
+                <Select value={project} onValueChange={setProject}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Pilih Project" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projectNames.map((name) => (
+                      <SelectItem key={name} value={name}>
+                        {name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+            </div>
+          ) : (
+            <p className="text-[11.5px] text-text-faint">
+              {vercelToken
+                ? "Belum ada project Vercel untuk di-push — secret akan disimpan lokal saja."
+                : "Isi Vercel Token di Settings untuk push otomatis ke Vercel."}
+            </p>
+          )}
+
           <button type="submit" className="btn-primary w-full py-2.5 text-[13px]">
             Simpan Secret
           </button>
@@ -181,6 +208,11 @@ export function EnvironmentView() {
                     </td>
                     <td className="px-6 py-4">
                       <span className="pill px-2.5 py-0.5 text-[11px] font-medium">{item.environment}</span>
+                      {item.syncedProject && (
+                        <span className="ml-1.5 inline-flex items-center gap-1 rounded-pill border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10.5px] font-medium text-emerald-400">
+                          ✓ Vercel
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center justify-end gap-2">
