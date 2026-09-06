@@ -143,11 +143,14 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
   const [view, setView] = React.useState<DashboardView>("dashboard");
   const [history, setHistory] = useCloudStorage<HistoryItem[]>("history", [], "depush-history");
   const stats = React.useMemo(
-    () => ({
-      total: history.length,
-      ready: history.filter((h) => h.status === "ready").length,
-      failed: history.filter((h) => h.status === "failed").length,
-    }),
+    () => {
+      const safeHistory = Array.isArray(history) ? history : [];
+      return {
+        total: safeHistory.length,
+        ready: safeHistory.filter((h) => h.status === "ready").length,
+        failed: safeHistory.filter((h) => h.status === "failed").length,
+      };
+    },
     [history]
   );
   const [form, setForm] = React.useState<DeployFormValues>(emptyForm);
@@ -454,7 +457,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           { headers: { "x-vercel-token": vercelToken } }
         );
         if (!status.exists) {
-          setHistory((prev) => prev.filter((h) => h.name !== name));
+          setHistory((prev) => (Array.isArray(prev) ? prev : []).filter((h) => h.name !== name));
           return "deleted";
         }
         return "exists";
@@ -468,8 +471,9 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
   /** Runs syncProjectStatus for every unique Vercel-platform project — used on Projects view mount. */
   const syncAllProjects = React.useCallback(async () => {
     if (!vercelToken) return;
+    const safeHistory = Array.isArray(history) ? history : [];
     const names = Array.from(
-      new Set(history.filter((h) => h.platform === "vercel").map((h) => h.name))
+      new Set(safeHistory.filter((h) => h.platform === "vercel").map((h) => h.name))
     );
     if (names.length === 0) return;
 
@@ -548,7 +552,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           return;
         }
       }
-      setDomains((prev) => prev.filter((d) => d.id !== id));
+      setDomains((prev) => (Array.isArray(prev) ? prev : []).filter((d) => d.id !== id));
     },
     [domains, setDomains, showToast, vercelToken]
   );
@@ -644,7 +648,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           return;
         }
       }
-      setEnvVars((prev) => prev.filter((v) => v.id !== id));
+      setEnvVars((prev) => (Array.isArray(prev) ? prev : []).filter((v) => v.id !== id));
     },
     [envVars, setEnvVars, showToast, vercelToken]
   );

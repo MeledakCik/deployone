@@ -18,7 +18,10 @@ function useProjectNames() {
 function useVercelProjectNames() {
   const { history } = useDeploy();
   return React.useMemo(
-    () => Array.from(new Set(history.filter((h) => h.platform === "vercel").map((h) => h.name))),
+    () => {
+      const safeHistory = Array.isArray(history) ? history : [];
+      return Array.from(new Set(safeHistory.filter((h) => h.platform === "vercel").map((h) => h.name)));
+    },
     [history]
   );
 }
@@ -195,7 +198,10 @@ export function EnvironmentView() {
   }, [activeProject, projectNames]);
 
   const filteredEnvVars = React.useMemo(
-    () => (activeProject === "all" ? envVars : envVars.filter((v) => v.project === activeProject)),
+    () => {
+      const safeEnvVars = Array.isArray(envVars) ? envVars : [];
+      return activeProject === "all" ? safeEnvVars : safeEnvVars.filter((v) => v.project === activeProject);
+    },
     [envVars, activeProject]
   );
 
