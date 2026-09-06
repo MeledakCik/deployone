@@ -1,4 +1,5 @@
 import crypto from "crypto";
+import type { NextRequest } from "next/server";
 
 export interface SessionPayload {
   email: string;
@@ -57,3 +58,18 @@ export function verifySession(token: string | undefined | null): SessionPayload 
 
 export const SESSION_COOKIE = "depush_session";
 export const OAUTH_STATE_COOKIE = "depush_oauth_state";
+
+/**
+ * Helper dipakai oleh route yang butuh email user saat ini dari cookie
+ * session (mis. app/api/user-data/route.ts). Mengembalikan email yang
+ * sudah dinormalisasi (trim + lowercase) supaya selalu konsisten dengan
+ * key KV di app/api/_lib/store.ts (userKey juga lowercase, tapi
+ * normalisasi di sini menghindari salah pakai di tempat lain).
+ * Return null kalau cookie tidak ada / invalid / sudah expired.
+ */
+export function getSessionEmail(req: NextRequest): string | null {
+  const token = req.cookies.get(SESSION_COOKIE)?.value;
+  const payload = verifySession(token);
+  if (!payload?.email) return null;
+  return payload.email.trim().toLowerCase();
+}
