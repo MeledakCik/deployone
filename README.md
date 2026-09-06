@@ -73,6 +73,26 @@ pola yang sama persis: validasi input → panggil Vercel REST API asli → tidak
 Settings punya tombol **Test Koneksi** yang benar-benar memanggil `GET /v2/user` (Vercel) dan
 `GET /user` (GitHub) untuk membuktikan token valid, bukan sekadar cek format.
 
+## Penyimpanan data dashboard (per akun Google, bukan localStorage)
+
+Deploy history, domains, environment variables, dan settings tokens **tidak** lagi disimpan di
+`localStorage` browser — semua disimpan di server lewat `GET`/`PUT /api/user-data`
+(`app/api/user-data/route.ts`), di-keyed pakai email dari session cookie yang sedang login. Jadi
+kalau login dengan akun Google yang sama di device/browser lain, data yang sama akan muncul,
+bukannya kosong.
+
+Backend-nya (`app/api/_lib/store.ts`) pakai **Vercel KV** (REST API yang kompatibel dengan
+Upstash) — tinggal buka **Vercel dashboard -> Storage -> Create Database -> KV**, connect ke
+project ini, lalu redeploy; Vercel otomatis mengisi env var `KV_REST_API_URL` dan
+`KV_REST_API_TOKEN`. Tanpa KV di-attach, di production route ini akan menolak request dengan
+pesan error yang jelas (bukan diam-diam gagal). Untuk `next dev` tanpa KV, ada fallback nulis ke
+file JSON lokal di `.data/` supaya tetap bisa dites — fallback ini **hanya untuk dev**, tidak
+jalan di production karena filesystem Vercel serverless read-only.
+
+Data lama yang masih ada di `localStorage` browser (dari sebelum perubahan ini) otomatis
+di-migrasikan sekali ke server saat pertama kali dashboard dibuka, lalu dihapus dari
+`localStorage` (lihat `lib/useCloudStorage.ts`).
+
 ## Login Google (OAuth2 asli)
 
 Depush pakai OAuth2 Google beneran — bukan simulasi/akun dummy. Alurnya standar Authorization

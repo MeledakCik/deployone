@@ -50,8 +50,10 @@ export interface EnvItem {
   value: string;
   environment: "Production" | "Preview";
   visible: boolean;
-  /** Project this secret was pushed to on Vercel, if any. */
-  syncedProject?: string;
+  /** Project this secret belongs to — env vars are always scoped per-project, never global. */
+  project: string;
+  /** True once this secret has been pushed to the matching project on Vercel. */
+  syncedToVercel?: boolean;
 }
 
 export interface SettingsTokens {
@@ -88,7 +90,8 @@ export interface ApiError {
     | "vercel_error"
     | "project_conflict"
     | "not_found"
-    | "bad_request";
+    | "bad_request"
+    | "unauthorized";
 }
 
 export interface ApiOk<T> {

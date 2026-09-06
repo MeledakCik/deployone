@@ -1,4 +1,4 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Geist+Mono:wght@400;500&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&family=Geist+Mono:wght@400;500&display=swap");
 
 @tailwind base;
 @tailwind components;
@@ -65,6 +65,19 @@
   --row-hover: rgba(15, 23, 42, 0.035);
 }
 
+/* Single source of truth for how long/with-what-easing COLOR changes
+   animate when the theme is switched. Every element that recolors on
+   dark/light toggle uses this exact pair so the whole UI fades in sync
+   instead of finishing at slightly different times. */
+:root {
+  --theme-duration: 260ms;
+  --theme-ease: cubic-bezier(0.4, 0, 0.2, 1);
+  --theme-transition: background-color var(--theme-duration) var(--theme-ease),
+    background var(--theme-duration) var(--theme-ease), border-color var(--theme-duration) var(--theme-ease),
+    color var(--theme-duration) var(--theme-ease), box-shadow var(--theme-duration) var(--theme-ease),
+    fill var(--theme-duration) var(--theme-ease);
+}
+
 * {
   border-color: var(--line);
 }
@@ -78,7 +91,7 @@ body {
   background-image: var(--bg-grad-1), var(--bg-grad-2), var(--bg-grad-3);
   background-attachment: fixed;
   color: var(--text);
-  transition: background-color 420ms ease, color 300ms ease;
+  transition: var(--theme-transition);
 }
 
 .mono {
@@ -92,7 +105,7 @@ body {
   -webkit-backdrop-filter: var(--glass-blur);
   box-shadow: var(--glass-shadow);
   border-radius: 32px;
-  transition: background 320ms ease, border-color 320ms ease, box-shadow 320ms ease, transform 200ms ease;
+  transition: var(--theme-transition), transform 200ms ease;
 }
 
 .glass-flat {
@@ -108,6 +121,7 @@ body {
   backdrop-filter: blur(12px) saturate(1.2);
   -webkit-backdrop-filter: blur(12px) saturate(1.2);
   border-right: 1px solid var(--glass-border);
+  transition: var(--theme-transition);
 }
 
 .sidebar-topbar {
@@ -124,7 +138,7 @@ body {
   -webkit-backdrop-filter: blur(12px) saturate(1.2);
   box-shadow: var(--glass-shadow);
   border-radius: 24px;
-  transition: transform 200ms ease;
+  transition: var(--theme-transition), transform 200ms ease;
 }
 .stat-card-glass:hover {
   transform: translateY(-1px);
@@ -137,7 +151,7 @@ body {
   backdrop-filter: blur(10px) saturate(1.15);
   -webkit-backdrop-filter: blur(10px) saturate(1.15);
   border-radius: 20px;
-  transition: transform 180ms ease, background 180ms ease;
+  transition: var(--theme-transition), transform 180ms ease;
 }
 .docs-item-glass:hover {
   transform: translateY(-1px);
@@ -159,7 +173,7 @@ body {
   border: 1px solid var(--surface-line);
   border-radius: 16px;
   color: var(--text);
-  transition: border-color 160ms ease;
+  transition: var(--theme-transition);
 }
 .input-solid:focus {
   outline: none;
@@ -177,7 +191,7 @@ body {
   border-radius: 9999px;
   font-weight: 600;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.04) inset;
-  transition: all 220ms ease;
+  transition: var(--theme-transition), transform 220ms ease, filter 220ms ease;
 }
 .btn-primary:hover {
   transform: translateY(-1px);
@@ -192,6 +206,7 @@ body {
   background: var(--pill-bg);
   border: 1px solid var(--line);
   border-radius: 9999px;
+  transition: var(--theme-transition);
 }
 
 .theme-toggle {
@@ -205,7 +220,7 @@ body {
   align-items: center;
   padding: 2px;
   cursor: pointer;
-  transition: all 300ms cubic-bezier(0.4, 0, 0.2, 1);
+  transition: var(--theme-transition);
 }
 .theme-toggle-knob {
   width: 26px;
@@ -215,7 +230,7 @@ body {
   color: var(--bg-base);
   display: grid;
   place-items: center;
-  transition: transform 380ms cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: var(--theme-transition), transform var(--theme-duration) var(--theme-ease);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
 }
 [data-theme="light"] .theme-toggle-knob {
@@ -248,7 +263,7 @@ body {
   border: 1px solid var(--input-border);
   border-radius: 14px;
   color: var(--text);
-  transition: border-color 200ms ease, background 200ms ease;
+  transition: var(--theme-transition);
 }
 .input-glass:focus {
   outline: none;
@@ -297,4 +312,33 @@ body {
 
 ::selection {
   background: rgba(139, 92, 246, 0.3);
+}
+
+/* ---- Landing page (always-dark, glassmorphic) ---- */
+@keyframes landing-blink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+@keyframes landing-float {
+  0%,
+  100% {
+    transform: translateY(0px) rotate(-2deg);
+  }
+  50% {
+    transform: translateY(-10px) rotate(-1deg);
+  }
+}
+@keyframes landing-glow-pulse {
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.9;
+  }
 }

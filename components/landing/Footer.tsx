@@ -1,23 +1,33 @@
-import Link from "next/link";
-import { Rocket } from "lucide-react";
-
 export function Footer() {
   return (
-    <footer id="docs" className="px-4 py-12 border-t border-[var(--line)]">
-      <div className="mx-auto max-w-6xl flex flex-col items-center gap-6 text-center sm:flex-row sm:justify-between sm:text-left">
-        <div className="flex items-center gap-2">
-          <span className="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-br from-violet-500 to-cyan-400 text-white">
-            <Rocket size={14} />
-          </span>
-          <span className="text-[13px] font-semibold">Depush</span>
-          <span className="text-[12px] text-text-faint">© {new Date().getFullYear()}</span>
+    <footer id="docs" style={{ borderTop: "1px solid var(--line)" }}>
+      <div className="mx-auto max-w-[1200px] px-6 h-[72px] flex flex-col sm:flex-row items-center justify-between gap-3 text-[13px]">
+        <div className="flex items-center gap-2 text-[var(--text-muted)]">
+          <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center shadow-[0_0_0_1px_rgba(15,23,42,0.08)]">
+            <div className="w-2 h-2 rounded-full bg-[#3B82F6]" />
+          </div>
+          <span className="font-semibold text-[var(--text)]">Depush</span>
+          <span className="text-[var(--text-faint)]">© {new Date().getFullYear()} Depush, Inc.</span>
         </div>
-        <div className="flex items-center gap-6 text-[13px] text-text-muted">
-          <a href="#docs" className="hover:text-text">Docs</a>
-          <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="hover:text-text">
+
+        <div className="flex items-center gap-6 text-[var(--text-faint)]">
+          <a href="#docs" className="hover:text-[var(--text)] transition">
+            Docs
+          </a>
+          <a
+            href="https://github.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-[var(--text)] transition"
+          >
             GitHub
           </a>
-          <a href="https://saweria.co" target="_blank" rel="noopener noreferrer" className="hover:text-text">
+          <a
+            href="https://saweria.co"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-[var(--text)] transition"
+          >
             Saweria Donasi
           </a>
         </div>

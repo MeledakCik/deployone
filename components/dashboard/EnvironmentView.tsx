@@ -8,6 +8,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useDeploy } from "@/lib/deploy-context";
 import { useToast } from "@/components/ui/Toast";
 
+/** All projects the user has ever deployed (any platform) — env vars can be scoped to any of these. */
+function useProjectNames() {
+  const { history } = useDeploy();
+  return React.useMemo(() => Array.from(new Set(history.map((h) => h.name))), [history]);
+}
+
+/** Only Vercel-platform projects — that's the only platform we can actually push secrets to. */
 function useVercelProjectNames() {
   const { history } = useDeploy();
   return React.useMemo(
@@ -16,23 +23,33 @@ function useVercelProjectNames() {
   );
 }
 
-function AddSecretModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+function AddSecretModal({
+  open,
+  onClose,
+  defaultProject,
+}: {
+  open: boolean;
+  onClose: () => void;
+  defaultProject?: string;
+}) {
   const { addEnvVar, vercelToken } = useDeploy();
   const { showToast } = useToast();
-  const projectNames = useVercelProjectNames();
+  const projectNames = useProjectNames();
+  const vercelProjectNames = useVercelProjectNames();
   const [key, setKey] = React.useState("");
   const [value, setValue] = React.useState("");
   const [environment, setEnvironment] = React.useState<"Production" | "Preview">("Production");
-  const [project, setProject] = React.useState(projectNames[0] ?? "");
+  const [project, setProject] = React.useState(defaultProject ?? projectNames[0] ?? "");
   const [pushToVercel, setPushToVercel] = React.useState(true);
 
   React.useEffect(() => {
-    if (open) setProject(projectNames[0] ?? "");
-  }, [open, projectNames]);
+    if (open) setProject(defaultProject ?? projectNames[0] ?? "");
+  }, [open, defaultProject, projectNames]);
 
   if (!open) return null;
 
-  const canPush = Boolean(vercelToken) && projectNames.length > 0;
+  const isVercelProject = vercelProjectNames.includes(project);
+  const canPush = Boolean(vercelToken) && isVercelProject;
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -40,8 +57,11 @@ function AddSecretModal({ open, onClose }: { open: boolean; onClose: () => void 
       showToast("Key dan value tidak boleh kosong");
       return;
     }
-    addEnvVar(key.trim(), value.trim(), environment, {
-      project: canPush && pushToVercel ? project : undefined,
+    if (!project) {
+      showToast("Pilih project untuk secret ini — env var selalu per-project, bukan global.");
+      return;
+    }
+    addEnvVar(key.trim(), value.trim(), environment, project, {
       pushToVercel: canPush && pushToVercel,
     });
     setKey("");
@@ -64,6 +84,30 @@ function AddSecretModal({ open, onClose }: { open: boolean; onClose: () => void 
           </button>
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-[12px] font-medium text-text-muted mb-1.5">Project</label>
+            {projectNames.length === 0 ? (
+              <p className="input-solid h-11 flex items-center px-3.5 text-[13px] text-text-faint">
+                Belum ada project — deploy dulu untuk bisa menyimpan secret.
+              </p>
+            ) : (
+              <Select value={project} onValueChange={setProject}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih Project" />
+                </SelectTrigger>
+                <SelectContent>
+                  {projectNames.map((name) => (
+                    <SelectItem key={name} value={name}>
+                      {name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            <p className="mt-1.5 text-[11px] text-text-faint">
+              Secret hanya berlaku untuk project ini, tidak akan bocor/bentrok ke project lain.
+            </p>
+          </div>
           <div>
             <label htmlFor="envKey" className="block text-[12px] font-medium text-text-muted mb-1.5">
               Key
@@ -104,37 +148,27 @@ function AddSecretModal({ open, onClose }: { open: boolean; onClose: () => void 
             </Select>
           </div>
 
-          {canPush ? (
-            <div className="space-y-2 rounded-2xl border border-[var(--surface-line)] p-3.5">
-              <label className="flex items-center gap-2.5 text-[12.5px] font-medium">
-                <input
-                  type="checkbox"
-                  checked={pushToVercel}
-                  onChange={(e) => setPushToVercel(e.target.checked)}
-                  className="h-4 w-4 accent-violet-500"
-                />
-                Push otomatis ke project Vercel
-              </label>
-              {pushToVercel && (
-                <Select value={project} onValueChange={setProject}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih Project" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {projectNames.map((name) => (
-                      <SelectItem key={name} value={name}>
-                        {name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              )}
-            </div>
+          {isVercelProject ? (
+            vercelToken ? (
+              <div className="space-y-2 rounded-2xl border border-[var(--surface-line)] p-3.5">
+                <label className="flex items-center gap-2.5 text-[12.5px] font-medium">
+                  <input
+                    type="checkbox"
+                    checked={pushToVercel}
+                    onChange={(e) => setPushToVercel(e.target.checked)}
+                    className="h-4 w-4 accent-violet-500"
+                  />
+                  Push otomatis ke project &quot;{project}&quot; di Vercel
+                </label>
+              </div>
+            ) : (
+              <p className="text-[11.5px] text-text-faint">
+                Isi Vercel Token di Settings untuk push otomatis ke Vercel.
+              </p>
+            )
           ) : (
             <p className="text-[11.5px] text-text-faint">
-              {vercelToken
-                ? "Belum ada project Vercel untuk di-push — secret akan disimpan lokal saja."
-                : "Isi Vercel Token di Settings untuk push otomatis ke Vercel."}
+              Project ini bukan platform Vercel — secret akan disimpan lokal saja untuk project ini.
             </p>
           )}
 
@@ -149,7 +183,21 @@ function AddSecretModal({ open, onClose }: { open: boolean; onClose: () => void 
 
 export function EnvironmentView() {
   const { envVars, removeEnvVar, toggleEnvVisible } = useDeploy();
+  const projectNames = useProjectNames();
   const [modalOpen, setModalOpen] = React.useState(false);
+  const [activeProject, setActiveProject] = React.useState<string>("all");
+
+  // Keep the filter valid if the underlying project list changes.
+  React.useEffect(() => {
+    if (activeProject !== "all" && !projectNames.includes(activeProject)) {
+      setActiveProject("all");
+    }
+  }, [activeProject, projectNames]);
+
+  const filteredEnvVars = React.useMemo(
+    () => (activeProject === "all" ? envVars : envVars.filter((v) => v.project === activeProject)),
+    [envVars, activeProject]
+  );
 
   return (
     <ViewFade>
@@ -157,7 +205,9 @@ export function EnvironmentView() {
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h2 className="text-[22px] font-semibold">Environment Variables</h2>
-            <p className="text-[13px] text-text-muted">Simpan secret untuk di-inject ke build kamu.</p>
+            <p className="text-[13px] text-text-muted">
+              Simpan secret per-project untuk di-inject ke build kamu — tidak ada secret global antar project.
+            </p>
           </div>
           <button
             type="button"
@@ -171,17 +221,38 @@ export function EnvironmentView() {
         <Surface className="flex items-start gap-3 px-5 py-4">
           <Info size={16} className="mt-0.5 shrink-0 text-violet-400" />
           <p className="text-[12.5px] leading-relaxed text-text-muted">
-            Fitur injeksi <span className="mono">.env</span> saat build — semua secret di sini otomatis
-            tersedia sebagai environment variable pada proses build & runtime project kamu.
+            Fitur injeksi <span className="mono">.env</span> saat build — setiap secret terikat ke satu
+            project dan hanya tersedia sebagai environment variable pada build & runtime project itu saja.
           </p>
         </Surface>
 
-        {envVars.length === 0 ? (
+        {projectNames.length > 0 && (
+          <div className="w-full max-w-xs">
+            <label className="mb-1.5 block text-[12px] font-medium text-text-muted">Filter berdasarkan project</label>
+            <Select value={activeProject} onValueChange={setActiveProject}>
+              <SelectTrigger>
+                <SelectValue placeholder="Semua project" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua project</SelectItem>
+                {projectNames.map((name) => (
+                  <SelectItem key={name} value={name}>
+                    {name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {filteredEnvVars.length === 0 ? (
           <Surface className="flex flex-col items-center justify-center gap-3 px-6 py-24 text-center">
             <KeyRound size={52} className="text-text-faint" strokeWidth={1.5} />
             <h3 className="text-[16px] font-semibold">Belum ada secret</h3>
             <p className="max-w-xs text-[13px] text-text-muted">
-              Tambahkan environment variable pertamamu untuk digunakan saat deploy.
+              {activeProject === "all"
+                ? "Tambahkan environment variable pertamamu untuk digunakan saat deploy."
+                : `Belum ada secret untuk project "${activeProject}".`}
             </p>
           </Surface>
         ) : (
@@ -191,12 +262,13 @@ export function EnvironmentView() {
                 <tr className="text-[11px] uppercase tracking-wide text-text-faint">
                   <th className="px-6 py-3 font-medium">Key</th>
                   <th className="px-6 py-3 font-medium">Value</th>
+                  <th className="px-6 py-3 font-medium">Project</th>
                   <th className="px-6 py-3 font-medium">Environment</th>
                   <th className="px-6 py-3 font-medium text-right">Action</th>
                 </tr>
               </thead>
               <tbody>
-                {envVars.map((item) => (
+                {filteredEnvVars.map((item) => (
                   <tr
                     key={item.id}
                     className="surface-solid-row border-b last:border-0 transition-colors"
@@ -206,9 +278,10 @@ export function EnvironmentView() {
                     <td className="px-6 py-4 mono text-[12px] text-text-muted">
                       {item.visible ? item.value : "•".repeat(Math.min(item.value.length, 14) || 8)}
                     </td>
+                    <td className="px-6 py-4 text-[12px] text-text-muted">{item.project}</td>
                     <td className="px-6 py-4">
                       <span className="pill px-2.5 py-0.5 text-[11px] font-medium">{item.environment}</span>
-                      {item.syncedProject && (
+                      {item.syncedToVercel && (
                         <span className="ml-1.5 inline-flex items-center gap-1 rounded-pill border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10.5px] font-medium text-emerald-400">
                           ✓ Vercel
                         </span>
@@ -243,7 +316,11 @@ export function EnvironmentView() {
         )}
       </div>
 
-      <AddSecretModal open={modalOpen} onClose={() => setModalOpen(false)} />
+      <AddSecretModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        defaultProject={activeProject !== "all" ? activeProject : undefined}
+      />
     </ViewFade>
   );
 }

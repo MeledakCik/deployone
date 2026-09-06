@@ -1,173 +1,179 @@
-"use client";
-
-import * as React from "react";
 import Link from "next/link";
-import { ArrowRight, PlayCircle } from "lucide-react";
-import { GlassPanel } from "@/components/ui/GlassPanel";
+import { ArrowUpRight, Play } from "lucide-react";
+
+const DEPLOYMENTS = [
+  { name: "depush-landing-v2", platform: "VERCEL", status: "Ready", time: "2m ago", branch: "main", dot: "bg-emerald-400" },
+  { name: "api-gateway-edge", platform: "CLOUDFLARE", status: "Building", time: "now", branch: "feat/cache", dot: "bg-amber-400" },
+  { name: "docs-v3-redesign", platform: "VERCEL", status: "Ready", time: "18m ago", branch: "docs/new", dot: "bg-emerald-400" },
+  { name: "marketing-site", platform: "CLOUDFLARE", status: "Failed", time: "1h ago", branch: "main", dot: "bg-red-400" },
+  { name: "dashboard-app", platform: "VERCEL", status: "Ready", time: "3h ago", branch: "main", dot: "bg-emerald-400" },
+];
+
+const STATS = [
+  { k: "Total Deploys", v: "1,284", d: "+12%" },
+  { k: "Success Rate", v: "98.2%", d: "+0.4%" },
+  { k: "Avg Build", v: "47s", d: "-8s" },
+];
+
+function statusClasses(status: string) {
+  if (status === "Ready") return "bg-emerald-500/10 border-emerald-400/20 text-emerald-300";
+  if (status === "Building") return "bg-amber-500/10 border-amber-400/20 text-amber-300";
+  return "bg-red-500/10 border-red-400/20 text-red-300";
+}
 
 export function Hero() {
   return (
-    <section className="relative pt-32 pb-16 md:pt-44 md:pb-24 px-4 sm:px-6 overflow-hidden mb-12">
-      {/* Cosmic Background - Blur Orbs (Disesuaikan opacity untuk light & dark) */}
-      <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute top-20 right-[10%] h-64 w-64 md:h-96 md:w-96 rounded-full bg-violet-500/20 dark:bg-violet-500/15 blur-3xl" />
-        <div className="absolute bottom-10 right-[20%] h-72 w-72 md:h-96 md:w-96 rounded-full bg-cyan-400/20 dark:bg-cyan-400/15 blur-3xl" />
-        <div className="absolute top-[40%] left-[5%] h-56 w-56 md:h-80 md:w-80 rounded-full bg-fuchsia-500/15 dark:bg-fuchsia-500/10 blur-3xl" />
-      </div>
-
-      <div className="mx-auto max-w-6xl grid gap-12 lg:grid-cols-2 lg:items-center">
-        {/* Left Column: Text Content */}
-        <div className="flex flex-col items-center text-center lg:items-start lg:text-left">
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900/5 dark:bg-white/5 border border-slate-900/10 dark:border-white/10 text-xs sm:text-sm font-medium text-slate-600 dark:text-slate-300 mb-6 backdrop-blur-md">
-            <span className="h-2 w-2 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-pulse" />
+    <section className="relative mx-auto max-w-[1200px] px-6 pt-12 md:pt-20 pb-10 md:pb-24">
+      <div className="grid md:grid-cols-[1.05fr_0.95fr] gap-12 md:gap-8 items-center">
+        {/* Left: copy */}
+        <div>
+          <div className="pill inline-flex items-center gap-2.5 h-8 px-3.5 backdrop-blur-xl text-[12.5px] text-[var(--text-muted)]">
+            <span
+              className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.6)]"
+              style={{ animation: "landing-blink 1.4s infinite" }}
+            />
             Sekarang mendukung Cloudflare Pages
+            <span className="w-px h-3 mx-1 hidden sm:block" style={{ background: "var(--line-strong)" }} />
+            <span className="hidden sm:inline-flex items-center gap-1 text-[var(--text-faint)]">
+              Baru <span className="w-1 h-1 rounded-full" style={{ background: "var(--text-faint)" }} />
+            </span>
           </div>
 
-          <h1 className="text-4xl sm:text-5xl lg:text-6xl leading-[1.1] font-bold tracking-tight text-slate-900 dark:text-white">
-            Deploy without <br className="hidden sm:inline" />
-            <span className="bg-gradient-to-r from-slate-900 via-slate-700 to-slate-500 dark:from-white dark:via-slate-200 dark:to-slate-400 bg-clip-text text-transparent">
-              the hassle.
-            </span>
+          <h1 className="mt-7 text-[42px] md:text-[64px] leading-[0.95] tracking-[-0.04em] font-[800] text-[var(--text)]">
+            Deploy without
+            <br />
+            <span className="text-[var(--text)]">the hassle.</span>
           </h1>
 
-          <p className="mt-5 max-w-md text-base sm:text-lg leading-relaxed text-slate-600 dark:text-slate-400">
+          <p className="mt-5 text-[16.5px] md:text-[18px] leading-[1.6] text-[var(--text-muted)] max-w-[480px]">
             Kelola semua deployment Vercel dan Cloudflare dari satu dashboard glass yang cantik.
             No more tab switching.
           </p>
 
-          <div className="mt-8 flex flex-wrap items-center justify-center lg:justify-start gap-4 w-full sm:w-auto">
+          <div className="mt-8 flex flex-wrap gap-3">
             <Link
               href="/dashboard"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-violet-600 to-cyan-600 hover:from-violet-500 hover:to-cyan-500 text-white font-medium text-sm transition-all shadow-lg shadow-violet-500/25 active:scale-[0.98]"
+              className="group h-[44px] px-6 rounded-full bg-gradient-to-br from-violet-600 to-fuchsia-500 text-white text-[14px] font-semibold flex items-center gap-2 shadow-[0_0_30px_rgba(124,58,237,0.35)] hover:shadow-[0_0_40px_rgba(124,58,237,0.5)] hover:brightness-110 transition-all"
             >
-              Deploy Sekarang <ArrowRight size={16} />
+              Deploy Sekarang
+              <ArrowUpRight size={16} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
             </Link>
 
             <a
               href="#how-it-works"
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3.5 rounded-xl bg-slate-900/5 hover:bg-slate-900/10 dark:bg-white/5 dark:hover:bg-white/10 border border-slate-900/10 dark:border-white/10 text-slate-700 dark:text-white font-medium text-sm backdrop-blur-md transition-all active:scale-[0.98]"
+              className="pill h-[44px] px-6 backdrop-blur-xl text-[var(--text)] text-[14px] font-medium flex items-center gap-2 hover:brightness-105 transition"
             >
-              <PlayCircle size={16} /> Lihat Demo
+              <span className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: "var(--card-hover)" }}>
+                <Play size={12} className="fill-[var(--text)] ml-0.5" />
+              </span>
+              Lihat Demo
             </a>
+          </div>
+
+          <div className="mt-10 flex items-center gap-6 text-[12.5px] text-[var(--text-faint)]">
+            <div className="flex -space-x-2">
+              {[1, 2, 3].map((n) => (
+                <div
+                  key={n}
+                  className="w-7 h-7 rounded-full border backdrop-blur flex items-center justify-center text-[10px] font-bold text-[var(--text)]"
+                  style={{ background: "var(--card-hover)", borderColor: "var(--line)" }}
+                >
+                  {String.fromCharCode(64 + n)}
+                </div>
+              ))}
+            </div>
+            <span>Dipercaya 2,400+ developers Indonesia</span>
           </div>
         </div>
 
-        {/* Right Column: Interactive Glass Mockup */}
-        <div className="relative w-full max-w-xl mx-auto lg:max-w-none">
-          {/* Mockup Ambient Glow */}
-          <div className="absolute -inset-4 sm:-inset-6 -z-10 bg-gradient-to-br from-violet-500/30 via-fuchsia-500/20 to-cyan-400/30 dark:from-violet-500/20 dark:via-fuchsia-500/10 dark:to-cyan-400/20 blur-2xl rounded-3xl" />
+        {/* Right: glass dashboard mockup */}
+        <div className="relative md:h-[520px] flex items-center justify-center">
+          <div
+            className="absolute w-[420px] h-[420px] bg-violet-600/20 blur-[80px] rounded-full -z-10"
+            style={{ animation: "landing-glow-pulse 4s ease-in-out infinite" }}
+          />
+          <div className="absolute w-[300px] h-[300px] bg-fuchsia-500/15 blur-[60px] rounded-full top-10 right-10 -z-10" />
 
-          <GlassPanel className="p-2 sm:p-4 overflow-hidden transform lg:rotate-[-2deg] hover:rotate-0 transition-transform duration-500 ease-out shadow-xl dark:shadow-2xl shadow-slate-300/50 dark:shadow-black/60 border border-slate-200/60 dark:border-white/10 bg-white/40 dark:bg-slate-950/40 backdrop-blur-xl">
-            <svg
-              viewBox="0 0 800 480"
-              width="100%"
-              height="100%"
-              xmlns="http://www.w3.org/2000/svg"
-              className="w-full h-auto drop-shadow-md text-slate-800 dark:text-white"
+          <div
+            className="glass w-full max-w-[560px] !rounded-[24px] overflow-hidden"
+            style={{ animation: "landing-float 6s ease-in-out infinite" }}
+          >
+            <div
+              className="h-[48px] px-5 flex items-center justify-between"
+              style={{ borderBottom: "1px solid var(--line)", background: "var(--card-hover)" }}
             >
-              <defs>
-                <linearGradient id="progress-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#8b5cf6" />
-                  <stop offset="70%" stopColor="#06b6d4" />
-                  <stop offset="100%" stopColor="#38ef7d" />
-                </linearGradient>
+              <div className="flex items-center gap-2">
+                <div className="flex gap-1.5">
+                  <div className="w-3 h-3 rounded-full" style={{ background: "var(--line-strong)" }} />
+                  <div className="w-3 h-3 rounded-full" style={{ background: "var(--line-strong)" }} />
+                  <div className="w-3 h-3 rounded-full" style={{ background: "var(--line-strong)" }} />
+                </div>
+                <span className="ml-4 text-[12px] text-[var(--text-faint)] tracking-wide">
+                  depush.app / deployments
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="pill w-20 h-6" />
+                <div className="w-6 h-6 rounded-full bg-violet-500/20 border border-violet-400/20 flex items-center justify-center text-[10px] text-[var(--text-muted)]">
+                  ⌘K
+                </div>
+              </div>
+            </div>
 
-                <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-                  <feGaussianBlur stdDeviation="6" result="blur" />
-                  <feComposite in="SourceGraphic" in2="blur" operator="over" />
-                </filter>
+            <div className="p-4 grid grid-cols-3 gap-3">
+              {STATS.map((s) => (
+                <div key={s.k} className="rounded-[14px] p-3" style={{ background: "var(--card-hover)", border: "1px solid var(--line)" }}>
+                  <div className="text-[10px] uppercase tracking-widest text-[var(--text-faint)]">{s.k}</div>
+                  <div className="mt-1 flex items-end gap-1.5">
+                    <span className="text-[18px] font-bold tracking-tight text-[var(--text)]">{s.v}</span>
+                    <span className="text-[11px] text-emerald-500 mb-[2px]">{s.d}</span>
+                  </div>
+                </div>
+              ))}
+            </div>
 
-                <radialGradient id="cosmic1" cx="50%" cy="50%">
-                  <stop offset="0%" stopColor="#8b5cf6" stopOpacity="0.8" />
-                  <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0" />
-                </radialGradient>
-              </defs>
+            <div className="px-4 pb-4 space-y-2">
+              <div className="flex items-center justify-between px-1 pb-1">
+                <span className="text-[11px] tracking-widest text-[var(--text-faint)] uppercase">
+                  Recent Deployments
+                </span>
+                <span className="text-[11px] text-[var(--text-faint)]">5 active</span>
+              </div>
 
-              {/* Cosmic Particles */}
-              <g opacity="0.6">
-                <circle cx="60" cy="80" r="18" fill="url(#cosmic1)" opacity="0.15" />
-                <circle cx="740" cy="60" r="2" fill="#06b6d4">
-                  <animate attributeName="opacity" values="0.2;1;0.2" dur="3s" repeatCount="indefinite" />
-                </circle>
-                <circle cx="760" cy="120" r="1.5" fill="#8b5cf6" opacity="0.6" />
-                <circle cx="750" cy="200" r="2.5" fill="#06b6d4" opacity="0.5" />
-                <circle cx="30" cy="320" r="1.8" fill="#8b5cf6" opacity="0.5" />
-                <circle cx="760" cy="340" r="1.5" fill="#ec4899" opacity="0.5" />
-                <circle cx="770" cy="420" r="2" fill="#06b6d4" opacity="0.4" />
-              </g>
+              {DEPLOYMENTS.map((d) => (
+                <div
+                  key={d.name}
+                  className="group flex items-center gap-3 h-[54px] px-3.5 rounded-[14px] transition-all cursor-default"
+                  style={{ background: "var(--card-hover)", border: "1px solid var(--line)" }}
+                >
+                  <div className={`w-2 h-2 rounded-full ${d.dot} shadow-[0_0_8px_currentColor]`} />
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[13px] font-medium text-[var(--text)] truncate">{d.name}</span>
+                      <span className="hidden sm:inline text-[9px] px-1.5 py-0.5 rounded tracking-widest text-[var(--text-faint)]" style={{ background: "var(--pill-bg)", border: "1px solid var(--line)" }}>
+                        {d.platform}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <span className="text-[11px] text-[var(--text-faint)]">{d.branch}</span>
+                      <span className="w-1 h-1 rounded-full" style={{ background: "var(--line-strong)" }} />
+                      <span className="text-[11px] text-[var(--text-faint)]">{d.time}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-[11px] px-2.5 py-1 rounded-full border font-medium ${statusClasses(d.status)}`}>
+                      {d.status}
+                    </span>
+                    <div className="w-6 h-6 rounded-full hidden sm:flex items-center justify-center opacity-0 group-hover:opacity-100 transition" style={{ background: "var(--pill-bg)" }}>
+                      <ArrowUpRight size={12} className="text-[var(--text-faint)]" />
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
 
-              {/* Window Header */}
-              <g>
-                <circle cx="28" cy="22" r="5" fill="#fb7185" opacity="0.8" />
-                <circle cx="46" cy="22" r="5" fill="#fbbf24" opacity="0.8" />
-                <circle cx="64" cy="22" r="5" fill="#34d399" opacity="0.8" />
-                <text x="770" y="26" fill="currentColor" opacity="0.5" fontFamily="sans-serif" fontSize="11" textAnchor="end" fontWeight="500">
-                  depush.app/dashboard
-                </text>
-              </g>
-
-              {/* Card 1: acme-storefront */}
-              <g transform="translate(16, 44)">
-                <rect x="0" y="0" width="372" height="132" rx="12" className="fill-slate-900/5 dark:fill-white/[0.03] stroke-slate-900/10 dark:stroke-white/[0.08]" />
-                <text x="16" y="28" fill="currentColor" opacity="0.5" fontSize="10" fontFamily="sans-serif" fontWeight="700" letterSpacing="1">PROJECT</text>
-                <text x="16" y="54" fill="currentColor" fontSize="16" fontFamily="sans-serif" fontWeight="600">acme-storefront</text>
-                <g transform="translate(16, 72)">
-                  <rect width="82" height="26" rx="13" fill="rgba(16,185,129,0.12)" stroke="rgba(16,185,129,0.3)" />
-                  <circle cx="14" cy="13" r="3.5" fill="#10b981">
-                    <animate attributeName="opacity" values="1;0.4;1" dur="1.5s" repeatCount="indefinite" />
-                  </circle>
-                  <text x="25" y="17" fill="#10b981" fontSize="11" fontFamily="sans-serif" fontWeight="600">Ready</text>
-                </g>
-              </g>
-
-              {/* Card 2: docs-portal */}
-              <g transform="translate(412, 44)">
-                <rect x="0" y="0" width="372" height="132" rx="12" className="fill-slate-900/5 dark:fill-white/[0.03] stroke-slate-900/10 dark:stroke-white/[0.08]" />
-                <text x="16" y="28" fill="currentColor" opacity="0.5" fontSize="10" fontFamily="sans-serif" fontWeight="700" letterSpacing="1">PROJECT</text>
-                <text x="16" y="54" fill="currentColor" fontSize="16" fontFamily="sans-serif" fontWeight="600">docs-portal</text>
-                <g transform="translate(16, 72)">
-                  <rect width="92" height="26" rx="13" fill="rgba(245,158,11,0.12)" stroke="rgba(245,158,11,0.3)" />
-                  <circle cx="14" cy="13" r="3.5" fill="#f59e0b">
-                    <animate attributeName="opacity" values="1;0.4;1" dur="1.2s" repeatCount="indefinite" />
-                  </circle>
-                  <text x="25" y="17" fill="#d97706" className="dark:fill-[#fbbf24]" fontSize="11" fontFamily="sans-serif" fontWeight="600">Building</text>
-                </g>
-              </g>
-
-              {/* Build Log Container */}
-              <g transform="translate(16, 192)">
-                <rect width="768" height="220" rx="12" className="fill-slate-900/5 dark:fill-white/[0.02] stroke-slate-900/10 dark:stroke-white/[0.06]" />
-                <text x="16" y="28" fill="currentColor" opacity="0.5" fontSize="10" fontFamily="sans-serif" fontWeight="700" letterSpacing="1">BUILD LOG</text>
-
-                <g transform="translate(16, 52)">
-                  <circle cx="6" cy="0" r="6" fill="none" stroke="#10b981" strokeWidth="1.5" />
-                  <path d="M3 -1 L5 2 L9 -2" fill="none" stroke="#10b981" strokeWidth="1.5" strokeLinecap="round" />
-                  <text x="22" y="4" fill="#059669" className="dark:fill-[#34d399]" fontSize="12" fontFamily="monospace">Cloning repository...</text>
-                </g>
-
-                <g transform="translate(16, 80)">
-                  <circle cx="6" cy="0" r="6" fill="none" stroke="#10b981" strokeWidth="1.5" />
-                  <path d="M3 -1 L5 2 L9 -2" fill="none" stroke="#10b981" strokeWidth="1.5" strokeLinecap="round" />
-                  <text x="22" y="4" fill="#059669" className="dark:fill-[#34d399]" fontSize="12" fontFamily="monospace">Installing dependencies...</text>
-                </g>
-
-                <text x="38" y="112" fill="currentColor" fontSize="12" fontFamily="monospace" fontWeight="500">
-                  Building for production...
-                </text>
-
-                {/* Progress Bar Label & Percentage */}
-                <text x="16" y="162" fill="currentColor" opacity="0.6" fontSize="11" fontFamily="sans-serif" fontWeight="500">Deploy progress</text>
-                <text x="752" y="162" fill="#10b981" className="dark:fill-[#38ef7d]" fontSize="11" fontFamily="monospace" fontWeight="700" textAnchor="end">72%</text>
-
-                {/* Progress Bar Track */}
-                <rect x="16" y="174" width="736" height="6" rx="3" className="fill-slate-900/10 dark:fill-white/10" />
-                {/* Progress Bar Fill */}
-                <rect x="16" y="174" width="530" height="6" rx="3" fill="url(#progress-grad)" filter="url(#glow)">
-                  <animate attributeName="width" from="0" to="530" dur="1.8s" fill="freeze" calcMode="spline" keySplines="0.4 0 0.2 1" />
-                </rect>
-              </g>
-            </svg>
-          </GlassPanel>
+            <div className="h-10 bg-gradient-to-t from-[var(--bg-base)]/40 to-transparent pointer-events-none" />
+          </div>
         </div>
       </div>
     </section>

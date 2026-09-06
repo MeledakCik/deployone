@@ -3,7 +3,7 @@
 import * as React from "react";
 import { useToast } from "@/components/ui/Toast";
 import { resolveDomain, formatDate } from "@/lib/utils";
-import { useLocalStorage } from "@/lib/useLocalStorage";
+import { useCloudStorage } from "@/lib/useCloudStorage";
 import type {
   ApiResponse,
   CreateDeployResult,
@@ -122,7 +122,8 @@ interface DeployContextValue {
     key: string,
     value: string,
     environment: "Production" | "Preview",
-    options?: { project?: string; pushToVercel?: boolean }
+    project: string,
+    options?: { pushToVercel?: boolean }
   ) => Promise<void>;
   removeEnvVar: (id: string) => Promise<void>;
   toggleEnvVisible: (id: string) => void;
@@ -140,7 +141,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
   const { showToast } = useToast();
 
   const [view, setView] = React.useState<DashboardView>("dashboard");
-  const [history, setHistory] = useLocalStorage<HistoryItem[]>("depush-history", []);
+  const [history, setHistory] = useCloudStorage<HistoryItem[]>("history", [], "depush-history");
   const stats = React.useMemo(
     () => ({
       total: history.length,
@@ -153,9 +154,13 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
   const [modal, setModal] = React.useState<ModalState>(defaultModal);
   const [confirmOpen, setConfirmOpen] = React.useState(false);
 
-  const [domains, setDomains] = useLocalStorage<DomainItem[]>("depush-domains", []);
-  const [envVars, setEnvVars] = useLocalStorage<EnvItem[]>("depush-env", []);
-  const [settingsTokens] = useLocalStorage<SettingsTokens>(SETTINGS_TOKENS_KEY, DEFAULT_SETTINGS_TOKENS);
+  const [domains, setDomains] = useCloudStorage<DomainItem[]>("domains", [], "depush-domains");
+  const [envVars, setEnvVars] = useCloudStorage<EnvItem[]>("envVars", [], "depush-env");
+  const [settingsTokens] = useCloudStorage<SettingsTokens>(
+    "settingsTokens",
+    DEFAULT_SETTINGS_TOKENS,
+    SETTINGS_TOKENS_KEY
+  );
   const vercelToken = settingsTokens.vercelToken;
   const [syncingProjects, setSyncingProjects] = React.useState(false);
 
@@ -553,22 +558,34 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       key: string,
       value: string,
       environment: "Production" | "Preview",
-      options?: { project?: string; pushToVercel?: boolean }
+      project: string,
+      options?: { pushToVercel?: boolean }
     ) => {
       const trimmedKey = key.trim();
+      const trimmedProject = project.trim();
 
       if (!ENV_KEY_RE.test(trimmedKey)) {
         showToast('Key harus UPPER_SNAKE_CASE, contoh: DATABASE_URL (huruf besar & underscore).');
         return;
       }
-      if (envVars.some((v) => v.key === trimmedKey && v.environment === environment)) {
-        showToast(`Key "${trimmedKey}" sudah ada untuk environment ${environment}.`);
+      if (!trimmedProject) {
+        showToast("Pilih project untuk secret ini — env var selalu disimpan per-project.");
+        return;
+      }
+      // Scoped per-project: the same key can be reused across different projects,
+      // it only collides within the same project + environment.
+      if (
+        envVars.some(
+          (v) => v.key === trimmedKey && v.environment === environment && v.project === trimmedProject
+        )
+      ) {
+        showToast(`Key "${trimmedKey}" sudah ada untuk project "${trimmedProject}" (${environment}).`);
         return;
       }
 
-      let syncedProject: string | undefined;
+      let syncedToVercel = false;
 
-      if (options?.pushToVercel && options.project) {
+      if (options?.pushToVercel) {
         if (!vercelToken) {
           showToast("Isi Vercel Token di Settings dulu untuk push env ke Vercel.");
           return;
@@ -578,14 +595,14 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              project: options.project,
+              project: trimmedProject,
               key: trimmedKey,
               value,
               target: environment === "Production" ? ["production"] : ["preview"],
               vercelToken,
             }),
           });
-          syncedProject = options.project;
+          syncedToVercel = true;
         } catch (err) {
           showToast(err instanceof Error ? err.message : "Gagal push env var ke Vercel.");
           return;
@@ -593,10 +610,22 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       }
 
       setEnvVars((prev) => [
-        { id: `${Date.now()}`, key: trimmedKey, value, environment, visible: false, syncedProject },
+        {
+          id: `${Date.now()}`,
+          key: trimmedKey,
+          value,
+          environment,
+          visible: false,
+          project: trimmedProject,
+          syncedToVercel,
+        },
         ...prev,
       ]);
-      showToast(syncedProject ? `Secret disimpan & di-push ke Vercel (${syncedProject}).` : "Secret berhasil disimpan");
+      showToast(
+        syncedToVercel
+          ? `Secret disimpan untuk "${trimmedProject}" & di-push ke Vercel.`
+          : `Secret disimpan untuk project "${trimmedProject}".`
+      );
     },
     [envVars, setEnvVars, showToast, vercelToken]
   );
@@ -604,10 +633,10 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
   const removeEnvVar = React.useCallback(
     async (id: string) => {
       const item = envVars.find((v) => v.id === id);
-      if (item?.syncedProject && vercelToken) {
+      if (item?.syncedToVercel && vercelToken) {
         try {
           await callApi(
-            `/api/vercel/env?project=${encodeURIComponent(item.syncedProject)}&key=${encodeURIComponent(item.key)}`,
+            `/api/vercel/env?project=${encodeURIComponent(item.project)}&key=${encodeURIComponent(item.key)}`,
             { method: "DELETE", headers: { "x-vercel-token": vercelToken } }
           );
         } catch (err) {

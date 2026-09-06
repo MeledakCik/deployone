@@ -4,7 +4,7 @@ import * as React from "react";
 import { Eye, EyeOff, Save, ShieldCheck, ShieldAlert, Loader2 } from "lucide-react";
 import { Surface } from "@/components/ui/Surface";
 import { ViewFade } from "@/components/ui/ViewFade";
-import { useLocalStorage } from "@/lib/useLocalStorage";
+import { useCloudStorage } from "@/lib/useCloudStorage";
 import { useToast } from "@/components/ui/Toast";
 import type { ApiResponse, SettingsTokens, VercelUserInfo, GithubUserInfo } from "@/types";
 
@@ -95,7 +95,11 @@ function TokenField({
 }
 
 export function SettingsView() {
-  const [tokens, setTokens, ready] = useLocalStorage<SettingsTokens>("depush-settings-tokens", DEFAULT_TOKENS);
+  const [tokens, setTokens, ready] = useCloudStorage<SettingsTokens>(
+    "settingsTokens",
+    DEFAULT_TOKENS,
+    "depush-settings-tokens"
+  );
   const [draft, setDraft] = React.useState<SettingsTokens>(DEFAULT_TOKENS);
   const [vercelCheck, setVercelCheck] = React.useState<CheckState>({ status: "idle" });
   const [githubCheck, setGithubCheck] = React.useState<CheckState>({ status: "idle" });
