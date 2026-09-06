@@ -10,7 +10,7 @@ import { useToast } from "@/components/ui/Toast";
 
 function useProjectNames() {
   const { history } = useDeploy();
-  return React.useMemo(() => Array.from(new Set(history.map((h) => h.name))), [history]);
+  return React.useMemo(() => Array.from(new Set((Array.isArray(history) ? history : []).map((h) => h.name))), [history]);
 }
 
 function AddDomainModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -82,7 +82,7 @@ function AddDomainModal({ open, onClose }: { open: boolean; onClose: () => void 
                   <SelectValue placeholder="Pilih Project" />
                 </SelectTrigger>
                 <SelectContent>
-                  {projectNames.map((name) => (
+                  {(Array.isArray(projectNames)? projectNames : []).map((name) => (
                     <SelectItem key={name} value={name}>
                       {name}
                     </SelectItem>
@@ -141,7 +141,7 @@ export function DomainsView() {
                 </tr>
               </thead>
               <tbody>
-                {domains.map((d) => (
+                {(Array.isArray(domains)? domains : []).map((d) => (
                   <tr
                     key={d.id}
                     className="surface-solid-row border-b last:border-0 transition-colors"
@@ -151,11 +151,10 @@ export function DomainsView() {
                     <td className="px-6 py-4 text-[12px] text-text-muted">{d.project}</td>
                     <td className="px-6 py-4">
                       <span
-                        className={`inline-flex items-center gap-1.5 rounded-pill border px-2.5 py-0.5 text-[11px] font-medium ${
-                          d.status === "Active"
+                        className={`inline-flex items-center gap-1.5 rounded-pill border px-2.5 py-0.5 text-[11px] font-medium ${d.status === "Active"
                             ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
                             : "border-amber-500/20 bg-amber-500/10 text-amber-400"
-                        }`}
+                          }`}
                       >
                         {d.status}
                       </span>

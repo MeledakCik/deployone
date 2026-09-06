@@ -655,7 +655,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
 
   const toggleEnvVisible = React.useCallback(
     (id: string) => {
-      setEnvVars((prev) => prev.map((v) => (v.id === id ? { ...v, visible: !v.visible } : v)));
+      setEnvVars((prev) => (Array.isArray(prev)? prev : []).map((v) => (v.id === id? {...v, visible:!v.visible } : v)));
     },
     [setEnvVars]
   );
