@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ChevronDown, ExternalLink, KeyRound, Github, ShieldCheck } from "lucide-react";
+import { ChevronDown, ExternalLink, KeyRound, Github, ShieldCheck, BarChart2 } from "lucide-react";
 import { ViewFade } from "@/components/ui/ViewFade";
 import { Surface } from "@/components/ui/Surface";
 
@@ -10,7 +10,7 @@ interface Guide {
   title: string;
   desc: string;
   link: { label: string; href: string };
-  steps: string[];
+  steps: (string | React.ReactNode)[];
 }
 
 const GUIDES: Guide[] = [
@@ -56,6 +56,54 @@ const GUIDES: Guide[] = [
       'Di project Vercel Depush, buka Settings → Environment Variables, tambahkan GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, dan AUTH_SECRET (string acak bebas, minimal 16 karakter) — lalu redeploy.',
     ],
   },
+  {
+    icon: BarChart2,
+    title: "Enable Analytics di Project Target",
+    desc: "Cara mengaktifkan Vercel Analytics / Speed Insights dan memasang paket kode tracking pada repositori Next.js / React kamu.",
+    link: { label: "Buka Vercel Analytics Docs", href: "https://vercel.com/docs/analytics" },
+    steps: [
+      "Buka Dashboard Vercel → Pilih project target kamu → Masuk ke tab Analytics atau Speed Insights → Klik Enable.",
+      "Install package analytics di project kamu lewat terminal: npm i @vercel/analytics",
+      (
+        <div key="nextjs-app">
+          <p className="font-medium text-text">Untuk Next.js (App Router - Root Layout `app/layout.tsx`):</p>
+          <pre className="mt-1 overflow-x-auto rounded-lg bg-[var(--surface-solid-2)] p-2.5 text-[11.5px] text-violet-300 mono">
+{`import { Analytics } from "@vercel/analytics/react";
+
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  return (
+    <html lang="en">
+      <body>
+        {children}
+        <Analytics />
+      </body>
+    </html>
+  );
+}`}
+          </pre>
+        </div>
+      ),
+      (
+        <div key="nextjs-pages">
+          <p className="font-medium text-text">Untuk Next.js (Pages Router - `pages/_app.tsx`):</p>
+          <pre className="mt-1 overflow-x-auto rounded-lg bg-[var(--surface-solid-2)] p-2.5 text-[11.5px] text-violet-300 mono">
+{`import { Analytics } from "@vercel/analytics/react";
+import type { AppProps } from "next/app";
+
+export default function App({ Component, pageProps }: AppProps) {
+  return (
+    <>
+      <Component {...pageProps} />
+      <Analytics />
+    </>
+  );
+}`}
+          </pre>
+        </div>
+      ),
+      "Commit perubahan tersebut ke repository GitHub kamu, lalu lakukan trigger deploy via Depush.",
+    ],
+  },
 ];
 
 function GuideCard({ guide }: { guide: Guide }) {
@@ -84,13 +132,13 @@ function GuideCard({ guide }: { guide: Guide }) {
 
       {open && (
         <div className="border-t px-5 pb-5 pt-4" style={{ borderColor: "var(--surface-line)" }}>
-          <ol className="space-y-3">
+          <ol className="space-y-4">
             {guide.steps.map((step, i) => (
               <li key={i} className="flex gap-3 text-[13px] leading-relaxed">
                 <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[var(--pill-bg)] text-[11px] font-semibold text-text-muted">
                   {i + 1}
                 </span>
-                <span className="text-text-muted">{step}</span>
+                <div className="min-w-0 flex-1 text-text-muted">{step}</div>
               </li>
             ))}
           </ol>
@@ -98,7 +146,7 @@ function GuideCard({ guide }: { guide: Guide }) {
             href={guide.link.href}
             target="_blank"
             rel="noopener noreferrer"
-            className="pill mt-4 inline-flex items-center gap-1.5 px-3.5 py-1.5 text-[12px] font-medium hover:brightness-110"
+            className="pill mt-5 inline-flex items-center gap-1.5 px-3.5 py-1.5 text-[12px] font-medium hover:brightness-110"
           >
             {guide.link.label} <ExternalLink size={12} />
           </a>
@@ -115,7 +163,7 @@ export function DocsView() {
         <div>
           <h2 className="text-[22px] font-semibold">Docs</h2>
           <p className="text-[13px] text-text-muted">
-            Panduan lengkap setup token & OAuth yang dipakai Depush — semuanya real, tidak ada simulasi.
+            Panduan lengkap setup token, OAuth, serta integrasi Analytics pada project target — semuanya real, tidak ada simulasi.
           </p>
         </div>
 
