@@ -1,4 +1,9 @@
-import type { VercelReadyState } from "@/types";
+import type {
+  AnalyticsApiResult,
+  AnalyticsTimeseriesPoint,
+  AnalyticsTopPath,
+  VercelReadyState,
+} from "@/types";
 
 const VERCEL_API = "https://api.vercel.com";
 
@@ -29,6 +34,8 @@ export interface ProjectStatus {
   exists: boolean;
   linkedRepoFullName: string | null;
   latestDeploymentReadyState: VercelReadyState | null;
+  /** Whether Vercel Web Analytics has been switched on for this project. */
+  webAnalyticsEnabled: boolean;
 }
 
 interface VercelDeploymentResponse {
@@ -109,7 +116,7 @@ export async function getVercelProject(
   });
 
   if (res.status === 404) {
-    return { exists: false, linkedRepoFullName: null, latestDeploymentReadyState: null };
+    return { exists: false, linkedRepoFullName: null, latestDeploymentReadyState: null, webAnalyticsEnabled: false };
   }
   if (!res.ok) throw await parseVercelError(res);
 
@@ -119,8 +126,12 @@ export async function getVercelProject(
     link?.type === "github" && link.org && link.repo ? `${link.org}/${link.repo}` : null;
   const latestDeploymentReadyState: VercelReadyState | null =
     data?.latestDeployments?.[0]?.readyState ?? null;
+  // `webAnalytics.enabledAt` is only present once someone has clicked "Enable"
+  // on the project's Analytics tab — Vercel doesn't expose a public API to
+  // flip this switch, so we can only detect it, not set it, from here.
+  const webAnalyticsEnabled = Boolean(data?.webAnalytics?.enabledAt);
 
-  return { exists: true, linkedRepoFullName, latestDeploymentReadyState };
+  return { exists: true, linkedRepoFullName, latestDeploymentReadyState, webAnalyticsEnabled };
 }
 
 /**
@@ -319,4 +330,171 @@ export async function upsertProjectEnv(
     }
   );
   if (!patchRes.ok) throw await parseVercelError(patchRes);
+}
+
+/* ---------------------------------------------------------------------- */
+/*  Observability / analytics                                              */
+/* ---------------------------------------------------------------------- */
+
+const ANALYTICS_DISABLED_MESSAGE =
+  "Web Analytics belum diaktifkan untuk project ini. Aktifkan dulu di Vercel Dashboard → Project → Analytics. Wajib pasang analytics di kode project nya.";
+
+/** Loose shape of a single timeseries bucket — the exact field names vary between the two analytics endpoints we try. */
+interface RawTimeseriesPoint {
+  timestamp?: string | number;
+  time?: string | number;
+  date?: string | number;
+  total?: number;
+  requests?: number;
+  value?: number;
+  count?: number;
+}
+
+interface RawTopPath {
+  path?: string;
+  pathname?: string;
+  route?: string;
+  key?: string;
+  total?: number;
+  count?: number;
+  value?: number;
+}
+
+function toIsoTimestamp(value: string | number | undefined): string {
+  if (value === undefined) return new Date().toISOString();
+  if (typeof value === "number") {
+    // Vercel timestamps are usually epoch ms; treat anything under 10^12 as seconds.
+    const ms = value < 1e12 ? value * 1000 : value;
+    return new Date(ms).toISOString();
+  }
+  const parsed = new Date(value);
+  return Number.isNaN(parsed.getTime()) ? new Date().toISOString() : parsed.toISOString();
+}
+
+function normalizeTimeseries(raw: unknown): AnalyticsTimeseriesPoint[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.map((point: RawTimeseriesPoint) => ({
+    timestamp: toIsoTimestamp(point.timestamp ?? point.time ?? point.date),
+    requests: Number(point.total ?? point.requests ?? point.value ?? point.count ?? 0) || 0,
+  }));
+}
+
+function normalizeTopPaths(raw: unknown): AnalyticsTopPath[] {
+  if (!Array.isArray(raw)) return [];
+  return raw
+    .map((item: RawTopPath) => ({
+      path: item.path ?? item.pathname ?? item.route ?? item.key ?? "/",
+      count: Number(item.total ?? item.count ?? item.value ?? 0) || 0,
+    }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 10);
+}
+
+/**
+ * Tries the primary Web Analytics endpoint (`/v1/projects/{project}/analytics`),
+ * then falls back to the older timeseries endpoint (`/v6/analytics/timeseries`)
+ * when the first isn't available for this account/project. If neither returns
+ * usable data — most commonly because the project simply doesn't have Web
+ * Analytics enabled — we return `{ enabled: false }` instead of throwing, so
+ * the UI can show a friendly empty state rather than an error.
+ */
+export async function getProjectAnalytics(
+  projectName: string,
+  vercelToken: string
+): Promise<AnalyticsApiResult> {
+  // Resolve the project first — this also validates the token/project the
+  // same way every other route in this file does, so a bad token or a
+  // missing project surfaces as the usual VercelApiError.
+  const projectRes = await fetch(
+    `${VERCEL_API}/v9/projects/${encodeURIComponent(projectName)}`,
+    { headers: { Authorization: `Bearer ${vercelToken}` }, cache: "no-store" }
+  );
+  if (!projectRes.ok) throw await parseVercelError(projectRes);
+  const projectData = await projectRes.json();
+  const projectId: string | undefined = projectData?.id;
+
+  const to = Date.now();
+  const from = to - 7 * 24 * 60 * 60 * 1000; // 7 days ago
+
+  const authHeaders = { Authorization: `Bearer ${vercelToken}` };
+
+  // Attempt 1: newer per-project analytics endpoint.
+  try {
+    const res = await fetch(
+      `${VERCEL_API}/v1/projects/${encodeURIComponent(projectName)}/analytics?from=${from}&to=${to}&tier=pro`,
+      { headers: authHeaders, cache: "no-store" }
+    );
+
+    if (res.ok) {
+      const data = await res.json();
+      const result = extractAnalyticsResult(data);
+      if (result) return result;
+    } else if (res.status !== 400 && res.status !== 403 && res.status !== 404) {
+      // Something other than "not available" — surface it as a real error.
+      throw await parseVercelError(res);
+    }
+  } catch (e) {
+    if (e instanceof VercelApiError) throw e;
+    // Network/parse hiccup on the primary endpoint — fall through to the fallback.
+  }
+
+  // Attempt 2: legacy timeseries endpoint, keyed by projectId instead of name.
+  if (projectId) {
+    try {
+      const res = await fetch(
+        `${VERCEL_API}/v6/analytics/timeseries?projectId=${encodeURIComponent(projectId)}&from=${from}&to=${to}`,
+        { headers: authHeaders, cache: "no-store" }
+      );
+
+      if (res.ok) {
+        const data = await res.json();
+        const result = extractAnalyticsResult(data);
+        if (result) return result;
+      } else if (res.status !== 400 && res.status !== 403 && res.status !== 404) {
+        throw await parseVercelError(res);
+      }
+    } catch (e) {
+      if (e instanceof VercelApiError) throw e;
+    }
+  }
+
+  // Neither endpoint returned usable data — treat as "analytics not enabled".
+  return { enabled: false, message: ANALYTICS_DISABLED_MESSAGE };
+}
+
+/** Normalizes either analytics endpoint's response shape into our own contract, or returns null if the payload looks empty/unrecognized. */
+function extractAnalyticsResult(data: unknown): AnalyticsApiResult | null {
+  if (!data || typeof data !== "object") return null;
+  const d = data as Record<string, unknown>;
+
+  const timeseriesRaw = d.timeseries ?? d.series ?? d.data ?? null;
+  const timeseries = normalizeTimeseries(timeseriesRaw);
+
+  const topPathsRaw = d.topPaths ?? d.pages ?? d.paths ?? d.routes ?? null;
+  const topPaths = normalizeTopPaths(topPathsRaw);
+
+  const totalRequests =
+    Number(d.totalRequests ?? d.total ?? d.requests) ||
+    timeseries.reduce((sum, p) => sum + p.requests, 0);
+
+  if (totalRequests === 0 && timeseries.length === 0 && topPaths.length === 0) {
+    // No data at all usually means analytics isn't enabled rather than a
+    // genuinely empty week — let the caller fall back / report disabled.
+    return null;
+  }
+
+  const errorsRaw = (d.errors ?? {}) as Record<string, unknown>;
+  const bandwidth = Number(d.bandwidth ?? d.bytes ?? 0) || 0;
+
+  return {
+    enabled: true,
+    totalRequests,
+    bandwidth,
+    topPaths,
+    errors: {
+      "4xx": Number(errorsRaw["4xx"] ?? errorsRaw.clientErrors ?? 0) || 0,
+      "5xx": Number(errorsRaw["5xx"] ?? errorsRaw.serverErrors ?? 0) || 0,
+    },
+    timeseries,
+  };
 }

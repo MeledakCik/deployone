@@ -30,6 +30,34 @@ import type { ApiResponse } from "@/types";
  * @param legacyLocalStorageKey key localStorage lama untuk migrasi satu kali
  *                              (mis. "depush-history"). Opsional.
  */
+/** Local-only cache key, namespaced per email so different accounts on the
+ *  same browser never collide. This is NOT the source of truth — KV is —
+ *  but it means data survives a reload/redeploy even on setups where
+ *  KV_REST_API_URL/KV_REST_API_TOKEN haven't been configured yet (e.g. a
+ *  fresh local dev environment), instead of silently resetting to empty. */
+function fallbackCacheKey(email: string, key: string): string {
+  return `depush-fallback:${email}:${key}`;
+}
+
+function readFallbackCache<T>(email: string, key: string): T | null {
+  try {
+    const raw = window.localStorage.getItem(fallbackCacheKey(email, key));
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return isNonEmpty(parsed) ? (parsed as T) : null;
+  } catch {
+    return null;
+  }
+}
+
+function writeFallbackCache<T>(email: string, key: string, value: T): void {
+  try {
+    window.localStorage.setItem(fallbackCacheKey(email, key), JSON.stringify(value));
+  } catch {
+    // quota/serialization errors are non-fatal — cache is best-effort only
+  }
+}
+
 export function useCloudStorage<T>(
   key: string,
   initial: T,
@@ -89,6 +117,7 @@ export function useCloudStorage<T>(
 
         if (isNonEmpty(serverValue)) {
           setState(serverValue as T);
+          writeFallbackCache(email, key, serverValue);
           return;
         }
 
@@ -121,12 +150,15 @@ export function useCloudStorage<T>(
           }
         }
 
-        setState(isNonEmpty(serverValue) ? (serverValue as T) : initial);
+        setState(isNonEmpty(serverValue) ? (serverValue as T) : readFallbackCache<T>(email, key) ?? initial);
       } catch (err) {
         console.error(`useCloudStorage[${key}] load error:`, err);
-        // Gagal load -> JANGAN kosongkan state yang mungkin sudah ada di UI,
-        // dan JANGAN tandai initialized, supaya effect sync di bawah tidak
-        // ter-trigger PUT dengan data yang belum tentu benar.
+        // Server/KV tidak bisa diakses (mis. KV_REST_API_URL belum di-set) —
+        // JANGAN kosongkan state, coba pulihkan dari cache lokal browser ini
+        // dulu supaya user tidak kehilangan data yang sudah pernah tersimpan
+        // di sini, meskipun sinkronisasi ke cloud sedang bermasalah.
+        const cached = readFallbackCache<T>(email, key);
+        if (cached !== null) setState(cached);
         return;
       } finally {
         if (!cancelled) {
@@ -152,6 +184,11 @@ export function useCloudStorage<T>(
     if (!email) return; // tidak login -> jangan pernah PUT
     if (!isInitialized) return; // load awal belum selesai -> jangan PUT
     if (skipSyncRef.current) return; // perubahan bukan dari aksi user -> skip
+
+    // Selalu tulis ke cache lokal dulu (murah, sinkron) supaya kalau PUT ke
+    // KV gagal (mis. belum dikonfigurasi), perubahan ini tidak hilang saat
+    // reload berikutnya — effect load di atas akan memulihkannya dari sini.
+    writeFallbackCache(email, key, state);
 
     const controller = new AbortController();
 

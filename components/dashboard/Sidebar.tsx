@@ -8,6 +8,7 @@ import {
   Rocket,
   Globe2,
   KeyRound,
+  Activity,
   BookOpen,
   Settings2,
   LogOut,
@@ -26,6 +27,7 @@ const NAV_ITEMS: { id: DashboardView; label: string; icon: React.ElementType }[]
   { id: "deploy", label: "Deploy", icon: Rocket },
   { id: "domains", label: "Domains", icon: Globe2 },
   { id: "env", label: "Environment", icon: KeyRound },
+  { id: "observability", label: "Observability", icon: Activity },
   { id: "docs", label: "Docs", icon: BookOpen },
   { id: "settings", label: "Settings", icon: Settings2 },
 ];

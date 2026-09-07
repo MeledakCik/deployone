@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { FolderOpen, ExternalLink, RotateCw, Globe2, RefreshCw, ShieldAlert } from "lucide-react";
+import { FolderOpen, ExternalLink, RotateCw, Globe2, RefreshCw, ShieldAlert, BarChart3 } from "lucide-react";
 import { Surface } from "@/components/ui/Surface";
 import { ViewFade } from "@/components/ui/ViewFade";
 import { useDeploy } from "@/lib/deploy-context";
@@ -17,11 +17,17 @@ function groupByProject(history: HistoryItem[]) {
 }
 
 export function ProjectsView() {
-  const { history, redeploy, vercelToken, syncingProjects, syncAllProjects, syncProjectStatus } = useDeploy();
+  const { history, redeploy, vercelToken, syncingProjects, syncAllProjects, syncProjectStatus, setView, setFocusedTrafficProject } =
+    useDeploy();
   const safeHistory = Array.isArray(history) ? history : [];
   const projects = groupByProject(safeHistory);
   const [checkingName, setCheckingName] = React.useState<string | null>(null);
   const didAutoSync = React.useRef(false);
+
+  function viewTraffic(name: string) {
+    setFocusedTrafficProject(name);
+    setView("observability");
+  }
 
   React.useEffect(() => {
     if (didAutoSync.current || !vercelToken) return;
@@ -120,15 +126,24 @@ export function ProjectsView() {
                   </div>
 
                   {project.platform === "vercel" && vercelToken && (
-                    <button
-                      type="button"
-                      onClick={() => void handleCheck(project.name)}
-                      disabled={isChecking}
-                      className="mt-2 w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-text-faint hover:text-text disabled:opacity-50"
-                    >
-                      <RefreshCw size={11} className={isChecking ? "animate-spin" : ""} />
-                      {isChecking ? "Mengecek..." : "Cek status di Vercel"}
-                    </button>
+                    <div className="mt-2 flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => void handleCheck(project.name)}
+                        disabled={isChecking}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-text-faint hover:text-text disabled:opacity-50"
+                      >
+                        <RefreshCw size={11} className={isChecking ? "animate-spin" : ""} />
+                        {isChecking ? "Mengecek..." : "Cek status di Vercel"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => viewTraffic(project.name)}
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-text-faint hover:text-text"
+                      >
+                        <BarChart3 size={13} /> View Traffic
+                      </button>
+                    </div>
                   )}
                 </Surface>
               );

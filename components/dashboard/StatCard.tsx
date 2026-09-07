@@ -9,7 +9,7 @@ export function StatCard({
 }: {
   id: string;
   label: string;
-  value: number;
+  value: number | string;
   icon: React.ElementType;
   tone: "violet" | "emerald" | "red";
 }) {

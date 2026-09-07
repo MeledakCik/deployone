@@ -73,7 +73,15 @@ interface ModalState {
   subtitle: string;
   resultVisible: boolean;
   closeVisible: boolean;
-  result: { name: string; domain: string; inspectorUrl?: string } | null;
+  result: {
+    name: string;
+    domain: string;
+    inspectorUrl?: string;
+    /** Web Analytics status for Vercel deploys — undefined for other platforms, null while unknown. */
+    analyticsEnabled?: boolean | null;
+    /** Direct link to the project's Analytics tab so the user can flip it on in one click. */
+    analyticsUrl?: string;
+  } | null;
   error: string | null;
 }
 
@@ -97,6 +105,9 @@ interface DeployContextValue {
   form: DeployFormValues;
   setFormField: <K extends keyof DeployFormValues>(key: K, value: DeployFormValues[K]) => void;
   platformTokenLabel: string;
+  /** Vercel token saved in Settings, already known to work — lets the deploy form skip asking for it again. */
+  savedVercelToken: { token: string; username: string } | null;
+  savedVercelTokenStatus: "idle" | "checking" | "ok" | "invalid";
   modal: ModalState;
   confirmOpen: boolean;
   submitDeploy: (e: React.FormEvent<HTMLFormElement>) => void;
@@ -122,6 +133,8 @@ interface DeployContextValue {
   ) => Promise<void>;
   removeEnvVar: (id: string) => Promise<void>;
   toggleEnvVisible: (id: string) => void;
+  focusedTrafficProject: string | null;
+  setFocusedTrafficProject: (name: string | null) => void;
 }
 
 const DeployContext = React.createContext<DeployContextValue | null>(null);
@@ -136,6 +149,9 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
   const { showToast } = useToast();
 
   const [view, setView] = React.useState<DashboardView>("dashboard");
+  // Set by ProjectsView's "View Traffic" button so the Observability page
+  // knows which project to open detail for right after navigating there.
+  const [focusedTrafficProject, setFocusedTrafficProject] = React.useState<string | null>(null);
   const [history, setHistory] = useCloudStorage<HistoryItem[]>("history", [], "depush-history");
   const stats = React.useMemo(
     () => {
@@ -161,6 +177,41 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
   );
   const vercelToken = settingsTokens.vercelToken;
   const [syncingProjects, setSyncingProjects] = React.useState(false);
+
+  // Tests the Vercel token saved in Settings once (and again whenever it
+  // changes) so the deploy form can skip asking for it a second time —
+  // but only after confirming it still actually connects.
+  const [savedVercelToken, setSavedVercelToken] = React.useState<{ token: string; username: string } | null>(null);
+  const [savedVercelTokenStatus, setSavedVercelTokenStatus] = React.useState<
+    "idle" | "checking" | "ok" | "invalid"
+  >("idle");
+
+  React.useEffect(() => {
+    let cancelled = false;
+    if (!vercelToken) {
+      setSavedVercelToken(null);
+      setSavedVercelTokenStatus("idle");
+      return;
+    }
+    setSavedVercelTokenStatus("checking");
+    (async () => {
+      try {
+        const user = await callApi<{ username: string; email: string | null }>("/api/vercel/whoami", {
+          headers: { "x-vercel-token": vercelToken },
+        });
+        if (cancelled) return;
+        setSavedVercelToken({ token: vercelToken, username: user.username });
+        setSavedVercelTokenStatus("ok");
+      } catch {
+        if (cancelled) return;
+        setSavedVercelToken(null);
+        setSavedVercelTokenStatus("invalid");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [vercelToken]);
 
   const pendingFormRef = React.useRef<DeployFormValues | null>(null);
   const intervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
@@ -320,6 +371,11 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         }
         if (status.readyState === "READY") {
           if (intervalRef.current) clearInterval(intervalRef.current);
+          // Derive the project's Analytics tab URL from the inspector URL
+          // (https://vercel.com/{scope}/{project}/...) instead of a second
+          // lookup, then check whether Web Analytics is actually switched on.
+          const scopeMatch = status.inspectorUrl.match(/^https:\/\/vercel\.com\/([^/]+)\/([^/]+)/);
+          const analyticsUrl = scopeMatch ? `https://vercel.com/${scopeMatch[1]}/${scopeMatch[2]}/analytics` : undefined;
           setModal((prev) => ({
            ...prev,
             stepIndex: 5,
@@ -328,9 +384,34 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
             subtitle: `Project ${projectName} siap di ${status.url}`,
             resultVisible: true,
             closeVisible: true,
-            result: { name: projectName, domain: status.url, inspectorUrl: status.inspectorUrl },
+            result: {
+              name: projectName,
+              domain: status.url,
+              inspectorUrl: status.inspectorUrl,
+              analyticsEnabled: null,
+              analyticsUrl,
+            },
           }));
           addHistory(projectName, "vercel", status.url, "ready");
+          // Best-effort: Vercel doesn't expose a public API to turn Web
+          // Analytics on, only to read whether it's already on — so we check
+          // and surface a one-click link in the modal instead of pretending
+          // to enable it ourselves.
+          void (async () => {
+            try {
+              const projectStatus = await callApi<ProjectStatusResult>(
+                `/api/vercel/status?project=${encodeURIComponent(projectName)}`,
+                { headers: { "x-vercel-token": data.platformToken } }
+              );
+              setModal((prev) =>
+                prev.result
+                  ? { ...prev, result: { ...prev.result, analyticsEnabled: projectStatus.webAnalyticsEnabled } }
+                  : prev
+              );
+            } catch {
+              setModal((prev) => (prev.result ? { ...prev, result: { ...prev.result, analyticsEnabled: null } } : prev));
+            }
+          })();
           return;
         }
         if (status.readyState === "ERROR" || status.readyState === "CANCELED") {
@@ -640,6 +721,8 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     form,
     setFormField,
     platformTokenLabel,
+    savedVercelToken,
+    savedVercelTokenStatus,
     modal,
     confirmOpen,
     submitDeploy,
@@ -659,6 +742,8 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     addEnvVar,
     removeEnvVar,
     toggleEnvVisible,
+    focusedTrafficProject,
+    setFocusedTrafficProject,
   };
 
   return <DeployContext.Provider value={value}>{children}</DeployContext.Provider>;

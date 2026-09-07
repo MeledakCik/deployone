@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { HelpCircle } from "lucide-react";
+import { HelpCircle, Loader2, ShieldCheck, ShieldAlert } from "lucide-react";
 import { ViewFade } from "@/components/ui/ViewFade";
 import { cn } from "@/lib/utils";
 import { useDeploy } from "@/lib/deploy-context";
@@ -59,6 +59,98 @@ function FieldLabel({
         {optional && <span className="text-text-faint">(opsional)</span>}
       </label>
       {help && <TokenHelpLink topic={help} />}
+    </div>
+  );
+}
+
+/**
+ * Vercel token field for the deploy form. If the token saved in Settings has
+ * already been verified against the Vercel API, it's reused automatically
+ * and the field collapses into a "connected as @user" badge — no retyping.
+ * If there's no saved token, or it fails the check, it falls back to asking
+ * for one manually (same as before).
+ */
+function VercelTokenField() {
+  const { form, setFormField, savedVercelToken, savedVercelTokenStatus } = useDeploy();
+  const [manualOverride, setManualOverride] = React.useState(false);
+
+  const usingSavedToken = savedVercelTokenStatus === "ok" && Boolean(savedVercelToken) && !manualOverride;
+
+  // Keep the form's real token value in sync with the saved+verified token,
+  // unless the user has explicitly chosen to type a different one.
+  React.useEffect(() => {
+    if (usingSavedToken && savedVercelToken) {
+      setFormField("platformToken", savedVercelToken.token);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [usingSavedToken, savedVercelToken?.token]);
+
+  if (savedVercelTokenStatus === "checking") {
+    return (
+      <div>
+        <FieldLabel htmlFor="platformToken" required>
+          Vercel Token
+        </FieldLabel>
+        <p className="inline-flex items-center gap-1.5 text-[12px] text-text-muted">
+          <Loader2 size={13} className="animate-spin" /> Mengecek token tersimpan di Settings...
+        </p>
+      </div>
+    );
+  }
+
+  if (usingSavedToken && savedVercelToken) {
+    return (
+      <div>
+        <FieldLabel htmlFor="platformToken" required>
+          Vercel Token
+        </FieldLabel>
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-2.5">
+          <p className="inline-flex items-center gap-1.5 text-[12.5px] text-emerald-300">
+            <ShieldCheck size={14} /> Terhubung sebagai @{savedVercelToken.username} (token dari Settings)
+          </p>
+          <button
+            type="button"
+            onClick={() => setManualOverride(true)}
+            className="shrink-0 text-[11.5px] font-medium text-violet-400 hover:brightness-110"
+          >
+            Ganti token
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <FieldLabel htmlFor="platformToken" required help="Vercel Token">
+        Vercel Token
+      </FieldLabel>
+      <input
+        id="platformToken"
+        type="password"
+        required
+        placeholder="••••••••••••••••"
+        value={form.platformToken}
+        onChange={(e) => setFormField("platformToken", e.target.value)}
+        className={inputCls}
+      />
+      {savedVercelTokenStatus === "invalid" && !manualOverride && (
+        <p className="mt-1.5 inline-flex items-center gap-1.5 text-[11.5px] text-red-400">
+          <ShieldAlert size={13} /> Token di Settings sudah tidak valid — masukin token baru di sini.
+        </p>
+      )}
+      {manualOverride && savedVercelToken && (
+        <button
+          type="button"
+          onClick={() => {
+            setManualOverride(false);
+            setFormField("platformToken", savedVercelToken.token);
+          }}
+          className="mt-1.5 text-[11.5px] font-medium text-violet-400 hover:brightness-110"
+        >
+          Pakai token tersimpan lagi (@{savedVercelToken.username})
+        </button>
+      )}
     </div>
   );
 }
@@ -134,20 +226,7 @@ export function DeployFormView() {
                   />
                 </div>
 
-                <div>
-                  <FieldLabel htmlFor="platformToken" required help="Vercel Token">
-                    Vercel Token
-                  </FieldLabel>
-                  <input
-                    id="platformToken"
-                    type="password"
-                    required
-                    placeholder="••••••••••••••••"
-                    value={form.platformToken}
-                    onChange={(e) => setFormField("platformToken", e.target.value)}
-                    className={inputCls}
-                  />
-                </div>
+                <VercelTokenField />
 
                 <div>
                   <FieldLabel htmlFor="githubPat" optional help="GitHub Token">

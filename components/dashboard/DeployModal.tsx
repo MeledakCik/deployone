@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, CheckCircle2, Circle, ExternalLink } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Circle, ExternalLink, BarChart3, Loader2 } from "lucide-react";
 import { Surface } from "@/components/ui/Surface";
 import { useDeploy, DEPLOY_STEPS } from "@/lib/deploy-context";
 
@@ -87,6 +87,45 @@ export function DeployModal() {
                   Lihat di Vercel <ExternalLink size={12} />
                 </a>
               </>
+            )}
+
+            {modal.result.analyticsEnabled !== undefined && (
+              <div className="mt-4 rounded-xl border border-[var(--surface-line)] bg-[var(--surface-solid-2)] p-3.5">
+                {modal.result.analyticsEnabled === null && (
+                  <p className="inline-flex items-center gap-1.5 text-[12px] text-text-muted">
+                    <Loader2 size={13} className="animate-spin" /> Mengecek status Web Analytics...
+                  </p>
+                )}
+                {modal.result.analyticsEnabled === true && (
+                  <p className="inline-flex items-center gap-1.5 text-[12px] text-emerald-400">
+                    <BarChart3 size={14} /> Web Analytics sudah aktif untuk project ini.
+                  </p>
+                )}
+                {modal.result.analyticsEnabled === false && (
+                  <div className="space-y-1.5">
+                    <p className="inline-flex items-center gap-1.5 text-[12px] text-text-muted">
+                      <BarChart3 size={14} /> Web Analytics belum aktif di project ini.
+                    </p>
+                    <p className="text-[11.5px] text-text-faint">
+                      Vercel tidak punya API publik untuk nyalain ini otomatis — klik Enable sekali di
+                      dashboard, lalu pastikan package{" "}
+                      <code className="mono text-[11px] text-text-muted">@vercel/analytics</code> dan{" "}
+                      <code className="mono text-[11px] text-text-muted">&lt;Analytics /&gt;</code> sudah
+                      ada di kode project-nya supaya datanya kekirim.
+                    </p>
+                    {modal.result.analyticsUrl && (
+                      <a
+                        href={modal.result.analyticsUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-violet-400 underline"
+                      >
+                        Aktifkan Web Analytics <ExternalLink size={12} />
+                      </a>
+                    )}
+                  </div>
+                )}
+              </div>
             )}
           </div>
         )}
