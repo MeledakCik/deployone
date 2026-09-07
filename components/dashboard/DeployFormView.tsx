@@ -9,7 +9,7 @@ import type { Platform } from "@/types";
 
 const PLATFORMS: { id: Platform; label: string }[] = [
   { id: "vercel", label: "Vercel" },
-  { id: "cloudflare", label: "Cloudflare Pages" },
+  { id: "cloudflare", label: "Cloudflare" },
   { id: "railway", label: "Railway" },
   { id: "render", label: "Render" },
 ];
@@ -157,7 +157,16 @@ function VercelTokenField() {
 
 export function DeployFormView() {
   const { form, setFormField, submitDeploy } = useDeploy();
+  
+  // Memastikan default local state adalah 'vercel'
   const [platform, setPlatform] = React.useState<Platform>(form.platform || "vercel");
+
+  // Efek untuk sinkronisasi default platform 'vercel' ke global state context
+  React.useEffect(() => {
+    if (!form.platform) {
+      setFormField("platform", "vercel");
+    }
+  }, [form.platform, setFormField]);
 
   const choosePlatform = (p: Platform) => {
     setPlatform(p);
