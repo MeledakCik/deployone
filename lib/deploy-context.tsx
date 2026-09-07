@@ -52,7 +52,7 @@ const DEFAULT_MODAL_SUBTITLE = "Import repository dan deploy ke edge network dal
 
 const emptyForm: DeployFormValues = {
   projectName: "",
-  platform: "cloudflare",
+  platform: "vercel",
   domain: "",
   platformToken: "",
   githubUrl: "",
