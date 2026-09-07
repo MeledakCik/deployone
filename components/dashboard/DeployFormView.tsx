@@ -157,7 +157,7 @@ function VercelTokenField() {
 
 export function DeployFormView() {
   const { form, setFormField, submitDeploy } = useDeploy();
-  const [platform, setPlatform] = React.useState<Platform>(form.platform || "cloudflare");
+  const [platform, setPlatform] = React.useState<Platform>(form.platform || "vercel");
 
   const choosePlatform = (p: Platform) => {
     setPlatform(p);
