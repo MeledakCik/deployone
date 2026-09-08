@@ -162,6 +162,60 @@ export async function getVercelProject(
   };
 }
 
+/** Summary of one project already existing on Vercel — used by the "Import Project" flow. */
+export interface VercelProjectSummary {
+  id: string;
+  name: string;
+  /** Best-effort primary domain for the project (latest deployment alias, falling back to the default `{name}.vercel.app`). */
+  domain: string | null;
+  latestDeploymentReadyState: VercelReadyState | null;
+}
+
+/**
+ * Lists every project on the caller's Vercel account — used by "Import
+ * Project" so the user can pull in projects created directly on Vercel
+ * (outside Depush) without re-deploying them.
+ */
+export async function listVercelProjects(vercelToken: string): Promise<VercelProjectSummary[]> {
+  const res = await fetch(`${VERCEL_API}/v9/projects?limit=100`, {
+    headers: { Authorization: `Bearer ${vercelToken}` },
+    cache: "no-store",
+  });
+  if (!res.ok) throw await parseVercelError(res);
+  const data = await res.json();
+  const projects = Array.isArray(data.projects) ? data.projects : [];
+  return projects.map(
+    (p: {
+      id: string;
+      name: string;
+      latestDeployments?: { alias?: string[]; readyState?: VercelReadyState }[];
+    }) => {
+      const latest = p.latestDeployments?.[0];
+      const domain = latest?.alias?.[0] ?? `${p.name}.vercel.app`;
+      return {
+        id: p.id,
+        name: p.name,
+        domain,
+        latestDeploymentReadyState: latest?.readyState ?? null,
+      };
+    }
+  );
+}
+
+/**
+ * Permanently deletes a project on Vercel — used by "Hapus di kedua sisi" on
+ * the Projects page. This removes the project, its deployments, and its
+ * domains from the real Vercel account, not just from Depush's local list.
+ */
+export async function deleteVercelProject(projectName: string, vercelToken: string): Promise<void> {
+  const res = await fetch(`${VERCEL_API}/v9/projects/${encodeURIComponent(projectName)}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${vercelToken}` },
+  });
+  if (res.status === 404) return; // already gone — nothing to do
+  if (!res.ok) throw await parseVercelError(res);
+}
+
 /**
  * Triggers a fresh production deployment by re-running the project's most
  * recent deployment. Used to auto-redeploy right after an env var is

@@ -211,6 +211,14 @@ export interface VercelUserInfo {
   email: string | null;
 }
 
+/** One project as it exists on Vercel — result of GET /api/vercel/project, used by "Import Project". */
+export interface VercelProjectSummary {
+  id: string;
+  name: string;
+  domain: string | null;
+  latestDeploymentReadyState: VercelReadyState | null;
+}
+
 /** Result of GET /api/github/whoami */
 export interface GithubUserInfo {
   login: string;

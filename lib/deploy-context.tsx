@@ -20,6 +20,7 @@ import type {
   SettingsTokens,
   VercelDomainResult,
   VercelEnvSummary,
+  VercelProjectSummary,
 } from "@/types";
 
 export const DEPLOY_STEPS = [
@@ -127,6 +128,10 @@ interface DeployContextValue {
   syncingProjects: boolean;
   syncProjectStatus: (name: string) => Promise<"exists" | "deleted" | "skipped" | "error">;
   syncAllProjects: () => Promise<void>;
+  deletingProject: string | null;
+  deleteProject: (name: string, options: { alsoDeleteFromVercel: boolean }) => Promise<void>;
+  fetchImportableVercelProjects: () => Promise<VercelProjectSummary[]>;
+  importVercelProject: (project: VercelProjectSummary) => void;
   domains: DomainItem[];
   addDomain: (domain: string, project: string) => Promise<void>;
   removeDomain: (id: string) => Promise<void>;
@@ -191,6 +196,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
   );
   const vercelToken = settingsTokens.vercelToken;
   const [syncingProjects, setSyncingProjects] = React.useState(false);
+  const [deletingProject, setDeletingProject] = React.useState<string | null>(null);
   const [syncingEnvVars, setSyncingEnvVars] = React.useState(false);
   const [syncingDomains, setSyncingDomains] = React.useState(false);
 
@@ -555,6 +561,80 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       );
     }
   }, [history, syncProjectStatus, vercelToken, showToast]);
+
+  // Deletes a project from Depush's local history, and — if the user
+  // confirms it — permanently deletes the real project on Vercel too
+  // (deployments, domains, everything). If the Vercel-side delete fails,
+  // the local entry is kept so a still-live project doesn't silently
+  // disappear from the list.
+  const deleteProject = React.useCallback(
+    async (name: string, options: { alsoDeleteFromVercel: boolean }) => {
+      const safeHistory = Array.isArray(history) ? history : [];
+      const targetItem = safeHistory.find((h) => h.name === name);
+      const isVercelProject = targetItem?.platform === "vercel";
+
+      if (options.alsoDeleteFromVercel && isVercelProject) {
+        if (!vercelToken) {
+          showToast("Isi Vercel Token di Settings dulu untuk hapus project di Vercel.");
+          return;
+        }
+        setDeletingProject(name);
+        try {
+          await callApi(`/api/vercel/project?project=${encodeURIComponent(name)}`, {
+            method: "DELETE",
+            headers: { "x-vercel-token": vercelToken },
+          });
+        } catch (err) {
+          setDeletingProject(null);
+          showToast(
+            err instanceof Error
+              ? `Gagal menghapus "${name}" di Vercel: ${err.message}`
+              : `Gagal menghapus "${name}" di Vercel.`
+          );
+          return;
+        }
+        setDeletingProject(null);
+      }
+
+      setHistory((prev) => (Array.isArray(prev) ? prev : []).filter((h) => h.name !== name));
+      showToast(
+        options.alsoDeleteFromVercel && isVercelProject
+          ? `Project "${name}" dihapus dari Depush & Vercel.`
+          : `Project "${name}" dihapus dari Depush (tetap ada di Vercel).`
+      );
+    },
+    [history, setHistory, showToast, vercelToken]
+  );
+
+  // Pulls the real project list from the caller's Vercel account, minus
+  // whatever's already tracked locally, for the "Import Project" modal.
+  const fetchImportableVercelProjects = React.useCallback(async (): Promise<VercelProjectSummary[]> => {
+    if (!vercelToken) {
+      throw new Error("Isi Vercel Token di Settings dulu untuk konek ke Vercel.");
+    }
+    const remote = await callApi<VercelProjectSummary[]>("/api/vercel/project", {
+      headers: { "x-vercel-token": vercelToken },
+    });
+    const safeHistory = Array.isArray(history) ? history : [];
+    const existingNames = new Set(safeHistory.map((h) => h.name));
+    return remote.filter((p) => !existingNames.has(p.name));
+  }, [vercelToken, history]);
+
+  const importVercelProject = React.useCallback(
+    (project: VercelProjectSummary) => {
+      const safeHistory = Array.isArray(history) ? history : [];
+      if (safeHistory.some((h) => h.name === project.name)) {
+        showToast(`Project "${project.name}" sudah ada di Depush.`);
+        return;
+      }
+      const readyState = project.latestDeploymentReadyState;
+      const status: HistoryItem["status"] =
+        readyState === "ERROR" || readyState === "CANCELED" ? "failed" : "ready";
+      addHistory(project.name, "vercel", project.domain ?? `${project.name}.vercel.app`, status);
+      showToast(`Project "${project.name}" berhasil diimport dari Vercel.`);
+    },
+    [history, addHistory, showToast]
+  );
 
   // Depush pushes secrets to Vercel but has no webhook for the reverse —
   // someone deleting an env var straight from the Vercel dashboard leaves a
@@ -992,6 +1072,10 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     syncingProjects,
     syncProjectStatus,
     syncAllProjects,
+    deletingProject,
+    deleteProject,
+    fetchImportableVercelProjects,
+    importVercelProject,
     domains: Array.isArray(domains)? domains : [],
     addDomain,
     removeDomain,

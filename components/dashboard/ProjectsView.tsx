@@ -1,11 +1,23 @@
 "use client";
 
 import * as React from "react";
-import { FolderOpen, ExternalLink, RotateCw, Globe2, RefreshCw, ShieldAlert, BarChart3 } from "lucide-react";
+import {
+  FolderOpen,
+  ExternalLink,
+  RotateCw,
+  Globe2,
+  RefreshCw,
+  ShieldAlert,
+  BarChart3,
+  Trash2,
+  X,
+  Download,
+  AlertTriangle,
+} from "lucide-react";
 import { Surface } from "@/components/ui/Surface";
 import { ViewFade } from "@/components/ui/ViewFade";
 import { useDeploy } from "@/lib/deploy-context";
-import type { HistoryItem } from "@/types";
+import type { HistoryItem, VercelProjectSummary } from "@/types";
 
 function groupByProject(history: HistoryItem[]) {
   const safeHistory = Array.isArray(history) ? history : [];
@@ -16,12 +28,193 @@ function groupByProject(history: HistoryItem[]) {
   return Array.from(map.values());
 }
 
+/** Confirms whether a project delete should also hit the real Vercel project, or stay local-only. */
+function DeleteProjectModal({
+  project,
+  onClose,
+}: {
+  project: HistoryItem | null;
+  onClose: () => void;
+}) {
+  const { deleteProject, deletingProject, vercelToken } = useDeploy();
+  if (!project) return null;
+
+  const isVercelProject = project.platform === "vercel";
+  const busy = deletingProject === project.name;
+
+  async function handleChoice(alsoDeleteFromVercel: boolean) {
+    await deleteProject(project!.name, { alsoDeleteFromVercel });
+    onClose();
+  }
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 px-4">
+      <Surface className="w-full max-w-sm p-6">
+        <div className="flex items-center justify-between mb-4">
+          <span className="stat-icon text-red-400">
+            <AlertTriangle size={18} />
+          </span>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Tutup"
+            className="grid h-8 w-8 place-items-center rounded-full hover:bg-[var(--row-hover)]"
+          >
+            <X size={16} />
+          </button>
+        </div>
+        <h3 className="text-[15px] font-semibold mb-2">Hapus &quot;{project.name}&quot;?</h3>
+        <p className="text-[13px] leading-relaxed text-text-muted mb-6">
+          {isVercelProject
+            ? "Pilih mau dihapus di kedua sisi (Vercel + Depush) atau di Depush saja — project di Vercel tetap jalan kalau kamu pilih Depush saja."
+            : "Project ini bukan platform Vercel, jadi hanya akan dihapus dari daftar Depush."}
+        </p>
+        <div className="space-y-2">
+          {isVercelProject && (
+            <button
+              type="button"
+              onClick={() => void handleChoice(true)}
+              disabled={busy || !vercelToken}
+              className="btn-primary w-full py-2.5 text-[13px] disabled:opacity-50"
+            >
+              {busy ? "Menghapus..." : "Hapus di kedua sisi (Vercel + Depush)"}
+            </button>
+          )}
+          {isVercelProject && !vercelToken && (
+            <p className="text-[11px] text-text-faint text-center">
+              Isi Vercel Token di Settings dulu untuk hapus di Vercel.
+            </p>
+          )}
+          <button
+            type="button"
+            onClick={() => void handleChoice(false)}
+            disabled={busy}
+            className="pill w-full py-2.5 text-[13px] font-medium hover:brightness-110 disabled:opacity-50"
+          >
+            {isVercelProject ? "Hapus di Depush saja" : "Hapus"}
+          </button>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={busy}
+            className="w-full py-2 text-[12.5px] font-medium text-text-faint hover:text-text disabled:opacity-50"
+          >
+            Batal
+          </button>
+        </div>
+      </Surface>
+    </div>
+  );
+}
+
+/** Lists real Vercel projects not yet tracked in Depush, so the user can pull one in without re-deploying it. */
+function ImportProjectModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { vercelToken, fetchImportableVercelProjects, importVercelProject } = useDeploy();
+  const [loading, setLoading] = React.useState(false);
+  const [error, setError] = React.useState<string | null>(null);
+  const [candidates, setCandidates] = React.useState<VercelProjectSummary[]>([]);
+  const [importingName, setImportingName] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (!open) return;
+    if (!vercelToken) {
+      setError("Isi Vercel Token di Settings dulu untuk konek ke Vercel.");
+      setCandidates([]);
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    fetchImportableVercelProjects()
+      .then((result) => setCandidates(result))
+      .catch((err) => setError(err instanceof Error ? err.message : "Gagal konek ke Vercel."))
+      .finally(() => setLoading(false));
+  }, [open, vercelToken, fetchImportableVercelProjects]);
+
+  if (!open) return null;
+
+  function handleImport(project: VercelProjectSummary) {
+    setImportingName(project.name);
+    importVercelProject(project);
+    setCandidates((prev) => prev.filter((p) => p.name !== project.name));
+    setImportingName(null);
+  }
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 px-4">
+      <Surface className="w-full max-w-md p-6">
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-[15px] font-semibold">Import Project dari Vercel</h3>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Tutup"
+            className="grid h-8 w-8 place-items-center rounded-full hover:bg-[var(--row-hover)]"
+          >
+            <X size={16} />
+          </button>
+        </div>
+
+        {!vercelToken ? (
+          <div className="flex flex-col items-center gap-3 py-10 text-center">
+            <ShieldAlert size={36} className="text-amber-400" />
+            <p className="text-[13px] text-text-muted max-w-xs">
+              Belum konek ke Vercel — isi Vercel Token di Settings dulu, baru bisa import project yang
+              sudah ada di sana.
+            </p>
+          </div>
+        ) : loading ? (
+          <div className="flex flex-col items-center gap-3 py-10 text-center">
+            <RefreshCw size={24} className="animate-spin text-text-faint" />
+            <p className="text-[13px] text-text-muted">Menghubungkan ke Vercel...</p>
+          </div>
+        ) : error ? (
+          <div className="flex flex-col items-center gap-3 py-10 text-center">
+            <ShieldAlert size={36} className="text-red-400" />
+            <p className="text-[13px] text-text-muted max-w-xs">{error}</p>
+          </div>
+        ) : candidates.length === 0 ? (
+          <div className="flex flex-col items-center gap-3 py-10 text-center">
+            <FolderOpen size={36} className="text-text-faint" />
+            <p className="text-[13px] text-text-muted max-w-xs">
+              Semua project di Vercel kamu sudah ada di Depush — tidak ada yang bisa diimport.
+            </p>
+          </div>
+        ) : (
+          <div className="max-h-80 space-y-2 overflow-y-auto">
+            {candidates.map((p) => (
+              <div
+                key={p.id}
+                className="flex items-center justify-between gap-3 rounded-2xl border border-[var(--surface-line)] px-3.5 py-2.5"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-[13px] font-medium">{p.name}</p>
+                  <p className="mono truncate text-[11.5px] text-text-faint">{p.domain}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleImport(p)}
+                  disabled={importingName === p.name}
+                  className="pill shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-[11.5px] font-medium hover:brightness-110 disabled:opacity-50"
+                >
+                  <Download size={12} /> Import
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </Surface>
+    </div>
+  );
+}
+
 export function ProjectsView() {
   const { history, redeploy, vercelToken, syncingProjects, syncAllProjects, syncProjectStatus, setView, setFocusedTrafficProject } =
     useDeploy();
   const safeHistory = Array.isArray(history) ? history : [];
   const projects = groupByProject(safeHistory);
   const [checkingName, setCheckingName] = React.useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = React.useState<HistoryItem | null>(null);
+  const [importOpen, setImportOpen] = React.useState(false);
   const didAutoSync = React.useRef(false);
 
   function viewTraffic(name: string) {
@@ -52,21 +245,30 @@ export function ProjectsView() {
               {projects.length} project unik dari riwayat deployment kamu.
             </p>
           </div>
-          {vercelToken ? (
+          <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
-              onClick={() => void syncAllProjects()}
-              disabled={syncingProjects}
-              className="pill inline-flex items-center gap-2 px-4 py-2 text-sm font-medium hover:brightness-110 disabled:opacity-50"
+              onClick={() => setImportOpen(true)}
+              className="pill inline-flex items-center gap-2 px-4 py-2 text-sm font-medium hover:brightness-110"
             >
-              <RefreshCw size={13} className={syncingProjects ? "animate-spin" : ""} />
-              {syncingProjects ? "Sinkronisasi..." : "Sinkronkan dengan Vercel"}
+              <Download size={13} /> Import Project
             </button>
-          ) : (
-            <span className="inline-flex items-center gap-1.5 text-[11.5px] text-text-faint">
-              <ShieldAlert size={13} /> Isi Vercel Token di Settings untuk sinkronisasi otomatis
-            </span>
-          )}
+            {vercelToken ? (
+              <button
+                type="button"
+                onClick={() => void syncAllProjects()}
+                disabled={syncingProjects}
+                className="pill inline-flex items-center gap-2 px-4 py-2 text-sm font-medium hover:brightness-110 disabled:opacity-50"
+              >
+                <RefreshCw size={13} className={syncingProjects ? "animate-spin" : ""} />
+                {syncingProjects ? "Sinkronisasi..." : "Sinkronkan dengan Vercel"}
+              </button>
+            ) : (
+              <span className="inline-flex items-center gap-1.5 text-[11.5px] text-text-faint">
+                <ShieldAlert size={13} /> Isi Vercel Token di Settings untuk sinkronisasi otomatis
+              </span>
+            )}
+          </div>
         </div>
 
         {projects.length === 0 ? (
@@ -145,12 +347,25 @@ export function ProjectsView() {
                       </button>
                     </div>
                   )}
+
+                  <div className="mt-1">
+                    <button
+                      type="button"
+                      onClick={() => setDeleteTarget(project)}
+                      className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-400 hover:brightness-110"
+                    >
+                      <Trash2 size={12} /> Hapus Project
+                    </button>
+                  </div>
                 </Surface>
               );
             })}
           </div>
         )}
       </div>
+
+      <DeleteProjectModal project={deleteTarget} onClose={() => setDeleteTarget(null)} />
+      <ImportProjectModal open={importOpen} onClose={() => setImportOpen(false)} />
     </ViewFade>
   );
 }
