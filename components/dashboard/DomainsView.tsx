@@ -1,12 +1,42 @@
 "use client";
 
 import * as React from "react";
-import { Globe2, Plus, Trash2, X } from "lucide-react";
+import { Globe2, Plus, Trash2, X, Copy, Check, RefreshCw } from "lucide-react";
 import { Surface } from "@/components/ui/Surface";
 import { ViewFade } from "@/components/ui/ViewFade";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDeploy } from "@/lib/deploy-context";
 import { useToast } from "@/components/ui/Toast";
+
+/** One "Type / Name / Value" row the user copies into their DNS provider's dashboard. */
+function DnsField({ label, value }: { label: string; value: string }) {
+  const [copied, setCopied] = React.useState(false);
+  async function handleCopy() {
+    try {
+      await navigator.clipboard.writeText(value);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      /* clipboard unavailable — silently ignore, value is still visible to copy manually */
+    }
+  }
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-xl bg-[var(--row-hover)] px-3 py-1.5">
+      <div className="min-w-0">
+        <p className="text-[10px] uppercase tracking-wide text-text-faint">{label}</p>
+        <p className="mono truncate text-[12.5px]">{value}</p>
+      </div>
+      <button
+        type="button"
+        onClick={handleCopy}
+        aria-label={`Salin ${label.toLowerCase()}`}
+        className="grid h-7 w-7 shrink-0 place-items-center rounded-full hover:bg-black/10"
+      >
+        {copied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
+      </button>
+    </div>
+  );
+}
 
 function useProjectNames() {
   const { history } = useDeploy();
@@ -101,8 +131,18 @@ function AddDomainModal({ open, onClose }: { open: boolean; onClose: () => void 
 }
 
 export function DomainsView() {
-  const { domains, removeDomain } = useDeploy();
+  const { domains, removeDomain, refreshDomainStatus } = useDeploy();
   const [modalOpen, setModalOpen] = React.useState(false);
+  const [checkingId, setCheckingId] = React.useState<string | null>(null);
+
+  async function handleCheckStatus(id: string) {
+    setCheckingId(id);
+    try {
+      await refreshDomainStatus(id);
+    } finally {
+      setCheckingId(null);
+    }
+  }
 
   return (
     <ViewFade>
@@ -142,34 +182,73 @@ export function DomainsView() {
               </thead>
               <tbody>
                 {(Array.isArray(domains)? domains : []).map((d) => (
-                  <tr
-                    key={d.id}
-                    className="surface-solid-row border-b last:border-0 transition-colors"
-                    style={{ borderColor: "var(--surface-line)" }}
-                  >
-                    <td className="px-6 py-4 mono text-[13px]">{d.domain}</td>
-                    <td className="px-6 py-4 text-[12px] text-text-muted">{d.project}</td>
-                    <td className="px-6 py-4">
-                      <span
-                        className={`inline-flex items-center gap-1.5 rounded-pill border px-2.5 py-0.5 text-[11px] font-medium ${d.status === "Active"
-                            ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
-                            : "border-amber-500/20 bg-amber-500/10 text-amber-400"
-                          }`}
-                      >
-                        {d.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <button
-                        type="button"
-                        onClick={() => removeDomain(d.id)}
-                        aria-label={`Hapus ${d.domain}`}
-                        className="pill inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-medium text-red-400 hover:brightness-110"
-                      >
-                        <Trash2 size={12} /> Hapus
-                      </button>
-                    </td>
-                  </tr>
+                  <React.Fragment key={d.id}>
+                    <tr
+                      className="surface-solid-row border-b last:border-0 transition-colors"
+                      style={{ borderColor: d.dns ? "transparent" : "var(--surface-line)" }}
+                    >
+                      <td className="px-6 py-4 mono text-[13px]">{d.domain}</td>
+                      <td className="px-6 py-4 text-[12px] text-text-muted">{d.project}</td>
+                      <td className="px-6 py-4">
+                        <span
+                          className={`inline-flex items-center gap-1.5 rounded-pill border px-2.5 py-0.5 text-[11px] font-medium ${d.status === "Active"
+                              ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
+                              : "border-amber-500/20 bg-amber-500/10 text-amber-400"
+                            }`}
+                        >
+                          {d.status}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          {d.dns && d.status !== "Active" && (
+                            <button
+                              type="button"
+                              onClick={() => handleCheckStatus(d.id)}
+                              disabled={checkingId === d.id}
+                              aria-label={`Cek status ${d.domain}`}
+                              className="pill inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-medium hover:brightness-110 disabled:opacity-60"
+                            >
+                              <RefreshCw size={12} className={checkingId === d.id ? "animate-spin" : undefined} />
+                              Cek Status
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => removeDomain(d.id)}
+                            aria-label={`Hapus ${d.domain}`}
+                            className="pill inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-medium text-red-400 hover:brightness-110"
+                          >
+                            <Trash2 size={12} /> Hapus
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    {d.dns && (
+                      <tr className="border-b last:border-0" style={{ borderColor: "var(--surface-line)" }}>
+                        <td colSpan={4} className="px-6 pb-4">
+                          <div className="space-y-2 rounded-2xl border border-[var(--surface-line)] p-3.5">
+                            <p className="text-[11.5px] text-text-muted">
+                              {d.status === "Active"
+                                ? "Sudah aktif. Ini record yang dipakai kalau kamu perlu cek ulang di DNS provider:"
+                                : "Domain sudah ditambahkan ke Vercel — tinggal pasang record ini di DNS provider (Cloudflare, Niagahoster, Domainesia, dll):"}
+                            </p>
+                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                              <DnsField label="Type" value={d.dns.type} />
+                              <DnsField label="Name" value={d.dns.name} />
+                              <DnsField label="Value" value={d.dns.value} />
+                            </div>
+                            {d.status !== "Active" && (
+                              <p className="text-[11px] text-text-faint">
+                                Propagasi DNS bisa makan waktu beberapa menit sampai jam. Setelah record di atas
+                                terpasang di DNS provider kamu, klik &quot;Cek Status&quot; untuk verifikasi.
+                              </p>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>

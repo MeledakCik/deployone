@@ -16,6 +16,7 @@ import type {
   HistoryItem,
   Platform,
   ProjectStatusResult,
+  RedeployResult,
   SettingsTokens,
   VercelDomainResult,
 } from "@/types";
@@ -123,6 +124,7 @@ interface DeployContextValue {
   domains: DomainItem[];
   addDomain: (domain: string, project: string) => Promise<void>;
   removeDomain: (id: string) => Promise<void>;
+  refreshDomainStatus: (id: string) => Promise<void>;
   envVars: EnvItem[];
   addEnvVar: (
     key: string,
@@ -540,6 +542,33 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     }
   }, [history, syncProjectStatus, vercelToken, showToast]);
 
+  // Vercel only applies a new/changed/removed env var on the *next*
+  // deployment — pushing the var alone never touches the already-running
+  // site. So every time a Vercel-synced env var changes, we kick off a
+  // fresh production deployment automatically, re-using the project's last
+  // deployment as the source.
+  const triggerAutoRedeploy = React.useCallback(
+    async (projectName: string) => {
+      if (!vercelToken) return;
+      showToast(`Redeploy otomatis "${projectName}" dimulai karena secret berubah...`);
+      try {
+        await callApi<RedeployResult>("/api/vercel/redeploy", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ project: projectName, vercelToken }),
+        });
+        showToast(`Redeploy "${projectName}" berhasil — perubahan secret sudah live.`);
+      } catch (err) {
+        showToast(
+          err instanceof Error
+            ? `Redeploy otomatis "${projectName}" gagal: ${err.message}`
+            : `Redeploy otomatis "${projectName}" gagal.`
+        );
+      }
+    },
+    [vercelToken, showToast]
+  );
+
   const addDomain = React.useCallback(
     async (domain: string, project: string) => {
       const safeHistory = Array.isArray(history)? history : [];
@@ -575,6 +604,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
               project,
               status: result.verified? "Active" : "Pending",
               syncedToVercel: true,
+              dns: result.dns,
             },
            ...safePrev,
           ];
@@ -607,6 +637,38 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         }
       }
       setDomains((prev) => (Array.isArray(prev)? prev : []).filter((d) => d.id!== id));
+    },
+    [domains, setDomains, showToast, vercelToken]
+  );
+
+  // Vercel doesn't push us a webhook when DNS propagates, so "Active" only
+  // updates when the user asks us to check — this re-fetches the domain
+  // list for the project and syncs this one domain's verified state.
+  const refreshDomainStatus = React.useCallback(
+    async (id: string) => {
+      const safeDomains = Array.isArray(domains)? domains : [];
+      const item = safeDomains.find((d) => d.id === id);
+      if (!item || !item.syncedToVercel || !vercelToken) return;
+      try {
+        const list = await callApi<{ name: string; verified: boolean }[]>(
+          `/api/vercel/domains?project=${encodeURIComponent(item.project)}`,
+          { headers: { "x-vercel-token": vercelToken } }
+        );
+        const match = list.find((d) => d.name === item.domain);
+        if (!match) return;
+        setDomains((prev) =>
+          (Array.isArray(prev)? prev : []).map((d) =>
+            d.id === id? { ...d, status: match.verified? ("Active" as const) : ("Pending" as const) } : d
+          )
+        );
+        showToast(
+          match.verified
+           ? `${item.domain} sudah aktif — DNS terverifikasi.`
+            : `${item.domain} masih menunggu DNS provider (belum terverifikasi).`
+        );
+      } catch (err) {
+        showToast(err instanceof Error? err.message : "Gagal cek status domain.");
+      }
     },
     [domains, setDomains, showToast, vercelToken]
   );
@@ -682,8 +744,11 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
          ? `Secret disimpan untuk "${trimmedProject}" & di-push ke Vercel.`
           : `Secret disimpan untuk project "${trimmedProject}".`
       );
+      if (syncedToVercel) {
+        void triggerAutoRedeploy(trimmedProject);
+      }
     },
-    [envVars, setEnvVars, showToast, vercelToken]
+    [envVars, setEnvVars, showToast, vercelToken, triggerAutoRedeploy]
   );
 
   const removeEnvVar = React.useCallback(
@@ -702,8 +767,11 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         }
       }
       setEnvVars((prev) => (Array.isArray(prev)? prev : []).filter((v) => v.id!== id));
+      if (item?.syncedToVercel && vercelToken) {
+        void triggerAutoRedeploy(item.project);
+      }
     },
-    [envVars, setEnvVars, showToast, vercelToken]
+    [envVars, setEnvVars, showToast, vercelToken, triggerAutoRedeploy]
   );
 
   const toggleEnvVisible = React.useCallback(
@@ -738,6 +806,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     domains: Array.isArray(domains)? domains : [],
     addDomain,
     removeDomain,
+    refreshDomainStatus,
     envVars: Array.isArray(envVars)? envVars : [],
     addEnvVar,
     removeEnvVar,

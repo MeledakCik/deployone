@@ -26,8 +26,12 @@ interface CreateDeploymentParams {
 export interface VercelDomainInfo {
   name: string;
   verified: boolean;
-  /** Present when the domain needs a DNS record before it's live. */
+  /** Present when the domain needs an extra TXT record to prove ownership (rare — usually only if it's already attached elsewhere). */
   verification: { type: string; domain: string; value: string; reason: string }[] | null;
+  /** The registrable root domain, e.g. "example.com" for both "example.com" and "app.example.com". Only resolved right after adding a domain. */
+  apexName?: string;
+  /** The A/CNAME record the user must add at their DNS provider to point the domain at this deployment. Only resolved right after adding a domain. */
+  dns?: DnsInstruction;
 }
 
 export interface ProjectStatus {
@@ -36,6 +40,16 @@ export interface ProjectStatus {
   latestDeploymentReadyState: VercelReadyState | null;
   /** Whether Vercel Web Analytics has been switched on for this project. */
   webAnalyticsEnabled: boolean;
+  /** id of the most recent deployment — needed to trigger a redeploy from it. */
+  latestDeploymentId: string | null;
+}
+
+/** A single DNS record instruction the user needs to add at their domain registrar. */
+export interface DnsInstruction {
+  type: "A" | "CNAME";
+  /** Host/name part to enter at the registrar, e.g. "@" for apex or "app" for a subdomain. */
+  name: string;
+  value: string;
 }
 
 interface VercelDeploymentResponse {
@@ -116,7 +130,13 @@ export async function getVercelProject(
   });
 
   if (res.status === 404) {
-    return { exists: false, linkedRepoFullName: null, latestDeploymentReadyState: null, webAnalyticsEnabled: false };
+    return {
+      exists: false,
+      linkedRepoFullName: null,
+      latestDeploymentReadyState: null,
+      webAnalyticsEnabled: false,
+      latestDeploymentId: null,
+    };
   }
   if (!res.ok) throw await parseVercelError(res);
 
@@ -126,12 +146,64 @@ export async function getVercelProject(
     link?.type === "github" && link.org && link.repo ? `${link.org}/${link.repo}` : null;
   const latestDeploymentReadyState: VercelReadyState | null =
     data?.latestDeployments?.[0]?.readyState ?? null;
+  const latestDeploymentId: string | null =
+    data?.latestDeployments?.[0]?.uid ?? data?.latestDeployments?.[0]?.id ?? null;
   // `webAnalytics.enabledAt` is only present once someone has clicked "Enable"
   // on the project's Analytics tab — Vercel doesn't expose a public API to
   // flip this switch, so we can only detect it, not set it, from here.
   const webAnalyticsEnabled = Boolean(data?.webAnalytics?.enabledAt);
 
-  return { exists: true, linkedRepoFullName, latestDeploymentReadyState, webAnalyticsEnabled };
+  return {
+    exists: true,
+    linkedRepoFullName,
+    latestDeploymentReadyState,
+    webAnalyticsEnabled,
+    latestDeploymentId,
+  };
+}
+
+/**
+ * Triggers a fresh production deployment by re-running the project's most
+ * recent deployment. Used to auto-redeploy right after an env var is
+ * added/changed/removed, because Vercel only picks up new env var values on
+ * the *next* deployment — pushing the var alone never touches the live site.
+ */
+export async function redeployProject(
+  projectName: string,
+  vercelToken: string
+): Promise<{ deploymentId: string; url: string; inspectorUrl: string; readyState: VercelReadyState }> {
+  const project = await getVercelProject(projectName, vercelToken);
+  if (!project.exists) {
+    throw new VercelApiError(`Project "${projectName}" tidak ditemukan di Vercel.`, "not_found");
+  }
+  if (!project.latestDeploymentId) {
+    throw new VercelApiError(
+      `Project "${projectName}" belum punya deployment sebelumnya di Vercel untuk di-redeploy.`,
+      "not_found"
+    );
+  }
+
+  const res = await fetch(`${VERCEL_API}/v13/deployments?skipAutoDetectionConfirmation=1`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${vercelToken}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      name: projectName,
+      deploymentId: project.latestDeploymentId,
+      target: "production",
+    }),
+  });
+  if (!res.ok) throw await parseVercelError(res);
+
+  const data = (await res.json()) as VercelDeploymentResponse;
+  return {
+    deploymentId: data.id,
+    url: primaryUrlFor(data),
+    inspectorUrl: inspectorUrlFor(data),
+    readyState: data.readyState,
+  };
 }
 
 /**
@@ -217,6 +289,44 @@ export async function listProjectDomains(
   }));
 }
 
+/**
+ * Reads the DNS state Vercel actually expects for a domain (falls back to
+ * Vercel's documented standard records if the config lookup itself fails —
+ * that lookup is best-effort polish, not something that should block the
+ * user from getting *a* correct record to add).
+ */
+async function resolveDnsInstruction(
+  domain: string,
+  apexName: string,
+  vercelToken: string
+): Promise<DnsInstruction> {
+  const isApex = domain === apexName;
+  const name = isApex ? "@" : domain.slice(0, domain.length - apexName.length - 1);
+
+  try {
+    const res = await fetch(`${VERCEL_API}/v6/domains/${encodeURIComponent(domain)}/config`, {
+      headers: { Authorization: `Bearer ${vercelToken}` },
+      cache: "no-store",
+    });
+    if (res.ok) {
+      const data = await res.json();
+      if (isApex && Array.isArray(data.aValues) && data.aValues.length > 0) {
+        return { type: "A", name, value: data.aValues[0] };
+      }
+      if (!isApex && Array.isArray(data.cnames) && data.cnames.length > 0) {
+        return { type: "CNAME", name, value: data.cnames[0] };
+      }
+    }
+  } catch {
+    /* network hiccup on the polish lookup — fall through to the documented default below */
+  }
+
+  // Vercel's standard, stable records for anyone not on custom nameservers.
+  return isApex
+    ? { type: "A", name, value: "76.76.21.21" }
+    : { type: "CNAME", name, value: "cname.vercel-dns.com" };
+}
+
 export async function addProjectDomain(
   projectName: string,
   domain: string,
@@ -235,7 +345,15 @@ export async function addProjectDomain(
   );
   if (!res.ok) throw await parseVercelError(res);
   const data = await res.json();
-  return { name: data.name, verified: data.verified, verification: data.verification ?? null };
+  const apexName: string = data.apexName ?? domain;
+  const dns = await resolveDnsInstruction(data.name ?? domain, apexName, vercelToken);
+  return {
+    name: data.name,
+    verified: data.verified,
+    verification: data.verification ?? null,
+    apexName,
+    dns,
+  };
 }
 
 export async function removeProjectDomain(

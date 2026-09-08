@@ -35,6 +35,14 @@ export interface DeployFormValues {
   envText: string;
 }
 
+/** The DNS record the user needs to add at their domain registrar/DNS provider. */
+export interface DnsRecordInstruction {
+  type: "A" | "CNAME";
+  /** Host/name part to enter at the registrar, e.g. "@" for apex or "app" for a subdomain. */
+  name: string;
+  value: string;
+}
+
 export interface DomainItem {
   id: string;
   domain: string;
@@ -42,6 +50,8 @@ export interface DomainItem {
   status: "Active" | "Pending";
   /** true once this was successfully pushed to a real Vercel project. */
   syncedToVercel?: boolean;
+  /** Key-value DNS record to add at the domain's DNS provider — present once synced to Vercel. */
+  dns?: DnsRecordInstruction;
 }
 
 export interface EnvItem {
@@ -156,6 +166,16 @@ export interface ProjectStatusResult {
   latestDeploymentReadyState: VercelReadyState | null;
   /** Whether Vercel Web Analytics has been switched on for this project. */
   webAnalyticsEnabled: boolean;
+  /** id of the most recent deployment — needed to trigger a redeploy from it. */
+  latestDeploymentId: string | null;
+}
+
+/** Result of POST /api/vercel/redeploy */
+export interface RedeployResult {
+  deploymentId: string;
+  url: string;
+  inspectorUrl: string;
+  readyState: VercelReadyState;
 }
 
 /** A single domain as returned by /api/vercel/domains */
@@ -163,6 +183,9 @@ export interface VercelDomainResult {
   name: string;
   verified: boolean;
   verification: { type: string; domain: string; value: string; reason: string }[] | null;
+  apexName?: string;
+  /** The A/CNAME record to add at the DNS provider so the domain points here. */
+  dns?: DnsRecordInstruction;
 }
 
 /** Body of POST /api/vercel/env */
