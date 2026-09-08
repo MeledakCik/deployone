@@ -78,7 +78,7 @@ function isCrossSiteWrite(req: NextRequest): boolean {
   }
 }
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const contentLength = req.headers.get("content-length");
   if (contentLength && Number(contentLength) > MAX_BODY_BYTES) {
     return payloadTooLargeResponse();
