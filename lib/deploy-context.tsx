@@ -131,6 +131,9 @@ interface DeployContextValue {
   addDomain: (domain: string, project: string) => Promise<void>;
   removeDomain: (id: string) => Promise<void>;
   refreshDomainStatus: (id: string) => Promise<void>;
+  syncingDomains: boolean;
+  syncDomainsForProject: (project: string) => Promise<"synced" | "skipped" | "error">;
+  syncAllDomains: () => Promise<void>;
   envVars: EnvItem[];
   addEnvVar: (
     key: string,
@@ -189,6 +192,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
   const vercelToken = settingsTokens.vercelToken;
   const [syncingProjects, setSyncingProjects] = React.useState(false);
   const [syncingEnvVars, setSyncingEnvVars] = React.useState(false);
+  const [syncingDomains, setSyncingDomains] = React.useState(false);
 
   // Tests the Vercel token saved in Settings once (and again whenever it
   // changes) so the deploy form can skip asking for it a second time —
@@ -770,6 +774,55 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     [domains, setDomains, showToast, vercelToken]
   );
 
+  // Depush pushes domains to Vercel but has no webhook for the reverse —
+  // someone removing a domain straight from the Vercel dashboard otherwise
+  // leaves a stale "Active" row here forever (mirrors syncEnvVarsForProject).
+  const syncDomainsForProject = React.useCallback(
+    async (project: string): Promise<"synced" | "skipped" | "error"> => {
+      if (!vercelToken) return "skipped";
+      try {
+        const remote = await callApi<{ name: string; verified: boolean }[]>(
+          `/api/vercel/domains?project=${encodeURIComponent(project)}`,
+          { headers: { "x-vercel-token": vercelToken } }
+        );
+        let removedCount = 0;
+        setDomains((prev) => {
+          const safePrev = Array.isArray(prev) ? prev : [];
+          return safePrev.filter((d) => {
+            if (d.project !== project || !d.syncedToVercel) return true;
+            const stillExists = remote.some((r) => r.name === d.domain);
+            if (!stillExists) removedCount += 1;
+            return stillExists;
+          });
+        });
+        if (removedCount > 0) {
+          showToast(
+            `${removedCount} domain untuk "${project}" sudah dihapus di Vercel — dihapus juga di sini.`
+          );
+        }
+        return "synced";
+      } catch {
+        return "error";
+      }
+    },
+    [vercelToken, setDomains, showToast]
+  );
+
+  const syncAllDomains = React.useCallback(async () => {
+    if (!vercelToken) return;
+    const safeDomains = Array.isArray(domains) ? domains : [];
+    const projects = Array.from(
+      new Set(safeDomains.filter((d) => d.syncedToVercel).map((d) => d.project))
+    );
+    if (projects.length === 0) return;
+    setSyncingDomains(true);
+    for (const project of projects) {
+      // eslint-disable-next-line no-await-in-loop
+      await syncDomainsForProject(project);
+    }
+    setSyncingDomains(false);
+  }, [domains, syncDomainsForProject, vercelToken]);
+
   // Vercel doesn't push us a webhook when DNS propagates, so "Active" only
   // updates when the user asks us to check — this re-fetches the domain
   // list for the project and syncs this one domain's verified state.
@@ -784,7 +837,14 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           { headers: { "x-vercel-token": vercelToken } }
         );
         const match = list.find((d) => d.name === item.domain);
-        if (!match) return;
+        if (!match) {
+          // No longer exists on Vercel (e.g. deleted straight from the
+          // dashboard) — drop it here too instead of leaving it stuck
+          // showing "Active" forever even though it's gone on Vercel.
+          setDomains((prev) => (Array.isArray(prev)? prev : []).filter((d) => d.id!== id));
+          showToast(`${item.domain} sudah tidak ada di Vercel — dihapus juga di sini.`);
+          return;
+        }
         setDomains((prev) =>
           (Array.isArray(prev)? prev : []).map((d) =>
             d.id === id? { ...d, status: match.verified? ("Active" as const) : ("Pending" as const) } : d
@@ -936,6 +996,9 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     addDomain,
     removeDomain,
     refreshDomainStatus,
+    syncingDomains,
+    syncDomainsForProject,
+    syncAllDomains,
     envVars: Array.isArray(envVars)? envVars : [],
     addEnvVar,
     removeEnvVar,

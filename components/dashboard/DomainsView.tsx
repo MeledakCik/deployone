@@ -131,9 +131,20 @@ function AddDomainModal({ open, onClose }: { open: boolean; onClose: () => void 
 }
 
 export function DomainsView() {
-  const { domains, removeDomain, refreshDomainStatus } = useDeploy();
+  const { domains, removeDomain, refreshDomainStatus, vercelToken, syncingDomains, syncAllDomains } = useDeploy();
   const [modalOpen, setModalOpen] = React.useState(false);
   const [checkingId, setCheckingId] = React.useState<string | null>(null);
+  const didAutoSync = React.useRef(false);
+
+  // Depush has no webhook for it, so we don't find out on our own when a
+  // domain gets removed straight from the Vercel dashboard — check once per
+  // visit so the list here doesn't quietly show a domain as "Active" that
+  // no longer actually exists on Vercel.
+  React.useEffect(() => {
+    if (didAutoSync.current || !vercelToken) return;
+    didAutoSync.current = true;
+    void syncAllDomains();
+  }, [vercelToken, syncAllDomains]);
 
   async function handleCheckStatus(id: string) {
     setCheckingId(id);
@@ -160,6 +171,20 @@ export function DomainsView() {
             <Plus size={15} /> Add Domain
           </button>
         </div>
+
+        {vercelToken && (
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => void syncAllDomains()}
+              disabled={syncingDomains}
+              className="pill inline-flex items-center gap-2 px-4 py-2 text-[12.5px] font-medium hover:brightness-110 disabled:opacity-50"
+            >
+              <RefreshCw size={13} className={syncingDomains ? "animate-spin" : undefined} />
+              {syncingDomains ? "Sinkronisasi..." : "Sinkronkan dengan Vercel"}
+            </button>
+          </div>
+        )}
 
         {domains.length === 0 ? (
           <Surface className="flex flex-col items-center justify-center gap-3 px-6 py-24 text-center">
