@@ -36,7 +36,7 @@ export async function GET(req: NextRequest) {
   const res = NextResponse.redirect(authUrl.toString());
   res.cookies.set(OAUTH_STATE_COOKIE, state, {
     httpOnly: true,
-    secure: true,
+    secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
     maxAge: 600,

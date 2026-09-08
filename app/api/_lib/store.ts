@@ -1,4 +1,5 @@
 import { kv } from "@vercel/kv";
+import { decryptJson, encryptJson } from "@/app/api/_lib/crypto";
 
 export type UserData = {
   history: any[];
@@ -34,7 +35,7 @@ export function userKey(email: string): string {
  */
 export async function getUserData(email: string): Promise<UserData> {
   const key = userKey(email);
-  const data = await kv.get<Partial<UserData>>(key);
+  const data = await kv.get<Record<string, any>>(key);
 
   if (!data) {
     return { ...EMPTY_USER_DATA };
@@ -44,10 +45,11 @@ export async function getUserData(email: string): Promise<UserData> {
     history: Array.isArray(data.history) ? data.history : [],
     domains: Array.isArray(data.domains) ? data.domains : [],
     envVars: Array.isArray(data.envVars) ? data.envVars : [],
-    settingsTokens:
-      data.settingsTokens && typeof data.settingsTokens === "object"
-        ? data.settingsTokens
-        : {},
+    // settingsTokens (isinya token Vercel/GitHub) disimpan terenkripsi di
+    // KV — decryptJson otomatis fallback ke data apa adanya kalau formatnya
+    // masih plain object lama (sebelum enkripsi ini ada), jadi aman untuk
+    // data yang sudah ada duluan.
+    settingsTokens: decryptJson<Record<string, any>>(data.settingsTokens, {}),
   };
 }
 
@@ -63,18 +65,25 @@ export async function putUserData(
 ): Promise<UserData> {
   const key = userKey(email);
 
-  const safeData: UserData = {
+  const safeSettingsTokens: Record<string, any> =
+    data.settingsTokens && typeof data.settingsTokens === "object"
+      ? data.settingsTokens
+      : {};
+
+  const safeData = {
     history: Array.isArray(data.history) ? data.history : [],
     domains: Array.isArray(data.domains) ? data.domains : [],
     envVars: Array.isArray(data.envVars) ? data.envVars : [],
-    settingsTokens:
-      data.settingsTokens && typeof data.settingsTokens === "object"
-        ? data.settingsTokens
-        : {},
+    // Dienkripsi sebelum disentuh KV — kalau KV/backup-nya suatu saat bocor,
+    // token Vercel/GitHub user tidak ikut ke-expose plaintext.
+    settingsTokens: encryptJson(safeSettingsTokens),
   };
 
   await kv.set(key, safeData);
-  return safeData;
+
+  // Yang di-return ke caller (route -> client) tetap bentuk decrypted,
+  // bukan blob yang barusan disimpan ke KV.
+  return { ...safeData, settingsTokens: safeSettingsTokens };
 }
 
 /**
