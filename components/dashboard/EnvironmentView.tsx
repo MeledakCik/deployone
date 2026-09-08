@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { KeyRound, Plus, Trash2, Eye, EyeOff, Info, X } from "lucide-react";
+import { KeyRound, Plus, Trash2, Eye, EyeOff, Info, X, RefreshCw } from "lucide-react";
 import { Surface } from "@/components/ui/Surface";
 import { ViewFade } from "@/components/ui/ViewFade";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -185,10 +185,20 @@ function AddSecretModal({
 }
 
 export function EnvironmentView() {
-  const { envVars, removeEnvVar, toggleEnvVisible } = useDeploy();
+  const { envVars, removeEnvVar, toggleEnvVisible, vercelToken, syncingEnvVars, syncAllEnvVars } = useDeploy();
   const projectNames = useProjectNames();
   const [modalOpen, setModalOpen] = React.useState(false);
   const [activeProject, setActiveProject] = React.useState<string>("all");
+  const didAutoSync = React.useRef(false);
+
+  // Depush has no webhook for it, so we don't find out on our own when a
+  // secret gets deleted straight from the Vercel dashboard — check once per
+  // visit so the list here doesn't quietly go stale.
+  React.useEffect(() => {
+    if (didAutoSync.current || !vercelToken) return;
+    didAutoSync.current = true;
+    void syncAllEnvVars();
+  }, [vercelToken, syncAllEnvVars]);
 
   // Keep the filter valid if the underlying project list changes.
   React.useEffect(() => {
@@ -223,6 +233,20 @@ export function EnvironmentView() {
             <Plus size={15} /> Add Secret
           </button>
         </div>
+
+        {vercelToken && (
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => void syncAllEnvVars()}
+              disabled={syncingEnvVars}
+              className="pill inline-flex items-center gap-2 px-4 py-2 text-[12.5px] font-medium hover:brightness-110 disabled:opacity-50"
+            >
+              <RefreshCw size={13} className={syncingEnvVars ? "animate-spin" : undefined} />
+              {syncingEnvVars ? "Sinkronisasi..." : "Sinkronkan dengan Vercel"}
+            </button>
+          </div>
+        )}
 
         <Surface className="flex items-start gap-3 px-5 py-4">
           <Info size={16} className="mt-0.5 shrink-0 text-violet-400" />

@@ -52,6 +52,8 @@ export interface DomainItem {
   syncedToVercel?: boolean;
   /** Key-value DNS record to add at the domain's DNS provider — present once synced to Vercel. */
   dns?: DnsRecordInstruction;
+  /** Shared id linking this domain to its auto-added www/non-www counterpart, so both are removed together. */
+  pairId?: string;
 }
 
 export interface EnvItem {
@@ -195,6 +197,12 @@ export interface UpsertEnvRequest {
   value: string;
   target: ("production" | "preview")[];
   vercelToken: string;
+}
+
+/** One entry from GET /api/vercel/env — an env var as it currently exists on Vercel. */
+export interface VercelEnvSummary {
+  key: string;
+  target: string[];
 }
 
 /** Result of GET /api/vercel/whoami — used by Settings to prove a token actually works. */

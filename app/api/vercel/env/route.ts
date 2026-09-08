@@ -1,12 +1,32 @@
 import type { NextRequest } from "next/server";
 import { ok, fail, withErrorHandling } from "@/app/api/_lib/response";
-import { deleteProjectEnv, upsertProjectEnv, VercelApiError } from "@/app/api/_lib/vercel";
+import { deleteProjectEnv, listProjectEnv, upsertProjectEnv, VercelApiError } from "@/app/api/_lib/vercel";
 import { requireString, BadRequestError } from "@/app/api/_lib/validators";
 import type { UpsertEnvRequest } from "@/types";
 
 export const runtime = "nodejs";
 
 const ENV_KEY_RE = /^[A-Z][A-Z0-9_]*$/;
+
+/** Lists every env var currently set on a real Vercel project — used to sync-detect vars deleted directly on Vercel. */
+export const GET = withErrorHandling(async (req: NextRequest) => {
+  const vercelToken = req.headers.get("x-vercel-token");
+  const project = req.nextUrl.searchParams.get("project");
+
+  if (!vercelToken) return fail("Header x-vercel-token wajib diisi.", 400, "bad_request");
+  if (!project) return fail("Query param project wajib diisi.", 400, "bad_request");
+
+  try {
+    const envs = await listProjectEnv(project, vercelToken);
+    return ok(envs);
+  } catch (e) {
+    if (e instanceof VercelApiError) {
+      const status = e.code === "invalid_token" ? 401 : e.code === "not_found" ? 404 : 502;
+      return fail(e.message, status, e.code);
+    }
+    throw e;
+  }
+});
 
 export const POST = withErrorHandling(async (req: NextRequest) => {
   const body = (await req.json().catch(() => ({}))) as Partial<UpsertEnvRequest>;

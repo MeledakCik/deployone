@@ -10,16 +10,19 @@ export function DeployModal() {
   if (!modal.open) return null;
 
   return (
-    <div id="modal" className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 px-4">
-      <Surface className="w-full max-w-md p-6">
-        <h3 id="deployTitle" className="text-[17px] font-semibold mb-1">
+    <div
+      id="modal"
+      className="fixed inset-0 z-[100] flex items-start justify-center overflow-y-auto bg-black/60 px-4 py-6 sm:items-center"
+    >
+      <Surface className="my-auto w-full max-w-md p-5 sm:p-6">
+        <h3 id="deployTitle" className="text-[16px] font-semibold mb-1 sm:text-[17px]">
           {modal.title}
         </h3>
-        <p id="deploySubtitle" className="text-[13px] text-text-muted mb-6">
+        <p id="deploySubtitle" className="text-[12.5px] text-text-muted mb-5 break-words sm:text-[13px] sm:mb-6">
           {modal.subtitle}
         </p>
 
-        <div className="mb-5 h-1.5 w-full overflow-hidden rounded-pill bg-[var(--pill-bg)]">
+        <div className="mb-4 h-1.5 w-full overflow-hidden rounded-pill bg-[var(--pill-bg)] sm:mb-5">
           <div
             id="bar"
             className={`h-full rounded-pill transition-[width] duration-500 ease-out bg-gradient-to-r ${
@@ -30,7 +33,7 @@ export function DeployModal() {
         </div>
 
         {!modal.error && (
-          <ul className="space-y-2.5 mb-2">
+          <ul className="space-y-2 mb-2 sm:space-y-2.5">
             {DEPLOY_STEPS.map((label, i) => {
               const done = modal.stepIndex > i;
               return (
@@ -38,14 +41,14 @@ export function DeployModal() {
                   key={label}
                   id={`s${i + 1}`}
                   data-text={label}
-                  className={`deploy-step flex items-center gap-2.5 text-[13px] ${done ? "done text-text" : "text-text-muted"}`}
+                  className={`deploy-step flex items-center gap-2.5 text-[12.5px] sm:text-[13px] ${done ? "done text-text" : "text-text-muted"}`}
                 >
                   {done ? (
                     <CheckCircle2 size={16} className="text-emerald-500 shrink-0" />
                   ) : (
                     <Circle size={16} className="text-text-faint shrink-0" />
                   )}
-                  {done ? `✓ ${label}` : label}
+                  <span className="break-words">{done ? `✓ ${label}` : label}</span>
                 </li>
               );
             })}
@@ -55,7 +58,7 @@ export function DeployModal() {
         {modal.error && (
           <div
             id="deployError"
-            className="mt-1 flex items-start gap-2.5 rounded-xl border border-red-500/30 bg-red-500/10 p-3.5 text-[13px] text-red-300"
+            className="mt-1 flex items-start gap-2.5 rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-[12.5px] text-red-300 sm:p-3.5 sm:text-[13px]"
           >
             <AlertTriangle size={16} className="mt-0.5 shrink-0" />
             <span className="break-words">{modal.error}</span>
@@ -63,55 +66,56 @@ export function DeployModal() {
         )}
 
         {modal.resultVisible && modal.result && (
-          <div id="result" className="mt-5 pt-5 border-t border-[var(--line)]">
-            <p className="mono text-[12px] opacity-60">PROJECT</p>
-            <p className="font-semibold">{modal.result.name}</p>
-            <p className="mt-3 mono text-[12px] opacity-60">URL</p>
+          <div id="result" className="mt-4 pt-4 border-t border-[var(--line)] sm:mt-5 sm:pt-5">
+            <p className="mono text-[11.5px] opacity-60 sm:text-[12px]">PROJECT</p>
+            <p className="font-semibold break-words">{modal.result.name}</p>
+            <p className="mt-3 mono text-[11.5px] opacity-60 sm:text-[12px]">URL</p>
             <a
               href={`https://${modal.result.domain}`}
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1 text-violet-400 underline break-all"
             >
-              {modal.result.domain} <ExternalLink size={12} />
+              {modal.result.domain} <ExternalLink size={12} className="shrink-0" />
             </a>
             {modal.result.inspectorUrl && (
               <>
-                <p className="mt-3 mono text-[12px] opacity-60">BUILD LOGS</p>
+                <p className="mt-3 mono text-[11.5px] opacity-60 sm:text-[12px]">BUILD LOGS</p>
                 <a
                   href={modal.result.inspectorUrl}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 text-violet-400 underline break-all"
                 >
-                  Lihat di Vercel <ExternalLink size={12} />
+                  Lihat di Vercel <ExternalLink size={12} className="shrink-0" />
                 </a>
               </>
             )}
 
             {modal.result.analyticsEnabled !== undefined && (
-              <div className="mt-4 rounded-xl border border-[var(--surface-line)] bg-[var(--surface-solid-2)] p-3.5">
+              <div className="mt-4 rounded-xl border border-[var(--surface-line)] bg-[var(--surface-solid-2)] p-3 sm:p-3.5">
                 {modal.result.analyticsEnabled === null && (
-                  <p className="inline-flex items-center gap-1.5 text-[12px] text-text-muted">
-                    <Loader2 size={13} className="animate-spin" /> Mengecek status Web Analytics...
+                  <p className="inline-flex items-center gap-1.5 text-[11.5px] text-text-muted sm:text-[12px]">
+                    <Loader2 size={13} className="shrink-0 animate-spin" /> Mengecek status Web Analytics...
                   </p>
                 )}
                 {modal.result.analyticsEnabled === true && (
-                  <p className="inline-flex items-center gap-1.5 text-[12px] text-emerald-400">
-                    <BarChart3 size={14} /> Web Analytics sudah aktif untuk project ini.
+                  <p className="inline-flex items-center gap-1.5 text-[11.5px] text-emerald-400 sm:text-[12px]">
+                    <BarChart3 size={14} className="shrink-0" /> Web Analytics sudah aktif untuk project ini.
                   </p>
                 )}
                 {modal.result.analyticsEnabled === false && (
                   <div className="space-y-1.5">
-                    <p className="inline-flex items-center gap-1.5 text-[12px] text-text-muted">
-                      <BarChart3 size={14} /> Web Analytics belum aktif di project ini.
+                    <p className="inline-flex items-center gap-1.5 text-[11.5px] text-text-muted sm:text-[12px]">
+                      <BarChart3 size={14} className="shrink-0" /> Web Analytics belum aktif di project ini.
                     </p>
-                    <p className="text-[11.5px] text-text-faint">
+                    <p className="text-[11px] text-text-faint break-words">
                       Vercel tidak punya API publik untuk nyalain ini otomatis — klik Enable sekali di
                       dashboard, lalu pastikan package{" "}
-                      <code className="mono text-[11px] text-text-muted">@vercel/analytics</code> dan{" "}
-                      <code className="mono text-[11px] text-text-muted">&lt;Analytics /&gt;</code> sudah
-                      ada di kode project-nya supaya datanya kekirim.
+                      <code className="mono text-[10.5px] text-text-muted sm:text-[11px]">@vercel/analytics</code>{" "}
+                      dan{" "}
+                      <code className="mono text-[10.5px] text-text-muted sm:text-[11px]">&lt;Analytics /&gt;</code>{" "}
+                      sudah ada di kode project-nya supaya datanya kekirim.
                     </p>
                     {modal.result.analyticsUrl && (
                       <a
@@ -120,7 +124,7 @@ export function DeployModal() {
                         rel="noopener noreferrer"
                         className="inline-flex items-center gap-1 text-violet-400 underline"
                       >
-                        Aktifkan Web Analytics <ExternalLink size={12} />
+                        Aktifkan Web Analytics <ExternalLink size={12} className="shrink-0" />
                       </a>
                     )}
                   </div>
@@ -130,12 +134,12 @@ export function DeployModal() {
           </div>
         )}
 
-        <div className="mt-6 flex justify-end gap-2">
+        <div className="mt-5 flex flex-col-reverse justify-end gap-2 sm:mt-6 sm:flex-row">
           {!modal.closeVisible && (
             <button
               type="button"
               onClick={closeModal}
-              className="pill px-4 py-2 text-[13px] font-medium hover:bg-[var(--card-hover)]"
+              className="pill w-full px-4 py-2 text-[13px] font-medium hover:bg-[var(--card-hover)] sm:w-auto"
             >
               Sembunyikan
             </button>
@@ -145,7 +149,7 @@ export function DeployModal() {
               id="closeModal"
               type="button"
               onClick={handleCloseAfterDeploy}
-              className="btn-primary px-5 py-2.5 text-[13px]"
+              className="btn-primary w-full px-5 py-2.5 text-[13px] sm:w-auto"
             >
               Tutup &amp; Kembali
             </button>

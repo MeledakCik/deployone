@@ -375,6 +375,27 @@ export async function removeProjectDomain(
 interface VercelEnvVar {
   id: string;
   key: string;
+  target?: string[];
+}
+
+/** Summary of one env var as it currently exists on a real Vercel project. */
+export interface VercelEnvSummary {
+  key: string;
+  target: string[];
+}
+
+/** Lists every env var currently set on a real Vercel project — used to detect vars deleted directly on Vercel (outside Depush) so they can be cleaned up here too. */
+export async function listProjectEnv(
+  projectName: string,
+  vercelToken: string
+): Promise<VercelEnvSummary[]> {
+  const res = await fetch(`${VERCEL_API}/v9/projects/${encodeURIComponent(projectName)}/env`, {
+    headers: { Authorization: `Bearer ${vercelToken}` },
+    cache: "no-store",
+  });
+  if (!res.ok) throw await parseVercelError(res);
+  const data = await res.json();
+  return (data.envs as VercelEnvVar[] | undefined)?.map((e) => ({ key: e.key, target: e.target ?? [] })) ?? [];
 }
 
 async function findProjectEnvId(

@@ -19,6 +19,7 @@ import type {
   RedeployResult,
   SettingsTokens,
   VercelDomainResult,
+  VercelEnvSummary,
 } from "@/types";
 
 export const DEPLOY_STEPS = [
@@ -36,6 +37,11 @@ const POLL_INTERVAL_MS = 2000;
 
 const GITHUB_REPO_RE = /^https:\/\/github\.com\/[^/]+\/[^/]+/;
 const ENV_KEY_RE = /^[A-Z][A-Z0-9_]*$/;
+
+/** Toggles the "www." prefix — used to auto-add/remove the www ↔ non-www counterpart of a domain together. */
+function wwwPairFor(domain: string): string {
+  return domain.toLowerCase().startsWith("www.") ? domain.slice(4) : `www.${domain}`;
+}
 const SETTINGS_TOKENS_KEY = "depush-settings-tokens";
 const DEFAULT_SETTINGS_TOKENS: SettingsTokens = { vercelToken: "", cloudflareToken: "", githubPat: "" };
 
@@ -135,6 +141,9 @@ interface DeployContextValue {
   ) => Promise<void>;
   removeEnvVar: (id: string) => Promise<void>;
   toggleEnvVisible: (id: string) => void;
+  syncingEnvVars: boolean;
+  syncEnvVarsForProject: (project: string) => Promise<"synced" | "skipped" | "error">;
+  syncAllEnvVars: () => Promise<void>;
   focusedTrafficProject: string | null;
   setFocusedTrafficProject: (name: string | null) => void;
 }
@@ -179,6 +188,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
   );
   const vercelToken = settingsTokens.vercelToken;
   const [syncingProjects, setSyncingProjects] = React.useState(false);
+  const [syncingEnvVars, setSyncingEnvVars] = React.useState(false);
 
   // Tests the Vercel token saved in Settings once (and again whenever it
   // changes) so the deploy form can skip asking for it a second time —
@@ -542,6 +552,57 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     }
   }, [history, syncProjectStatus, vercelToken, showToast]);
 
+  // Depush pushes secrets to Vercel but has no webhook for the reverse —
+  // someone deleting an env var straight from the Vercel dashboard leaves a
+  // stale row here otherwise. This re-fetches the real list for a project
+  // and drops any locally-synced secret that's no longer actually on Vercel.
+  const syncEnvVarsForProject = React.useCallback(
+    async (project: string): Promise<"synced" | "skipped" | "error"> => {
+      if (!vercelToken) return "skipped";
+      try {
+        const remote = await callApi<VercelEnvSummary[]>(
+          `/api/vercel/env?project=${encodeURIComponent(project)}`,
+          { headers: { "x-vercel-token": vercelToken } }
+        );
+        let removedCount = 0;
+        setEnvVars((prev) => {
+          const safePrev = Array.isArray(prev)? prev : [];
+          return safePrev.filter((v) => {
+            if (v.project !== project ||!v.syncedToVercel) return true;
+            const targetKey = v.environment === "Production"? "production" : "preview";
+            const stillExists = remote.some((r) => r.key === v.key && r.target.includes(targetKey));
+            if (!stillExists) removedCount += 1;
+            return stillExists;
+          });
+        });
+        if (removedCount > 0) {
+          showToast(
+            `${removedCount} secret untuk "${project}" sudah dihapus di Vercel — dihapus juga di sini.`
+          );
+        }
+        return "synced";
+      } catch {
+        return "error";
+      }
+    },
+    [vercelToken, setEnvVars, showToast]
+  );
+
+  const syncAllEnvVars = React.useCallback(async () => {
+    if (!vercelToken) return;
+    const safeEnvVars = Array.isArray(envVars)? envVars : [];
+    const projects = Array.from(
+      new Set(safeEnvVars.filter((v) => v.syncedToVercel).map((v) => v.project))
+    );
+    if (projects.length === 0) return;
+    setSyncingEnvVars(true);
+    for (const project of projects) {
+      // eslint-disable-next-line no-await-in-loop
+      await syncEnvVarsForProject(project);
+    }
+    setSyncingEnvVars(false);
+  }, [envVars, syncEnvVarsForProject, vercelToken]);
+
   // Vercel only applies a new/changed/removed env var on the *next*
   // deployment — pushing the var alone never touches the already-running
   // site. So every time a Vercel-synced env var changes, we kick off a
@@ -570,73 +631,141 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
   );
 
   const addDomain = React.useCallback(
-    async (domain: string, project: string) => {
-      const safeHistory = Array.isArray(history)? history : [];
-      const targetItem = safeHistory.find((h) => h.name === project);
-      const canSync = Boolean(vercelToken) && targetItem?.platform === "vercel";
-      if (!canSync) {
-        setDomains((prev) => {
-          const safePrev = Array.isArray(prev)? prev : [];
-          return [
-            { id: `${Date.now()}`, domain, project, status: "Pending" as const, syncedToVercel: false },
-           ...safePrev,
-          ];
-        });
-        showToast(
-          vercelToken
-           ? "Domain disimpan lokal (project ini bukan platform Vercel)."
-            : "Domain disimpan lokal — isi Vercel Token di Settings untuk push otomatis ke Vercel."
-        );
+    async (domain: string, project: string, options?: { pairId?: string }) => {
+      const trimmedDomain = domain.trim();
+      if (!trimmedDomain) return;
+      // A pairId present means this call is the *auto* add of the www/non-www
+      // counterpart — suppress its own toasts/pairing so the user only sees
+      // one clean message for the pair as a whole.
+      const isPairCall = Boolean(options?.pairId);
+      const pairId = options?.pairId ?? `pair-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+      const safeDomainsNow = Array.isArray(domains) ? domains : [];
+      const alreadyExists = safeDomainsNow.some(
+        (d) => d.project === project && d.domain.toLowerCase() === trimmedDomain.toLowerCase()
+      );
+      if (alreadyExists) {
+        if (!isPairCall) showToast(`Domain "${trimmedDomain}" sudah ada untuk project ini.`);
         return;
       }
-      try {
-        const result = await callApi<VercelDomainResult>("/api/vercel/domains", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ project, domain, vercelToken }),
-        });
+
+      const safeHistory = Array.isArray(history) ? history : [];
+      const targetItem = safeHistory.find((h) => h.name === project);
+      const canSync = Boolean(vercelToken) && targetItem?.platform === "vercel";
+
+      if (!canSync) {
         setDomains((prev) => {
-          const safePrev = Array.isArray(prev)? prev : [];
+          const safePrev = Array.isArray(prev) ? prev : [];
           return [
             {
-              id: `${Date.now()}`,
-              domain: result.name,
+              id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+              domain: trimmedDomain,
               project,
-              status: result.verified? "Active" : "Pending",
-              syncedToVercel: true,
-              dns: result.dns,
+              status: "Pending" as const,
+              syncedToVercel: false,
+              pairId,
             },
-           ...safePrev,
+            ...safePrev,
           ];
         });
-        showToast(
-          result.verified
-           ? "Domain berhasil ditambahkan & terverifikasi di Vercel."
-            : "Domain ditambahkan di Vercel — arahkan DNS sesuai instruksi untuk verifikasi."
-        );
-      } catch (err) {
-        showToast(err instanceof Error? err.message : "Gagal menambahkan domain ke Vercel.");
+        if (!isPairCall) {
+          showToast(
+            vercelToken
+              ? "Domain disimpan lokal (project ini bukan platform Vercel)."
+              : "Domain disimpan lokal — isi Vercel Token di Settings untuk push otomatis ke Vercel."
+          );
+        }
+      } else {
+        try {
+          const result = await callApi<VercelDomainResult>("/api/vercel/domains", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ project, domain: trimmedDomain, vercelToken }),
+          });
+          setDomains((prev) => {
+            const safePrev = Array.isArray(prev) ? prev : [];
+            return [
+              {
+                id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                domain: result.name,
+                project,
+                status: result.verified ? "Active" : "Pending",
+                syncedToVercel: true,
+                dns: result.dns,
+                pairId,
+              },
+              ...safePrev,
+            ];
+          });
+          if (!isPairCall) {
+            showToast(
+              result.verified
+                ? "Domain berhasil ditambahkan & terverifikasi di Vercel."
+                : "Domain ditambahkan di Vercel — arahkan DNS sesuai instruksi untuk verifikasi."
+            );
+          }
+        } catch (err) {
+          if (isPairCall) {
+            // Primary domain already saved fine — pairing is best-effort, so
+            // just warn instead of undoing the successful half.
+            showToast(
+              `Domain utama tersimpan, tapi gagal menambahkan pasangan "${trimmedDomain}" otomatis: ${
+                err instanceof Error ? err.message : "unknown error"
+              }`
+            );
+            return;
+          }
+          showToast(err instanceof Error ? err.message : "Gagal menambahkan domain ke Vercel.");
+          return;
+        }
+      }
+
+      // Auto-add the www ↔ non-www counterpart so both always exist together.
+      if (!isPairCall) {
+        const pairDomain = wwwPairFor(trimmedDomain);
+        void addDomain(pairDomain, project, { pairId });
       }
     },
-    [history, setDomains, showToast, vercelToken]
+    [domains, history, setDomains, showToast, vercelToken]
   );
 
   const removeDomain = React.useCallback(
     async (id: string) => {
-      const safeDomains = Array.isArray(domains)? domains : [];
+      const safeDomains = Array.isArray(domains) ? domains : [];
       const item = safeDomains.find((d) => d.id === id);
-      if (item?.syncedToVercel && vercelToken) {
-        try {
-          await callApi(
-            `/api/vercel/domains/${encodeURIComponent(item.domain)}?project=${encodeURIComponent(item.project)}`,
-            { method: "DELETE", headers: { "x-vercel-token": vercelToken } }
-          );
-        } catch (err) {
-          showToast(err instanceof Error? err.message : "Gagal menghapus domain di Vercel.");
-          return;
+      if (!item) return;
+
+      // Remove the whole www/non-www pair together, not just the one clicked.
+      const group = item.pairId ? safeDomains.filter((d) => d.pairId === item.pairId) : [item];
+
+      const removedIds: string[] = [];
+      for (const target of group) {
+        if (target.syncedToVercel && vercelToken) {
+          try {
+            // eslint-disable-next-line no-await-in-loop
+            await callApi(
+              `/api/vercel/domains/${encodeURIComponent(target.domain)}?project=${encodeURIComponent(target.project)}`,
+              { method: "DELETE", headers: { "x-vercel-token": vercelToken } }
+            );
+          } catch (err) {
+            showToast(
+              err instanceof Error
+                ? `Gagal menghapus "${target.domain}" di Vercel: ${err.message}`
+                : `Gagal menghapus "${target.domain}" di Vercel.`
+            );
+            continue; // keep this one in the list, still remove whatever else succeeds
+          }
         }
+        removedIds.push(target.id);
       }
-      setDomains((prev) => (Array.isArray(prev)? prev : []).filter((d) => d.id!== id));
+
+      if (removedIds.length === 0) return;
+
+      setDomains((prev) => (Array.isArray(prev) ? prev : []).filter((d) => !removedIds.includes(d.id)));
+
+      if (removedIds.length > 1) {
+        showToast(`${removedIds.length} domain (termasuk pasangan www) berhasil dihapus.`);
+      }
     },
     [domains, setDomains, showToast, vercelToken]
   );
@@ -811,6 +940,9 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     addEnvVar,
     removeEnvVar,
     toggleEnvVisible,
+    syncingEnvVars,
+    syncEnvVarsForProject,
+    syncAllEnvVars,
     focusedTrafficProject,
     setFocusedTrafficProject,
   };
