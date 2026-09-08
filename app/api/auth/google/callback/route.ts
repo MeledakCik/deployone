@@ -85,7 +85,7 @@ export async function GET(req: NextRequest) {
   const res = NextResponse.redirect(new URL("/dashboard", req.url));
   res.cookies.set(SESSION_COOKIE, sessionToken, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: true,
     sameSite: "lax",
     path: "/",
     maxAge: 60 * 60 * 24 * 30,
