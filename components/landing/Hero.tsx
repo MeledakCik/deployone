@@ -95,8 +95,19 @@ export function Hero() {
           <div className="absolute w-[300px] h-[300px] bg-fuchsia-500/15 blur-[60px] rounded-full top-10 right-10 -z-10" />
 
           <div
-            className="glass w-full max-w-[560px] !rounded-[24px] overflow-hidden"
-            style={{ animation: "landing-float 6s ease-in-out infinite" }}
+            // Solid surface instead of .glass here on purpose: this element
+            // runs an infinite transform animation, and animating transform
+            // on a backdrop-blur element forces the GPU to re-blur every
+            // single frame forever — a classic stutter/frame-drop cause on
+            // low-end phones and laptops. Everything else on the page still
+            // gets the glass look; only the thing that never stops moving
+            // goes solid.
+            className="surface-solid w-full max-w-[560px] !rounded-[24px] overflow-hidden"
+            style={{
+              background: "var(--surface-solid)",
+              animation: "landing-float 6s ease-in-out infinite",
+              willChange: "transform",
+            }}
           >
             <div
               className="h-[48px] px-5 flex items-center justify-between"

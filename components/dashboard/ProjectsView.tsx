@@ -288,7 +288,7 @@ export function ProjectsView() {
                 <Surface key={project.name} className="p-5">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <h3 className="truncate text-base light:text-black dark:text-white font-semibold">{project.name}</h3>
+                      <h3 className="truncate text-base font-semibold">{project.name}</h3>
                       <p className="mono text-xs text-text-faint capitalize mt-0.5">
                         {project.platform} • {project.date}
                       </p>

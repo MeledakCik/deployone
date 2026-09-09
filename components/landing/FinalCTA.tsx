@@ -36,7 +36,7 @@ export function FinalCTA() {
           </div>
 
           <div
-            className="mx-auto mt-12 max-w-[860px] rounded-[20px] backdrop-blur-xl overflow-hidden"
+            className="mx-auto mt-12 max-w-[860px] rounded-[20px] backdrop-blur-md overflow-hidden"
             style={{ border: "1px solid var(--line)", background: "var(--card-hover)" }}
           >
             <div

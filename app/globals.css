@@ -82,6 +82,25 @@
   border-color: var(--line);
 }
 
+/* Every element gets the shared theme-transition by default so background,
+   border, text and fill colors all fade together in one pass when the
+   dark/light toggle fires — components only need to declare EXTRA
+   transitions (transform, filter, etc.), never re-declare the color part. */
+*,
+*::before,
+*::after {
+  transition: var(--theme-transition);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
 html {
   scrollbar-gutter: stable;
 }
