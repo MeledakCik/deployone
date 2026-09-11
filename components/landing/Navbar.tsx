@@ -35,31 +35,16 @@ export function Navbar() {
   }, [searchParams]);
 
   React.useEffect(() => {
-    // rAF-throttled + passive: scroll fires dozens of times/sec, this makes
-    // sure we only ever touch state once per animation frame instead of once
-    // per event, which is what was causing extra work/jank on weak devices.
-    let ticking = false;
-    const onScroll = () => {
-      if (ticking) return;
-      ticking = true;
-      requestAnimationFrame(() => {
-        setScrolled(window.scrollY > 20);
-        ticking = false;
-      });
-    };
+    const onScroll = () => setScrolled(window.scrollY > 20);
     onScroll();
-    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
   return (
     <>
       <header
-        // backdrop-blur is only turned on once we're actually scrolled — a
-        // sticky element blurring nothing (transparent bg) still forces the
-        // GPU to resample every scroll frame, so this was costing frames for
-        // zero visual benefit at the top of the page.
-        className={`sticky top-0 z-50 transition-all duration-300 ${scrolled ? "backdrop-blur-md" : ""}`}
+        className="sticky top-0 z-50 backdrop-blur-md"
         style={{
           background: scrolled ? "var(--glass-bg)" : "transparent",
           borderBottom: scrolled ? "1px solid var(--line)" : "1px solid transparent",

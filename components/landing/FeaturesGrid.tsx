@@ -82,12 +82,7 @@ export function FeaturesGrid() {
           return (
             <div
               key={feature.title}
-              // No backdrop-blur here: this renders 9 of these at once, and
-              // 9 simultaneous backdrop-filter layers in one grid is the
-              // single biggest scroll-jank source on low-end GPUs. The
-              // translucent var(--card-hover) background alone keeps the
-              // glass look without the per-frame blur cost.
-              className={`group relative rounded-[22px] p-[22px] overflow-hidden transition-all duration-300 ${
+              className={`group relative rounded-[22px] backdrop-blur-sm p-[22px] overflow-hidden ${
                 feature.span || ""
               } ${feature.large ? "md:min-h-[280px]" : "min-h-[200px]"}`}
               style={{ background: "var(--card-hover)", border: "1px solid var(--line)" }}
@@ -95,7 +90,7 @@ export function FeaturesGrid() {
               <div
                 className={`pointer-events-none absolute -top-24 -right-24 w-[260px] h-[260px] rounded-full bg-gradient-to-br ${
                   feature.accent || "from-violet-500/10 to-transparent"
-                } blur-[30px] opacity-60 group-hover:opacity-90 transition`}
+                } blur-[16px] opacity-60 group-hover:opacity-90 transition`}
               />
 
               <div className="relative">
@@ -129,7 +124,7 @@ export function FeaturesGrid() {
                     </div>
 
                     <div
-                      className="lg:w-[300px] rounded-[14px] p-3"
+                      className="lg:w-[300px] rounded-[14px] p-3 backdrop-blur"
                       style={{ background: "var(--surface-solid)", border: "1px solid var(--surface-line)" }}
                     >
                       <div className="flex items-center justify-between">

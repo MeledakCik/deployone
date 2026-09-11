@@ -1,15 +1,8 @@
 "use client";
 
-import { motion } from "framer-motion";
-
+// Lightweight CSS-only fade (no framer-motion / JS-driven animation).
+// Avoids per-mount JS animation work and layout-affecting transforms;
+// only `opacity` is animated, which is cheap to composite.
 export function ViewFade({ children }: { children: React.ReactNode }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.3, ease: "easeOut" }}
-    >
-      {children}
-    </motion.div>
-  );
+  return <div className="view-fade">{children}</div>;
 }

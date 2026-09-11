@@ -27,7 +27,7 @@ export function Hero() {
       <div className="grid md:grid-cols-[1.05fr_0.95fr] gap-12 md:gap-8 items-center">
         {/* Left: copy */}
         <div>
-          <div className="pill inline-flex items-center gap-2.5 h-8 px-3.5 backdrop-blur-xl text-[12.5px] text-[var(--text-muted)]">
+          <div className="pill inline-flex items-center gap-2.5 h-8 px-3.5 backdrop-blur-sm text-[12.5px] text-[var(--text-muted)]">
             <span
               className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.6)]"
               style={{ animation: "landing-blink 1.4s infinite" }}
@@ -53,7 +53,7 @@ export function Hero() {
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               href="/dashboard"
-              className="group h-[44px] px-6 rounded-full bg-gradient-to-br from-violet-600 to-fuchsia-500 text-white text-[14px] font-semibold flex items-center gap-2 shadow-[0_0_30px_rgba(124,58,237,0.35)] hover:shadow-[0_0_40px_rgba(124,58,237,0.5)] hover:brightness-110 transition-all"
+              className="group h-[44px] px-6 rounded-full bg-gradient-to-br from-violet-600 to-fuchsia-500 text-white text-[14px] font-semibold flex items-center gap-2 shadow-[0_0_30px_rgba(124,58,237,0.35)] hover:shadow-[0_0_40px_rgba(124,58,237,0.5)] hover:brightness-110 transition-shadow"
             >
               Deploy Sekarang
               <ArrowUpRight size={16} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
@@ -61,7 +61,7 @@ export function Hero() {
 
             <a
               href="#how-it-works"
-              className="pill h-[44px] px-6 backdrop-blur-xl text-[var(--text)] text-[14px] font-medium flex items-center gap-2 hover:brightness-105 transition"
+              className="pill h-[44px] px-6 backdrop-blur-sm text-[var(--text)] text-[14px] font-medium flex items-center gap-2 hover:brightness-105 transition"
             >
               <span className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: "var(--card-hover)" }}>
                 <Play size={12} className="fill-[var(--text)] ml-0.5" />
@@ -89,25 +89,14 @@ export function Hero() {
         {/* Right: glass dashboard mockup */}
         <div className="relative md:h-[520px] flex items-center justify-center">
           <div
-            className="absolute w-[420px] h-[420px] bg-violet-600/20 blur-[80px] rounded-full -z-10"
+            className="absolute w-[420px] h-[420px] bg-violet-600/25 blur-[36px] rounded-full -z-10"
             style={{ animation: "landing-glow-pulse 4s ease-in-out infinite" }}
           />
-          <div className="absolute w-[300px] h-[300px] bg-fuchsia-500/15 blur-[60px] rounded-full top-10 right-10 -z-10" />
+          <div className="absolute w-[300px] h-[300px] bg-fuchsia-500/20 blur-[28px] rounded-full top-10 right-10 -z-10" />
 
           <div
-            // Solid surface instead of .glass here on purpose: this element
-            // runs an infinite transform animation, and animating transform
-            // on a backdrop-blur element forces the GPU to re-blur every
-            // single frame forever — a classic stutter/frame-drop cause on
-            // low-end phones and laptops. Everything else on the page still
-            // gets the glass look; only the thing that never stops moving
-            // goes solid.
-            className="surface-solid w-full max-w-[560px] !rounded-[24px] overflow-hidden"
-            style={{
-              background: "var(--surface-solid)",
-              animation: "landing-float 6s ease-in-out infinite",
-              willChange: "transform",
-            }}
+            className="glass w-full max-w-[560px] !rounded-[24px] overflow-hidden"
+            style={{ animation: "landing-float 6s ease-in-out infinite" }}
           >
             <div
               className="h-[48px] px-5 flex items-center justify-between"
@@ -154,7 +143,7 @@ export function Hero() {
               {DEPLOYMENTS.map((d) => (
                 <div
                   key={d.name}
-                  className="group flex items-center gap-3 h-[54px] px-3.5 rounded-[14px] transition-all cursor-default"
+                  className="group flex items-center gap-3 h-[54px] px-3.5 rounded-[14px] cursor-default"
                   style={{ background: "var(--card-hover)", border: "1px solid var(--line)" }}
                 >
                   <div className={`w-2 h-2 rounded-full ${d.dot} shadow-[0_0_8px_currentColor]`} />

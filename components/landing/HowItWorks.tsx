@@ -20,7 +20,7 @@ export function HowItWorks() {
   return (
     <section id="how-it-works" className="relative mx-auto max-w-[1200px] px-6 py-20">
       <div
-        className="rounded-[28px] backdrop-blur-md overflow-hidden"
+        className="rounded-[28px] backdrop-blur-sm overflow-hidden"
         style={{ border: "1px solid var(--line)", background: "var(--row-hover)" }}
       >
         <div className="px-6 md:px-10 pt-10 md:pt-14 pb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">

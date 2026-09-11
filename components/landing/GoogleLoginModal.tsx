@@ -22,7 +22,7 @@ export function GoogleLoginModal({ open, onClose }: { open: boolean; onClose: ()
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-md px-4 transition-all"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-md px-4"
       onClick={onClose}
     >
       <div
@@ -49,7 +49,7 @@ export function GoogleLoginModal({ open, onClose }: { open: boolean; onClose: ()
         <button
           type="button"
           onClick={login}
-          className="flex w-full items-center justify-center gap-3 rounded-full bg-white px-4 py-3 text-[14px] font-semibold text-black border border-[var(--line)] hover:bg-white/90 active:scale-[0.99] transition-all"
+          className="flex w-full items-center justify-center gap-3 rounded-full bg-white px-4 py-3 text-[14px] font-semibold text-black border border-[var(--line)] hover:bg-white/90 active:scale-[0.99] transition"
         >
           <GoogleMark size={18} />
           <span>Lanjutkan dengan Google</span>
