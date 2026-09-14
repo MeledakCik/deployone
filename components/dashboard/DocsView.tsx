@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ChevronDown, ExternalLink, KeyRound, Github, ShieldCheck, BarChart2 } from "lucide-react";
+import { ChevronDown, ExternalLink, KeyRound, Github, ShieldCheck, BarChart2, Cloud } from "lucide-react";
 import { ViewFade } from "@/components/ui/ViewFade";
 import { Surface } from "@/components/ui/Surface";
 
@@ -26,6 +26,22 @@ const GUIDES: Guide[] = [
       "Atur masa berlaku (No Expiration lebih praktis untuk dipakai berulang, tapi lebih aman kalau dikasih expiry).",
       'Klik "Create", lalu salin token yang muncul — token ini cuma ditampilkan sekali, jadi langsung simpan.',
       "Tempel token itu ke field Vercel Token di form Deploy atau di halaman Settings Depup.",
+    ],
+  },
+  {
+    icon: Cloud,
+    title: "Cara dapetin Cloudflare Token",
+    desc: "Token ini dipakai Depup untuk deploy repo GitHub kamu ke Cloudflare Pages, kelola domain, dan env vars.",
+    link: { label: "Buka Cloudflare API Tokens", href: "https://dash.cloudflare.com/profile/api-tokens" },
+    steps: [
+      "Login ke dash.cloudflare.com, klik ikon profil kanan atas → \"My Profile\" → tab \"API Tokens\" (atau langsung ke dash.cloudflare.com/profile/api-tokens).",
+      'Klik "Create Token" → pilih "Create Custom Token" (jangan pakai template siap pakai).',
+      'Di bagian Permissions pilih: Account → "Cloudflare Pages" → "Edit". Kalau mau sekalian kelola custom domain, tambahkan juga Zone → DNS → Edit dan Zone → Zone → Read via "+ Add more".',
+      'PENTING di bagian Account Resources: dropdown pertama biarkan "Include", tapi dropdown kedua WAJIB dipilih nama akun Cloudflare kamu secara spesifik (atau "All accounts"). Kalau dibiarkan kosong, token akan valid tapi tidak punya akses ke akun manapun — ini penyebab paling umum error di Depup.',
+      "Client IP Address Filtering dan TTL boleh dikosongin (opsional) — klik \"Continue to summary\".",
+      'Cek ringkasan permission-nya, lalu klik "Create Token" dan langsung salin — token cuma ditampilkan sekali.',
+      'Ambil Account ID: buka Workers & Pages di dashboard Cloudflare, Account ID muncul di sidebar kanan — pastikan ini akun yang sama dengan yang dipilih di Account Resources tadi.',
+      'Tempel token + Account ID ke field Cloudflare Token & Account ID di form Deploy (atau Settings Depup), lalu klik "Test Koneksi" sebelum deploy. Kalau muncul "token tidak punya akses ke akun manapun", balik ke token itu di Cloudflare dan pastikan Account Resources-nya benar-benar terisi nama akun.',
     ],
   },
   {

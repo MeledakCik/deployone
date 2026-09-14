@@ -155,13 +155,23 @@ export function SettingsView() {
         return;
       }
       const chosen = accounts.find((a) => a.id === draft.cloudflareAccountId) ?? accounts[0];
-      setDraft((prev) => ({ ...prev, cloudflareAccountId: chosen.id }));
+      // FIX: sebelumnya account ID hasil auto-detect ini cuma masuk ke
+      // `draft` (state sementara) dan baru benar-benar tersimpan kalau user
+      // klik tombol "Simpan" terpisah di bawah form. Kalau user langsung
+      // pindah ke halaman Deploy setelah "Test Koneksi" tanpa klik Simpan,
+      // deploy-context masih baca `settingsTokens` versi lama/kosong dari
+      // penyimpanan — jadi konek berhasil di sini tapi deploy tetap gagal
+      // dengan pesan "token tidak valid". Sekarang begitu test sukses,
+      // token + account ID langsung dipersist ke penyimpanan asli juga.
+      const next = { ...draft, cloudflareToken: draft.cloudflareToken, cloudflareAccountId: chosen.id };
+      setDraft(next);
+      setTokens(next);
       setCloudflareCheck({
         status: "ok",
         label:
           accounts.length > 1
-            ? `Terhubung — akun aktif: "${chosen.name}" (${accounts.length} akun tersedia di bawah)`
-            : `Terhubung ke akun "${chosen.name}"`,
+            ? `Terhubung & tersimpan — akun aktif: "${chosen.name}" (${accounts.length} akun tersedia di bawah)`
+            : `Terhubung & tersimpan ke akun "${chosen.name}"`,
       });
     } catch (err) {
       setCloudflareAccounts([]);
@@ -214,7 +224,11 @@ export function SettingsView() {
                 <select
                   id="cloudflareAccount"
                   value={draft.cloudflareAccountId}
-                  onChange={(e) => setDraft((prev) => ({ ...prev, cloudflareAccountId: e.target.value }))}
+                  onChange={(e) => {
+                    const next = { ...draft, cloudflareAccountId: e.target.value };
+                    setDraft(next);
+                    setTokens(next); // persist immediately, same fix as testCloudflare()
+                  }}
                   className="input-solid h-11 w-full px-3.5 text-[13px]"
                 >
                   {cloudflareAccounts.map((a) => (
