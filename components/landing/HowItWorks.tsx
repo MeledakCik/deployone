@@ -2,7 +2,7 @@ const STEPS = [
   {
     n: "01",
     t: "Connect Repository",
-    d: "Hubungkan GitHub. Depush auto-detect framework Next.js, Astro, Vite, dan lainnya.",
+    d: "Hubungkan GitHub. Depup auto-detect framework Next.js, Astro, Vite, dan lainnya.",
   },
   {
     n: "02",
@@ -65,15 +65,15 @@ export function HowItWorks() {
                   >
                     <div className="flex items-center gap-2 text-[var(--text-faint)]">
                       <div className="w-2 h-2 rounded-full bg-emerald-400" />
-                      depush CLI
+                      depup CLI
                     </div>
                     <div className="mt-2 space-y-1">
                       <div>
-                        <span className="text-violet-400">$</span> depush connect
+                        <span className="text-violet-400">$</span> depup connect
                       </div>
                       <div className="text-[var(--text-faint)]">✓ repo linked</div>
                       <div>
-                        <span className="text-violet-400">$</span> depush deploy --prod
+                        <span className="text-violet-400">$</span> depup deploy --prod
                       </div>
                     </div>
                   </div>

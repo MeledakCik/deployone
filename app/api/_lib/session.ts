@@ -56,8 +56,8 @@ export function verifySession(token: string | undefined | null): SessionPayload 
   }
 }
 
-export const SESSION_COOKIE = "depush_session";
-export const OAUTH_STATE_COOKIE = "depush_oauth_state";
+export const SESSION_COOKIE = "depup_session";
+export const OAUTH_STATE_COOKIE = "depup_oauth_state";
 
 /**
  * Helper dipakai oleh route yang butuh email user saat ini dari cookie

@@ -174,7 +174,7 @@ export interface VercelProjectSummary {
 /**
  * Lists every project on the caller's Vercel account — used by "Import
  * Project" so the user can pull in projects created directly on Vercel
- * (outside Depush) without re-deploying them.
+ * (outside Depup) without re-deploying them.
  */
 export async function listVercelProjects(vercelToken: string): Promise<VercelProjectSummary[]> {
   const res = await fetch(`${VERCEL_API}/v9/projects?limit=100`, {
@@ -205,7 +205,7 @@ export async function listVercelProjects(vercelToken: string): Promise<VercelPro
 /**
  * Permanently deletes a project on Vercel — used by "Hapus di kedua sisi" on
  * the Projects page. This removes the project, its deployments, and its
- * domains from the real Vercel account, not just from Depush's local list.
+ * domains from the real Vercel account, not just from Depup's local list.
  */
 export async function deleteVercelProject(projectName: string, vercelToken: string): Promise<void> {
   const res = await fetch(`${VERCEL_API}/v9/projects/${encodeURIComponent(projectName)}`, {
@@ -438,7 +438,7 @@ export interface VercelEnvSummary {
   target: string[];
 }
 
-/** Lists every env var currently set on a real Vercel project — used to detect vars deleted directly on Vercel (outside Depush) so they can be cleaned up here too. */
+/** Lists every env var currently set on a real Vercel project — used to detect vars deleted directly on Vercel (outside Depup) so they can be cleaned up here too. */
 export async function listProjectEnv(
   projectName: string,
   vercelToken: string

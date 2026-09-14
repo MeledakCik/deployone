@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowUpRight, Play } from "lucide-react";
 
 const DEPLOYMENTS = [
-  { name: "depush-landing-v2", platform: "VERCEL", status: "Ready", time: "2m ago", branch: "main", dot: "bg-emerald-400" },
+  { name: "depup-landing-v2", platform: "VERCEL", status: "Ready", time: "2m ago", branch: "main", dot: "bg-emerald-400" },
   { name: "api-gateway-edge", platform: "CLOUDFLARE", status: "Building", time: "now", branch: "feat/cache", dot: "bg-amber-400" },
   { name: "docs-v3-redesign", platform: "VERCEL", status: "Ready", time: "18m ago", branch: "docs/new", dot: "bg-emerald-400" },
   { name: "marketing-site", platform: "CLOUDFLARE", status: "Failed", time: "1h ago", branch: "main", dot: "bg-red-400" },
@@ -109,7 +109,7 @@ export function Hero() {
                   <div className="w-3 h-3 rounded-full" style={{ background: "var(--line-strong)" }} />
                 </div>
                 <span className="ml-4 text-[12px] text-[var(--text-faint)] tracking-wide">
-                  depush.app / deployments
+                  depup.app / deployments
                 </span>
               </div>
               <div className="flex items-center gap-2">

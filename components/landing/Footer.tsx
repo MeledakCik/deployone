@@ -6,8 +6,8 @@ export function Footer() {
           <div className="w-6 h-6 rounded-full bg-white flex items-center justify-center shadow-[0_0_0_1px_rgba(15,23,42,0.08)]">
             <div className="w-2 h-2 rounded-full bg-[#3B82F6]" />
           </div>
-          <span className="font-semibold text-[var(--text)]">Depush</span>
-          <span className="text-[var(--text-faint)]">© {new Date().getFullYear()} Depush, Inc.</span>
+          <span className="font-semibold text-[var(--text)]">Depup</span>
+          <span className="text-[var(--text-faint)]">© {new Date().getFullYear()} Depup, Inc.</span>
         </div>
 
         <div className="flex items-center gap-6 text-[var(--text-faint)]">

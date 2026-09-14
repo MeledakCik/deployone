@@ -30,7 +30,7 @@ export function GoogleLoginModal({ open, onClose }: { open: boolean; onClose: ()
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-1">
-          <h3 className="text-[17px] font-semibold tracking-tight">Masuk ke Depush</h3>
+          <h3 className="text-[17px] font-semibold tracking-tight">Masuk ke Depup</h3>
           <button
             type="button"
             onClick={onClose}
@@ -44,7 +44,7 @@ export function GoogleLoginModal({ open, onClose }: { open: boolean; onClose: ()
           </button>
         </div>
 
-        <p className="text-[12px] text-[var(--text-faint)] mb-6">untuk melanjutkan ke dashboard Depush</p>
+        <p className="text-[12px] text-[var(--text-faint)] mb-6">untuk melanjutkan ke dashboard Depup</p>
 
         <button
           type="button"

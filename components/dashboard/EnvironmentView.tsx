@@ -14,16 +14,14 @@ function useProjectNames() {
   return React.useMemo(() => Array.from(new Set(history.map((h) => h.name))), [history]);
 }
 
-/** Only Vercel-platform projects — that's the only platform we can actually push secrets to. */
-function useVercelProjectNames() {
+/** Maps project name -> platform, so the modal knows which remote (if any) a project can push secrets to. */
+function useProjectPlatforms() {
   const { history } = useDeploy();
-  return React.useMemo(
-    () => {
-      const safeHistory = Array.isArray(history) ? history : [];
-      return Array.from(new Set(safeHistory.filter((h) => h.platform === "vercel").map((h) => h.name)));
-    },
-    [history]
-  );
+  return React.useMemo(() => {
+    const map = new Map<string, string>();
+    for (const h of Array.isArray(history) ? history : []) if (!map.has(h.name)) map.set(h.name, h.platform);
+    return map;
+  }, [history]);
 }
 
 function AddSecretModal({
@@ -35,15 +33,15 @@ function AddSecretModal({
   onClose: () => void;
   defaultProject?: string;
 }) {
-  const { addEnvVar, vercelToken } = useDeploy();
+  const { addEnvVar, vercelToken, savedCloudflareToken } = useDeploy();
   const { showToast } = useToast();
   const projectNames = useProjectNames();
-  const vercelProjectNames = useVercelProjectNames();
+  const projectPlatforms = useProjectPlatforms();
   const [key, setKey] = React.useState("");
   const [value, setValue] = React.useState("");
   const [environment, setEnvironment] = React.useState<"Production" | "Preview">("Production");
   const [project, setProject] = React.useState(defaultProject ?? projectNames[0] ?? "");
-  const [pushToVercel, setPushToVercel] = React.useState(true);
+  const [pushToRemote, setPushToRemote] = React.useState(true);
 
   React.useEffect(() => {
     if (open) setProject(defaultProject ?? projectNames[0] ?? "");
@@ -51,8 +49,10 @@ function AddSecretModal({
 
   if (!open) return null;
 
-  const isVercelProject = vercelProjectNames.includes(project);
-  const canPush = Boolean(vercelToken) && isVercelProject;
+  const projectPlatform = projectPlatforms.get(project);
+  const isVercelProject = projectPlatform === "vercel";
+  const isCloudflareProject = projectPlatform === "cloudflare";
+  const canPush = (isVercelProject && Boolean(vercelToken)) || (isCloudflareProject && Boolean(savedCloudflareToken));
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -65,7 +65,8 @@ function AddSecretModal({
       return;
     }
     addEnvVar(key.trim(), value.trim(), environment, project, {
-      pushToVercel: canPush && pushToVercel,
+      pushToVercel: canPush && pushToRemote && isVercelProject,
+      pushToCloudflare: canPush && pushToRemote && isCloudflareProject,
     });
     setKey("");
     setValue("");
@@ -151,27 +152,27 @@ function AddSecretModal({
             </Select>
           </div>
 
-          {isVercelProject ? (
-            vercelToken ? (
+          {isVercelProject || isCloudflareProject ? (
+            canPush ? (
               <div className="space-y-2 rounded-2xl border border-[var(--surface-line)] p-3.5">
                 <label className="flex items-center gap-2.5 text-[12.5px] font-medium">
                   <input
                     type="checkbox"
-                    checked={pushToVercel}
-                    onChange={(e) => setPushToVercel(e.target.checked)}
+                    checked={pushToRemote}
+                    onChange={(e) => setPushToRemote(e.target.checked)}
                     className="h-4 w-4 accent-violet-500"
                   />
-                  Push otomatis ke project &quot;{project}&quot; di Vercel
+                  Push otomatis ke project &quot;{project}&quot; di {isVercelProject ? "Vercel" : "Cloudflare"}
                 </label>
               </div>
             ) : (
               <p className="text-[11.5px] text-text-faint">
-                Isi Vercel Token di Settings untuk push otomatis ke Vercel.
+                Konek-kan {isVercelProject ? "Vercel" : "Cloudflare"} Token di Settings untuk push otomatis.
               </p>
             )
           ) : (
             <p className="text-[11.5px] text-text-faint">
-              Project ini bukan platform Vercel — secret akan disimpan lokal saja untuk project ini.
+              Project ini bukan platform Vercel/Cloudflare — secret akan disimpan lokal saja untuk project ini.
             </p>
           )}
 
@@ -185,20 +186,21 @@ function AddSecretModal({
 }
 
 export function EnvironmentView() {
-  const { envVars, removeEnvVar, toggleEnvVisible, vercelToken, syncingEnvVars, syncAllEnvVars } = useDeploy();
+  const { envVars, removeEnvVar, toggleEnvVisible, vercelToken, savedCloudflareToken, syncingEnvVars, syncAllEnvVars } =
+    useDeploy();
   const projectNames = useProjectNames();
   const [modalOpen, setModalOpen] = React.useState(false);
   const [activeProject, setActiveProject] = React.useState<string>("all");
   const didAutoSync = React.useRef(false);
 
-  // Depush has no webhook for it, so we don't find out on our own when a
-  // secret gets deleted straight from the Vercel dashboard — check once per
-  // visit so the list here doesn't quietly go stale.
+  // Depup has no webhook for it, so we don't find out on our own when a
+  // secret gets deleted straight from the Vercel/Cloudflare dashboard —
+  // check once per visit so the list here doesn't quietly go stale.
   React.useEffect(() => {
-    if (didAutoSync.current || !vercelToken) return;
+    if (didAutoSync.current || (!vercelToken && !savedCloudflareToken)) return;
     didAutoSync.current = true;
     void syncAllEnvVars();
-  }, [vercelToken, syncAllEnvVars]);
+  }, [vercelToken, savedCloudflareToken, syncAllEnvVars]);
 
   // Keep the filter valid if the underlying project list changes.
   React.useEffect(() => {
@@ -234,7 +236,7 @@ export function EnvironmentView() {
           </button>
         </div>
 
-        {vercelToken && (
+        {(vercelToken || savedCloudflareToken) && (
           <div className="flex justify-end">
             <button
               type="button"
@@ -243,7 +245,7 @@ export function EnvironmentView() {
               className="pill inline-flex items-center gap-2 px-4 py-2 text-[12.5px] font-medium hover:brightness-110 disabled:opacity-50"
             >
               <RefreshCw size={13} className={syncingEnvVars ? "animate-spin" : undefined} />
-              {syncingEnvVars ? "Sinkronisasi..." : "Sinkronkan dengan Vercel"}
+              {syncingEnvVars ? "Sinkronisasi..." : "Sinkronkan"}
             </button>
           </div>
         )}
@@ -314,6 +316,11 @@ export function EnvironmentView() {
                       {item.syncedToVercel && (
                         <span className="ml-1.5 inline-flex items-center gap-1 rounded-pill border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10.5px] font-medium text-emerald-400">
                           ✓ Vercel
+                        </span>
+                      )}
+                      {item.syncedToCloudflare && (
+                        <span className="ml-1.5 inline-flex items-center gap-1 rounded-pill border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10.5px] font-medium text-emerald-400">
+                          ✓ Cloudflare
                         </span>
                       )}
                     </td>

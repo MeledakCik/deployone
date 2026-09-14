@@ -39,7 +39,7 @@ menimpa data valid di KV dengan array kosong.
 3. **useCloudStorage.ts** — effect sync PUT hanya jalan kalau: ada
    email login, sudah selesai load awal (`isInitialized`), dan
    perubahan berasal dari aksi eksplisit user (`skipSyncRef`).
-4. **auth/logout/route.ts** — hanya menghapus cookie `depush_session`,
+4. **auth/logout/route.ts** — hanya menghapus cookie `depup_session`,
    tidak ada import dari `store.ts` sama sekali.
 
 ## Test flow

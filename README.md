@@ -1,6 +1,6 @@
-# Depush
+# Depup
 
-**Depush** adalah landing page + dashboard untuk mengelola deployment Vercel dan Cloudflare
+**Depup** adalah landing page + dashboard untuk mengelola deployment Vercel dan Cloudflare
 Pages dari satu tempat — dibangun dengan Next.js 14 (App Router), TypeScript, dan Tailwind CSS.
 
 ## Halaman
@@ -95,7 +95,7 @@ di-migrasikan sekali ke server saat pertama kali dashboard dibuka, lalu dihapus 
 
 ## Login Google (OAuth2 asli)
 
-Depush pakai OAuth2 Google beneran — bukan simulasi/akun dummy. Alurnya standar Authorization
+Depup pakai OAuth2 Google beneran — bukan simulasi/akun dummy. Alurnya standar Authorization
 Code flow, session disimpan sebagai cookie `httpOnly` yang ditandatangani HMAC (lihat
 `app/api/_lib/session.ts`), tanpa dependency tambahan (`next-auth`, dll).
 

@@ -17,15 +17,15 @@ const GUIDES: Guide[] = [
   {
     icon: KeyRound,
     title: "Cara dapetin Vercel Token",
-    desc: "Token ini dipakai Depush untuk deploy langsung dari repo GitHub kamu ke Vercel.",
+    desc: "Token ini dipakai Depup untuk deploy langsung dari repo GitHub kamu ke Vercel.",
     link: { label: "Buka Vercel Tokens", href: "https://vercel.com/account/tokens" },
     steps: [
       "Login ke akun Vercel kamu di vercel.com.",
       'Buka menu Account Settings → tab "Tokens" (atau langsung ke vercel.com/account/tokens).',
-      'Klik "Create Token", kasih nama bebas (misal "depush"), pilih scope sesuai akun/tim yang mau dipakai.',
+      'Klik "Create Token", kasih nama bebas (misal "depup"), pilih scope sesuai akun/tim yang mau dipakai.',
       "Atur masa berlaku (No Expiration lebih praktis untuk dipakai berulang, tapi lebih aman kalau dikasih expiry).",
       'Klik "Create", lalu salin token yang muncul — token ini cuma ditampilkan sekali, jadi langsung simpan.',
-      "Tempel token itu ke field Vercel Token di form Deploy atau di halaman Settings Depush.",
+      "Tempel token itu ke field Vercel Token di form Deploy atau di halaman Settings Depup.",
     ],
   },
   {
@@ -38,14 +38,14 @@ const GUIDES: Guide[] = [
       'Scroll ke bawah ke "Developer settings" (paling bawah sidebar kiri).',
       'Pilih "Personal access tokens" → "Fine-grained tokens" → "Generate new token".',
       "Kasih nama token, atur masa berlaku, dan pilih repository access — bisa semua repo atau pilih repo tertentu saja.",
-      'Di bagian "Repository permissions", pastikan "Contents" di-set ke "Read-only" minimal (biar Depush bisa baca source code & package.json).',
+      'Di bagian "Repository permissions", pastikan "Contents" di-set ke "Read-only" minimal (biar Depup bisa baca source code & package.json).',
       'Klik "Generate token", salin, lalu tempel ke field GitHub Token di form Deploy atau Settings.',
     ],
   },
   {
     icon: ShieldCheck,
-    title: "Setup Login Google (untuk admin/deployer Depush)",
-    desc: "Depush pakai OAuth2 Google asli — bukan simulasi. Ini perlu di-setup sekali di Google Cloud Console oleh yang deploy Depush.",
+    title: "Setup Login Google (untuk admin/deployer Depup)",
+    desc: "Depup pakai OAuth2 Google asli — bukan simulasi. Ini perlu di-setup sekali di Google Cloud Console oleh yang deploy Depup.",
     link: { label: "Buka Google Cloud Console", href: "https://console.cloud.google.com/apis/credentials" },
     steps: [
       "Buka Google Cloud Console → pilih/buat sebuah project.",
@@ -53,7 +53,7 @@ const GUIDES: Guide[] = [
       'Buka "Credentials" → "Create Credentials" → "OAuth client ID" → pilih tipe "Web application".',
       "Di bagian Authorized redirect URIs, tambahkan persis: https://<domain-vercel-kamu>/api/auth/google/callback",
       "Simpan, lalu salin Client ID dan Client Secret yang muncul.",
-      'Di project Vercel Depush, buka Settings → Environment Variables, tambahkan GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, dan AUTH_SECRET (string acak bebas, minimal 16 karakter) — lalu redeploy.',
+      'Di project Vercel Depup, buka Settings → Environment Variables, tambahkan GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, dan AUTH_SECRET (string acak bebas, minimal 16 karakter) — lalu redeploy.',
     ],
   },
   {
@@ -101,7 +101,7 @@ export default function App({ Component, pageProps }: AppProps) {
           </pre>
         </div>
       ),
-      "Commit perubahan tersebut ke repository GitHub kamu, lalu lakukan trigger deploy via Depush.",
+      "Commit perubahan tersebut ke repository GitHub kamu, lalu lakukan trigger deploy via Depup.",
     ],
   },
 ];

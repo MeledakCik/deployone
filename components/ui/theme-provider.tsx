@@ -11,7 +11,7 @@ export function ThemeProvider({ children, ...props }: ThemeProviderProps) {
       attribute="data-theme"
       defaultTheme="dark"
       enableSystem={false}
-      storageKey="depush-theme"
+      storageKey="depup-theme"
       {...props}
     >
       {children}

@@ -155,6 +155,194 @@ function VercelTokenField() {
   );
 }
 
+/**
+ * Cloudflare token + account field for the deploy form — mirrors
+ * VercelTokenField. If the token saved in Settings is already verified and
+ * resolved to exactly one account, it's reused automatically ("connected as
+ * account X") and the field collapses; otherwise it falls back to asking
+ * for a token + account ID manually.
+ */
+function CloudflareTokenField() {
+  const { form, setFormField, savedCloudflareToken, savedCloudflareTokenStatus, cloudflareAccounts } = useDeploy();
+  const [manualOverride, setManualOverride] = React.useState(false);
+
+  const usingSavedToken = savedCloudflareTokenStatus === "ok" && Boolean(savedCloudflareToken) && !manualOverride;
+
+  React.useEffect(() => {
+    if (usingSavedToken && savedCloudflareToken) {
+      setFormField("platformToken", savedCloudflareToken.token);
+      setFormField("accountId", savedCloudflareToken.accountId);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [usingSavedToken, savedCloudflareToken?.token, savedCloudflareToken?.accountId]);
+
+  if (savedCloudflareTokenStatus === "checking") {
+    return (
+      <div>
+        <FieldLabel htmlFor="platformToken" required>
+          Cloudflare Token
+        </FieldLabel>
+        <p className="inline-flex items-center gap-1.5 text-[12px] text-text-muted">
+          <Loader2 size={13} className="animate-spin" /> Mengecek token tersimpan di Settings...
+        </p>
+      </div>
+    );
+  }
+
+  if (usingSavedToken && savedCloudflareToken) {
+    return (
+      <div>
+        <FieldLabel htmlFor="platformToken" required>
+          Cloudflare Token
+        </FieldLabel>
+        <div className="flex items-center justify-between gap-3 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-2.5">
+          <p className="inline-flex items-center gap-1.5 text-[12.5px] text-emerald-300">
+            <ShieldCheck size={14} /> Terhubung ke akun &quot;{savedCloudflareToken.accountName}&quot; (token dari Settings)
+          </p>
+          <button
+            type="button"
+            onClick={() => setManualOverride(true)}
+            className="shrink-0 text-[11.5px] font-medium text-violet-400 hover:brightness-110"
+          >
+            Ganti
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div>
+        <FieldLabel htmlFor="platformToken" required help="Cloudflare Token">
+          Cloudflare Token
+        </FieldLabel>
+        <input
+          id="platformToken"
+          type="password"
+          required
+          placeholder="••••••••••••••••"
+          value={form.platformToken}
+          onChange={(e) => setFormField("platformToken", e.target.value)}
+          className={inputCls}
+        />
+        {savedCloudflareTokenStatus === "invalid" && !manualOverride && (
+          <p className="mt-1.5 inline-flex items-center gap-1.5 text-[11.5px] text-red-400">
+            <ShieldAlert size={13} /> Token di Settings sudah tidak valid — masukin token baru di sini.
+          </p>
+        )}
+        {savedCloudflareTokenStatus === "needs_account" && cloudflareAccounts.length > 1 && !manualOverride && (
+          <p className="mt-1.5 text-[11.5px] text-text-faint">
+            Token di Settings valid tapi punya akses ke {cloudflareAccounts.length} akun Cloudflare — pilih Account ID di
+            bawah, atau kunci salah satu akun di Settings.
+          </p>
+        )}
+        {manualOverride && savedCloudflareToken && (
+          <button
+            type="button"
+            onClick={() => {
+              setManualOverride(false);
+              setFormField("platformToken", savedCloudflareToken.token);
+              setFormField("accountId", savedCloudflareToken.accountId);
+            }}
+            className="mt-1.5 text-[11.5px] font-medium text-violet-400 hover:brightness-110"
+          >
+            Pakai token tersimpan lagi (&quot;{savedCloudflareToken.accountName}&quot;)
+          </button>
+        )}
+      </div>
+      <div>
+        <FieldLabel htmlFor="accountId" required>
+          Account ID
+        </FieldLabel>
+        {cloudflareAccounts.length > 0 ? (
+          <select
+            id="accountId"
+            required
+            value={form.accountId}
+            onChange={(e) => setFormField("accountId", e.target.value)}
+            className={cn(inputCls, "mono")}
+          >
+            <option value="" disabled>
+              Pilih akun...
+            </option>
+            {cloudflareAccounts.map((a) => (
+              <option key={a.id} value={a.id}>
+                {a.name} — {a.id}
+              </option>
+            ))}
+          </select>
+        ) : (
+          <input
+            id="accountId"
+            type="text"
+            required
+            placeholder="a1b2c3d4e5f6..."
+            value={form.accountId}
+            onChange={(e) => setFormField("accountId", e.target.value)}
+            className={cn(inputCls, "mono")}
+          />
+        )}
+      </div>
+    </>
+  );
+}
+
+/**
+ * Guides the user through connecting the Cloudflare Pages GitHub App the
+ * first time — Cloudflare has no public API to trigger that install, only
+ * its own dashboard flow, so this opens that screen and lets the user
+ * confirm once they're done, or just re-checks silently once a Cloudflare
+ * account is known. "unknown" isn't shown as an error — the first deploy
+ * attempt confirms either way.
+ */
+function CloudflareGithubConnectionStep() {
+  const { githubConnectionStatus, checkGithubConnection, savedCloudflareToken } = useDeploy();
+
+  if (!savedCloudflareToken) return null;
+
+  if (githubConnectionStatus.status === "connected") {
+    return (
+      <p className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-500/30 bg-emerald-500/10 px-3.5 py-2.5 text-[12.5px] text-emerald-300">
+        <ShieldCheck size={14} /> GitHub sudah terhubung ke akun Cloudflare ini — deploy langsung jalan otomatis.
+      </p>
+    );
+  }
+
+  return (
+    <div className="space-y-2 rounded-xl border border-amber-500/30 bg-amber-500/10 px-3.5 py-3">
+      <p className="inline-flex items-center gap-1.5 text-[12.5px] text-amber-300">
+        <ShieldAlert size={14} /> Belum terdeteksi GitHub yang terhubung ke akun Cloudflare ini.
+      </p>
+      <p className="text-[11.5px] leading-relaxed text-text-muted">
+        Kalau ini pertama kali deploy ke Cloudflare Pages dari repo GitHub, aktifkan dulu koneksinya di Cloudflare
+        (sekali saja) — setelah itu deploy berikutnya otomatis kaya Vercel.
+      </p>
+      <div className="flex flex-wrap gap-2">
+        {githubConnectionStatus.connectUrl && (
+          <a
+            href={githubConnectionStatus.connectUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="pill inline-flex items-center gap-1.5 px-3 py-1.5 text-[11.5px] font-medium hover:brightness-110"
+          >
+            Hubungkan GitHub ke Cloudflare
+          </a>
+        )}
+        <button
+          type="button"
+          onClick={() => void checkGithubConnection()}
+          disabled={githubConnectionStatus.status === "checking"}
+          className="pill inline-flex items-center gap-1.5 px-3 py-1.5 text-[11.5px] font-medium hover:brightness-110 disabled:opacity-50"
+        >
+          {githubConnectionStatus.status === "checking" && <Loader2 size={11} className="animate-spin" />}
+          Sudah connect, cek lagi
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function DeployFormView() {
   const { form, setFormField, submitDeploy } = useDeploy();
   
@@ -255,76 +443,23 @@ export function DeployFormView() {
 
             {platform === "cloudflare" && (
               <>
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <div>
-                    <FieldLabel htmlFor="projectName" required>
-                      Nama Project
-                    </FieldLabel>
-                    <input
-                      id="projectName"
-                      type="text"
-                      required
-                      placeholder="acme-storefront"
-                      value={form.projectName}
-                      onChange={(e) => setFormField("projectName", e.target.value)}
-                      className={inputCls}
-                    />
-                  </div>
-                  <div>
-                    <FieldLabel htmlFor="platformDisplay">Platform</FieldLabel>
-                    <input
-                      id="platformDisplay"
-                      type="text"
-                      disabled
-                      value="Cloudflare Pages"
-                      className={inputCls}
-                    />
-                  </div>
-                </div>
-
                 <div>
-                  <FieldLabel htmlFor="domain" optional>
-                    Custom Domain
+                  <FieldLabel htmlFor="projectName" required>
+                    Nama Project
                   </FieldLabel>
                   <input
-                    id="domain"
+                    id="projectName"
                     type="text"
-                    placeholder="app.namadomain.com"
-                    value={form.domain}
-                    onChange={(e) => setFormField("domain", e.target.value)}
+                    required
+                    placeholder="acme-storefront"
+                    value={form.projectName}
+                    onChange={(e) => setFormField("projectName", e.target.value)}
                     className={inputCls}
                   />
                 </div>
 
-                <div>
-                  <FieldLabel htmlFor="platformToken" required>
-                    Cloudflare Token
-                  </FieldLabel>
-                  <input
-                    id="platformToken"
-                    type="password"
-                    required
-                    placeholder="••••••••••••••••"
-                    value={form.platformToken}
-                    onChange={(e) => setFormField("platformToken", e.target.value)}
-                    className={inputCls}
-                  />
-                </div>
-
-                <div>
-                  <FieldLabel htmlFor="accountId" required>
-                    Account ID
-                  </FieldLabel>
-                  <input
-                    id="accountId"
-                    type="text"
-                    required
-                    placeholder="a1b2c3d4e5f6..."
-                    value={form.accountId}
-                    onChange={(e) => setFormField("accountId", e.target.value)}
-                    className={cn(inputCls, "mono")}
-                  />
-                </div>
+                <CloudflareTokenField />
+                <CloudflareGithubConnectionStep />
 
                 <div>
                   <FieldLabel htmlFor="githubUrl" required>
@@ -338,6 +473,20 @@ export function DeployFormView() {
                     value={form.githubUrl}
                     onChange={(e) => setFormField("githubUrl", e.target.value)}
                     className={cn(inputCls, "mono")}
+                  />
+                </div>
+
+                <div>
+                  <FieldLabel htmlFor="githubPat" optional help="GitHub Token">
+                    GitHub Token
+                  </FieldLabel>
+                  <input
+                    id="githubPat"
+                    type="password"
+                    placeholder="ghp_•••••••••••••••• (untuk repo private)"
+                    value={form.githubPat}
+                    onChange={(e) => setFormField("githubPat", e.target.value)}
+                    className={inputCls}
                   />
                 </div>
 

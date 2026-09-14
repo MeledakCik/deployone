@@ -131,20 +131,21 @@ function AddDomainModal({ open, onClose }: { open: boolean; onClose: () => void 
 }
 
 export function DomainsView() {
-  const { domains, removeDomain, refreshDomainStatus, vercelToken, syncingDomains, syncAllDomains } = useDeploy();
+  const { domains, removeDomain, refreshDomainStatus, vercelToken, savedCloudflareToken, syncingDomains, syncAllDomains } =
+    useDeploy();
   const [modalOpen, setModalOpen] = React.useState(false);
   const [checkingId, setCheckingId] = React.useState<string | null>(null);
   const didAutoSync = React.useRef(false);
 
-  // Depush has no webhook for it, so we don't find out on our own when a
-  // domain gets removed straight from the Vercel dashboard — check once per
-  // visit so the list here doesn't quietly show a domain as "Active" that
-  // no longer actually exists on Vercel.
+  // Depup has no webhook for it, so we don't find out on our own when a
+  // domain gets removed straight from the Vercel/Cloudflare dashboard —
+  // check once per visit so the list here doesn't quietly show a domain as
+  // "Active" that no longer actually exists remotely.
   React.useEffect(() => {
-    if (didAutoSync.current || !vercelToken) return;
+    if (didAutoSync.current || (!vercelToken && !savedCloudflareToken)) return;
     didAutoSync.current = true;
     void syncAllDomains();
-  }, [vercelToken, syncAllDomains]);
+  }, [vercelToken, savedCloudflareToken, syncAllDomains]);
 
   async function handleCheckStatus(id: string) {
     setCheckingId(id);
@@ -172,7 +173,7 @@ export function DomainsView() {
           </button>
         </div>
 
-        {vercelToken && (
+        {(vercelToken || savedCloudflareToken) && (
           <div className="flex justify-end">
             <button
               type="button"
@@ -181,7 +182,7 @@ export function DomainsView() {
               className="pill inline-flex items-center gap-2 px-4 py-2 text-[12.5px] font-medium hover:brightness-110 disabled:opacity-50"
             >
               <RefreshCw size={13} className={syncingDomains ? "animate-spin" : undefined} />
-              {syncingDomains ? "Sinkronisasi..." : "Sinkronkan dengan Vercel"}
+              {syncingDomains ? "Sinkronisasi..." : "Sinkronkan"}
             </button>
           </div>
         )}
@@ -191,7 +192,7 @@ export function DomainsView() {
             <Globe2 size={52} className="text-text-faint" strokeWidth={1.5} />
             <h3 className="text-[16px] font-semibold">Belum ada domain</h3>
             <p className="max-w-xs text-[13px] text-text-muted">
-              Tambahkan custom domain dan arahkan DNS kamu ke project Depush.
+              Tambahkan custom domain dan arahkan DNS kamu ke project Depup.
             </p>
           </Surface>
         ) : (
@@ -256,7 +257,7 @@ export function DomainsView() {
                             <p className="text-[11.5px] text-text-muted">
                               {d.status === "Active"
                                 ? "Sudah aktif. Ini record yang dipakai kalau kamu perlu cek ulang di DNS provider:"
-                                : "Domain sudah ditambahkan ke Vercel — tinggal pasang record ini di DNS provider (Cloudflare, Niagahoster, Domainesia, dll):"}
+                                : `Domain sudah ditambahkan ke ${d.syncedToCloudflare ? "Cloudflare" : "Vercel"} — tinggal pasang record ini di DNS provider (Cloudflare, Niagahoster, Domainesia, dll):`}
                             </p>
                             <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
                               <DnsField label="Type" value={d.dns.type} />

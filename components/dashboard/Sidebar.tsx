@@ -64,7 +64,7 @@ export function Sidebar() {
           <span className="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-br from-violet-500 to-cyan-400 text-white">
             <Rocket size={14} />
           </span>
-          <span className="text-[14px] font-semibold tracking-tight">Depush</span>
+          <span className="text-[14px] font-semibold tracking-tight">Depup</span>
         </div>
         <ThemeToggle />
       </div>
@@ -88,7 +88,7 @@ export function Sidebar() {
             <span className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-violet-500 to-cyan-400 text-white">
               <Rocket size={16} />
             </span>
-            <span className="text-[15px] font-semibold tracking-tight">Depush</span>
+            <span className="text-[15px] font-semibold tracking-tight">Depup</span>
           </div>
           <button
             type="button"

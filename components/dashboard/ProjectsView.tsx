@@ -17,7 +17,7 @@ import {
 import { Surface } from "@/components/ui/Surface";
 import { ViewFade } from "@/components/ui/ViewFade";
 import { useDeploy } from "@/lib/deploy-context";
-import type { HistoryItem, VercelProjectSummary } from "@/types";
+import type { CloudflareProjectSummary, HistoryItem, Platform, VercelProjectSummary } from "@/types";
 
 function groupByProject(history: HistoryItem[]) {
   const safeHistory = Array.isArray(history) ? history : [];
@@ -28,7 +28,7 @@ function groupByProject(history: HistoryItem[]) {
   return Array.from(map.values());
 }
 
-/** Confirms whether a project delete should also hit the real Vercel project, or stay local-only. */
+/** Confirms whether a project delete should also hit the real Vercel/Cloudflare project, or stay local-only. */
 function DeleteProjectModal({
   project,
   onClose,
@@ -36,16 +36,23 @@ function DeleteProjectModal({
   project: HistoryItem | null;
   onClose: () => void;
 }) {
-  const { deleteProject, deletingProject, vercelToken } = useDeploy();
+  const { deleteProject, deletingProject, vercelToken, savedCloudflareToken } = useDeploy();
   if (!project) return null;
 
   const isVercelProject = project.platform === "vercel";
+  const isCloudflareProject = project.platform === "cloudflare";
   const busy = deletingProject === project.name;
 
-  async function handleChoice(alsoDeleteFromVercel: boolean) {
-    await deleteProject(project!.name, { alsoDeleteFromVercel });
+  async function handleChoice(alsoDelete: boolean) {
+    await deleteProject(project!.name, {
+      alsoDeleteFromVercel: alsoDelete && isVercelProject,
+      alsoDeleteFromCloudflare: alsoDelete && isCloudflareProject,
+    });
     onClose();
   }
+
+  const platformLabel = isVercelProject ? "Vercel" : isCloudflareProject ? "Cloudflare" : null;
+  const canDeleteRemote = isVercelProject ? Boolean(vercelToken) : isCloudflareProject ? Boolean(savedCloudflareToken) : false;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 px-4">
@@ -65,24 +72,24 @@ function DeleteProjectModal({
         </div>
         <h3 className="text-[15px] font-semibold mb-2">Hapus &quot;{project.name}&quot;?</h3>
         <p className="text-[13px] leading-relaxed text-text-muted mb-6">
-          {isVercelProject
-            ? "Pilih mau dihapus di kedua sisi (Vercel + Depush) atau di Depush saja — project di Vercel tetap jalan kalau kamu pilih Depush saja."
-            : "Project ini bukan platform Vercel, jadi hanya akan dihapus dari daftar Depush."}
+          {platformLabel
+            ? `Pilih mau dihapus di kedua sisi (${platformLabel} + Depup) atau di Depup saja — project di ${platformLabel} tetap jalan kalau kamu pilih Depup saja.`
+            : "Project ini bukan platform Vercel/Cloudflare, jadi hanya akan dihapus dari daftar Depup."}
         </p>
         <div className="space-y-2">
-          {isVercelProject && (
+          {platformLabel && (
             <button
               type="button"
               onClick={() => void handleChoice(true)}
-              disabled={busy || !vercelToken}
+              disabled={busy || !canDeleteRemote}
               className="btn-primary w-full py-2.5 text-[13px] disabled:opacity-50"
             >
-              {busy ? "Menghapus..." : "Hapus di kedua sisi (Vercel + Depush)"}
+              {busy ? "Menghapus..." : `Hapus di kedua sisi (${platformLabel} + Depup)`}
             </button>
           )}
-          {isVercelProject && !vercelToken && (
+          {platformLabel && !canDeleteRemote && (
             <p className="text-[11px] text-text-faint text-center">
-              Isi Vercel Token di Settings dulu untuk hapus di Vercel.
+              Konek-kan {platformLabel} Token di Settings dulu untuk hapus di {platformLabel}.
             </p>
           )}
           <button
@@ -91,7 +98,7 @@ function DeleteProjectModal({
             disabled={busy}
             className="pill w-full py-2.5 text-[13px] font-medium hover:brightness-110 disabled:opacity-50"
           >
-            {isVercelProject ? "Hapus di Depush saja" : "Hapus"}
+            {platformLabel ? "Hapus di Depup saja" : "Hapus"}
           </button>
           <button
             type="button"
@@ -107,34 +114,50 @@ function DeleteProjectModal({
   );
 }
 
-/** Lists real Vercel projects not yet tracked in Depush, so the user can pull one in without re-deploying it. */
+/** Lists real Vercel or Cloudflare projects not yet tracked in Depup, so the user can pull one in without re-deploying it. */
 function ImportProjectModal({ open, onClose }: { open: boolean; onClose: () => void }) {
-  const { vercelToken, fetchImportableVercelProjects, importVercelProject } = useDeploy();
+  const {
+    vercelToken,
+    fetchImportableVercelProjects,
+    importVercelProject,
+    savedCloudflareToken,
+    fetchImportableCloudflareProjects,
+    importCloudflareProject,
+  } = useDeploy();
+  const [tab, setTab] = React.useState<"vercel" | "cloudflare">("vercel");
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const [candidates, setCandidates] = React.useState<VercelProjectSummary[]>([]);
+  const [candidates, setCandidates] = React.useState<(VercelProjectSummary | CloudflareProjectSummary)[]>([]);
   const [importingName, setImportingName] = React.useState<string | null>(null);
+
+  const connected = tab === "vercel" ? Boolean(vercelToken) : Boolean(savedCloudflareToken);
 
   React.useEffect(() => {
     if (!open) return;
-    if (!vercelToken) {
-      setError("Isi Vercel Token di Settings dulu untuk konek ke Vercel.");
+    if (!connected) {
+      setError(
+        tab === "vercel"
+          ? "Isi Vercel Token di Settings dulu untuk konek ke Vercel."
+          : "Konek-kan Cloudflare Token di Settings dulu untuk konek ke Cloudflare."
+      );
       setCandidates([]);
       return;
     }
     setLoading(true);
     setError(null);
-    fetchImportableVercelProjects()
+    const fetcher = tab === "vercel" ? fetchImportableVercelProjects : fetchImportableCloudflareProjects;
+    fetcher()
       .then((result) => setCandidates(result))
-      .catch((err) => setError(err instanceof Error ? err.message : "Gagal konek ke Vercel."))
+      .catch((err) => setError(err instanceof Error ? err.message : "Gagal konek."))
       .finally(() => setLoading(false));
-  }, [open, vercelToken, fetchImportableVercelProjects]);
+  }, [open, tab, connected, fetchImportableVercelProjects, fetchImportableCloudflareProjects]);
 
   if (!open) return null;
 
-  function handleImport(project: VercelProjectSummary) {
+  function handleImport(project: VercelProjectSummary | CloudflareProjectSummary) {
     setImportingName(project.name);
-    importVercelProject(project);
+    if (tab === "vercel") importVercelProject(project as VercelProjectSummary);
+    else importCloudflareProject(project as CloudflareProjectSummary);
     setCandidates((prev) => prev.filter((p) => p.name !== project.name));
     setImportingName(null);
   }
@@ -143,7 +166,7 @@ function ImportProjectModal({ open, onClose }: { open: boolean; onClose: () => v
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 px-4">
       <Surface className="w-full max-w-md p-6">
         <div className="flex items-center justify-between mb-5">
-          <h3 className="text-[15px] font-semibold">Import Project dari Vercel</h3>
+          <h3 className="text-[15px] font-semibold">Import Project</h3>
           <button
             type="button"
             onClick={onClose}
@@ -154,18 +177,32 @@ function ImportProjectModal({ open, onClose }: { open: boolean; onClose: () => v
           </button>
         </div>
 
-        {!vercelToken ? (
+        <div className="mb-4 flex gap-2">
+          {(["vercel", "cloudflare"] as const).map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setTab(t)}
+              className={`rounded-xl border px-3.5 py-1.5 text-[12.5px] font-medium capitalize transition-colors ${
+                tab === t
+                  ? "border-violet-500/50 bg-violet-500/15 text-text"
+                  : "border-[var(--surface-line)] bg-[var(--surface-solid-2)] text-text-muted hover:text-text"
+              }`}
+            >
+              {t}
+            </button>
+          ))}
+        </div>
+
+        {!connected ? (
           <div className="flex flex-col items-center gap-3 py-10 text-center">
             <ShieldAlert size={36} className="text-amber-400" />
-            <p className="text-[13px] text-text-muted max-w-xs">
-              Belum konek ke Vercel — isi Vercel Token di Settings dulu, baru bisa import project yang
-              sudah ada di sana.
-            </p>
+            <p className="text-[13px] text-text-muted max-w-xs">{error}</p>
           </div>
         ) : loading ? (
           <div className="flex flex-col items-center gap-3 py-10 text-center">
             <RefreshCw size={24} className="animate-spin text-text-faint" />
-            <p className="text-[13px] text-text-muted">Menghubungkan ke Vercel...</p>
+            <p className="text-[13px] text-text-muted">Menghubungkan ke {tab === "vercel" ? "Vercel" : "Cloudflare"}...</p>
           </div>
         ) : error ? (
           <div className="flex flex-col items-center gap-3 py-10 text-center">
@@ -176,7 +213,8 @@ function ImportProjectModal({ open, onClose }: { open: boolean; onClose: () => v
           <div className="flex flex-col items-center gap-3 py-10 text-center">
             <FolderOpen size={36} className="text-text-faint" />
             <p className="text-[13px] text-text-muted max-w-xs">
-              Semua project di Vercel kamu sudah ada di Depush — tidak ada yang bisa diimport.
+              Semua project di {tab === "vercel" ? "Vercel" : "Cloudflare"} kamu sudah ada di Depup — tidak ada yang
+              bisa diimport.
             </p>
           </div>
         ) : (
@@ -208,10 +246,20 @@ function ImportProjectModal({ open, onClose }: { open: boolean; onClose: () => v
 }
 
 export function ProjectsView() {
-  const { history, redeploy, vercelToken, syncingProjects, syncAllProjects, syncProjectStatus, setView, setFocusedTrafficProject } =
-    useDeploy();
+  const {
+    history,
+    redeploy,
+    vercelToken,
+    savedCloudflareToken,
+    syncingProjects,
+    syncAllProjects,
+    syncProjectStatus,
+    setView,
+    setFocusedTrafficProject,
+  } = useDeploy();
   const safeHistory = Array.isArray(history) ? history : [];
-  const projects = groupByProject(safeHistory);
+  const [platformTab, setPlatformTab] = React.useState<"all" | Platform>("all");
+  const projects = groupByProject(safeHistory).filter((p) => platformTab === "all" || p.platform === platformTab);
   const [checkingName, setCheckingName] = React.useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = React.useState<HistoryItem | null>(null);
   const [importOpen, setImportOpen] = React.useState(false);
@@ -223,11 +271,11 @@ export function ProjectsView() {
   }
 
   React.useEffect(() => {
-    if (didAutoSync.current || !vercelToken) return;
+    if (didAutoSync.current || (!vercelToken && !savedCloudflareToken)) return;
     didAutoSync.current = true;
     void syncAllProjects();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vercelToken]);
+  }, [vercelToken, savedCloudflareToken]);
 
   async function handleCheck(name: string) {
     setCheckingName(name);
@@ -242,7 +290,7 @@ export function ProjectsView() {
           <div>
             <h2 className="text-xl font-semibold">Projects</h2>
             <p className="text-sm text-text-muted">
-              {projects.length} project unik dari riwayat deployment kamu.
+              {projects.length} project {platformTab !== "all" ? `(${platformTab}) ` : ""}unik dari riwayat deployment kamu.
             </p>
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -253,7 +301,7 @@ export function ProjectsView() {
             >
               <Download size={13} /> Import Project
             </button>
-            {vercelToken ? (
+            {(vercelToken || savedCloudflareToken) ? (
               <button
                 type="button"
                 onClick={() => void syncAllProjects()}
@@ -261,14 +309,31 @@ export function ProjectsView() {
                 className="pill inline-flex items-center gap-2 px-4 py-2 text-sm font-medium hover:brightness-110 disabled:opacity-50"
               >
                 <RefreshCw size={13} className={syncingProjects ? "animate-spin" : ""} />
-                {syncingProjects ? "Sinkronisasi..." : "Sinkronkan dengan Vercel"}
+                {syncingProjects ? "Sinkronisasi..." : "Sinkronkan"}
               </button>
             ) : (
               <span className="inline-flex items-center gap-1.5 text-[11.5px] text-text-faint">
-                <ShieldAlert size={13} /> Isi Vercel Token di Settings untuk sinkronisasi otomatis
+                <ShieldAlert size={13} /> Konek-kan token di Settings untuk sinkronisasi otomatis
               </span>
             )}
           </div>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {(["all", "vercel", "cloudflare", "railway", "render"] as const).map((t) => (
+            <button
+              key={t}
+              type="button"
+              onClick={() => setPlatformTab(t)}
+              className={`rounded-xl border px-3.5 py-1.5 text-[12.5px] font-medium capitalize transition-colors ${
+                platformTab === t
+                  ? "border-violet-500/50 bg-violet-500/15 text-text"
+                  : "border-[var(--surface-line)] bg-[var(--surface-solid-2)] text-text-muted hover:text-text"
+              }`}
+            >
+              {t === "all" ? "Semua" : t}
+            </button>
+          ))}
         </div>
 
         {projects.length === 0 ? (
@@ -344,6 +409,20 @@ export function ProjectsView() {
                         className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-text-faint hover:text-text"
                       >
                         <BarChart3 size={13} /> View Traffic
+                      </button>
+                    </div>
+                  )}
+
+                  {project.platform === "cloudflare" && savedCloudflareToken && (
+                    <div className="mt-2 flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => void handleCheck(project.name)}
+                        disabled={isChecking}
+                        className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-text-faint hover:text-text disabled:opacity-50"
+                      >
+                        <RefreshCw size={11} className={isChecking ? "animate-spin" : ""} />
+                        {isChecking ? "Mengecek..." : "Cek status di Cloudflare"}
                       </button>
                     </div>
                   )}

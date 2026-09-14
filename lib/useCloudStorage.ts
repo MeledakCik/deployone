@@ -28,7 +28,7 @@ import type { ApiResponse } from "@/types";
  * @param key    nama field di payload /api/user-data (history/domains/envVars/settingsTokens)
  * @param initial nilai default sebelum data ke-load / saat logout
  * @param legacyLocalStorageKey key localStorage lama untuk migrasi satu kali
- *                              (mis. "depush-history"). Opsional.
+ *                              (mis. "depup-history"). Opsional.
  */
 /** Local-only cache key, namespaced per email so different accounts on the
  *  same browser never collide. This is NOT the source of truth — KV is —
@@ -36,7 +36,7 @@ import type { ApiResponse } from "@/types";
  *  KV_REST_API_URL/KV_REST_API_TOKEN haven't been configured yet (e.g. a
  *  fresh local dev environment), instead of silently resetting to empty. */
 function fallbackCacheKey(email: string, key: string): string {
-  return `depush-fallback:${email}:${key}`;
+  return `depup-fallback:${email}:${key}`;
 }
 
 function readFallbackCache<T>(email: string, key: string): T | null {
@@ -125,7 +125,7 @@ export function useCloudStorage<T>(
         // Migrasi hanya dianggap valid kalau server memang belum punya
         // data, dan hasilnya langsung di-PUT eksplisit di sini — bukan
         // lewat effect sync generik di bawah.
-        const legacyKey = legacyLocalStorageKey ?? `depush-${key}`;
+        const legacyKey = legacyLocalStorageKey ?? `depup-${key}`;
         const legacy = window.localStorage.getItem(legacyKey);
 
         if (legacy) {

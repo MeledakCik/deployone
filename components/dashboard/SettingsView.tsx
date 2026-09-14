@@ -6,11 +6,12 @@ import { Surface } from "@/components/ui/Surface";
 import { ViewFade } from "@/components/ui/ViewFade";
 import { useCloudStorage } from "@/lib/useCloudStorage";
 import { useToast } from "@/components/ui/Toast";
-import type { ApiResponse, SettingsTokens, VercelUserInfo, GithubUserInfo } from "@/types";
+import type { ApiResponse, SettingsTokens, VercelUserInfo, GithubUserInfo, CloudflareAccountInfo } from "@/types";
 
 const DEFAULT_TOKENS: SettingsTokens = {
   vercelToken: "",
   cloudflareToken: "",
+  cloudflareAccountId: "",
   githubPat: "",
 };
 
@@ -98,10 +99,12 @@ export function SettingsView() {
   const [tokens, setTokens, ready] = useCloudStorage<SettingsTokens>(
     "settingsTokens",
     DEFAULT_TOKENS,
-    "depush-settings-tokens"
+    "depup-settings-tokens"
   );
   const [draft, setDraft] = React.useState<SettingsTokens>(DEFAULT_TOKENS);
   const [vercelCheck, setVercelCheck] = React.useState<CheckState>({ status: "idle" });
+  const [cloudflareCheck, setCloudflareCheck] = React.useState<CheckState>({ status: "idle" });
+  const [cloudflareAccounts, setCloudflareAccounts] = React.useState<CloudflareAccountInfo[]>([]);
   const [githubCheck, setGithubCheck] = React.useState<CheckState>({ status: "idle" });
   const { showToast } = useToast();
 
@@ -140,6 +143,32 @@ export function SettingsView() {
     }
   }
 
+  async function testCloudflare() {
+    setCloudflareCheck({ status: "checking" });
+    try {
+      const { accounts } = await callApi<{ accounts: CloudflareAccountInfo[] }>("/api/cloudflare/whoami", {
+        headers: { "x-cloudflare-token": draft.cloudflareToken },
+      });
+      setCloudflareAccounts(accounts);
+      if (accounts.length === 0) {
+        setCloudflareCheck({ status: "error", message: "Token valid tapi tidak punya akses ke akun manapun." });
+        return;
+      }
+      const chosen = accounts.find((a) => a.id === draft.cloudflareAccountId) ?? accounts[0];
+      setDraft((prev) => ({ ...prev, cloudflareAccountId: chosen.id }));
+      setCloudflareCheck({
+        status: "ok",
+        label:
+          accounts.length > 1
+            ? `Terhubung — akun aktif: "${chosen.name}" (${accounts.length} akun tersedia di bawah)`
+            : `Terhubung ke akun "${chosen.name}"`,
+      });
+    } catch (err) {
+      setCloudflareAccounts([]);
+      setCloudflareCheck({ status: "error", message: err instanceof Error ? err.message : "Token tidak valid." });
+    }
+  }
+
   return (
     <ViewFade>
       <div className="space-y-6">
@@ -169,9 +198,36 @@ export function SettingsView() {
               id="settingsCloudflareToken"
               label="Cloudflare Token"
               value={draft.cloudflareToken}
-              onChange={(v) => setDraft((prev) => ({ ...prev, cloudflareToken: v }))}
-              check={{ status: "idle" }}
+              onChange={(v) => {
+                setDraft((prev) => ({ ...prev, cloudflareToken: v }));
+                setCloudflareCheck({ status: "idle" });
+                setCloudflareAccounts([]);
+              }}
+              check={cloudflareCheck}
+              onTest={testCloudflare}
             />
+            {cloudflareAccounts.length > 1 && (
+              <div>
+                <label htmlFor="cloudflareAccount" className="mb-1.5 block text-[12px] font-medium text-text-muted">
+                  Akun Cloudflare aktif
+                </label>
+                <select
+                  id="cloudflareAccount"
+                  value={draft.cloudflareAccountId}
+                  onChange={(e) => setDraft((prev) => ({ ...prev, cloudflareAccountId: e.target.value }))}
+                  className="input-solid h-11 w-full px-3.5 text-[13px]"
+                >
+                  {cloudflareAccounts.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name} — {a.id}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1.5 text-[11px] text-text-faint">
+                  Token ini punya akses ke beberapa akun — pilih satu untuk dipakai deploy Cloudflare Pages.
+                </p>
+              </div>
+            )}
             <TokenField
               id="settingsGithubPat"
               label="GitHub PAT"

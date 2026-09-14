@@ -24,7 +24,7 @@ kamu (cuma ada `signSession` & `verifySession`). Build gagal:
 `Module '"@/app/api/_lib/session"' has no exported member 'getSessionEmail'`.
 
 **Fix:** ditambahkan fungsi `getSessionEmail(req)` yang membaca cookie
-`depush_session`, verify HMAC-nya lewat `verifySession` yang sudah ada,
+`depup_session`, verify HMAC-nya lewat `verifySession` yang sudah ada,
 lalu balikin email ter-normalisasi (trim + lowercase) atau `null`.
 
 ### 3. `lib/useCloudStorage.ts` — ini akar masalah utamanya
@@ -83,7 +83,7 @@ sekarang ikut pola yang sama:
 
 ### 5. `app/api/auth/logout/route.ts`
 Sudah benar secara logika sebelumnya (tidak menyentuh KV), tapi
-hardcode string `"depush_session"` diganti pakai konstanta
+hardcode string `"depup_session"` diganti pakai konstanta
 `SESSION_COOKIE` dari `session.ts` supaya tidak bisa "kelewat" typo
 kalau nama cookie berubah di masa depan. Response juga disamakan pakai
 `ok({ loggedOut: true })`.

@@ -11,7 +11,7 @@
 import { NextRequest } from "next/server";
 
 // Asumsi: fungsi ini sudah ada di session.ts kamu dan melakukan
-// verifikasi HMAC terhadap cookie "depush_session", lalu mengembalikan
+// verifikasi HMAC terhadap cookie "depup_session", lalu mengembalikan
 // payload session atau null kalau invalid/expired.
 declare function getSession(req: NextRequest): { email: string } | null;
 

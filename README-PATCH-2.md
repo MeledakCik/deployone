@@ -62,10 +62,10 @@ result + kotak Web Analytics) bisa ke-cut atau kepenuhan.
 - Tombol bawah full-width & `flex-col-reverse` di mobile, balik normal
   `flex-row` di desktop.
 
-## Patch 2d — Sinkron balik: env dihapus di Vercel ikut kehapus di Depush
-Sebelumnya Depush cuma push satu arah (Depush → Vercel). Kalau secret
-dihapus langsung dari Vercel dashboard (bukan lewat Depush), baris-nya
-tetap nongkrong di tabel Environment Variables Depush — nggak pernah tahu
+## Patch 2d — Sinkron balik: env dihapus di Vercel ikut kehapus di Depup
+Sebelumnya Depup cuma push satu arah (Depup → Vercel). Kalau secret
+dihapus langsung dari Vercel dashboard (bukan lewat Depup), baris-nya
+tetap nongkrong di tabel Environment Variables Depup — nggak pernah tahu
 kalau itu sudah nggak ada beneran.
 
 **Fix (pola yang sama seperti sinkronisasi "Projects" yang sudah ada):**

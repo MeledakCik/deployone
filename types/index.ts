@@ -37,7 +37,7 @@ export interface DeployFormValues {
 
 /** The DNS record the user needs to add at their domain registrar/DNS provider. */
 export interface DnsRecordInstruction {
-  type: "A" | "CNAME";
+  type: "A" | "CNAME" | "TXT";
   /** Host/name part to enter at the registrar, e.g. "@" for apex or "app" for a subdomain. */
   name: string;
   value: string;
@@ -50,7 +50,9 @@ export interface DomainItem {
   status: "Active" | "Pending";
   /** true once this was successfully pushed to a real Vercel project. */
   syncedToVercel?: boolean;
-  /** Key-value DNS record to add at the domain's DNS provider — present once synced to Vercel. */
+  /** true once this was successfully pushed to a real Cloudflare Pages project. */
+  syncedToCloudflare?: boolean;
+  /** Key-value DNS record to add at the domain's DNS provider — present once synced to Vercel/Cloudflare. */
   dns?: DnsRecordInstruction;
   /** Shared id linking this domain to its auto-added www/non-www counterpart, so both are removed together. */
   pairId?: string;
@@ -66,11 +68,15 @@ export interface EnvItem {
   project: string;
   /** True once this secret has been pushed to the matching project on Vercel. */
   syncedToVercel?: boolean;
+  /** True once this secret has been pushed to the matching project on Cloudflare Pages. */
+  syncedToCloudflare?: boolean;
 }
 
 export interface SettingsTokens {
   vercelToken: string;
   cloudflareToken: string;
+  /** Which Cloudflare account (of possibly several the token can see) to use — picked once in Settings. */
+  cloudflareAccountId?: string;
   githubPat: string;
 }
 
@@ -101,6 +107,9 @@ export interface ApiError {
     | "no_package_json"
     | "invalid_token"
     | "vercel_error"
+    | "cloudflare_error"
+    | "github_not_connected"
+    | "missing_account"
     | "project_conflict"
     | "not_found"
     | "bad_request"
@@ -262,4 +271,103 @@ export interface AnalyticsDisabledResult {
 }
 
 export type AnalyticsApiResult = AnalyticsResult | AnalyticsDisabledResult;
+
+/* ---------------------------------------------------------------------- */
+/*  Cloudflare Pages                                                       */
+/* ---------------------------------------------------------------------- */
+
+/** One Cloudflare account the token has access to — a token can belong to more than one account. */
+export interface CloudflareAccountInfo {
+  id: string;
+  name: string;
+}
+
+/** Result of GET /api/cloudflare/whoami — used by Settings & the deploy form to prove a token actually works. */
+export interface CloudflareUserInfo {
+  accounts: CloudflareAccountInfo[];
+}
+
+/**
+ * Result of GET /api/cloudflare/github-status. Cloudflare has no public API
+ * to *start* the GitHub App install for a third party — that has to happen
+ * once on the Cloudflare dashboard. "connected" means we found at least one
+ * existing Pages project on this account already wired to GitHub, so new
+ * deploys can go straight through. "unknown" means we can't tell yet (no
+ * projects on the account at all) — the first deploy attempt will confirm
+ * either way.
+ */
+export interface GithubConnectionStatus {
+  status: "connected" | "unknown";
+  /** Deep link to Cloudflare's own "connect to Git" screen for this account. */
+  connectUrl: string;
+}
+
+/** Body of POST /api/cloudflare/deploy */
+export interface CreateCloudflareDeployRequest {
+  projectName: string;
+  githubUrl: string;
+  cloudflareToken: string;
+  accountId: string;
+  githubPat?: string;
+  buildCommand?: string;
+  outputDir?: string;
+}
+
+/** Result of POST /api/cloudflare/deploy */
+export interface CreateCloudflareDeployResult {
+  deploymentId: string;
+  url: string;
+  inspectorUrl: string;
+  readyState: VercelReadyState;
+}
+
+/** Result of GET /api/cloudflare/deploy/[id] */
+export interface CloudflareDeployStatusResult {
+  deploymentId: string;
+  url: string;
+  inspectorUrl: string;
+  readyState: VercelReadyState;
+  errorMessage: string | null;
+}
+
+/** Result of GET /api/cloudflare/status */
+export interface CloudflareProjectStatusResult {
+  exists: boolean;
+  linkedRepoFullName: string | null;
+  latestDeploymentReadyState: VercelReadyState | null;
+  latestDeploymentId: string | null;
+  /** The project's stable `{name}.pages.dev` domain. */
+  subdomain: string | null;
+}
+
+/** One project already existing on Cloudflare Pages — used by "Import Project". */
+export interface CloudflareProjectSummary {
+  id: string;
+  name: string;
+  domain: string | null;
+  latestDeploymentReadyState: VercelReadyState | null;
+}
+
+/** A single custom domain attached to a Cloudflare Pages project. */
+export interface CloudflareDomainResult {
+  name: string;
+  verified: boolean;
+  dns?: DnsRecordInstruction;
+}
+
+/** One entry from GET /api/cloudflare/env — an env var as it currently exists on Cloudflare Pages. */
+export interface CloudflareEnvSummary {
+  key: string;
+  target: string[];
+}
+
+/** Body of POST /api/cloudflare/env */
+export interface UpsertCloudflareEnvRequest {
+  project: string;
+  key: string;
+  value: string;
+  target: ("production" | "preview")[];
+  cloudflareToken: string;
+  accountId: string;
+}
 

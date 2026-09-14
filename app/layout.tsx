@@ -5,7 +5,7 @@ import { AuthProvider } from "@/lib/auth-context";
 import { ToastProvider } from "@/components/ui/Toast";
 
 export const metadata: Metadata = {
-  title: "Depush — Deploy without the hassle.",
+  title: "Depup — Deploy without the hassle.",
   description:
     "Kelola semua deployment Vercel dan Cloudflare dari satu dashboard glass yang cantik. No more tab switching.",
 };

@@ -43,7 +43,7 @@ export function FinalCTA() {
               className="h-9 flex items-center px-4 text-[11px] text-[var(--text-faint)]"
               style={{ borderBottom: "1px solid var(--line)", background: "var(--row-hover)" }}
             >
-              depush.app — live preview
+              depup.app — live preview
             </div>
             <div className="grid grid-cols-3" style={{ borderColor: "var(--line)" }}>
               <div className="p-5 text-left" style={{ borderRight: "1px solid var(--line)" }}>

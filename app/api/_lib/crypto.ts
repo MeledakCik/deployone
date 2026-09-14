@@ -7,7 +7,7 @@ const PREFIX = "enc:v1:";
 // mendomain-pisahkan key enkripsi dari AUTH_SECRET mentah, supaya kita
 // tidak perlu env var baru (ENCRYPTION_KEY dsb.) yang gampang lupa di-set
 // pas deploy. Keamanan tetap bergantung ke AUTH_SECRET yang sudah wajib ada.
-const KDF_SALT = "depush-settings-tokens-v1";
+const KDF_SALT = "depup-settings-tokens-v1";
 
 function getKey(): Buffer {
   const secret = process.env.AUTH_SECRET;

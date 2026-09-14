@@ -57,7 +57,7 @@ export function Navbar() {
               <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center relative shadow-[0_0_0_1px_rgba(15,23,42,0.06)]">
                 <div className="w-2.5 h-2.5 rounded-full bg-[#3B82F6] absolute left-[9px] top-[11px] group-hover:scale-110 transition" />
               </div>
-              <span className="font-bold text-[18px] tracking-[-0.02em] text-[var(--text)]">Depush</span>
+              <span className="font-bold text-[18px] tracking-[-0.02em] text-[var(--text)]">Depup</span>
             </Link>
 
             <nav className="hidden md:flex items-center gap-8 text-[14px] text-[var(--text-muted)]">
