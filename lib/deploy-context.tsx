@@ -98,6 +98,8 @@ interface ModalState {
     name: string;
     domain: string;
     inspectorUrl?: string;
+    /** Which platform this result belongs to — drives platform-specific labels/links in DeployModal (e.g. "Lihat di Vercel" vs "Lihat di Cloudflare"). */
+    platform?: Platform;
     /** Web Analytics status for Vercel deploys — undefined for other platforms, null while unknown. */
     analyticsEnabled?: boolean | null;
     /** Direct link to the project's Analytics tab so the user can flip it on in one click. */
@@ -390,7 +392,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         subtitle: `Project ${projectName} siap di ${domain}`,
         resultVisible: true,
         closeVisible: true,
-        result: { name: projectName, domain },
+        result: { name: projectName, domain, platform: data.platform },
       }));
       addHistory(projectName, data.platform, domain);
     },
@@ -517,6 +519,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
               name: projectName,
               domain: status.url,
               inspectorUrl: status.inspectorUrl,
+              platform: "vercel",
               analyticsEnabled: null,
               analyticsUrl,
             },
@@ -634,7 +637,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
             subtitle: `Project ${projectName} siap di ${status.url}`,
             resultVisible: true,
             closeVisible: true,
-            result: { name: projectName, domain: status.url, inspectorUrl: status.inspectorUrl },
+            result: { name: projectName, domain: status.url, inspectorUrl: status.inspectorUrl, platform: "cloudflare" },
           }));
           addHistory(projectName, "cloudflare", status.url, "ready");
           return;

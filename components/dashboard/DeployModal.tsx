@@ -87,12 +87,13 @@ export function DeployModal() {
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1 text-violet-400 underline break-all"
                 >
-                  Lihat di Vercel <ExternalLink size={12} className="shrink-0" />
+                  Lihat di {modal.result.platform === "cloudflare" ? "Cloudflare" : "Vercel"}{" "}
+                  <ExternalLink size={12} className="shrink-0" />
                 </a>
               </>
             )}
 
-            {modal.result.analyticsEnabled !== undefined && (
+            {modal.result.platform === "vercel" && modal.result.analyticsEnabled !== undefined && (
               <div className="mt-4 rounded-xl border border-[var(--surface-line)] bg-[var(--surface-solid-2)] p-3 sm:p-3.5">
                 {modal.result.analyticsEnabled === null && (
                   <p className="inline-flex items-center gap-1.5 text-[11.5px] text-text-muted sm:text-[12px]">
