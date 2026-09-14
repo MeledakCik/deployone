@@ -256,12 +256,33 @@ export async function triggerCloudflareDeployment(
   if (!res.ok) throw await parseCloudflareError(res);
   const data = await res.json();
   const deployment = data.result as CfDeploymentResponse;
+  // FIX: deployment.url is a per-build alias (e.g. https://<hash>.<project>.pages.dev),
+  // NOT the project's stable public domain — primaryUrlFor() existed to compute
+  // the right one but was never actually called anywhere. Fetch the project so we
+  // can return its real https://<project>.pages.dev (or custom subdomain).
+  const project = await getCloudflarePagesProjectRaw(accountId, projectName, token);
   return {
     deploymentId: deployment.id,
-    url: deployment.url ?? `https://${projectName}.pages.dev`,
+    url: project ? primaryUrlFor(project, deployment) : (deployment.url ?? `https://${projectName}.pages.dev`),
     inspectorUrl: inspectorUrlFor(accountId, projectName, deployment.id),
     readyState: readyStateFor(deployment),
   };
+}
+
+/** Internal helper: fetches the raw project response (or null on any failure) — used to resolve the stable public domain without risking the caller's main flow on a secondary lookup failing. */
+async function getCloudflarePagesProjectRaw(
+  accountId: string,
+  projectName: string,
+  token: string
+): Promise<CfProjectResponse | null> {
+  try {
+    const res = await cfFetch(`/accounts/${accountId}/pages/projects/${encodeURIComponent(projectName)}`, token);
+    if (!res.ok) return null;
+    const data = await res.json();
+    return data.result as CfProjectResponse;
+  } catch {
+    return null;
+  }
 }
 
 /** Polls a deployment's current build status. */
@@ -280,9 +301,17 @@ export async function getCloudflareDeployment(
   const deployment = data.result as CfDeploymentResponse;
   const readyState = readyStateFor(deployment);
   const failedStage = (deployment.stages ?? []).find((s) => s.status === "failure");
+  // Same fix as triggerCloudflareDeployment() — only bother with the extra
+  // project lookup once the deployment is actually READY, so polling doesn't
+  // do it on every tick while still BUILDING/QUEUED.
+  let url = deployment.url ?? `https://${projectName}.pages.dev`;
+  if (readyState === "READY") {
+    const project = await getCloudflarePagesProjectRaw(accountId, projectName, token);
+    if (project) url = primaryUrlFor(project, deployment);
+  }
   return {
     deploymentId: deployment.id,
-    url: deployment.url ?? `https://${projectName}.pages.dev`,
+    url,
     inspectorUrl: inspectorUrlFor(accountId, projectName, deployment.id),
     readyState,
     errorMessage:
