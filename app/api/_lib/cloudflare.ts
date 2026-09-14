@@ -23,9 +23,6 @@ interface CfErrorBody {
 }
 
 async function parseCloudflareError(res: Response): Promise<CloudflareApiError> {
-  if (res.status === 401 || res.status === 403) {
-    return new CloudflareApiError("Cloudflare token tidak valid atau tidak punya izin.", "invalid_token");
-  }
   if (res.status === 404) {
     return new CloudflareApiError("Resource tidak ditemukan di Cloudflare.", "not_found");
   }
@@ -34,22 +31,29 @@ async function parseCloudflareError(res: Response): Promise<CloudflareApiError> 
     const body = (await res.json()) as CfErrorBody;
     const first = body?.errors?.[0];
     if (first?.message) message = first.message;
-    // Cloudflare doesn't have a dedicated error code for "GitHub App not
-    // installed on this account yet" — it surfaces as a generic 400 whose
-    // message mentions the missing authorization/installation. Detect that
-    // by keyword so the UI can show the "connect GitHub" step instead of a
-    // raw API error.
-    if (/github|installation|authoriz/i.test(message) && (res.status === 400 || res.status === 403)) {
-      return new CloudflareApiError(
-        "GitHub belum terhubung ke akun Cloudflare kamu. Hubungkan dulu, lalu coba deploy lagi.",
-        "github_not_connected"
-      );
-    }
-    if (/already exists|already taken/i.test(message)) {
-      return new CloudflareApiError(message, "project_conflict");
-    }
   } catch {
     /* body wasn't JSON — keep the generic message */
+  }
+  // FIX: Cloudflare doesn't have a dedicated error code for "GitHub App not
+  // installed on this account yet" — it surfaces as a 400 OR a 403 whose
+  // message mentions the missing authorization/installation, depending on
+  // account state. The old code returned "invalid_token" immediately for
+  // ANY 401/403 before ever reading the message, so a 403 caused by a
+  // missing GitHub App connection was always misreported as a bad token.
+  // Now we check the message content first, regardless of status code,
+  // and only fall back to the generic "invalid_token" read when nothing
+  // more specific matches.
+  if (/github|installation|authoriz/i.test(message) && (res.status === 400 || res.status === 403)) {
+    return new CloudflareApiError(
+      "GitHub belum terhubung ke akun Cloudflare kamu. Hubungkan dulu, lalu coba deploy lagi.",
+      "github_not_connected"
+    );
+  }
+  if (/already exists|already taken/i.test(message)) {
+    return new CloudflareApiError(message, "project_conflict");
+  }
+  if (res.status === 401 || res.status === 403) {
+    return new CloudflareApiError("Cloudflare token tidak valid atau tidak punya izin.", "invalid_token");
   }
   return new CloudflareApiError(message, "cloudflare_error");
 }
