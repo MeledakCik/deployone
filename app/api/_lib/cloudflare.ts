@@ -27,25 +27,29 @@ async function parseCloudflareError(res: Response): Promise<CloudflareApiError> 
     return new CloudflareApiError("Resource tidak ditemukan di Cloudflare.", "not_found");
   }
   let message = `Cloudflare API error (${res.status})`;
+  let cfCode: number | undefined;
   try {
     const body = (await res.json()) as CfErrorBody;
     const first = body?.errors?.[0];
     if (first?.message) message = first.message;
+    if (first?.code) cfCode = first.code;
   } catch {
     /* body wasn't JSON — keep the generic message */
   }
   // FIX: Cloudflare doesn't have a dedicated error code for "GitHub App not
-  // installed on this account yet" — it surfaces as a 400 OR a 403 whose
-  // message mentions the missing authorization/installation, depending on
-  // account state. The old code returned "invalid_token" immediately for
-  // ANY 401/403 before ever reading the message, so a 403 caused by a
-  // missing GitHub App connection was always misreported as a bad token.
-  // Now we check the message content first, regardless of status code,
-  // and only fall back to the generic "invalid_token" read when nothing
-  // more specific matches.
-  if (/github|installation|authoriz/i.test(message) && (res.status === 400 || res.status === 403)) {
+  // installed / not authorized for this repo yet" — it surfaces as a 400
+  // (sometimes 403) with a generic message. Observed in the wild: code 9106
+  // "Authentication failed (status: 400)" when the Pages GitHub App hasn't
+  // been granted access to the specific repo being deployed — note this
+  // wording is "Authenticat*", not "Authoriz*", so the keyword match below
+  // covers both, plus the numeric code directly since the message text
+  // alone isn't reliable.
+  if (
+    (cfCode === 9106 || /github|installation|authoriz|authenticat/i.test(message)) &&
+    (res.status === 400 || res.status === 403)
+  ) {
     return new CloudflareApiError(
-      "GitHub belum terhubung ke akun Cloudflare kamu. Hubungkan dulu, lalu coba deploy lagi.",
+      "GitHub belum terhubung/diberi akses ke repo ini di akun Cloudflare kamu. Hubungkan atau kasih akses repo dulu, lalu coba deploy lagi.",
       "github_not_connected"
     );
   }
