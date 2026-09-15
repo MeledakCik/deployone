@@ -319,6 +319,36 @@ export async function triggerCloudflareDeployment(
   };
 }
 
+interface CfLogLine {
+  line: string;
+  ts?: string;
+}
+
+/** Fetches the raw build log for a deployment — used to turn a generic "build failed" into the actual error line(s) from Cloudflare. */
+export async function getCloudflareDeploymentLogs(
+  accountId: string,
+  projectName: string,
+  deploymentId: string,
+  token: string
+): Promise<string[]> {
+  const res = await cfFetch(
+    `/accounts/${accountId}/pages/projects/${encodeURIComponent(projectName)}/deployments/${deploymentId}/history/logs`,
+    token
+  );
+  if (!res.ok) return [];
+  const data = await res.json();
+  const lines = (Array.isArray(data.result?.data) ? data.result.data : []) as CfLogLine[];
+  return lines.map((l) => l.line).filter(Boolean);
+}
+
+/** Picks the most useful tail of a build log for a failure message — lines mentioning an error take priority, otherwise just the last few lines. */
+function summarizeFailure(lines: string[]): string | null {
+  if (lines.length === 0) return null;
+  const errorLines = lines.filter((l) => /error|failed|not found|cannot find|enoent/i.test(l));
+  const picked = (errorLines.length > 0 ? errorLines : lines).slice(-6);
+  return picked.join("\n").slice(0, 800);
+}
+
 /** Polls a deployment's current build status. */
 export async function getCloudflareDeployment(
   accountId: string,
@@ -334,16 +364,28 @@ export async function getCloudflareDeployment(
   const data = await res.json();
   const deployment = data.result as CfDeploymentResponse;
   const readyState = readyStateFor(deployment);
-  const failedStage = (deployment.stages ?? []).find((s) => s.status === "failure");
+
+  let errorMessage: string | null = null;
+  if (readyState === "ERROR") {
+    const failedStage = (deployment.stages ?? []).find((s) => s.status === "failure");
+    let logSummary: string | null = null;
+    try {
+      const logLines = await getCloudflareDeploymentLogs(accountId, projectName, deploymentId, token);
+      logSummary = summarizeFailure(logLines);
+    } catch {
+      /* best-effort — fall back to the generic message below */
+    }
+    errorMessage = logSummary
+      ? `Build gagal di tahap "${failedStage?.name ?? "build"}":\n${logSummary}`
+      : `Build gagal di tahap "${failedStage?.name ?? "build"}". Cek log deployment di Cloudflare dashboard untuk detail.`;
+  }
+
   return {
     deploymentId: deployment.id,
     url: deployment.url ?? `https://${projectName}.pages.dev`,
     inspectorUrl: inspectorUrlFor(accountId, projectName, deployment.id),
     readyState,
-    errorMessage:
-      readyState === "ERROR"
-        ? `Build gagal di tahap "${failedStage?.name ?? "build"}". Cek log deployment di Cloudflare dashboard untuk detail.`
-        : null,
+    errorMessage,
   };
 }
 
