@@ -498,7 +498,7 @@ export function DeployFormView() {
                     <input
                       id="buildCommand"
                       type="text"
-                      placeholder="npm run build"
+                      placeholder="Kosongkan = auto-detect framework"
                       value={form.buildCommand}
                       onChange={(e) => setFormField("buildCommand", e.target.value)}
                       className={cn(inputCls, "mono")}
@@ -511,13 +511,17 @@ export function DeployFormView() {
                     <input
                       id="outputDir"
                       type="text"
-                      placeholder="dist"
+                      placeholder="Kosongkan = auto-detect framework"
                       value={form.outputDir}
                       onChange={(e) => setFormField("outputDir", e.target.value)}
                       className={cn(inputCls, "mono")}
                     />
                   </div>
                 </div>
+                <p className="text-[11px] leading-relaxed text-text-faint">
+                  Depup mendeteksi framework dari package.json repo (Next.js, Vite, CRA, Astro, dll) dan otomatis
+                  pakai build command &amp; output dir yang sesuai kalau dua field di atas dikosongkan.
+                </p>
               </>
             )}
 

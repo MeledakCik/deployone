@@ -5,6 +5,7 @@ import {
   createCloudflarePagesProject,
   getCloudflarePagesProject,
   triggerCloudflareDeployment,
+  cloudflareBuildPreset,
   CloudflareApiError,
 } from "@/app/api/_lib/cloudflare";
 import {
@@ -61,6 +62,13 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
     throw e;
   }
 
+  // Cloudflare Pages has no zero-config framework detection like Vercel —
+  // if the caller didn't explicitly set a build command/output dir, fill in
+  // Cloudflare's own documented preset for the detected framework.
+  const preset = cloudflareBuildPreset(validation.framework);
+  const effectiveBuildCommand = buildCommand || preset.buildCommand;
+  const effectiveOutputDir = outputDir || preset.outputDir;
+
   // Same conflict guard as the Vercel flow: a project name already taken by
   // a *different* repo on this Cloudflare account is a real conflict.
   try {
@@ -76,7 +84,7 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
     if (existing.exists) {
       // Already created & wired to the same repo — just kick off a fresh deployment.
       const deployment = await triggerCloudflareDeployment(accountId, projectName, cloudflareToken);
-      return ok(deployment, 201);
+      return ok({ ...deployment, frameworkWarning: preset.warning }, 201);
     }
   } catch (e) {
     if (e instanceof CloudflareApiError) {
@@ -94,11 +102,11 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
       owner: validation.owner,
       repo: validation.repo,
       productionBranch: validation.defaultBranch,
-      buildCommand,
-      outputDir,
+      buildCommand: effectiveBuildCommand,
+      outputDir: effectiveOutputDir,
     });
     const deployment = await triggerCloudflareDeployment(accountId, projectName, cloudflareToken);
-    return ok(deployment, 201);
+    return ok({ ...deployment, frameworkWarning: preset.warning }, 201);
   } catch (e) {
     if (e instanceof CloudflareApiError) {
       const status =

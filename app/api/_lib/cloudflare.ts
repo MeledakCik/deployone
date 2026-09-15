@@ -23,41 +23,33 @@ interface CfErrorBody {
 }
 
 async function parseCloudflareError(res: Response): Promise<CloudflareApiError> {
+  if (res.status === 401 || res.status === 403) {
+    return new CloudflareApiError("Cloudflare token tidak valid atau tidak punya izin.", "invalid_token");
+  }
   if (res.status === 404) {
     return new CloudflareApiError("Resource tidak ditemukan di Cloudflare.", "not_found");
   }
   let message = `Cloudflare API error (${res.status})`;
-  let cfCode: number | undefined;
   try {
     const body = (await res.json()) as CfErrorBody;
     const first = body?.errors?.[0];
     if (first?.message) message = first.message;
-    if (first?.code) cfCode = first.code;
+    // Cloudflare doesn't have a dedicated error code for "GitHub App not
+    // installed on this account yet" — it surfaces as a generic 400 whose
+    // message mentions the missing authorization/installation. Detect that
+    // by keyword so the UI can show the "connect GitHub" step instead of a
+    // raw API error.
+    if (/github|installation|authoriz/i.test(message) && (res.status === 400 || res.status === 403)) {
+      return new CloudflareApiError(
+        "GitHub belum terhubung ke akun Cloudflare kamu. Hubungkan dulu, lalu coba deploy lagi.",
+        "github_not_connected"
+      );
+    }
+    if (/already exists|already taken/i.test(message)) {
+      return new CloudflareApiError(message, "project_conflict");
+    }
   } catch {
     /* body wasn't JSON — keep the generic message */
-  }
-  // FIX: Cloudflare doesn't have a dedicated error code for "GitHub App not
-  // installed / not authorized for this repo yet" — it surfaces as a 400
-  // (sometimes 403) with a generic message. Observed in the wild: code 9106
-  // "Authentication failed (status: 400)" when the Pages GitHub App hasn't
-  // been granted access to the specific repo being deployed — note this
-  // wording is "Authenticat*", not "Authoriz*", so the keyword match below
-  // covers both, plus the numeric code directly since the message text
-  // alone isn't reliable.
-  if (
-    (cfCode === 9106 || /github|installation|authoriz|authenticat/i.test(message)) &&
-    (res.status === 400 || res.status === 403)
-  ) {
-    return new CloudflareApiError(
-      "GitHub belum terhubung/diberi akses ke repo ini di akun Cloudflare kamu. Hubungkan atau kasih akses repo dulu, lalu coba deploy lagi.",
-      "github_not_connected"
-    );
-  }
-  if (/already exists|already taken/i.test(message)) {
-    return new CloudflareApiError(message, "project_conflict");
-  }
-  if (res.status === 401 || res.status === 403) {
-    return new CloudflareApiError("Cloudflare token tidak valid atau tidak punya izin.", "invalid_token");
   }
   return new CloudflareApiError(message, "cloudflare_error");
 }
@@ -200,6 +192,69 @@ export async function listCloudflarePagesProjects(
   }));
 }
 
+/**
+ * Best-effort Cloudflare Pages build presets per detected framework — mirrors
+ * what Cloudflare's own dashboard "Framework preset" dropdown fills in.
+ * Next.js is the tricky one: Cloudflare Pages was never built for Next.js
+ * SSR/API routes the way Vercel is. `@cloudflare/next-on-pages` still works
+ * for most apps but is officially deprecated — Cloudflare's current
+ * recommendation for full Next.js SSR is deploying as a Cloudflare *Worker*
+ * via `@opennextjs/cloudflare` instead, which as of now has no public API
+ * for git-connected auto-deploys (Cloudflare dashboard-only), so Depup can't
+ * automate that path yet. We use next-on-pages here as the best available
+ * automated option and surface the caveat to the user.
+ */
+export function cloudflareBuildPreset(framework: string | null): {
+  buildCommand: string;
+  outputDir: string;
+  warning?: string;
+} {
+  switch (framework) {
+    case "Next.js":
+      return {
+        buildCommand: "npx @cloudflare/next-on-pages@1",
+        outputDir: ".vercel/output/static",
+        warning:
+          "Next.js di Cloudflare Pages pakai adapter next-on-pages (deprecated tapi masih jalan untuk kebanyakan app) — sebagian fitur Next.js (terutama API routes/SSR yang kompleks) best-effort, tidak sekonsisten di Vercel. Untuk dukungan penuh, Cloudflare sekarang merekomendasikan deploy sebagai Cloudflare Worker via OpenNext, tapi itu belum bisa diotomasi lewat API publik Cloudflare (harus setup manual di dashboard Cloudflare).",
+      };
+    case "Vite + React":
+    case "Vite":
+      return { buildCommand: "npm run build", outputDir: "dist" };
+    case "Create React App":
+      return { buildCommand: "npm run build", outputDir: "build" };
+    case "Astro":
+      return { buildCommand: "npm run build", outputDir: "dist" };
+    case "Gatsby":
+      return { buildCommand: "npm run build", outputDir: "public" };
+    case "SvelteKit":
+      return {
+        buildCommand: "npm run build",
+        outputDir: "build",
+        warning:
+          "SvelteKit butuh @sveltejs/adapter-cloudflare terpasang di repo supaya build-nya cocok buat Cloudflare Pages — cek dulu adapter di svelte.config.js.",
+      };
+    case "Nuxt":
+      return {
+        buildCommand: "npm run build",
+        outputDir: "dist",
+        warning:
+          "Nuxt butuh nitro preset \"cloudflare-pages\" (nuxt.config.ts) supaya build-nya cocok buat Cloudflare Pages — kalau belum di-set, build kemungkinan gagal.",
+      };
+    case "Remix":
+      return {
+        buildCommand: "npm run build",
+        outputDir: "build/client",
+        warning: "Remix butuh @remix-run/cloudflare-pages terpasang supaya jalan di Cloudflare Pages.",
+      };
+    default:
+      return {
+        buildCommand: "npm run build",
+        outputDir: "dist",
+        warning: "Framework tidak terdeteksi otomatis — build command & output dir pakai default umum, cek lagi kalau build gagal.",
+      };
+  }
+}
+
 interface CreateCfProjectParams {
   accountId: string;
   token: string;
@@ -256,33 +311,12 @@ export async function triggerCloudflareDeployment(
   if (!res.ok) throw await parseCloudflareError(res);
   const data = await res.json();
   const deployment = data.result as CfDeploymentResponse;
-  // FIX: deployment.url is a per-build alias (e.g. https://<hash>.<project>.pages.dev),
-  // NOT the project's stable public domain — primaryUrlFor() existed to compute
-  // the right one but was never actually called anywhere. Fetch the project so we
-  // can return its real https://<project>.pages.dev (or custom subdomain).
-  const project = await getCloudflarePagesProjectRaw(accountId, projectName, token);
   return {
     deploymentId: deployment.id,
-    url: project ? primaryUrlFor(project, deployment) : (deployment.url ?? `https://${projectName}.pages.dev`),
+    url: deployment.url ?? `https://${projectName}.pages.dev`,
     inspectorUrl: inspectorUrlFor(accountId, projectName, deployment.id),
     readyState: readyStateFor(deployment),
   };
-}
-
-/** Internal helper: fetches the raw project response (or null on any failure) — used to resolve the stable public domain without risking the caller's main flow on a secondary lookup failing. */
-async function getCloudflarePagesProjectRaw(
-  accountId: string,
-  projectName: string,
-  token: string
-): Promise<CfProjectResponse | null> {
-  try {
-    const res = await cfFetch(`/accounts/${accountId}/pages/projects/${encodeURIComponent(projectName)}`, token);
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data.result as CfProjectResponse;
-  } catch {
-    return null;
-  }
 }
 
 /** Polls a deployment's current build status. */
@@ -301,17 +335,9 @@ export async function getCloudflareDeployment(
   const deployment = data.result as CfDeploymentResponse;
   const readyState = readyStateFor(deployment);
   const failedStage = (deployment.stages ?? []).find((s) => s.status === "failure");
-  // Same fix as triggerCloudflareDeployment() — only bother with the extra
-  // project lookup once the deployment is actually READY, so polling doesn't
-  // do it on every tick while still BUILDING/QUEUED.
-  let url = deployment.url ?? `https://${projectName}.pages.dev`;
-  if (readyState === "READY") {
-    const project = await getCloudflarePagesProjectRaw(accountId, projectName, token);
-    if (project) url = primaryUrlFor(project, deployment);
-  }
   return {
     deploymentId: deployment.id,
-    url,
+    url: deployment.url ?? `https://${projectName}.pages.dev`,
     inspectorUrl: inspectorUrlFor(accountId, projectName, deployment.id),
     readyState,
     errorMessage:

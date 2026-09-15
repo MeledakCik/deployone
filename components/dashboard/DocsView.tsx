@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ChevronDown, ExternalLink, KeyRound, Github, ShieldCheck, BarChart2, Cloud } from "lucide-react";
+import { ChevronDown, ExternalLink, KeyRound, Github, ShieldCheck, BarChart2, Cloud, Link2, AlertTriangle } from "lucide-react";
 import { ViewFade } from "@/components/ui/ViewFade";
 import { Surface } from "@/components/ui/Surface";
 
@@ -14,6 +14,23 @@ interface Guide {
 }
 
 const GUIDES: Guide[] = [
+  {
+    icon: AlertTriangle,
+    title: "Next.js di Cloudflare Pages vs Vercel — apa bedanya?",
+    desc: "Penting dibaca kalau repo yang di-deploy ke Cloudflare pakai Next.js dengan API routes — perilakunya beda dari Vercel.",
+    link: {
+      label: "Baca dokumentasi next-on-pages",
+      href: "https://github.com/cloudflare/next-on-pages",
+    },
+    steps: [
+      "Vercel dibuat oleh tim yang sama dengan Next.js, jadi API routes & SSR jalan otomatis tanpa konfigurasi tambahan.",
+      'Cloudflare Pages bukan didesain khusus untuk Next.js. Depup otomatis pakai adapter "@cloudflare/next-on-pages" untuk project Next.js supaya API routes tetap bisa jalan — tapi adapter ini sudah deprecated dan sifatnya best-effort, jadi tidak semua fitur Next.js (terutama fitur SSR/API routes yang kompleks) dijamin jalan 100% sama seperti di Vercel.',
+      "Kalau build gagal atau ada fitur yang error, itu keterbatasan platform Cloudflare Pages untuk Next.js — bukan bug di Depup. Cek log build project tersebut di Cloudflare dashboard untuk detail errornya.",
+      'Rekomendasi resmi Cloudflare sekarang untuk Next.js dengan banyak API routes adalah deploy sebagai Cloudflare Worker pakai adapter "@opennextjs/cloudflare" — tapi setup Git-connected Worker ini masih harus manual lewat dashboard Cloudflare (belum ada API publik buat Depup otomasi ini).',
+      "Kalau project kamu simple (tanpa API routes sama sekali, murni halaman statis), pertimbangkan set output: 'export' di next.config.js — hasilnya full static dan jauh lebih stabil di Cloudflare Pages.",
+      "Untuk Next.js app yang butuh API routes solid & lengkap, Vercel tetap pilihan paling straightforward lewat Depup.",
+    ],
+  },
   {
     icon: KeyRound,
     title: "Cara dapetin Vercel Token",
@@ -30,18 +47,29 @@ const GUIDES: Guide[] = [
   },
   {
     icon: Cloud,
-    title: "Cara dapetin Cloudflare Token",
-    desc: "Token ini dipakai Depup untuk deploy repo GitHub kamu ke Cloudflare Pages, kelola domain, dan env vars.",
+    title: "Cara dapetin Cloudflare API Token",
+    desc: "Token ini dipakai Depup untuk membuat & mengelola project Cloudflare Pages kamu — deploy, custom domain, dan environment variables.",
     link: { label: "Buka Cloudflare API Tokens", href: "https://dash.cloudflare.com/profile/api-tokens" },
     steps: [
-      "Login ke dash.cloudflare.com, klik ikon profil kanan atas → \"My Profile\" → tab \"API Tokens\" (atau langsung ke dash.cloudflare.com/profile/api-tokens).",
-      'Klik "Create Token" → pilih "Create Custom Token" (jangan pakai template siap pakai).',
-      'Di bagian Permissions pilih: Account → "Cloudflare Pages" → "Edit". Kalau mau sekalian kelola custom domain, tambahkan juga Zone → DNS → Edit dan Zone → Zone → Read via "+ Add more".',
-      'PENTING di bagian Account Resources: dropdown pertama biarkan "Include", tapi dropdown kedua WAJIB dipilih nama akun Cloudflare kamu secara spesifik (atau "All accounts"). Kalau dibiarkan kosong, token akan valid tapi tidak punya akses ke akun manapun — ini penyebab paling umum error di Depup.',
-      "Client IP Address Filtering dan TTL boleh dikosongin (opsional) — klik \"Continue to summary\".",
-      'Cek ringkasan permission-nya, lalu klik "Create Token" dan langsung salin — token cuma ditampilkan sekali.',
-      'Ambil Account ID: buka Workers & Pages di dashboard Cloudflare, Account ID muncul di sidebar kanan — pastikan ini akun yang sama dengan yang dipilih di Account Resources tadi.',
-      'Tempel token + Account ID ke field Cloudflare Token & Account ID di form Deploy (atau Settings Depup), lalu klik "Test Koneksi" sebelum deploy. Kalau muncul "token tidak punya akses ke akun manapun", balik ke token itu di Cloudflare dan pastikan Account Resources-nya benar-benar terisi nama akun.',
+      "Login ke dashboard Cloudflare kamu di dash.cloudflare.com.",
+      'Buka foto profil (kanan atas) → "My Profile" → tab "API Tokens" (atau langsung ke dash.cloudflare.com/profile/api-tokens).',
+      'Klik "Create Token" → pilih template "Edit Cloudflare Workers" atau bikin custom token dengan permission "Account" → "Cloudflare Pages" → "Edit".',
+      "Pilih akun (Account Resources) yang mau dipakai deploy, lalu klik Continue to summary.",
+      'Klik "Create Token", lalu salin token yang muncul — token ini cuma ditampilkan sekali, jadi langsung simpan.',
+      'Tempel token itu ke field Cloudflare Token di halaman Settings Depup, lalu klik "Test Koneksi" untuk pilih akun aktifnya.',
+    ],
+  },
+  {
+    icon: Link2,
+    title: "Cara hubungkan GitHub ke Cloudflare Pages",
+    desc: "Sekali di-connect, semua deploy Cloudflare berikutnya lewat Depup otomatis jalan tanpa perlu login ulang — sama seperti Vercel.",
+    link: { label: "Buka Cloudflare Pages", href: "https://dash.cloudflare.com/?to=/:account/pages/new/provider/github" },
+    steps: [
+      "Pertama kali deploy ke Cloudflare di form Deploy, Depup otomatis cek apakah GitHub sudah terhubung ke akun Cloudflare kamu.",
+      'Kalau belum, akan muncul tombol "Hubungkan GitHub ke Cloudflare" — klik itu, nanti diarahkan ke halaman resmi Cloudflare untuk connect.',
+      'Di halaman Cloudflare, klik "Connect GitHub" lalu login/authorize GitHub App Cloudflare Pages (pilih "All repositories" atau repo tertentu saja).',
+      "Setelah authorize berhasil, kembali ke tab Depup dan klik \"Sudah connect, cek lagi\".",
+      "Begitu status berubah jadi terhubung, klik Deploy Project lagi — deploy langsung jalan otomatis tanpa langkah manual lagi untuk deploy-deploy berikutnya.",
     ],
   },
   {

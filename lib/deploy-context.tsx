@@ -98,8 +98,6 @@ interface ModalState {
     name: string;
     domain: string;
     inspectorUrl?: string;
-    /** Which platform this result belongs to — drives platform-specific labels/links in DeployModal (e.g. "Lihat di Vercel" vs "Lihat di Cloudflare"). */
-    platform?: Platform;
     /** Web Analytics status for Vercel deploys — undefined for other platforms, null while unknown. */
     analyticsEnabled?: boolean | null;
     /** Direct link to the project's Analytics tab so the user can flip it on in one click. */
@@ -392,7 +390,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         subtitle: `Project ${projectName} siap di ${domain}`,
         resultVisible: true,
         closeVisible: true,
-        result: { name: projectName, domain, platform: data.platform },
+        result: { name: projectName, domain },
       }));
       addHistory(projectName, data.platform, domain);
     },
@@ -519,7 +517,6 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
               name: projectName,
               domain: status.url,
               inspectorUrl: status.inspectorUrl,
-              platform: "vercel",
               analyticsEnabled: null,
               analyticsUrl,
             },
@@ -610,6 +607,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         failDeploy(data, err instanceof Error ? err.message : "Gagal membuat deployment di Cloudflare Pages.");
         return;
       }
+      if (created.frameworkWarning) showToast(created.frameworkWarning);
       setModal((prev) => ({ ...prev, stepIndex: 2, barWidth: 40 }));
       intervalRef.current = setInterval(async () => {
         let status: CloudflareDeployStatusResult;
@@ -637,7 +635,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
             subtitle: `Project ${projectName} siap di ${status.url}`,
             resultVisible: true,
             closeVisible: true,
-            result: { name: projectName, domain: status.url, inspectorUrl: status.inspectorUrl, platform: "cloudflare" },
+            result: { name: projectName, domain: status.url, inspectorUrl: status.inspectorUrl },
           }));
           addHistory(projectName, "cloudflare", status.url, "ready");
           return;

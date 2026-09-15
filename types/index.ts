@@ -319,6 +319,8 @@ export interface CreateCloudflareDeployResult {
   url: string;
   inspectorUrl: string;
   readyState: VercelReadyState;
+  /** Framework-specific caveat (e.g. Next.js on Pages) surfaced from the server so the client can show it even on a successful deploy. */
+  frameworkWarning?: string;
 }
 
 /** Result of GET /api/cloudflare/deploy/[id] */
