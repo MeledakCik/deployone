@@ -23,33 +23,42 @@ interface CfErrorBody {
 }
 
 async function parseCloudflareError(res: Response): Promise<CloudflareApiError> {
-  if (res.status === 401 || res.status === 403) {
-    return new CloudflareApiError("Cloudflare token tidak valid atau tidak punya izin.", "invalid_token");
-  }
   if (res.status === 404) {
     return new CloudflareApiError("Resource tidak ditemukan di Cloudflare.", "not_found");
   }
+
   let message = `Cloudflare API error (${res.status})`;
+  let parsedBody = false;
   try {
     const body = (await res.json()) as CfErrorBody;
     const first = body?.errors?.[0];
-    if (first?.message) message = first.message;
-    // Cloudflare doesn't have a dedicated error code for "GitHub App not
-    // installed on this account yet" — it surfaces as a generic 400 whose
-    // message mentions the missing authorization/installation. Detect that
-    // by keyword so the UI can show the "connect GitHub" step instead of a
-    // raw API error.
-    if (/github|installation|authoriz/i.test(message) && (res.status === 400 || res.status === 403)) {
-      return new CloudflareApiError(
-        "GitHub belum terhubung ke akun Cloudflare kamu. Hubungkan dulu, lalu coba deploy lagi.",
-        "github_not_connected"
-      );
-    }
-    if (/already exists|already taken/i.test(message)) {
-      return new CloudflareApiError(message, "project_conflict");
+    if (first?.message) {
+      message = first.message;
+      parsedBody = true;
     }
   } catch {
     /* body wasn't JSON — keep the generic message */
+  }
+
+  // Read the body BEFORE assuming a 401/403 means "bad token" — Cloudflare
+  // also returns 403 when the token is fine but the GitHub App simply isn't
+  // authorized for that specific repo (e.g. deploying someone else's repo
+  // that hasn't been added to the App's repository access list). Catching
+  // that here first stops it from being misreported as an invalid token.
+  if (parsedBody && /github|installation|authoriz|repo/i.test(message)) {
+    return new CloudflareApiError(
+      "GitHub App Cloudflare Pages belum punya akses ke repo ini. Kalau repo ini bukan milik akun GitHub yang ke-connect ke Cloudflare, minta pemilik repo invite kamu sebagai collaborator, lalu tambahkan repo itu ke akses GitHub App Cloudflare Pages (github.com/settings/installations → Configure → Repository access).",
+      "github_not_connected"
+    );
+  }
+  if (parsedBody && /already exists|already taken/i.test(message)) {
+    return new CloudflareApiError(message, "project_conflict");
+  }
+  if (res.status === 401 || res.status === 403) {
+    return new CloudflareApiError(
+      parsedBody ? message : "Cloudflare token tidak valid atau tidak punya izin.",
+      "invalid_token"
+    );
   }
   return new CloudflareApiError(message, "cloudflare_error");
 }
@@ -208,12 +217,14 @@ export function cloudflareBuildPreset(framework: string | null): {
   buildCommand: string;
   outputDir: string;
   warning?: string;
+  compatFlags?: string[];
 } {
   switch (framework) {
     case "Next.js":
       return {
         buildCommand: "npx @cloudflare/next-on-pages@1",
         outputDir: ".vercel/output/static",
+        compatFlags: ["nodejs_compat"],
         warning:
           "Next.js di Cloudflare Pages pakai adapter next-on-pages (deprecated tapi masih jalan untuk kebanyakan app) — sebagian fitur Next.js (terutama API routes/SSR yang kompleks) best-effort, tidak sekonsisten di Vercel. Untuk dukungan penuh, Cloudflare sekarang merekomendasikan deploy sebagai Cloudflare Worker via OpenNext, tapi itu belum bisa diotomasi lewat API publik Cloudflare (harus setup manual di dashboard Cloudflare).",
       };
@@ -244,6 +255,7 @@ export function cloudflareBuildPreset(framework: string | null): {
       return {
         buildCommand: "npm run build",
         outputDir: "build/client",
+        compatFlags: ["nodejs_compat"],
         warning: "Remix butuh @remix-run/cloudflare-pages terpasang supaya jalan di Cloudflare Pages.",
       };
     default:
@@ -264,6 +276,8 @@ interface CreateCfProjectParams {
   productionBranch: string;
   buildCommand?: string;
   outputDir?: string;
+  compatibilityFlags?: string[];
+  compatibilityDate?: string;
 }
 
 /**
@@ -292,6 +306,24 @@ export async function createCloudflarePagesProject(params: CreateCfProjectParams
         build_command: params.buildCommand || undefined,
         destination_dir: params.outputDir || undefined,
       },
+      // Without this, Node-API-dependent frameworks (Next.js via
+      // next-on-pages, Remix, SvelteKit adapters, etc.) build "successfully"
+      // but fail or 404 at request time because the Workers runtime has no
+      // Node compat layer. Pin a fixed date rather than "today" so behavior
+      // doesn't silently shift on future redeploys.
+      deployment_configs:
+        params.compatibilityFlags && params.compatibilityFlags.length > 0
+          ? {
+              production: {
+                compatibility_date: params.compatibilityDate || "2024-09-23",
+                compatibility_flags: params.compatibilityFlags,
+              },
+              preview: {
+                compatibility_date: params.compatibilityDate || "2024-09-23",
+                compatibility_flags: params.compatibilityFlags,
+              },
+            }
+          : undefined,
     }),
   });
   if (!res.ok) throw await parseCloudflareError(res);

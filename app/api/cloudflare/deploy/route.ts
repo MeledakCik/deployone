@@ -104,6 +104,7 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
       productionBranch: validation.defaultBranch,
       buildCommand: effectiveBuildCommand,
       outputDir: effectiveOutputDir,
+      compatibilityFlags: preset.compatFlags,
     });
     const deployment = await triggerCloudflareDeployment(accountId, projectName, cloudflareToken);
     return ok({ ...deployment, frameworkWarning: preset.warning }, 201);
