@@ -47,10 +47,12 @@ const POLL_INTERVAL_MS = 2000;
 const GITHUB_REPO_RE = /^https:\/\/github\.com\/[^/]+\/[^/]+/;
 const ENV_KEY_RE = /^[A-Z][A-Z0-9_]*$/;
 
-/** Toggles the "www." prefix — used to auto-add/remove the www ↔ non-www counterpart of a domain together. */
 function wwwPairFor(domain: string): string {
-  return domain.toLowerCase().startsWith("www.") ? domain.slice(4) : `www.${domain}`;
+  return domain.toLowerCase().startsWith("www.")
+    ? domain.slice(4)
+    : `www.${domain}`;
 }
+
 const SETTINGS_TOKENS_KEY = "depup-settings-tokens";
 const DEFAULT_SETTINGS_TOKENS: SettingsTokens = {
   vercelToken: "",
@@ -62,14 +64,15 @@ const DEFAULT_SETTINGS_TOKENS: SettingsTokens = {
 async function callApi<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
   const body = (await res.json().catch(() => null)) as ApiResponse<T> | null;
-  if (!body ||!body.ok) {
-    throw new Error(body?.error?? `Request gagal (${res.status})`);
+  if (!body || !body.ok) {
+    throw new Error(body?.error ?? `Request gagal (${res.status})`);
   }
   return body.data;
 }
 
 const DEFAULT_MODAL_TITLE = "Deploy Project";
-const DEFAULT_MODAL_SUBTITLE = "Import repository dan deploy ke edge network dalam satu klik.";
+const DEFAULT_MODAL_SUBTITLE =
+  "Import repository dan deploy ke edge network dalam satu klik.";
 
 const emptyForm: DeployFormValues = {
   projectName: "",
@@ -86,6 +89,42 @@ const emptyForm: DeployFormValues = {
   envText: "",
 };
 
+/* ================================================================
+ *  State modern — sumber tunggal untuk progress deploy
+ * ================================================================ */
+
+export type DeployStatus = "idle" | "deploying" | "success" | "error";
+
+export interface DeployState {
+  status: DeployStatus;
+  stepIndex: number;
+  barWidth: number;
+  title: string;
+  subtitle: string;
+  error: string | null;
+  result: {
+    name: string;
+    domain: string;
+    inspectorUrl?: string;
+    analyticsEnabled?: boolean | null;
+    analyticsUrl?: string;
+  } | null;
+}
+
+const defaultDeployState: DeployState = {
+  status: "idle",
+  stepIndex: 0,
+  barWidth: 0,
+  title: DEFAULT_MODAL_TITLE,
+  subtitle: DEFAULT_MODAL_SUBTITLE,
+  error: null,
+  result: null,
+};
+
+/* ================================================================
+ *  State legacy — bentuk ModalState yang dipakai DeployModal.tsx
+ * ================================================================ */
+
 interface ModalState {
   open: boolean;
   stepIndex: number;
@@ -98,25 +137,15 @@ interface ModalState {
     name: string;
     domain: string;
     inspectorUrl?: string;
-    /** Web Analytics status for Vercel deploys — undefined for other platforms, null while unknown. */
     analyticsEnabled?: boolean | null;
-    /** Direct link to the project's Analytics tab so the user can flip it on in one click. */
     analyticsUrl?: string;
   } | null;
   error: string | null;
 }
 
-const defaultModal: ModalState = {
-  open: false,
-  stepIndex: 0,
-  barWidth: 0,
-  title: DEFAULT_MODAL_TITLE,
-  subtitle: DEFAULT_MODAL_SUBTITLE,
-  resultVisible: false,
-  closeVisible: false,
-  result: null,
-  error: null,
-};
+/* ================================================================
+ *  Context value
+ * ================================================================ */
 
 interface DeployContextValue {
   view: DashboardView;
@@ -124,61 +153,99 @@ interface DeployContextValue {
   stats: { total: number; ready: number; failed: number };
   history: HistoryItem[];
   form: DeployFormValues;
-  setFormField: <K extends keyof DeployFormValues>(key: K, value: DeployFormValues[K]) => void;
+  setFormField: <K extends keyof DeployFormValues>(
+    key: K,
+    value: DeployFormValues[K],
+  ) => void;
   platformTokenLabel: string;
-  /** Vercel token saved in Settings, already known to work — lets the deploy form skip asking for it again. */
+
+  /** Legacy derived view — dipakai DeployModal.tsx. */
+  modal: ModalState;
+  /** Modern state — dipakai DeployFormView wizard. */
+  deployState: DeployState;
+
+  closeModal: () => void;
+  handleCloseAfterDeploy: () => void;
+  resetDeployState: () => void;
+
   savedVercelToken: { token: string; username: string } | null;
   savedVercelTokenStatus: "idle" | "checking" | "ok" | "invalid";
-  /** Cloudflare token + account saved in Settings, already known to work. */
-  savedCloudflareToken: { token: string; accountId: string; accountName: string } | null;
-  savedCloudflareTokenStatus: "idle" | "checking" | "ok" | "invalid" | "needs_account";
+
+  savedCloudflareToken: {
+    token: string;
+    accountId: string;
+    accountName: string;
+  } | null;
+  savedCloudflareTokenStatus:
+    | "idle"
+    | "checking"
+    | "ok"
+    | "invalid"
+    | "needs_account";
   cloudflareAccounts: CloudflareAccountInfo[];
-  /** Whether Cloudflare's Pages GitHub App looks already installed on this account — see checkGithubConnection(). */
-  githubConnectionStatus: { status: "idle" | "checking" | "connected" | "unknown"; connectUrl: string | null };
+  githubConnectionStatus: {
+    status: "idle" | "checking" | "connected" | "unknown";
+    connectUrl: string | null;
+  };
   checkGithubConnection: () => Promise<void>;
-  modal: ModalState;
+
   confirmOpen: boolean;
   submitDeploy: (e: React.FormEvent<HTMLFormElement>) => void;
   proceedDeploy: () => void;
   closeConfirm: () => void;
-  closeModal: () => void;
-  handleCloseAfterDeploy: () => void;
+
   redeploy: (name: string) => void;
+
   vercelToken: string;
   cloudflareToken: string;
   cloudflareAccountId: string;
+
   syncingProjects: boolean;
-  syncProjectStatus: (name: string) => Promise<"exists" | "deleted" | "skipped" | "error">;
+  syncProjectStatus: (
+    name: string,
+  ) => Promise<"exists" | "deleted" | "skipped" | "error">;
   syncAllProjects: () => Promise<void>;
+
   deletingProject: string | null;
   deleteProject: (
     name: string,
-    options: { alsoDeleteFromVercel?: boolean; alsoDeleteFromCloudflare?: boolean }
+    options: {
+      alsoDeleteFromVercel?: boolean;
+      alsoDeleteFromCloudflare?: boolean;
+    },
   ) => Promise<void>;
+
   fetchImportableVercelProjects: () => Promise<VercelProjectSummary[]>;
   importVercelProject: (project: VercelProjectSummary) => void;
   fetchImportableCloudflareProjects: () => Promise<CloudflareProjectSummary[]>;
   importCloudflareProject: (project: CloudflareProjectSummary) => void;
+
   domains: DomainItem[];
   addDomain: (domain: string, project: string) => Promise<void>;
   removeDomain: (id: string) => Promise<void>;
   refreshDomainStatus: (id: string) => Promise<void>;
   syncingDomains: boolean;
-  syncDomainsForProject: (project: string) => Promise<"synced" | "skipped" | "error">;
+  syncDomainsForProject: (
+    project: string,
+  ) => Promise<"synced" | "skipped" | "error">;
   syncAllDomains: () => Promise<void>;
+
   envVars: EnvItem[];
   addEnvVar: (
     key: string,
     value: string,
     environment: "Production" | "Preview",
     project: string,
-    options?: { pushToVercel?: boolean; pushToCloudflare?: boolean }
+    options?: { pushToVercel?: boolean; pushToCloudflare?: boolean },
   ) => Promise<void>;
   removeEnvVar: (id: string) => Promise<void>;
   toggleEnvVisible: (id: string) => void;
   syncingEnvVars: boolean;
-  syncEnvVarsForProject: (project: string) => Promise<"synced" | "skipped" | "error">;
+  syncEnvVarsForProject: (
+    project: string,
+  ) => Promise<"synced" | "skipped" | "error">;
   syncAllEnvVars: () => Promise<void>;
+
   focusedTrafficProject: string | null;
   setFocusedTrafficProject: (name: string | null) => void;
 }
@@ -191,48 +258,67 @@ export function useDeploy() {
   return ctx;
 }
 
+/* ================================================================
+ *  Provider
+ * ================================================================ */
+
 export function DeployProvider({ children }: { children: React.ReactNode }) {
   const { showToast } = useToast();
 
   const [view, setView] = React.useState<DashboardView>("dashboard");
-  // Set by ProjectsView's "View Traffic" button so the Observability page
-  // knows which project to open detail for right after navigating there.
-  const [focusedTrafficProject, setFocusedTrafficProject] = React.useState<string | null>(null);
-  const [history, setHistory] = useCloudStorage<HistoryItem[]>("history", [], "depup-history");
-  const stats = React.useMemo(
-    () => {
-      const safeHistory = Array.isArray(history)? history : [];
-      return {
-        total: safeHistory.length,
-        ready: safeHistory.filter((h) => h.status === "ready").length,
-        failed: safeHistory.filter((h) => h.status === "failed").length,
-      };
-    },
-    [history]
-  );
-  const [form, setForm] = React.useState<DeployFormValues>(emptyForm);
-  const [modal, setModal] = React.useState<ModalState>(defaultModal);
-  const [confirmOpen, setConfirmOpen] = React.useState(false);
+  const [focusedTrafficProject, setFocusedTrafficProject] = React.useState<
+    string | null
+  >(null);
 
-  const [domains, setDomains] = useCloudStorage<DomainItem[]>("domains", [], "depup-domains");
-  const [envVars, setEnvVars] = useCloudStorage<EnvItem[]>("envVars", [], "depup-env");
+  const [history, setHistory] = useCloudStorage<HistoryItem[]>(
+    "history",
+    [],
+    "depup-history",
+  );
+  const stats = React.useMemo(() => {
+    const safeHistory = Array.isArray(history) ? history : [];
+    return {
+      total: safeHistory.length,
+      ready: safeHistory.filter((h) => h.status === "ready").length,
+      failed: safeHistory.filter((h) => h.status === "failed").length,
+    };
+  }, [history]);
+
+  const [form, setForm] = React.useState<DeployFormValues>(emptyForm);
+  const [deployState, setDeployState] =
+    React.useState<DeployState>(defaultDeployState);
+
+  const [domains, setDomains] = useCloudStorage<DomainItem[]>(
+    "domains",
+    [],
+    "depup-domains",
+  );
+  const [envVars, setEnvVars] = useCloudStorage<EnvItem[]>(
+    "envVars",
+    [],
+    "depup-env",
+  );
   const [settingsTokens] = useCloudStorage<SettingsTokens>(
     "settingsTokens",
     DEFAULT_SETTINGS_TOKENS,
-    SETTINGS_TOKENS_KEY
+    SETTINGS_TOKENS_KEY,
   );
   const vercelToken = settingsTokens.vercelToken;
   const cloudflareToken = settingsTokens.cloudflareToken;
   const cloudflareAccountId = settingsTokens.cloudflareAccountId ?? "";
+
   const [syncingProjects, setSyncingProjects] = React.useState(false);
-  const [deletingProject, setDeletingProject] = React.useState<string | null>(null);
+  const [deletingProject, setDeletingProject] = React.useState<string | null>(
+    null,
+  );
   const [syncingEnvVars, setSyncingEnvVars] = React.useState(false);
   const [syncingDomains, setSyncingDomains] = React.useState(false);
 
-  // Tests the Vercel token saved in Settings once (and again whenever it
-  // changes) so the deploy form can skip asking for it a second time —
-  // but only after confirming it still actually connects.
-  const [savedVercelToken, setSavedVercelToken] = React.useState<{ token: string; username: string } | null>(null);
+  /* ---------- saved Vercel token ---------- */
+  const [savedVercelToken, setSavedVercelToken] = React.useState<{
+    token: string;
+    username: string;
+  } | null>(null);
   const [savedVercelTokenStatus, setSavedVercelTokenStatus] = React.useState<
     "idle" | "checking" | "ok" | "invalid"
   >("idle");
@@ -247,9 +333,10 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     setSavedVercelTokenStatus("checking");
     (async () => {
       try {
-        const user = await callApi<{ username: string; email: string | null }>("/api/vercel/whoami", {
-          headers: { "x-vercel-token": vercelToken },
-        });
+        const user = await callApi<{ username: string; email: string | null }>(
+          "/api/vercel/whoami",
+          { headers: { "x-vercel-token": vercelToken } },
+        );
         if (cancelled) return;
         setSavedVercelToken({ token: vercelToken, username: user.username });
         setSavedVercelTokenStatus("ok");
@@ -264,18 +351,19 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     };
   }, [vercelToken]);
 
-  // Same idea as the Vercel token check above, but a Cloudflare token can
-  // see more than one account — if the token works but no account was
-  // chosen yet in Settings (or the saved one no longer matches), we surface
-  // "needs_account" instead of silently guessing which account to deploy
-  // into.
-  const [savedCloudflareToken, setSavedCloudflareToken] = React.useState<
-    { token: string; accountId: string; accountName: string } | null
-  >(null);
-  const [savedCloudflareTokenStatus, setSavedCloudflareTokenStatus] = React.useState<
-    "idle" | "checking" | "ok" | "invalid" | "needs_account"
-  >("idle");
-  const [cloudflareAccounts, setCloudflareAccounts] = React.useState<CloudflareAccountInfo[]>([]);
+  /* ---------- saved Cloudflare token ---------- */
+  const [savedCloudflareToken, setSavedCloudflareToken] = React.useState<{
+    token: string;
+    accountId: string;
+    accountName: string;
+  } | null>(null);
+  const [savedCloudflareTokenStatus, setSavedCloudflareTokenStatus] =
+    React.useState<
+      "idle" | "checking" | "ok" | "invalid" | "needs_account"
+    >("idle");
+  const [cloudflareAccounts, setCloudflareAccounts] = React.useState<
+    CloudflareAccountInfo[]
+  >([]);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -288,14 +376,22 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     setSavedCloudflareTokenStatus("checking");
     (async () => {
       try {
-        const { accounts } = await callApi<{ accounts: CloudflareAccountInfo[] }>("/api/cloudflare/whoami", {
+        const { accounts } = await callApi<{
+          accounts: CloudflareAccountInfo[];
+        }>("/api/cloudflare/whoami", {
           headers: { "x-cloudflare-token": cloudflareToken },
         });
         if (cancelled) return;
         setCloudflareAccounts(accounts);
-        const chosen = accounts.find((a) => a.id === cloudflareAccountId) ?? (accounts.length === 1 ? accounts[0] : undefined);
+        const chosen =
+          accounts.find((a) => a.id === cloudflareAccountId) ??
+          (accounts.length === 1 ? accounts[0] : undefined);
         if (chosen) {
-          setSavedCloudflareToken({ token: cloudflareToken, accountId: chosen.id, accountName: chosen.name });
+          setSavedCloudflareToken({
+            token: cloudflareToken,
+            accountId: chosen.id,
+            accountName: chosen.name,
+          });
           setSavedCloudflareTokenStatus("ok");
         } else {
           setSavedCloudflareToken(null);
@@ -313,9 +409,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     };
   }, [cloudflareToken, cloudflareAccountId]);
 
-  // Best-effort detection of whether the Cloudflare Pages GitHub App is
-  // already installed on the chosen account — see checkCloudflareGithubConnected()
-  // in app/api/_lib/cloudflare.ts for why this can only confirm "connected".
+  /* ---------- GitHub connection (Cloudflare Pages App) ---------- */
   const [githubConnectionStatus, setGithubConnectionStatus] = React.useState<{
     status: "idle" | "checking" | "connected" | "unknown";
     connectUrl: string | null;
@@ -329,10 +423,15 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     setGithubConnectionStatus((prev) => ({ ...prev, status: "checking" }));
     try {
       const result = await callApi<GithubConnectionStatus>(
-        `/api/cloudflare/github-status?accountId=${encodeURIComponent(savedCloudflareToken.accountId)}`,
-        { headers: { "x-cloudflare-token": savedCloudflareToken.token } }
+        `/api/cloudflare/github-status?accountId=${encodeURIComponent(
+          savedCloudflareToken.accountId,
+        )}`,
+        { headers: { "x-cloudflare-token": savedCloudflareToken.token } },
       );
-      setGithubConnectionStatus({ status: result.status, connectUrl: result.connectUrl });
+      setGithubConnectionStatus({
+        status: result.status,
+        connectUrl: result.connectUrl,
+      });
     } catch {
       setGithubConnectionStatus({ status: "unknown", connectUrl: null });
     }
@@ -342,7 +441,6 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     void checkGithubConnection();
   }, [checkGithubConnection]);
 
-  const pendingFormRef = React.useRef<DeployFormValues | null>(null);
   const intervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
 
   React.useEffect(() => {
@@ -352,16 +450,26 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const setFormField = React.useCallback(
-    <K extends keyof DeployFormValues>(key: K, value: DeployFormValues[K]) => {
-      setForm((prev) => ({...prev, [key]: value }));
+    <K extends keyof DeployFormValues>(
+      key: K,
+      value: DeployFormValues[K],
+    ) => {
+      setForm((prev) => ({ ...prev, [key]: value }));
     },
-    []
+    [],
   );
 
-  const platformTokenLabel = `${form.platform.charAt(0).toUpperCase()}${form.platform.slice(1)} Token`;
+  const platformTokenLabel = `${form.platform
+    .charAt(0)
+    .toUpperCase()}${form.platform.slice(1)} Token`;
 
   const addHistory = React.useCallback(
-    (name: string, platform: Platform, domain: string, status: HistoryItem["status"] = "ready") => {
+    (
+      name: string,
+      platform: Platform,
+      domain: string,
+      status: HistoryItem["status"] = "ready",
+    ) => {
       const item: HistoryItem = {
         id: `${Date.now()}`,
         name,
@@ -371,101 +479,116 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         status,
       };
       setHistory((prev) => {
-        const safePrev = Array.isArray(prev)? prev : [];
-        const next = [item,...safePrev];
-        return next.length > MAX_HISTORY? next.slice(0, MAX_HISTORY) : next;
+        const safePrev = Array.isArray(prev) ? prev : [];
+        const next = [item, ...safePrev];
+        return next.length > MAX_HISTORY ? next.slice(0, MAX_HISTORY) : next;
       });
     },
-    [setHistory]
+    [setHistory],
   );
+
+  /* ---------- deploy helpers ---------- */
+
+  const beginDeploy = React.useCallback(() => {
+    setDeployState({ ...defaultDeployState, status: "deploying" });
+  }, []);
 
   const finishDeploy = React.useCallback(
     (data: DeployFormValues) => {
-      const projectName = (data.projectName || "my-project").trim() || "my-project";
+      const projectName =
+        (data.projectName || "my-project").trim() || "my-project";
       const domain = resolveDomain(projectName, data.platform);
-      setModal((prev) => ({
-       ...prev,
+      setDeployState((prev) => ({
+        ...prev,
+        status: "success",
+        stepIndex: 5,
         barWidth: 100,
         title: "Deploy Berhasil!",
         subtitle: `Project ${projectName} siap di ${domain}`,
-        resultVisible: true,
-        closeVisible: true,
         result: { name: projectName, domain },
+        error: null,
       }));
       addHistory(projectName, data.platform, domain);
     },
-    [addHistory]
+    [addHistory],
   );
-
-  const openModal = React.useCallback(() => {
-    setModal({
-      open: true,
-      stepIndex: 0,
-      barWidth: 0,
-      title: DEFAULT_MODAL_TITLE,
-      subtitle: DEFAULT_MODAL_SUBTITLE,
-      resultVisible: false,
-      closeVisible: false,
-      result: null,
-      error: null,
-    });
-  }, []);
 
   const failDeploy = React.useCallback(
     (data: DeployFormValues, message: string) => {
-      const projectName = (data.projectName || "my-project").trim() || "my-project";
-      setModal((prev) => ({
-       ...prev,
+      const projectName =
+        (data.projectName || "my-project").trim() || "my-project";
+      setDeployState((prev) => ({
+        ...prev,
+        status: "error",
         title: "Deploy Gagal",
         subtitle: message,
-        closeVisible: true,
         error: message,
       }));
       addHistory(projectName, data.platform, "-", "failed");
     },
-    [addHistory]
+    [addHistory],
   );
 
+  const resetDeployState = React.useCallback(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    setDeployState(defaultDeployState);
+  }, []);
+
+  /* ---------- simulated (railway / render / fallback) ---------- */
   const startSimulatedDeploy = React.useCallback(
     (data: DeployFormValues) => {
       if (intervalRef.current) clearInterval(intervalRef.current);
-      openModal();
+      beginDeploy();
       let step = 0;
       intervalRef.current = setInterval(() => {
         step += 1;
-        setModal((prev) => ({...prev, stepIndex: step, barWidth: (step / 5) * 100 }));
+        setDeployState((prev) => ({
+          ...prev,
+          stepIndex: step,
+          barWidth: (step / 5) * 100,
+        }));
         if (step >= 5) {
           if (intervalRef.current) clearInterval(intervalRef.current);
           setTimeout(() => finishDeploy(data), FINISH_DELAY_MS);
         }
       }, STEP_INTERVAL_MS);
     },
-    [finishDeploy, openModal]
+    [beginDeploy, finishDeploy],
   );
 
+  /* ---------- Vercel ---------- */
   const startVercelDeploy = React.useCallback(
     async (data: DeployFormValues) => {
       if (intervalRef.current) clearInterval(intervalRef.current);
-      openModal();
-      const projectName = (data.projectName || "my-project").trim() || "my-project";
+      beginDeploy();
+      const projectName =
+        (data.projectName || "my-project").trim() || "my-project";
+
       let validation: GithubValidation;
       try {
         validation = await callApi<GithubValidation>("/api/github/validate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ githubUrl: data.githubUrl, githubPat: data.githubPat }),
+          body: JSON.stringify({
+            githubUrl: data.githubUrl,
+            githubPat: data.githubPat,
+          }),
         });
       } catch (err) {
-        failDeploy(data, err instanceof Error? err.message : "Validasi GitHub gagal.");
+        failDeploy(
+          data,
+          err instanceof Error ? err.message : "Validasi GitHub gagal.",
+        );
         return;
       }
-      setModal((prev) => ({
-       ...prev,
+      setDeployState((prev) => ({
+        ...prev,
         stepIndex: 1,
         barWidth: 20,
         subtitle: `Repo ${validation.fullName} (${validation.visibility}) terverifikasi.`,
       }));
       validation.warnings.forEach((w) => showToast(w));
+
       let created: CreateDeployResult;
       try {
         created = await callApi<CreateDeployResult>("/api/deploy", {
@@ -479,40 +602,61 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           }),
         });
       } catch (err) {
-        failDeploy(data, err instanceof Error? err.message : "Gagal membuat deployment di Vercel.");
+        failDeploy(
+          data,
+          err instanceof Error
+            ? err.message
+            : "Gagal membuat deployment di Vercel.",
+        );
         return;
       }
-      setModal((prev) => ({...prev, stepIndex: 2, barWidth: 40 }));
+      setDeployState((prev) => ({ ...prev, stepIndex: 2, barWidth: 40 }));
+
       intervalRef.current = setInterval(async () => {
         let status: DeployStatusResult;
         try {
-          status = await callApi<DeployStatusResult>(`/api/deploy/${created.deploymentId}`, {
-            headers: { "x-vercel-token": data.platformToken },
-          });
+          status = await callApi<DeployStatusResult>(
+            `/api/deploy/${created.deploymentId}`,
+            { headers: { "x-vercel-token": data.platformToken } },
+          );
         } catch (err) {
           if (intervalRef.current) clearInterval(intervalRef.current);
-          failDeploy(data, err instanceof Error? err.message : "Gagal memantau status deploy.");
+          failDeploy(
+            data,
+            err instanceof Error
+              ? err.message
+              : "Gagal memantau status deploy.",
+          );
           return;
         }
-        if (status.readyState === "BUILDING" || status.readyState === "INITIALIZING") {
-          setModal((prev) => (prev.stepIndex < 3? {...prev, stepIndex: 3, barWidth: 70 } : prev));
+        if (
+          status.readyState === "BUILDING" ||
+          status.readyState === "INITIALIZING"
+        ) {
+          setDeployState((prev) =>
+            prev.stepIndex < 3
+              ? { ...prev, stepIndex: 3, barWidth: 70 }
+              : prev,
+          );
           return;
         }
         if (status.readyState === "READY") {
           if (intervalRef.current) clearInterval(intervalRef.current);
-          // Derive the project's Analytics tab URL from the inspector URL
-          // (https://vercel.com/{scope}/{project}/...) instead of a second
-          // lookup, then check whether Web Analytics is actually switched on.
-          const scopeMatch = status.inspectorUrl.match(/^https:\/\/vercel\.com\/([^/]+)\/([^/]+)/);
-          const analyticsUrl = scopeMatch ? `https://vercel.com/${scopeMatch[1]}/${scopeMatch[2]}/analytics` : undefined;
-          setModal((prev) => ({
-           ...prev,
+
+          const scopeMatch = status.inspectorUrl.match(
+            /^https:\/\/vercel\.com\/([^/]+)\/([^/]+)/,
+          );
+          const analyticsUrl = scopeMatch
+            ? `https://vercel.com/${scopeMatch[1]}/${scopeMatch[2]}/analytics`
+            : undefined;
+
+          setDeployState((prev) => ({
+            ...prev,
+            status: "success",
             stepIndex: 5,
             barWidth: 100,
             title: "Deploy Berhasil!",
             subtitle: `Project ${projectName} siap di ${status.url}`,
-            resultVisible: true,
-            closeVisible: true,
             result: {
               name: projectName,
               domain: status.url,
@@ -522,39 +666,54 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
             },
           }));
           addHistory(projectName, "vercel", status.url, "ready");
-          // Best-effort: Vercel doesn't expose a public API to turn Web
-          // Analytics on, only to read whether it's already on — so we check
-          // and surface a one-click link in the modal instead of pretending
-          // to enable it ourselves.
+
           void (async () => {
             try {
               const projectStatus = await callApi<ProjectStatusResult>(
                 `/api/vercel/status?project=${encodeURIComponent(projectName)}`,
-                { headers: { "x-vercel-token": data.platformToken } }
+                { headers: { "x-vercel-token": data.platformToken } },
               );
-              setModal((prev) =>
+              setDeployState((prev) =>
                 prev.result
-                  ? { ...prev, result: { ...prev.result, analyticsEnabled: projectStatus.webAnalyticsEnabled } }
-                  : prev
+                  ? {
+                      ...prev,
+                      result: {
+                        ...prev.result,
+                        analyticsEnabled: projectStatus.webAnalyticsEnabled,
+                      },
+                    }
+                  : prev,
               );
             } catch {
-              setModal((prev) => (prev.result ? { ...prev, result: { ...prev.result, analyticsEnabled: null } } : prev));
+              setDeployState((prev) =>
+                prev.result
+                  ? {
+                      ...prev,
+                      result: { ...prev.result, analyticsEnabled: null },
+                    }
+                  : prev,
+              );
             }
           })();
           return;
         }
-        if (status.readyState === "ERROR" || status.readyState === "CANCELED") {
+        if (
+          status.readyState === "ERROR" ||
+          status.readyState === "CANCELED"
+        ) {
           if (intervalRef.current) clearInterval(intervalRef.current);
           failDeploy(
             data,
-            status.errorMessage?? "Build gagal di Vercel. Cek inspector url untuk detail log."
+            status.errorMessage ??
+              "Build gagal di Vercel. Cek inspector url untuk detail log.",
           );
         }
       }, POLL_INTERVAL_MS);
     },
-    [addHistory, failDeploy, openModal, showToast]
+    [addHistory, beginDeploy, failDeploy, showToast],
   );
 
+  /* ---------- Cloudflare ---------- */
   const startCloudflareDeploy = React.useCallback(
     async (data: DeployFormValues) => {
       if (intervalRef.current) clearInterval(intervalRef.current);
@@ -564,20 +723,28 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         showToast("Cloudflare Token & Account ID wajib diisi.");
         return;
       }
-      openModal();
-      const projectName = (data.projectName || "my-project").trim() || "my-project";
+      beginDeploy();
+      const projectName =
+        (data.projectName || "my-project").trim() || "my-project";
+
       let validation: GithubValidation;
       try {
         validation = await callApi<GithubValidation>("/api/github/validate", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ githubUrl: data.githubUrl, githubPat: data.githubPat }),
+          body: JSON.stringify({
+            githubUrl: data.githubUrl,
+            githubPat: data.githubPat,
+          }),
         });
       } catch (err) {
-        failDeploy(data, err instanceof Error ? err.message : "Validasi GitHub gagal.");
+        failDeploy(
+          data,
+          err instanceof Error ? err.message : "Validasi GitHub gagal.",
+        );
         return;
       }
-      setModal((prev) => ({
+      setDeployState((prev) => ({
         ...prev,
         stepIndex: 1,
         barWidth: 20,
@@ -587,80 +754,112 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
 
       let created: CreateCloudflareDeployResult;
       try {
-        created = await callApi<CreateCloudflareDeployResult>("/api/cloudflare/deploy", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            projectName,
-            githubUrl: data.githubUrl,
-            cloudflareToken: cfToken,
-            accountId,
-            githubPat: data.githubPat,
-            buildCommand: data.buildCommand,
-            outputDir: data.outputDir,
-          }),
-        });
+        created = await callApi<CreateCloudflareDeployResult>(
+          "/api/cloudflare/deploy",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              projectName,
+              githubUrl: data.githubUrl,
+              cloudflareToken: cfToken,
+              accountId,
+              githubPat: data.githubPat,
+              buildCommand: data.buildCommand,
+              outputDir: data.outputDir,
+            }),
+          },
+        );
       } catch (err) {
-        if (err instanceof Error && err.message.toLowerCase().includes("github belum terhubung")) {
+        if (
+          err instanceof Error &&
+          err.message.toLowerCase().includes("github belum terhubung")
+        ) {
           void checkGithubConnection();
         }
-        failDeploy(data, err instanceof Error ? err.message : "Gagal membuat deployment di Cloudflare Pages.");
+        failDeploy(
+          data,
+          err instanceof Error
+            ? err.message
+            : "Gagal membuat deployment di Cloudflare Pages.",
+        );
         return;
       }
       if (created.frameworkWarning) showToast(created.frameworkWarning);
-      setModal((prev) => ({ ...prev, stepIndex: 2, barWidth: 40 }));
+      setDeployState((prev) => ({ ...prev, stepIndex: 2, barWidth: 40 }));
+
       intervalRef.current = setInterval(async () => {
         let status: CloudflareDeployStatusResult;
         try {
           status = await callApi<CloudflareDeployStatusResult>(
-            `/api/cloudflare/deploy/${created.deploymentId}?project=${encodeURIComponent(projectName)}&accountId=${encodeURIComponent(accountId)}`,
-            { headers: { "x-cloudflare-token": cfToken } }
+            `/api/cloudflare/deploy/${created.deploymentId}?project=${encodeURIComponent(
+              projectName,
+            )}&accountId=${encodeURIComponent(accountId)}`,
+            { headers: { "x-cloudflare-token": cfToken } },
           );
         } catch (err) {
           if (intervalRef.current) clearInterval(intervalRef.current);
-          failDeploy(data, err instanceof Error ? err.message : "Gagal memantau status deploy.");
+          failDeploy(
+            data,
+            err instanceof Error
+              ? err.message
+              : "Gagal memantau status deploy.",
+          );
           return;
         }
-        if (status.readyState === "BUILDING" || status.readyState === "INITIALIZING" || status.readyState === "QUEUED") {
-          setModal((prev) => (prev.stepIndex < 3 ? { ...prev, stepIndex: 3, barWidth: 70 } : prev));
+        if (
+          status.readyState === "BUILDING" ||
+          status.readyState === "INITIALIZING" ||
+          status.readyState === "QUEUED"
+        ) {
+          setDeployState((prev) =>
+            prev.stepIndex < 3
+              ? { ...prev, stepIndex: 3, barWidth: 70 }
+              : prev,
+          );
           return;
         }
         if (status.readyState === "READY") {
           if (intervalRef.current) clearInterval(intervalRef.current);
-          setModal((prev) => ({
+          setDeployState((prev) => ({
             ...prev,
+            status: "success",
             stepIndex: 5,
             barWidth: 100,
             title: "Deploy Berhasil!",
             subtitle: `Project ${projectName} siap di ${status.url}`,
-            resultVisible: true,
-            closeVisible: true,
-            result: { name: projectName, domain: status.url, inspectorUrl: status.inspectorUrl },
+            result: {
+              name: projectName,
+              domain: status.url,
+              inspectorUrl: status.inspectorUrl,
+            },
           }));
           addHistory(projectName, "cloudflare", status.url, "ready");
           return;
         }
-        if (status.readyState === "ERROR" || status.readyState === "CANCELED") {
+        if (
+          status.readyState === "ERROR" ||
+          status.readyState === "CANCELED"
+        ) {
           if (intervalRef.current) clearInterval(intervalRef.current);
-          failDeploy(data, status.errorMessage ?? "Build gagal di Cloudflare Pages. Cek dashboard untuk detail log.");
+          failDeploy(
+            data,
+            status.errorMessage ??
+              "Build gagal di Cloudflare Pages. Cek dashboard untuk detail log.",
+          );
         }
       }, POLL_INTERVAL_MS);
     },
-    [addHistory, checkGithubConnection, failDeploy, openModal, showToast]
+    [addHistory, beginDeploy, checkGithubConnection, failDeploy, showToast],
   );
 
+  /* ---------- submit ---------- */
   const submitDeploy = React.useCallback(
     (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
       const repoCandidate = (form.githubUrl || form.projectName || "").trim();
       if (!GITHUB_REPO_RE.test(repoCandidate)) {
         showToast("Format URL GitHub belum benar");
-        return;
-      }
-      const safeHistory = Array.isArray(history)? history : [];
-      if (safeHistory.length >= MAX_HISTORY) {
-        pendingFormRef.current = form;
-        setConfirmOpen(true);
         return;
       }
       if (form.platform === "vercel") {
@@ -671,42 +870,56 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         startSimulatedDeploy(form);
       }
     },
-    [form, history, showToast, startCloudflareDeploy, startSimulatedDeploy, startVercelDeploy]
+    [
+      form,
+      showToast,
+      startCloudflareDeploy,
+      startSimulatedDeploy,
+      startVercelDeploy,
+    ],
   );
 
-  const proceedDeploy = React.useCallback(() => {
-    setConfirmOpen(false);
-    const pending = pendingFormRef.current;
-    if (pending) {
-      if (pending.platform === "vercel") {
-        void startVercelDeploy(pending);
-      } else if (pending.platform === "cloudflare") {
-        void startCloudflareDeploy(pending);
-      } else {
-        startSimulatedDeploy(pending);
-      }
-      pendingFormRef.current = null;
-    }
-  }, [startCloudflareDeploy, startSimulatedDeploy, startVercelDeploy]);
+  /* legacy no-ops */
+  const proceedDeploy = React.useCallback(() => {}, []);
+  const closeConfirm = React.useCallback(() => {}, []);
 
-  const closeConfirm = React.useCallback(() => {
-    setConfirmOpen(false);
-    pendingFormRef.current = null;
-  }, []);
+  const redeploy = React.useCallback(
+    (name: string) => {
+      setForm((prev) => ({ ...prev, projectName: name }));
+      setView("deploy");
+      showToast("Project dimuat ke form deploy");
+    },
+    [showToast],
+  );
+
+  /* ================================================================
+   *  Legacy modal view + handlers (dipakai DeployModal.tsx)
+   * ================================================================ */
+
+  const modal: ModalState = React.useMemo(
+    () => ({
+      open: deployState.status !== "idle",
+      stepIndex: deployState.stepIndex,
+      barWidth: deployState.barWidth,
+      title: deployState.title,
+      subtitle: deployState.subtitle,
+      resultVisible:
+        deployState.status === "success" || deployState.status === "error",
+      closeVisible:
+        deployState.status === "success" || deployState.status === "error",
+      result: deployState.result,
+      error: deployState.error,
+    }),
+    [deployState],
+  );
 
   const closeModal = React.useCallback(() => {
-    setModal((prev) => ({
-     ...prev,
-      open: false,
-      title: DEFAULT_MODAL_TITLE,
-      subtitle: DEFAULT_MODAL_SUBTITLE,
-      error: null,
-    }));
-  }, []);
+    resetDeployState();
+  }, [resetDeployState]);
 
   const handleCloseAfterDeploy = React.useCallback(() => {
-    const failed = Boolean(modal.error);
-    closeModal();
+    const failed = deployState.status === "error";
+    resetDeployState();
     if (failed) {
       showToast("Deploy gagal — cek pesan error dan coba lagi.");
       return;
@@ -714,30 +927,33 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     setView("dashboard");
     setForm(emptyForm);
     showToast("Deploy berhasil — cek dashboard!");
-  }, [closeModal, modal.error, showToast]);
+  }, [deployState.status, resetDeployState, showToast]);
 
-  const redeploy = React.useCallback(
-    (name: string) => {
-      setForm((prev) => ({...prev, projectName: name }));
-      setView("deploy");
-      showToast("Project dimuat ke form deploy");
-    },
-    [showToast]
-  );
+  /* ================================================================
+   *  Domain / Env / Sync / Delete — tidak berubah dari aslinya
+   * ================================================================ */
 
   const syncProjectStatus = React.useCallback(
-    async (name: string): Promise<"exists" | "deleted" | "skipped" | "error"> => {
+    async (
+      name: string,
+    ): Promise<"exists" | "deleted" | "skipped" | "error"> => {
       const safeHistory = Array.isArray(history) ? history : [];
       const targetItem = safeHistory.find((h) => h.name === name);
       if (targetItem?.platform === "cloudflare") {
         if (!savedCloudflareToken) return "skipped";
         try {
           const status = await callApi<CloudflareProjectStatusResult>(
-            `/api/cloudflare/status?project=${encodeURIComponent(name)}&accountId=${encodeURIComponent(savedCloudflareToken.accountId)}`,
-            { headers: { "x-cloudflare-token": savedCloudflareToken.token } }
+            `/api/cloudflare/status?project=${encodeURIComponent(
+              name,
+            )}&accountId=${encodeURIComponent(
+              savedCloudflareToken.accountId,
+            )}`,
+            { headers: { "x-cloudflare-token": savedCloudflareToken.token } },
           );
           if (!status.exists) {
-            setHistory((prev) => (Array.isArray(prev) ? prev : []).filter((h) => h.name !== name));
+            setHistory((prev) =>
+              (Array.isArray(prev) ? prev : []).filter((h) => h.name !== name),
+            );
             return "deleted";
           }
           return "exists";
@@ -749,10 +965,12 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       try {
         const status = await callApi<ProjectStatusResult>(
           `/api/vercel/status?project=${encodeURIComponent(name)}`,
-          { headers: { "x-vercel-token": vercelToken } }
+          { headers: { "x-vercel-token": vercelToken } },
         );
         if (!status.exists) {
-          setHistory((prev) => (Array.isArray(prev)? prev : []).filter((h) => h.name!== name));
+          setHistory((prev) =>
+            (Array.isArray(prev) ? prev : []).filter((h) => h.name !== name),
+          );
           return "deleted";
         }
         return "exists";
@@ -760,63 +978,81 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         return "error";
       }
     },
-    [history, savedCloudflareToken, vercelToken, setHistory]
+    [history, savedCloudflareToken, vercelToken, setHistory],
   );
 
   const syncAllProjects = React.useCallback(async () => {
-    const safeHistory = Array.isArray(history)? history : [];
+    const safeHistory = Array.isArray(history) ? history : [];
     const names = Array.from(
       new Set(
         safeHistory
-          .filter((h) => (h.platform === "vercel" && vercelToken) || (h.platform === "cloudflare" && savedCloudflareToken))
-          .map((h) => h.name)
-      )
+          .filter(
+            (h) =>
+              (h.platform === "vercel" && vercelToken) ||
+              (h.platform === "cloudflare" && savedCloudflareToken),
+          )
+          .map((h) => h.name),
+      ),
     );
     if (names.length === 0) return;
     setSyncingProjects(true);
     let deletedCount = 0;
     for (const name of names) {
-      // eslint-disable-next-line no-await-in-loop
       const result = await syncProjectStatus(name);
       if (result === "deleted") deletedCount += 1;
     }
     setSyncingProjects(false);
     if (deletedCount > 0) {
       showToast(
-        `${deletedCount} project sudah dihapus di platform aslinya — dihapus juga dari daftar di sini.`
+        `${deletedCount} project sudah dihapus di platform aslinya — dihapus juga dari daftar di sini.`,
       );
     }
-  }, [history, syncProjectStatus, vercelToken, savedCloudflareToken, showToast]);
+  }, [
+    history,
+    syncProjectStatus,
+    vercelToken,
+    savedCloudflareToken,
+    showToast,
+  ]);
 
-  // Deletes a project from Depup's local history, and — if the user
-  // confirms it — permanently deletes the real project on Vercel/Cloudflare
-  // too (deployments, domains, everything). If the remote delete fails, the
-  // local entry is kept so a still-live project doesn't silently disappear.
   const deleteProject = React.useCallback(
-    async (name: string, options: { alsoDeleteFromVercel?: boolean; alsoDeleteFromCloudflare?: boolean }) => {
+    async (
+      name: string,
+      options: {
+        alsoDeleteFromVercel?: boolean;
+        alsoDeleteFromCloudflare?: boolean;
+      },
+    ) => {
       const safeHistory = Array.isArray(history) ? history : [];
       const targetItem = safeHistory.find((h) => h.name === name);
       const isVercelProject = targetItem?.platform === "vercel";
       const isCloudflareProject = targetItem?.platform === "cloudflare";
-      const alsoDelete = Boolean(options.alsoDeleteFromVercel || options.alsoDeleteFromCloudflare);
+      const alsoDelete = Boolean(
+        options.alsoDeleteFromVercel || options.alsoDeleteFromCloudflare,
+      );
 
       if (options.alsoDeleteFromVercel && isVercelProject) {
         if (!vercelToken) {
-          showToast("Isi Vercel Token di Settings dulu untuk hapus project di Vercel.");
+          showToast(
+            "Isi Vercel Token di Settings dulu untuk hapus project di Vercel.",
+          );
           return;
         }
         setDeletingProject(name);
         try {
-          await callApi(`/api/vercel/project?project=${encodeURIComponent(name)}`, {
-            method: "DELETE",
-            headers: { "x-vercel-token": vercelToken },
-          });
+          await callApi(
+            `/api/vercel/project?project=${encodeURIComponent(name)}`,
+            {
+              method: "DELETE",
+              headers: { "x-vercel-token": vercelToken },
+            },
+          );
         } catch (err) {
           setDeletingProject(null);
           showToast(
             err instanceof Error
               ? `Gagal menghapus "${name}" di Vercel: ${err.message}`
-              : `Gagal menghapus "${name}" di Vercel.`
+              : `Gagal menghapus "${name}" di Vercel.`,
           );
           return;
         }
@@ -825,42 +1061,55 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
 
       if (options.alsoDeleteFromCloudflare && isCloudflareProject) {
         if (!savedCloudflareToken) {
-          showToast("Konek-kan Cloudflare Token di Settings dulu untuk hapus project di Cloudflare.");
+          showToast(
+            "Konek-kan Cloudflare Token di Settings dulu untuk hapus project di Cloudflare.",
+          );
           return;
         }
         setDeletingProject(name);
         try {
           await callApi(
-            `/api/cloudflare/project?project=${encodeURIComponent(name)}&accountId=${encodeURIComponent(savedCloudflareToken.accountId)}`,
-            { method: "DELETE", headers: { "x-cloudflare-token": savedCloudflareToken.token } }
+            `/api/cloudflare/project?project=${encodeURIComponent(
+              name,
+            )}&accountId=${encodeURIComponent(
+              savedCloudflareToken.accountId,
+            )}`,
+            {
+              method: "DELETE",
+              headers: { "x-cloudflare-token": savedCloudflareToken.token },
+            },
           );
         } catch (err) {
           setDeletingProject(null);
           showToast(
             err instanceof Error
               ? `Gagal menghapus "${name}" di Cloudflare: ${err.message}`
-              : `Gagal menghapus "${name}" di Cloudflare.`
+              : `Gagal menghapus "${name}" di Cloudflare.`,
           );
           return;
         }
         setDeletingProject(null);
       }
 
-      setHistory((prev) => (Array.isArray(prev) ? prev : []).filter((h) => h.name !== name));
+      setHistory((prev) =>
+        (Array.isArray(prev) ? prev : []).filter((h) => h.name !== name),
+      );
       showToast(
         alsoDelete
-          ? `Project "${name}" dihapus dari Depup & ${isVercelProject ? "Vercel" : "Cloudflare"}.`
-          : `Project "${name}" dihapus dari Depup (tetap ada di platform aslinya).`
+          ? `Project "${name}" dihapus dari Depup & ${
+              isVercelProject ? "Vercel" : "Cloudflare"
+            }.`
+          : `Project "${name}" dihapus dari Depup (tetap ada di platform aslinya).`,
       );
     },
-    [history, setHistory, showToast, vercelToken, savedCloudflareToken]
+    [history, setHistory, showToast, vercelToken, savedCloudflareToken],
   );
 
-  // Pulls the real project list from the caller's Vercel account, minus
-  // whatever's already tracked locally, for the "Import Project" modal.
-  const fetchImportableVercelProjects = React.useCallback(async (): Promise<VercelProjectSummary[]> => {
+  const fetchImportableVercelProjects = React.useCallback(async () => {
     if (!vercelToken) {
-      throw new Error("Isi Vercel Token di Settings dulu untuk konek ke Vercel.");
+      throw new Error(
+        "Isi Vercel Token di Settings dulu untuk konek ke Vercel.",
+      );
     }
     const remote = await callApi<VercelProjectSummary[]>("/api/vercel/project", {
       headers: { "x-vercel-token": vercelToken },
@@ -879,22 +1128,31 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       }
       const readyState = project.latestDeploymentReadyState;
       const status: HistoryItem["status"] =
-        readyState === "ERROR" || readyState === "CANCELED" ? "failed" : "ready";
-      addHistory(project.name, "vercel", project.domain ?? `${project.name}.vercel.app`, status);
+        readyState === "ERROR" || readyState === "CANCELED"
+          ? "failed"
+          : "ready";
+      addHistory(
+        project.name,
+        "vercel",
+        project.domain ?? `${project.name}.vercel.app`,
+        status,
+      );
       showToast(`Project "${project.name}" berhasil diimport dari Vercel.`);
     },
-    [history, addHistory, showToast]
+    [history, addHistory, showToast],
   );
 
-  // Same idea as fetchImportableVercelProjects, but against the Cloudflare
-  // Pages projects on the chosen account.
-  const fetchImportableCloudflareProjects = React.useCallback(async (): Promise<CloudflareProjectSummary[]> => {
+  const fetchImportableCloudflareProjects = React.useCallback(async () => {
     if (!savedCloudflareToken) {
-      throw new Error("Konek-kan Cloudflare Token di Settings dulu untuk konek ke Cloudflare.");
+      throw new Error(
+        "Konek-kan Cloudflare Token di Settings dulu untuk konek ke Cloudflare.",
+      );
     }
     const remote = await callApi<CloudflareProjectSummary[]>(
-      `/api/cloudflare/project?accountId=${encodeURIComponent(savedCloudflareToken.accountId)}`,
-      { headers: { "x-cloudflare-token": savedCloudflareToken.token } }
+      `/api/cloudflare/project?accountId=${encodeURIComponent(
+        savedCloudflareToken.accountId,
+      )}`,
+      { headers: { "x-cloudflare-token": savedCloudflareToken.token } },
     );
     const safeHistory = Array.isArray(history) ? history : [];
     const existingNames = new Set(safeHistory.map((h) => h.name));
@@ -910,18 +1168,22 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       }
       const readyState = project.latestDeploymentReadyState;
       const status: HistoryItem["status"] =
-        readyState === "ERROR" || readyState === "CANCELED" ? "failed" : "ready";
-      addHistory(project.name, "cloudflare", project.domain ?? `${project.name}.pages.dev`, status);
-      showToast(`Project "${project.name}" berhasil diimport dari Cloudflare Pages.`);
+        readyState === "ERROR" || readyState === "CANCELED"
+          ? "failed"
+          : "ready";
+      addHistory(
+        project.name,
+        "cloudflare",
+        project.domain ?? `${project.name}.pages.dev`,
+        status,
+      );
+      showToast(
+        `Project "${project.name}" berhasil diimport dari Cloudflare Pages.`,
+      );
     },
-    [history, addHistory, showToast]
+    [history, addHistory, showToast],
   );
 
-  // Depup pushes secrets to Vercel/Cloudflare but has no webhook for the
-  // reverse — someone deleting an env var straight from the dashboard
-  // leaves a stale row here otherwise. This re-fetches the real list for a
-  // project and drops any locally-synced secret that's no longer actually
-  // on the remote platform.
   const syncEnvVarsForProject = React.useCallback(
     async (project: string): Promise<"synced" | "skipped" | "error"> => {
       const safeHistory = Array.isArray(history) ? history : [];
@@ -930,23 +1192,30 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         if (!savedCloudflareToken) return "skipped";
         try {
           const remote = await callApi<CloudflareEnvSummary[]>(
-            `/api/cloudflare/env?project=${encodeURIComponent(project)}&accountId=${encodeURIComponent(savedCloudflareToken.accountId)}`,
-            { headers: { "x-cloudflare-token": savedCloudflareToken.token } }
+            `/api/cloudflare/env?project=${encodeURIComponent(
+              project,
+            )}&accountId=${encodeURIComponent(
+              savedCloudflareToken.accountId,
+            )}`,
+            { headers: { "x-cloudflare-token": savedCloudflareToken.token } },
           );
           let removedCount = 0;
           setEnvVars((prev) => {
             const safePrev = Array.isArray(prev) ? prev : [];
             return safePrev.filter((v) => {
               if (v.project !== project || !v.syncedToCloudflare) return true;
-              const targetKey = v.environment === "Production" ? "production" : "preview";
-              const stillExists = remote.some((r) => r.key === v.key && r.target.includes(targetKey));
+              const targetKey =
+                v.environment === "Production" ? "production" : "preview";
+              const stillExists = remote.some(
+                (r) => r.key === v.key && r.target.includes(targetKey),
+              );
               if (!stillExists) removedCount += 1;
               return stillExists;
             });
           });
           if (removedCount > 0) {
             showToast(
-              `${removedCount} secret untuk "${project}" sudah dihapus di Cloudflare — dihapus juga di sini.`
+              `${removedCount} secret untuk "${project}" sudah dihapus di Cloudflare — dihapus juga di sini.`,
             );
           }
           return "synced";
@@ -958,22 +1227,25 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       try {
         const remote = await callApi<VercelEnvSummary[]>(
           `/api/vercel/env?project=${encodeURIComponent(project)}`,
-          { headers: { "x-vercel-token": vercelToken } }
+          { headers: { "x-vercel-token": vercelToken } },
         );
         let removedCount = 0;
         setEnvVars((prev) => {
-          const safePrev = Array.isArray(prev)? prev : [];
+          const safePrev = Array.isArray(prev) ? prev : [];
           return safePrev.filter((v) => {
-            if (v.project !== project ||!v.syncedToVercel) return true;
-            const targetKey = v.environment === "Production"? "production" : "preview";
-            const stillExists = remote.some((r) => r.key === v.key && r.target.includes(targetKey));
+            if (v.project !== project || !v.syncedToVercel) return true;
+            const targetKey =
+              v.environment === "Production" ? "production" : "preview";
+            const stillExists = remote.some(
+              (r) => r.key === v.key && r.target.includes(targetKey),
+            );
             if (!stillExists) removedCount += 1;
             return stillExists;
           });
         });
         if (removedCount > 0) {
           showToast(
-            `${removedCount} secret untuk "${project}" sudah dihapus di Vercel — dihapus juga di sini.`
+            `${removedCount} secret untuk "${project}" sudah dihapus di Vercel — dihapus juga di sini.`,
           );
         }
         return "synced";
@@ -981,37 +1253,37 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         return "error";
       }
     },
-    [history, savedCloudflareToken, vercelToken, setEnvVars, showToast]
+    [history, savedCloudflareToken, vercelToken, setEnvVars, showToast],
   );
 
   const syncAllEnvVars = React.useCallback(async () => {
-    const safeEnvVars = Array.isArray(envVars)? envVars : [];
+    const safeEnvVars = Array.isArray(envVars) ? envVars : [];
     const projects = Array.from(
       new Set(
         safeEnvVars
-          .filter((v) => (v.syncedToVercel && vercelToken) || (v.syncedToCloudflare && savedCloudflareToken))
-          .map((v) => v.project)
-      )
+          .filter(
+            (v) =>
+              (v.syncedToVercel && vercelToken) ||
+              (v.syncedToCloudflare && savedCloudflareToken),
+          )
+          .map((v) => v.project),
+      ),
     );
     if (projects.length === 0) return;
     setSyncingEnvVars(true);
     for (const project of projects) {
-      // eslint-disable-next-line no-await-in-loop
       await syncEnvVarsForProject(project);
     }
     setSyncingEnvVars(false);
   }, [envVars, syncEnvVarsForProject, vercelToken, savedCloudflareToken]);
 
-  // Vercel/Cloudflare only apply a new/changed/removed env var on the
-  // *next* deployment — pushing the var alone never touches the
-  // already-running site. So every time a synced env var changes, we kick
-  // off a fresh production deployment automatically, re-using the
-  // project's platform to pick the right redeploy endpoint.
   const triggerAutoRedeploy = React.useCallback(
     async (projectName: string, platform: Platform) => {
       if (platform === "cloudflare") {
         if (!savedCloudflareToken) return;
-        showToast(`Redeploy otomatis "${projectName}" dimulai karena secret berubah...`);
+        showToast(
+          `Redeploy otomatis "${projectName}" dimulai karena secret berubah...`,
+        );
         try {
           await callApi<RedeployResult>("/api/cloudflare/redeploy", {
             method: "POST",
@@ -1022,59 +1294,69 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
               accountId: savedCloudflareToken.accountId,
             }),
           });
-          showToast(`Redeploy "${projectName}" berhasil — perubahan secret sudah live.`);
+          showToast(
+            `Redeploy "${projectName}" berhasil — perubahan secret sudah live.`,
+          );
         } catch (err) {
           showToast(
             err instanceof Error
               ? `Redeploy otomatis "${projectName}" gagal: ${err.message}`
-              : `Redeploy otomatis "${projectName}" gagal.`
+              : `Redeploy otomatis "${projectName}" gagal.`,
           );
         }
         return;
       }
       if (!vercelToken) return;
-      showToast(`Redeploy otomatis "${projectName}" dimulai karena secret berubah...`);
+      showToast(
+        `Redeploy otomatis "${projectName}" dimulai karena secret berubah...`,
+      );
       try {
         await callApi<RedeployResult>("/api/vercel/redeploy", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ project: projectName, vercelToken }),
         });
-        showToast(`Redeploy "${projectName}" berhasil — perubahan secret sudah live.`);
+        showToast(
+          `Redeploy "${projectName}" berhasil — perubahan secret sudah live.`,
+        );
       } catch (err) {
         showToast(
           err instanceof Error
             ? `Redeploy otomatis "${projectName}" gagal: ${err.message}`
-            : `Redeploy otomatis "${projectName}" gagal.`
+            : `Redeploy otomatis "${projectName}" gagal.`,
         );
       }
     },
-    [vercelToken, savedCloudflareToken, showToast]
+    [vercelToken, savedCloudflareToken, showToast],
   );
 
   const addDomain = React.useCallback(
     async (domain: string, project: string, options?: { pairId?: string }) => {
       const trimmedDomain = domain.trim();
       if (!trimmedDomain) return;
-      // A pairId present means this call is the *auto* add of the www/non-www
-      // counterpart — suppress its own toasts/pairing so the user only sees
-      // one clean message for the pair as a whole.
       const isPairCall = Boolean(options?.pairId);
-      const pairId = options?.pairId ?? `pair-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const pairId =
+        options?.pairId ??
+        `pair-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
       const safeDomainsNow = Array.isArray(domains) ? domains : [];
       const alreadyExists = safeDomainsNow.some(
-        (d) => d.project === project && d.domain.toLowerCase() === trimmedDomain.toLowerCase()
+        (d) =>
+          d.project === project &&
+          d.domain.toLowerCase() === trimmedDomain.toLowerCase(),
       );
       if (alreadyExists) {
-        if (!isPairCall) showToast(`Domain "${trimmedDomain}" sudah ada untuk project ini.`);
+        if (!isPairCall)
+          showToast(`Domain "${trimmedDomain}" sudah ada untuk project ini.`);
         return;
       }
 
       const safeHistory = Array.isArray(history) ? history : [];
       const targetItem = safeHistory.find((h) => h.name === project);
-      const canSyncVercel = Boolean(vercelToken) && targetItem?.platform === "vercel";
-      const canSyncCloudflare = Boolean(savedCloudflareToken) && targetItem?.platform === "cloudflare";
+      const canSyncVercel =
+        Boolean(vercelToken) && targetItem?.platform === "vercel";
+      const canSyncCloudflare =
+        Boolean(savedCloudflareToken) && targetItem?.platform === "cloudflare";
 
       if (!canSyncVercel && !canSyncCloudflare) {
         setDomains((prev) => {
@@ -1094,23 +1376,29 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         });
         if (!isPairCall) {
           showToast(
-            targetItem?.platform === "vercel" || targetItem?.platform === "cloudflare"
-              ? `Domain disimpan lokal — konek-kan ${targetItem.platform === "vercel" ? "Vercel" : "Cloudflare"} Token di Settings untuk push otomatis.`
-              : "Domain disimpan lokal (project ini bukan platform Vercel/Cloudflare)."
+            targetItem?.platform === "vercel" ||
+              targetItem?.platform === "cloudflare"
+              ? `Domain disimpan lokal — konek-kan ${
+                  targetItem.platform === "vercel" ? "Vercel" : "Cloudflare"
+                } Token di Settings untuk push otomatis.`
+              : "Domain disimpan lokal (project ini bukan platform Vercel/Cloudflare).",
           );
         }
       } else if (canSyncCloudflare && savedCloudflareToken) {
         try {
-          const result = await callApi<CloudflareDomainResult>("/api/cloudflare/domains", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              project,
-              domain: trimmedDomain,
-              cloudflareToken: savedCloudflareToken.token,
-              accountId: savedCloudflareToken.accountId,
-            }),
-          });
+          const result = await callApi<CloudflareDomainResult>(
+            "/api/cloudflare/domains",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                project,
+                domain: trimmedDomain,
+                cloudflareToken: savedCloudflareToken.token,
+                accountId: savedCloudflareToken.accountId,
+              }),
+            },
+          );
           setDomains((prev) => {
             const safePrev = Array.isArray(prev) ? prev : [];
             return [
@@ -1130,7 +1418,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
             showToast(
               result.verified
                 ? "Domain berhasil ditambahkan & terverifikasi di Cloudflare."
-                : "Domain ditambahkan di Cloudflare — arahkan DNS sesuai instruksi untuk verifikasi."
+                : "Domain ditambahkan di Cloudflare — arahkan DNS sesuai instruksi untuk verifikasi.",
             );
           }
         } catch (err) {
@@ -1138,20 +1426,31 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
             showToast(
               `Domain utama tersimpan, tapi gagal menambahkan pasangan "${trimmedDomain}" otomatis: ${
                 err instanceof Error ? err.message : "unknown error"
-              }`
+              }`,
             );
             return;
           }
-          showToast(err instanceof Error ? err.message : "Gagal menambahkan domain ke Cloudflare.");
+          showToast(
+            err instanceof Error
+              ? err.message
+              : "Gagal menambahkan domain ke Cloudflare.",
+          );
           return;
         }
       } else {
         try {
-          const result = await callApi<VercelDomainResult>("/api/vercel/domains", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ project, domain: trimmedDomain, vercelToken }),
-          });
+          const result = await callApi<VercelDomainResult>(
+            "/api/vercel/domains",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                project,
+                domain: trimmedDomain,
+                vercelToken,
+              }),
+            },
+          );
           setDomains((prev) => {
             const safePrev = Array.isArray(prev) ? prev : [];
             return [
@@ -1171,32 +1470,40 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
             showToast(
               result.verified
                 ? "Domain berhasil ditambahkan & terverifikasi di Vercel."
-                : "Domain ditambahkan di Vercel — arahkan DNS sesuai instruksi untuk verifikasi."
+                : "Domain ditambahkan di Vercel — arahkan DNS sesuai instruksi untuk verifikasi.",
             );
           }
         } catch (err) {
           if (isPairCall) {
-            // Primary domain already saved fine — pairing is best-effort, so
-            // just warn instead of undoing the successful half.
             showToast(
               `Domain utama tersimpan, tapi gagal menambahkan pasangan "${trimmedDomain}" otomatis: ${
                 err instanceof Error ? err.message : "unknown error"
-              }`
+              }`,
             );
             return;
           }
-          showToast(err instanceof Error ? err.message : "Gagal menambahkan domain ke Vercel.");
+          showToast(
+            err instanceof Error
+              ? err.message
+              : "Gagal menambahkan domain ke Vercel.",
+          );
           return;
         }
       }
 
-      // Auto-add the www ↔ non-www counterpart so both always exist together.
       if (!isPairCall) {
         const pairDomain = wwwPairFor(trimmedDomain);
         void addDomain(pairDomain, project, { pairId });
       }
     },
-    [domains, history, setDomains, showToast, vercelToken, savedCloudflareToken]
+    [
+      domains,
+      history,
+      setDomains,
+      showToast,
+      vercelToken,
+      savedCloudflareToken,
+    ],
   );
 
   const removeDomain = React.useCallback(
@@ -1205,38 +1512,50 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       const item = safeDomains.find((d) => d.id === id);
       if (!item) return;
 
-      // Remove the whole www/non-www pair together, not just the one clicked.
-      const group = item.pairId ? safeDomains.filter((d) => d.pairId === item.pairId) : [item];
+      const group = item.pairId
+        ? safeDomains.filter((d) => d.pairId === item.pairId)
+        : [item];
 
       const removedIds: string[] = [];
       for (const target of group) {
         if (target.syncedToVercel && vercelToken) {
           try {
-            // eslint-disable-next-line no-await-in-loop
             await callApi(
-              `/api/vercel/domains/${encodeURIComponent(target.domain)}?project=${encodeURIComponent(target.project)}`,
-              { method: "DELETE", headers: { "x-vercel-token": vercelToken } }
+              `/api/vercel/domains/${encodeURIComponent(
+                target.domain,
+              )}?project=${encodeURIComponent(target.project)}`,
+              { method: "DELETE", headers: { "x-vercel-token": vercelToken } },
             );
           } catch (err) {
             showToast(
               err instanceof Error
                 ? `Gagal menghapus "${target.domain}" di Vercel: ${err.message}`
-                : `Gagal menghapus "${target.domain}" di Vercel.`
+                : `Gagal menghapus "${target.domain}" di Vercel.`,
             );
-            continue; // keep this one in the list, still remove whatever else succeeds
+            continue;
           }
         } else if (target.syncedToCloudflare && savedCloudflareToken) {
           try {
-            // eslint-disable-next-line no-await-in-loop
             await callApi(
-              `/api/cloudflare/domains/${encodeURIComponent(target.domain)}?project=${encodeURIComponent(target.project)}&accountId=${encodeURIComponent(savedCloudflareToken.accountId)}`,
-              { method: "DELETE", headers: { "x-cloudflare-token": savedCloudflareToken.token } }
+              `/api/cloudflare/domains/${encodeURIComponent(
+                target.domain,
+              )}?project=${encodeURIComponent(
+                target.project,
+              )}&accountId=${encodeURIComponent(
+                savedCloudflareToken.accountId,
+              )}`,
+              {
+                method: "DELETE",
+                headers: {
+                  "x-cloudflare-token": savedCloudflareToken.token,
+                },
+              },
             );
           } catch (err) {
             showToast(
               err instanceof Error
                 ? `Gagal menghapus "${target.domain}" di Cloudflare: ${err.message}`
-                : `Gagal menghapus "${target.domain}" di Cloudflare.`
+                : `Gagal menghapus "${target.domain}" di Cloudflare.`,
             );
             continue;
           }
@@ -1246,19 +1565,21 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
 
       if (removedIds.length === 0) return;
 
-      setDomains((prev) => (Array.isArray(prev) ? prev : []).filter((d) => !removedIds.includes(d.id)));
+      setDomains((prev) =>
+        (Array.isArray(prev) ? prev : []).filter(
+          (d) => !removedIds.includes(d.id),
+        ),
+      );
 
       if (removedIds.length > 1) {
-        showToast(`${removedIds.length} domain (termasuk pasangan www) berhasil dihapus.`);
+        showToast(
+          `${removedIds.length} domain (termasuk pasangan www) berhasil dihapus.`,
+        );
       }
     },
-    [domains, setDomains, showToast, vercelToken, savedCloudflareToken]
+    [domains, setDomains, showToast, vercelToken, savedCloudflareToken],
   );
 
-  // Depup pushes domains to Vercel/Cloudflare but has no webhook for the
-  // reverse — someone removing a domain straight from the dashboard
-  // otherwise leaves a stale "Active" row here forever (mirrors
-  // syncEnvVarsForProject).
   const syncDomainsForProject = React.useCallback(
     async (project: string): Promise<"synced" | "skipped" | "error"> => {
       const safeHistory = Array.isArray(history) ? history : [];
@@ -1267,8 +1588,12 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         if (!savedCloudflareToken) return "skipped";
         try {
           const remote = await callApi<{ name: string; verified: boolean }[]>(
-            `/api/cloudflare/domains?project=${encodeURIComponent(project)}&accountId=${encodeURIComponent(savedCloudflareToken.accountId)}`,
-            { headers: { "x-cloudflare-token": savedCloudflareToken.token } }
+            `/api/cloudflare/domains?project=${encodeURIComponent(
+              project,
+            )}&accountId=${encodeURIComponent(
+              savedCloudflareToken.accountId,
+            )}`,
+            { headers: { "x-cloudflare-token": savedCloudflareToken.token } },
           );
           let removedCount = 0;
           setDomains((prev) => {
@@ -1282,7 +1607,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           });
           if (removedCount > 0) {
             showToast(
-              `${removedCount} domain untuk "${project}" sudah dihapus di Cloudflare — dihapus juga di sini.`
+              `${removedCount} domain untuk "${project}" sudah dihapus di Cloudflare — dihapus juga di sini.`,
             );
           }
           return "synced";
@@ -1294,7 +1619,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       try {
         const remote = await callApi<{ name: string; verified: boolean }[]>(
           `/api/vercel/domains?project=${encodeURIComponent(project)}`,
-          { headers: { "x-vercel-token": vercelToken } }
+          { headers: { "x-vercel-token": vercelToken } },
         );
         let removedCount = 0;
         setDomains((prev) => {
@@ -1308,7 +1633,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         });
         if (removedCount > 0) {
           showToast(
-            `${removedCount} domain untuk "${project}" sudah dihapus di Vercel — dihapus juga di sini.`
+            `${removedCount} domain untuk "${project}" sudah dihapus di Vercel — dihapus juga di sini.`,
           );
         }
         return "synced";
@@ -1316,7 +1641,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         return "error";
       }
     },
-    [history, savedCloudflareToken, vercelToken, setDomains, showToast]
+    [history, savedCloudflareToken, vercelToken, setDomains, showToast],
   );
 
   const syncAllDomains = React.useCallback(async () => {
@@ -1324,52 +1649,69 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     const projects = Array.from(
       new Set(
         safeDomains
-          .filter((d) => (d.syncedToVercel && vercelToken) || (d.syncedToCloudflare && savedCloudflareToken))
-          .map((d) => d.project)
-      )
+          .filter(
+            (d) =>
+              (d.syncedToVercel && vercelToken) ||
+              (d.syncedToCloudflare && savedCloudflareToken),
+          )
+          .map((d) => d.project),
+      ),
     );
     if (projects.length === 0) return;
     setSyncingDomains(true);
     for (const project of projects) {
-      // eslint-disable-next-line no-await-in-loop
       await syncDomainsForProject(project);
     }
     setSyncingDomains(false);
   }, [domains, syncDomainsForProject, vercelToken, savedCloudflareToken]);
 
-  // Neither platform pushes us a webhook when DNS propagates, so "Active"
-  // only updates when the user asks us to check — this re-fetches the
-  // domain list for the project and syncs this one domain's verified state.
   const refreshDomainStatus = React.useCallback(
     async (id: string) => {
-      const safeDomains = Array.isArray(domains)? domains : [];
+      const safeDomains = Array.isArray(domains) ? domains : [];
       const item = safeDomains.find((d) => d.id === id);
       if (!item) return;
 
       if (item.syncedToCloudflare && savedCloudflareToken) {
         try {
           const list = await callApi<{ name: string; verified: boolean }[]>(
-            `/api/cloudflare/domains?project=${encodeURIComponent(item.project)}&accountId=${encodeURIComponent(savedCloudflareToken.accountId)}`,
-            { headers: { "x-cloudflare-token": savedCloudflareToken.token } }
+            `/api/cloudflare/domains?project=${encodeURIComponent(
+              item.project,
+            )}&accountId=${encodeURIComponent(
+              savedCloudflareToken.accountId,
+            )}`,
+            { headers: { "x-cloudflare-token": savedCloudflareToken.token } },
           );
           const match = list.find((d) => d.name === item.domain);
           if (!match) {
-            setDomains((prev) => (Array.isArray(prev) ? prev : []).filter((d) => d.id !== id));
-            showToast(`${item.domain} sudah tidak ada di Cloudflare — dihapus juga di sini.`);
+            setDomains((prev) =>
+              (Array.isArray(prev) ? prev : []).filter((d) => d.id !== id),
+            );
+            showToast(
+              `${item.domain} sudah tidak ada di Cloudflare — dihapus juga di sini.`,
+            );
             return;
           }
           setDomains((prev) =>
             (Array.isArray(prev) ? prev : []).map((d) =>
-              d.id === id ? { ...d, status: match.verified ? ("Active" as const) : ("Pending" as const) } : d
-            )
+              d.id === id
+                ? {
+                    ...d,
+                    status: match.verified
+                      ? ("Active" as const)
+                      : ("Pending" as const),
+                  }
+                : d,
+            ),
           );
           showToast(
             match.verified
               ? `${item.domain} sudah aktif — DNS terverifikasi.`
-              : `${item.domain} masih menunggu DNS provider (belum terverifikasi).`
+              : `${item.domain} masih menunggu DNS provider (belum terverifikasi).`,
           );
         } catch (err) {
-          showToast(err instanceof Error ? err.message : "Gagal cek status domain.");
+          showToast(
+            err instanceof Error ? err.message : "Gagal cek status domain.",
+          );
         }
         return;
       }
@@ -1378,32 +1720,42 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       try {
         const list = await callApi<{ name: string; verified: boolean }[]>(
           `/api/vercel/domains?project=${encodeURIComponent(item.project)}`,
-          { headers: { "x-vercel-token": vercelToken } }
+          { headers: { "x-vercel-token": vercelToken } },
         );
         const match = list.find((d) => d.name === item.domain);
         if (!match) {
-          // No longer exists on Vercel (e.g. deleted straight from the
-          // dashboard) — drop it here too instead of leaving it stuck
-          // showing "Active" forever even though it's gone on Vercel.
-          setDomains((prev) => (Array.isArray(prev)? prev : []).filter((d) => d.id!== id));
-          showToast(`${item.domain} sudah tidak ada di Vercel — dihapus juga di sini.`);
+          setDomains((prev) =>
+            (Array.isArray(prev) ? prev : []).filter((d) => d.id !== id),
+          );
+          showToast(
+            `${item.domain} sudah tidak ada di Vercel — dihapus juga di sini.`,
+          );
           return;
         }
         setDomains((prev) =>
-          (Array.isArray(prev)? prev : []).map((d) =>
-            d.id === id? { ...d, status: match.verified? ("Active" as const) : ("Pending" as const) } : d
-          )
+          (Array.isArray(prev) ? prev : []).map((d) =>
+            d.id === id
+              ? {
+                  ...d,
+                  status: match.verified
+                    ? ("Active" as const)
+                    : ("Pending" as const),
+                }
+              : d,
+          ),
         );
         showToast(
           match.verified
-           ? `${item.domain} sudah aktif — DNS terverifikasi.`
-            : `${item.domain} masih menunggu DNS provider (belum terverifikasi).`
+            ? `${item.domain} sudah aktif — DNS terverifikasi.`
+            : `${item.domain} masih menunggu DNS provider (belum terverifikasi).`,
         );
       } catch (err) {
-        showToast(err instanceof Error? err.message : "Gagal cek status domain.");
+        showToast(
+          err instanceof Error ? err.message : "Gagal cek status domain.",
+        );
       }
     },
-    [domains, setDomains, showToast, vercelToken, savedCloudflareToken]
+    [domains, setDomains, showToast, vercelToken, savedCloudflareToken],
   );
 
   const addEnvVar = React.useCallback(
@@ -1412,32 +1764,43 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       value: string,
       environment: "Production" | "Preview",
       project: string,
-      options?: { pushToVercel?: boolean; pushToCloudflare?: boolean }
+      options?: { pushToVercel?: boolean; pushToCloudflare?: boolean },
     ) => {
       const trimmedKey = key.trim();
       const trimmedProject = project.trim();
       if (!ENV_KEY_RE.test(trimmedKey)) {
-        showToast('Key harus UPPER_SNAKE_CASE, contoh: DATABASE_URL (huruf besar & underscore).');
+        showToast(
+          "Key harus UPPER_SNAKE_CASE, contoh: DATABASE_URL (huruf besar & underscore).",
+        );
         return;
       }
       if (!trimmedProject) {
-        showToast("Pilih project untuk secret ini — env var selalu disimpan per-project.");
+        showToast(
+          "Pilih project untuk secret ini — env var selalu disimpan per-project.",
+        );
         return;
       }
-      const safeEnvVars = Array.isArray(envVars)? envVars : [];
+      const safeEnvVars = Array.isArray(envVars) ? envVars : [];
       if (
         safeEnvVars.some(
-          (v) => v.key === trimmedKey && v.environment === environment && v.project === trimmedProject
+          (v) =>
+            v.key === trimmedKey &&
+            v.environment === environment &&
+            v.project === trimmedProject,
         )
       ) {
-        showToast(`Key "${trimmedKey}" sudah ada untuk project "${trimmedProject}" (${environment}).`);
+        showToast(
+          `Key "${trimmedKey}" sudah ada untuk project "${trimmedProject}" (${environment}).`,
+        );
         return;
       }
       let syncedToVercel = false;
       let syncedToCloudflare = false;
       if (options?.pushToVercel) {
         if (!vercelToken) {
-          showToast("Isi Vercel Token di Settings dulu untuk push env ke Vercel.");
+          showToast(
+            "Isi Vercel Token di Settings dulu untuk push env ke Vercel.",
+          );
           return;
         }
         try {
@@ -1448,18 +1811,25 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
               project: trimmedProject,
               key: trimmedKey,
               value,
-              target: environment === "Production"? ["production"] : ["preview"],
+              target:
+                environment === "Production" ? ["production"] : ["preview"],
               vercelToken,
             }),
           });
           syncedToVercel = true;
         } catch (err) {
-          showToast(err instanceof Error? err.message : "Gagal push env var ke Vercel.");
+          showToast(
+            err instanceof Error
+              ? err.message
+              : "Gagal push env var ke Vercel.",
+          );
           return;
         }
       } else if (options?.pushToCloudflare) {
         if (!savedCloudflareToken) {
-          showToast("Konek-kan Cloudflare Token di Settings dulu untuk push env ke Cloudflare.");
+          showToast(
+            "Konek-kan Cloudflare Token di Settings dulu untuk push env ke Cloudflare.",
+          );
           return;
         }
         try {
@@ -1470,19 +1840,24 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
               project: trimmedProject,
               key: trimmedKey,
               value,
-              target: environment === "Production" ? ["production"] : ["preview"],
+              target:
+                environment === "Production" ? ["production"] : ["preview"],
               cloudflareToken: savedCloudflareToken.token,
               accountId: savedCloudflareToken.accountId,
             }),
           });
           syncedToCloudflare = true;
         } catch (err) {
-          showToast(err instanceof Error ? err.message : "Gagal push env var ke Cloudflare.");
+          showToast(
+            err instanceof Error
+              ? err.message
+              : "Gagal push env var ke Cloudflare.",
+          );
           return;
         }
       }
       setEnvVars((prev) => {
-        const safePrev = Array.isArray(prev)? prev : [];
+        const safePrev = Array.isArray(prev) ? prev : [];
         return [
           {
             id: `${Date.now()}`,
@@ -1494,15 +1869,15 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
             syncedToVercel,
             syncedToCloudflare,
           },
-         ...safePrev,
+          ...safePrev,
         ];
       });
       showToast(
         syncedToVercel
           ? `Secret disimpan untuk "${trimmedProject}" & di-push ke Vercel.`
           : syncedToCloudflare
-          ? `Secret disimpan untuk "${trimmedProject}" & di-push ke Cloudflare.`
-          : `Secret disimpan untuk project "${trimmedProject}".`
+            ? `Secret disimpan untuk "${trimmedProject}" & di-push ke Cloudflare.`
+            : `Secret disimpan untuk project "${trimmedProject}".`,
       );
       if (syncedToVercel) {
         void triggerAutoRedeploy(trimmedProject, "vercel");
@@ -1510,59 +1885,108 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         void triggerAutoRedeploy(trimmedProject, "cloudflare");
       }
     },
-    [envVars, setEnvVars, showToast, vercelToken, savedCloudflareToken, triggerAutoRedeploy]
+    [
+      envVars,
+      setEnvVars,
+      showToast,
+      vercelToken,
+      savedCloudflareToken,
+      triggerAutoRedeploy,
+    ],
   );
 
   const removeEnvVar = React.useCallback(
     async (id: string) => {
-      const safeEnvVars = Array.isArray(envVars)? envVars : [];
+      const safeEnvVars = Array.isArray(envVars) ? envVars : [];
       const item = safeEnvVars.find((v) => v.id === id);
       if (item?.syncedToVercel && vercelToken) {
         try {
           await callApi(
-            `/api/vercel/env?project=${encodeURIComponent(item.project)}&key=${encodeURIComponent(item.key)}`,
-            { method: "DELETE", headers: { "x-vercel-token": vercelToken } }
+            `/api/vercel/env?project=${encodeURIComponent(
+              item.project,
+            )}&key=${encodeURIComponent(item.key)}`,
+            { method: "DELETE", headers: { "x-vercel-token": vercelToken } },
           );
         } catch (err) {
-          showToast(err instanceof Error? err.message : "Gagal menghapus env var di Vercel.");
+          showToast(
+            err instanceof Error
+              ? err.message
+              : "Gagal menghapus env var di Vercel.",
+          );
           return;
         }
       } else if (item?.syncedToCloudflare && savedCloudflareToken) {
         try {
           await callApi(
-            `/api/cloudflare/env?project=${encodeURIComponent(item.project)}&accountId=${encodeURIComponent(savedCloudflareToken.accountId)}&key=${encodeURIComponent(item.key)}`,
-            { method: "DELETE", headers: { "x-cloudflare-token": savedCloudflareToken.token } }
+            `/api/cloudflare/env?project=${encodeURIComponent(
+              item.project,
+            )}&accountId=${encodeURIComponent(
+              savedCloudflareToken.accountId,
+            )}&key=${encodeURIComponent(item.key)}`,
+            {
+              method: "DELETE",
+              headers: { "x-cloudflare-token": savedCloudflareToken.token },
+            },
           );
         } catch (err) {
-          showToast(err instanceof Error ? err.message : "Gagal menghapus env var di Cloudflare.");
+          showToast(
+            err instanceof Error
+              ? err.message
+              : "Gagal menghapus env var di Cloudflare.",
+          );
           return;
         }
       }
-      setEnvVars((prev) => (Array.isArray(prev)? prev : []).filter((v) => v.id!== id));
+      setEnvVars((prev) =>
+        (Array.isArray(prev) ? prev : []).filter((v) => v.id !== id),
+      );
       if (item?.syncedToVercel && vercelToken) {
         void triggerAutoRedeploy(item.project, "vercel");
       } else if (item?.syncedToCloudflare && savedCloudflareToken) {
         void triggerAutoRedeploy(item.project, "cloudflare");
       }
     },
-    [envVars, setEnvVars, showToast, vercelToken, savedCloudflareToken, triggerAutoRedeploy]
+    [
+      envVars,
+      setEnvVars,
+      showToast,
+      vercelToken,
+      savedCloudflareToken,
+      triggerAutoRedeploy,
+    ],
   );
 
   const toggleEnvVisible = React.useCallback(
     (id: string) => {
-      setEnvVars((prev) => (Array.isArray(prev)? prev : []).map((v) => (v.id === id? {...v, visible:!v.visible } : v)));
+      setEnvVars((prev) =>
+        (Array.isArray(prev) ? prev : []).map((v) =>
+          v.id === id ? { ...v, visible: !v.visible } : v,
+        ),
+      );
     },
-    [setEnvVars]
+    [setEnvVars],
   );
+
+  /* ================================================================
+   *  Context value
+   * ================================================================ */
 
   const value: DeployContextValue = {
     view,
     setView,
     stats,
-    history: Array.isArray(history)? history : [],
+    history: Array.isArray(history) ? history : [],
     form,
     setFormField,
     platformTokenLabel,
+
+    // legacy + modern deploy views
+    modal,
+    deployState,
+    closeModal,
+    handleCloseAfterDeploy,
+    resetDeployState,
+
     savedVercelToken,
     savedVercelTokenStatus,
     savedCloudflareToken,
@@ -1570,43 +1994,50 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     cloudflareAccounts,
     githubConnectionStatus,
     checkGithubConnection,
-    modal,
-    confirmOpen,
+
+    confirmOpen: false,
     submitDeploy,
     proceedDeploy,
     closeConfirm,
-    closeModal,
-    handleCloseAfterDeploy,
+
     redeploy,
+
     vercelToken,
     cloudflareToken,
     cloudflareAccountId,
+
     syncingProjects,
     syncProjectStatus,
     syncAllProjects,
     deletingProject,
     deleteProject,
+
     fetchImportableVercelProjects,
     importVercelProject,
     fetchImportableCloudflareProjects,
     importCloudflareProject,
-    domains: Array.isArray(domains)? domains : [],
+
+    domains: Array.isArray(domains) ? domains : [],
     addDomain,
     removeDomain,
     refreshDomainStatus,
     syncingDomains,
     syncDomainsForProject,
     syncAllDomains,
-    envVars: Array.isArray(envVars)? envVars : [],
+
+    envVars: Array.isArray(envVars) ? envVars : [],
     addEnvVar,
     removeEnvVar,
     toggleEnvVisible,
     syncingEnvVars,
     syncEnvVarsForProject,
     syncAllEnvVars,
+
     focusedTrafficProject,
     setFocusedTrafficProject,
   };
 
-  return <DeployContext.Provider value={value}>{children}</DeployContext.Provider>;
+  return (
+    <DeployContext.Provider value={value}>{children}</DeployContext.Provider>
+  );
 }

@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   LayoutDashboard,
   FolderKanban,
@@ -61,8 +62,15 @@ export function Sidebar() {
           <Menu size={19} />
         </button>
         <div className="flex items-center gap-2">
-          <span className="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-br from-violet-500 to-cyan-400 text-white">
-            <Rocket size={14} />
+          <span className="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-br from-violet-500 to-cyan-400 text-white overflow-hidden">
+            <Image
+              src="/logo.png"
+              alt="Depup logo"
+              width={28}
+              height={28}
+              className="h-full w-full object-cover"
+              priority
+            />
           </span>
           <span className="text-[14px] font-semibold tracking-tight">Depup</span>
         </div>
@@ -79,14 +87,20 @@ export function Sidebar() {
       )}
 
       <aside
-        className={`sidebar fixed inset-y-0 left-0 z-50 flex h-screen w-72 max-w-[82%] shrink-0 flex-col p-4 transition-transform duration-300 ease-out md:sticky md:top-0 md:z-auto md:w-64 md:max-w-none md:translate-x-0 ${
-          open ? "translate-x-0" : "-translate-x-full"
-        }`}
+        className={`sidebar fixed inset-y-0 left-0 z-50 flex h-screen w-72 max-w-[82%] shrink-0 flex-col p-4 transition-transform duration-300 ease-out md:sticky md:top-0 md:z-auto md:w-64 md:max-w-none md:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"
+          }`}
       >
         <div className="flex items-center justify-between px-2 py-3 mb-4">
           <div className="flex items-center gap-2">
             <span className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-violet-500 to-cyan-400 text-white">
-              <Rocket size={16} />
+              <Image
+              src="/logo.png"
+              alt="Depup logo"
+              width={28}
+              height={28}
+              className="h-full w-full object-cover"
+              priority
+            />
             </span>
             <span className="text-[15px] font-semibold tracking-tight">Depup</span>
           </div>
@@ -108,9 +122,8 @@ export function Sidebar() {
                 key={item.id}
                 type="button"
                 data-view={item.id}
-                className={`nav flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-[13px] font-medium transition ${
-                  active ? "bg-[var(--card-hover)] text-text" : "text-text-muted hover:text-text hover:bg-[var(--card-hover)]"
-                }`}
+                className={`nav flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-[13px] font-medium transition ${active ? "bg-[var(--card-hover)] text-text" : "text-text-muted hover:text-text hover:bg-[var(--card-hover)]"
+                  }`}
                 onClick={() => setView(item.id)}
               >
                 <item.icon size={17} />
