@@ -159,7 +159,10 @@ interface RailwayEnvironmentNode {
 interface RailwayServiceSummary {
   id: string;
   name: string;
-  source: { repo: string | null } | null;
+  /** Derived from serviceInstances[].source.repo (see getProjectDetail) — a
+   *  service can have a different source per environment, but for our
+   *  single-environment usage the first instance's repo is what matters. */
+  repo: string | null;
 }
 
 interface RailwayProjectDetail {
@@ -171,20 +174,59 @@ interface RailwayProjectDetail {
 }
 
 async function getProjectDetail(projectId: string, railwayToken: string): Promise<RailwayProjectDetail> {
-  const data = await railwayGraphQL<{ project: RailwayProjectDetail }>(
+  const data = await railwayGraphQL<{
+    project: {
+      id: string;
+      name: string;
+      baseEnvironmentId: string | null;
+      services: {
+        edges: {
+          node: {
+            id: string;
+            name: string;
+            serviceInstances: { edges: { node: { source: { repo: string | null } | null } }[] };
+          };
+        }[];
+      };
+      environments: { edges: { node: RailwayEnvironmentNode }[] };
+    };
+  }>(
     `query project($id: String!) {
       project(id: $id) {
         id
         name
         baseEnvironmentId
-        services { edges { node { id name source { repo } } } }
+        services {
+          edges {
+            node {
+              id
+              name
+              serviceInstances { edges { node { source { repo } } } }
+            }
+          }
+        }
         environments { edges { node { id name } } }
       }
     }`,
     { id: projectId },
     railwayToken
   );
-  return data.project;
+  const p = data.project;
+  return {
+    id: p.id,
+    name: p.name,
+    baseEnvironmentId: p.baseEnvironmentId,
+    services: {
+      edges: p.services.edges.map((e) => ({
+        node: {
+          id: e.node.id,
+          name: e.node.name,
+          repo: e.node.serviceInstances.edges[0]?.node.source?.repo ?? null,
+        },
+      })),
+    },
+    environments: p.environments,
+  };
 }
 
 /** Finds an existing project by exact name in the caller's Railway account, or null if none exists yet. */
@@ -223,7 +265,7 @@ async function findProjectByRepo(
       continue;
     }
     const hasMatch = detail.services.edges.some(
-      (e) => e.node.source?.repo?.toLowerCase() === target
+      (e) => e.node.repo?.toLowerCase() === target
     );
     if (hasMatch) return detail;
   }
@@ -406,7 +448,7 @@ export async function createRailwayDeployment(
 
   const targetRepo = `${owner}/${repo}`.toLowerCase();
   let service =
-    project.services.edges.find((e) => e.node.source?.repo?.toLowerCase() === targetRepo)?.node ??
+    project.services.edges.find((e) => e.node.repo?.toLowerCase() === targetRepo)?.node ??
     project.services.edges[0]?.node ??
     null;
 
@@ -427,7 +469,7 @@ export async function createRailwayDeployment(
       },
       railwayToken
     );
-    service = { ...createdService.serviceCreate, source: { repo: `${owner}/${repo}` } };
+    service = { ...createdService.serviceCreate, repo: `${owner}/${repo}` };
   } else if (env && Object.keys(env).length > 0) {
     // Existing service being redeployed with (possibly new/updated) env vars.
     await railwayGraphQL(
