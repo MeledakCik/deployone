@@ -6,13 +6,21 @@ import { Surface } from "@/components/ui/Surface";
 import { ViewFade } from "@/components/ui/ViewFade";
 import { useCloudStorage } from "@/lib/useCloudStorage";
 import { useToast } from "@/components/ui/Toast";
-import type { ApiResponse, SettingsTokens, VercelUserInfo, GithubUserInfo, CloudflareAccountInfo } from "@/types";
+import type {
+  ApiResponse,
+  SettingsTokens,
+  VercelUserInfo,
+  GithubUserInfo,
+  CloudflareAccountInfo,
+  RailwayUserInfo,
+} from "@/types";
 
 const DEFAULT_TOKENS: SettingsTokens = {
   vercelToken: "",
   cloudflareToken: "",
   cloudflareAccountId: "",
   githubPat: "",
+  railwayToken: "",
 };
 
 async function callApi<T>(url: string, init?: RequestInit): Promise<T> {
@@ -106,6 +114,7 @@ export function SettingsView() {
   const [cloudflareCheck, setCloudflareCheck] = React.useState<CheckState>({ status: "idle" });
   const [cloudflareAccounts, setCloudflareAccounts] = React.useState<CloudflareAccountInfo[]>([]);
   const [githubCheck, setGithubCheck] = React.useState<CheckState>({ status: "idle" });
+  const [railwayCheck, setRailwayCheck] = React.useState<CheckState>({ status: "idle" });
   const { showToast } = useToast();
 
   React.useEffect(() => {
@@ -140,6 +149,21 @@ export function SettingsView() {
       setGithubCheck({ status: "ok", label: `Terhubung sebagai @${user.login}` });
     } catch (err) {
       setGithubCheck({ status: "error", message: err instanceof Error ? err.message : "Token tidak valid." });
+    }
+  }
+
+  async function testRailway() {
+    setRailwayCheck({ status: "checking" });
+    try {
+      const user = await callApi<RailwayUserInfo>("/api/railway/whoami", {
+        headers: { "x-railway-token": draft.railwayToken },
+      });
+      setRailwayCheck({
+        status: "ok",
+        label: `Terhubung sebagai ${user.name ?? user.email ?? user.id}`,
+      });
+    } catch (err) {
+      setRailwayCheck({ status: "error", message: err instanceof Error ? err.message : "Token tidak valid." });
     }
   }
 
@@ -238,6 +262,17 @@ export function SettingsView() {
               }}
               check={githubCheck}
               onTest={testGithub}
+            />
+            <TokenField
+              id="settingsRailwayToken"
+              label="Railway Token"
+              value={draft.railwayToken}
+              onChange={(v) => {
+                setDraft((prev) => ({ ...prev, railwayToken: v }));
+                setRailwayCheck({ status: "idle" });
+              }}
+              check={railwayCheck}
+              onTest={testRailway}
             />
 
             <button type="submit" className="btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-[13px]">

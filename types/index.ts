@@ -78,6 +78,8 @@ export interface SettingsTokens {
   /** Which Cloudflare account (of possibly several the token can see) to use — picked once in Settings. */
   cloudflareAccountId?: string;
   githubPat: string;
+  /** Railway account/workspace API token (from railway.com/account/tokens). */
+  railwayToken: string;
 }
 
 export type DashboardView =
@@ -108,6 +110,7 @@ export interface ApiError {
     | "invalid_token"
     | "vercel_error"
     | "cloudflare_error"
+    | "railway_error"
     | "github_not_connected"
     | "missing_account"
     | "project_conflict"
@@ -371,5 +374,82 @@ export interface UpsertCloudflareEnvRequest {
   target: ("production" | "preview")[];
   cloudflareToken: string;
   accountId: string;
+}
+
+/* ---------------------------------------------------------------------- */
+/*  Railway                                                                 */
+/* ---------------------------------------------------------------------- */
+
+/** Result of GET /api/railway/whoami — used by Settings & the deploy form to prove a token actually works. */
+export interface RailwayUserInfo {
+  id: string;
+  name: string | null;
+  email: string | null;
+}
+
+/** Body of POST /api/railway/deploy */
+export interface CreateRailwayDeployRequest {
+  projectName: string;
+  githubUrl: string;
+  railwayToken: string;
+  githubPat?: string;
+  /** Optional custom start command (leave empty to let Railway/Railpack auto-detect). */
+  startCommand?: string;
+  /** Optional env vars to seed the service with, format `KEY=value` per line. */
+  envText?: string;
+}
+
+/** Result of POST /api/railway/deploy */
+export interface CreateRailwayDeployResult {
+  deploymentId: string;
+  projectId: string;
+  serviceId: string;
+  environmentId: string;
+  url: string;
+  inspectorUrl: string;
+  readyState: VercelReadyState;
+}
+
+/** Result of GET /api/railway/deploy/[id] */
+export interface RailwayDeployStatusResult {
+  deploymentId: string;
+  url: string;
+  inspectorUrl: string;
+  readyState: VercelReadyState;
+  errorMessage: string | null;
+}
+
+/** Result of GET /api/railway/status */
+export interface RailwayProjectStatusResult {
+  exists: boolean;
+  linkedRepoFullName: string | null;
+  latestDeploymentReadyState: VercelReadyState | null;
+  latestDeploymentId: string | null;
+  projectId: string | null;
+  serviceId: string | null;
+  environmentId: string | null;
+  /** The service's public `{name}.up.railway.app` domain, once generated. */
+  domain: string | null;
+}
+
+/** Result of POST /api/railway/redeploy */
+export interface RailwayRedeployResult {
+  deploymentId: string;
+  url: string;
+  inspectorUrl: string;
+  readyState: VercelReadyState;
+}
+
+/** One entry from GET /api/railway/env — a variable as it currently exists on the Railway service. */
+export interface RailwayEnvSummary {
+  key: string;
+}
+
+/** Body of POST /api/railway/env */
+export interface UpsertRailwayEnvRequest {
+  project: string;
+  key: string;
+  value: string;
+  railwayToken: string;
 }
 

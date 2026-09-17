@@ -24,6 +24,9 @@ import type {
   HistoryItem,
   Platform,
   ProjectStatusResult,
+  RailwayDeployStatusResult,
+  RailwayUserInfo,
+  CreateRailwayDeployResult,
   RedeployResult,
   SettingsTokens,
   VercelDomainResult,
@@ -59,6 +62,7 @@ const DEFAULT_SETTINGS_TOKENS: SettingsTokens = {
   cloudflareToken: "",
   cloudflareAccountId: "",
   githubPat: "",
+  railwayToken: "",
 };
 
 async function callApi<T>(url: string, init?: RequestInit): Promise<T> {
@@ -183,6 +187,10 @@ interface DeployContextValue {
     | "invalid"
     | "needs_account";
   cloudflareAccounts: CloudflareAccountInfo[];
+
+  savedRailwayToken: { token: string; name: string } | null;
+  savedRailwayTokenStatus: "idle" | "checking" | "ok" | "invalid";
+
   githubConnectionStatus: {
     status: "idle" | "checking" | "connected" | "unknown";
     connectUrl: string | null;
@@ -199,6 +207,7 @@ interface DeployContextValue {
   vercelToken: string;
   cloudflareToken: string;
   cloudflareAccountId: string;
+  railwayToken: string;
 
   syncingProjects: boolean;
   syncProjectStatus: (
@@ -306,6 +315,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
   const vercelToken = settingsTokens.vercelToken;
   const cloudflareToken = settingsTokens.cloudflareToken;
   const cloudflareAccountId = settingsTokens.cloudflareAccountId ?? "";
+  const railwayToken = settingsTokens.railwayToken;
 
   const [syncingProjects, setSyncingProjects] = React.useState(false);
   const [deletingProject, setDeletingProject] = React.useState<string | null>(
@@ -408,6 +418,42 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       cancelled = true;
     };
   }, [cloudflareToken, cloudflareAccountId]);
+
+  /* ---------- saved Railway token ---------- */
+  const [savedRailwayToken, setSavedRailwayToken] = React.useState<{
+    token: string;
+    name: string;
+  } | null>(null);
+  const [savedRailwayTokenStatus, setSavedRailwayTokenStatus] = React.useState<
+    "idle" | "checking" | "ok" | "invalid"
+  >("idle");
+
+  React.useEffect(() => {
+    let cancelled = false;
+    if (!railwayToken) {
+      setSavedRailwayToken(null);
+      setSavedRailwayTokenStatus("idle");
+      return;
+    }
+    setSavedRailwayTokenStatus("checking");
+    (async () => {
+      try {
+        const user = await callApi<RailwayUserInfo>("/api/railway/whoami", {
+          headers: { "x-railway-token": railwayToken },
+        });
+        if (cancelled) return;
+        setSavedRailwayToken({ token: railwayToken, name: user.name ?? user.email ?? user.id });
+        setSavedRailwayTokenStatus("ok");
+      } catch {
+        if (cancelled) return;
+        setSavedRailwayToken(null);
+        setSavedRailwayTokenStatus("invalid");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [railwayToken]);
 
   /* ---------- GitHub connection (Cloudflare Pages App) ---------- */
   const [githubConnectionStatus, setGithubConnectionStatus] = React.useState<{
@@ -853,6 +899,132 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     [addHistory, beginDeploy, checkGithubConnection, failDeploy, showToast],
   );
 
+  /* ---------- Railway ---------- */
+  const startRailwayDeploy = React.useCallback(
+    async (data: DeployFormValues) => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      const railwayTokenValue = data.platformToken.trim();
+      if (!railwayTokenValue) {
+        showToast("Railway Token wajib diisi.");
+        return;
+      }
+      beginDeploy();
+      const projectName =
+        (data.projectName || "my-project").trim() || "my-project";
+
+      let validation: GithubValidation;
+      try {
+        validation = await callApi<GithubValidation>("/api/github/validate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            githubUrl: data.githubUrl,
+            githubPat: data.githubPat,
+          }),
+        });
+      } catch (err) {
+        failDeploy(
+          data,
+          err instanceof Error ? err.message : "Validasi GitHub gagal.",
+        );
+        return;
+      }
+      setDeployState((prev) => ({
+        ...prev,
+        stepIndex: 1,
+        barWidth: 20,
+        subtitle: `Repo ${validation.fullName} (${validation.visibility}) terverifikasi.`,
+      }));
+      validation.warnings.forEach((w) => showToast(w));
+
+      let created: CreateRailwayDeployResult;
+      try {
+        created = await callApi<CreateRailwayDeployResult>(
+          "/api/railway/deploy",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              projectName,
+              githubUrl: data.githubUrl,
+              railwayToken: railwayTokenValue,
+              githubPat: data.githubPat,
+              startCommand: data.startCommand,
+              envText: data.envText,
+            }),
+          },
+        );
+      } catch (err) {
+        failDeploy(
+          data,
+          err instanceof Error
+            ? err.message
+            : "Gagal membuat deployment di Railway.",
+        );
+        return;
+      }
+      setDeployState((prev) => ({ ...prev, stepIndex: 2, barWidth: 40 }));
+
+      intervalRef.current = setInterval(async () => {
+        let status: RailwayDeployStatusResult;
+        try {
+          status = await callApi<RailwayDeployStatusResult>(
+            `/api/railway/deploy/${created.deploymentId}`,
+            { headers: { "x-railway-token": railwayTokenValue } },
+          );
+        } catch (err) {
+          if (intervalRef.current) clearInterval(intervalRef.current);
+          failDeploy(
+            data,
+            err instanceof Error
+              ? err.message
+              : "Gagal memantau status deploy.",
+          );
+          return;
+        }
+        if (status.readyState === "BUILDING" || status.readyState === "QUEUED") {
+          setDeployState((prev) =>
+            prev.stepIndex < 3
+              ? { ...prev, stepIndex: 3, barWidth: 70 }
+              : prev,
+          );
+          return;
+        }
+        if (status.readyState === "READY") {
+          if (intervalRef.current) clearInterval(intervalRef.current);
+          const domain = status.url || created.url || resolveDomain(projectName, "railway");
+          setDeployState((prev) => ({
+            ...prev,
+            status: "success",
+            stepIndex: 5,
+            barWidth: 100,
+            title: "Deploy Berhasil!",
+            subtitle: `Project ${projectName} siap di ${domain}`,
+            result: {
+              name: projectName,
+              domain,
+              inspectorUrl: status.inspectorUrl,
+            },
+          }));
+          addHistory(projectName, "railway", domain, "ready");
+          return;
+        }
+        if (
+          status.readyState === "ERROR" ||
+          status.readyState === "CANCELED"
+        ) {
+          if (intervalRef.current) clearInterval(intervalRef.current);
+          failDeploy(
+            data,
+            status.errorMessage ??
+              "Build gagal di Railway. Cek log di dashboard Railway untuk detail.",
+          );
+        }
+      }, POLL_INTERVAL_MS);
+    },
+    [addHistory, beginDeploy, failDeploy, showToast],
+  );
+
   /* ---------- submit ---------- */
   const submitDeploy = React.useCallback(
     (e: React.FormEvent<HTMLFormElement>) => {
@@ -866,6 +1038,8 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         void startVercelDeploy(form);
       } else if (form.platform === "cloudflare") {
         void startCloudflareDeploy(form);
+      } else if (form.platform === "railway") {
+        void startRailwayDeploy(form);
       } else {
         startSimulatedDeploy(form);
       }
@@ -874,6 +1048,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       form,
       showToast,
       startCloudflareDeploy,
+      startRailwayDeploy,
       startSimulatedDeploy,
       startVercelDeploy,
     ],
@@ -1992,6 +2167,8 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     savedCloudflareToken,
     savedCloudflareTokenStatus,
     cloudflareAccounts,
+    savedRailwayToken,
+    savedRailwayTokenStatus,
     githubConnectionStatus,
     checkGithubConnection,
 
@@ -2005,6 +2182,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     vercelToken,
     cloudflareToken,
     cloudflareAccountId,
+    railwayToken,
 
     syncingProjects,
     syncProjectStatus,
