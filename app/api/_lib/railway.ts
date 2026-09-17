@@ -34,12 +34,27 @@ async function railwayGraphQL<T>(
   if (res.status === 401 || res.status === 403) {
     throw new RailwayApiError("Railway token tidak valid atau tidak punya izin.", "invalid_token");
   }
-  if (!res.ok) {
-    throw new RailwayApiError(`Railway API error (${res.status})`, "railway_error");
+
+  // Railway's GraphQL endpoint doesn't always return 200 with an `errors`
+  // array on failure — validation errors (e.g. a bad input field) can come
+  // back as a non-2xx status too. Try to read the actual message out of the
+  // body either way instead of throwing a blind "Railway API error (400)".
+  let body: { data?: unknown; errors?: { message?: string }[] } | null = null;
+  try {
+    body = await res.json();
+  } catch {
+    /* body wasn't JSON */
   }
 
-  const body = await res.json();
-  if (Array.isArray(body.errors) && body.errors.length > 0) {
+  if (!res.ok) {
+    const message = body?.errors?.[0]?.message;
+    throw new RailwayApiError(
+      message ? message : `Railway API error (${res.status})`,
+      "railway_error"
+    );
+  }
+
+  if (Array.isArray(body?.errors) && body.errors.length > 0) {
     const message: string = body.errors[0]?.message ?? "Railway API error";
     if (/not authorized|unauthorized/i.test(message)) {
       throw new RailwayApiError("Railway token tidak valid atau tidak punya izin.", "invalid_token");
@@ -50,7 +65,7 @@ async function railwayGraphQL<T>(
     throw new RailwayApiError(message, "railway_error");
   }
 
-  return body.data as T;
+  return body?.data as T;
 }
 
 /**
@@ -198,7 +213,15 @@ async function findProjectByRepo(
   const target = `${owner}/${repo}`.toLowerCase();
   const projects = await listProjects(railwayToken);
   for (const p of projects) {
-    const detail = await getProjectDetail(p.id, railwayToken);
+    let detail: RailwayProjectDetail;
+    try {
+      detail = await getProjectDetail(p.id, railwayToken);
+    } catch {
+      // A project can still show up in the list right after being deleted,
+      // or fail to fetch for other reasons — skip it rather than aborting
+      // the whole deploy over an unrelated project.
+      continue;
+    }
     const hasMatch = detail.services.edges.some(
       (e) => e.node.source?.repo?.toLowerCase() === target
     );
