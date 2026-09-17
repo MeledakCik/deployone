@@ -763,8 +763,8 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
   const startCloudflareDeploy = React.useCallback(
     async (data: DeployFormValues) => {
       if (intervalRef.current) clearInterval(intervalRef.current);
-      const cfToken = data.platformToken.trim();
-      const accountId = data.accountId.trim();
+      const cfToken = (data.platformToken ?? "").trim();
+      const accountId = (data.accountId ?? "").trim();
       if (!cfToken || !accountId) {
         showToast("Cloudflare Token & Account ID wajib diisi.");
         return;
@@ -903,7 +903,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
   const startRailwayDeploy = React.useCallback(
     async (data: DeployFormValues) => {
       if (intervalRef.current) clearInterval(intervalRef.current);
-      const railwayTokenValue = data.platformToken.trim();
+      const railwayTokenValue = (data.platformToken ?? "").trim();
       if (!railwayTokenValue) {
         showToast("Railway Token wajib diisi.");
         return;
