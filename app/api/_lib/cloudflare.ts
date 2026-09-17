@@ -104,7 +104,11 @@ export async function checkCloudflareGithubConnected(
   accountId: string,
   token: string
 ): Promise<"connected" | "unknown"> {
-  const res = await cfFetch(`/accounts/${accountId}/pages/projects?per_page=50`, token);
+  // NOTE: `pages/projects` rejects `per_page` above 25 with "Invalid list
+  // options provided" (unlike most other Cloudflare v4 list endpoints which
+  // allow up to 50/100) — cap it here so this best-effort check doesn't fail
+  // outright with a 502.
+  const res = await cfFetch(`/accounts/${accountId}/pages/projects?per_page=25`, token);
   if (!res.ok) throw await parseCloudflareError(res);
   const data = await res.json();
   const projects = Array.isArray(data.result) ? data.result : [];
@@ -189,7 +193,9 @@ export async function listCloudflarePagesProjects(
   accountId: string,
   token: string
 ): Promise<CloudflareProjectSummary[]> {
-  const res = await cfFetch(`/accounts/${accountId}/pages/projects?per_page=50`, token);
+  // Same `per_page` cap as checkCloudflareGithubConnected() above — Cloudflare
+  // rejects values over 25 on this endpoint with "Invalid list options provided".
+  const res = await cfFetch(`/accounts/${accountId}/pages/projects?per_page=25`, token);
   if (!res.ok) throw await parseCloudflareError(res);
   const data = await res.json();
   const projects = (Array.isArray(data.result) ? data.result : []) as CfProjectResponse[];
