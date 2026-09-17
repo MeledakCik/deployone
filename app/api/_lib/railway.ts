@@ -430,6 +430,62 @@ export async function createRailwayDeployment(
   };
 }
 
+interface RailwayLogLine {
+  message: string;
+  severity?: string | null;
+}
+
+/**
+ * Pulls the last few log lines for a failed deployment so the user gets an
+ * actual reason instead of Railway's opaque `meta.reason` (which is often
+ * just a lifecycle stage name like "deploy", not a human-readable message).
+ * Tries runtime logs first (crash-on-start is the common case once the
+ * build succeeded), falling back to build logs for build-time failures.
+ * Best-effort only — if both queries fail or come back empty, the caller
+ * falls back to a generic message.
+ */
+async function fetchRailwayFailureReason(
+  deploymentId: string,
+  railwayToken: string
+): Promise<string | null> {
+  const tail = (lines: RailwayLogLine[]): string | null => {
+    const relevant = lines.filter((l) => l.message?.trim());
+    if (relevant.length === 0) return null;
+    return relevant
+      .slice(-8)
+      .map((l) => l.message.trim())
+      .join("\n")
+      .slice(0, 1500);
+  };
+
+  try {
+    const runtime = await railwayGraphQL<{ deploymentLogs: RailwayLogLine[] }>(
+      `query deploymentLogs($deploymentId: String!, $limit: Int) {
+        deploymentLogs(deploymentId: $deploymentId, limit: $limit) { message severity }
+      }`,
+      { deploymentId, limit: 50 },
+      railwayToken
+    );
+    const runtimeTail = tail(runtime.deploymentLogs ?? []);
+    if (runtimeTail) return runtimeTail;
+  } catch {
+    /* best-effort — fall through to build logs */
+  }
+
+  try {
+    const build = await railwayGraphQL<{ buildLogs: RailwayLogLine[] }>(
+      `query buildLogs($deploymentId: String!, $limit: Int) {
+        buildLogs(deploymentId: $deploymentId, limit: $limit) { message severity }
+      }`,
+      { deploymentId, limit: 50 },
+      railwayToken
+    );
+    return tail(build.buildLogs ?? []);
+  } catch {
+    return null;
+  }
+}
+
 /** Polls a deployment's current build/deploy status. */
 export async function getRailwayDeployment(
   deploymentId: string,
@@ -472,10 +528,9 @@ export async function getRailwayDeployment(
 
   const d = data.deployment;
   const readyState = toReadyState(d.status);
-  const meta = (d.meta ?? {}) as Record<string, unknown>;
   const errorMessage =
     readyState === "ERROR"
-      ? (typeof meta.reason === "string" ? meta.reason : null) ??
+      ? (await fetchRailwayFailureReason(deploymentId, railwayToken)) ??
         "Build/deploy gagal di Railway. Cek log di dashboard Railway untuk detail."
       : null;
 
@@ -487,6 +542,7 @@ export async function getRailwayDeployment(
     errorMessage,
   };
 }
+
 
 /**
  * Re-triggers a deployment for an existing project's service using its
