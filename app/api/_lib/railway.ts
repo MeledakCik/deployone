@@ -136,21 +136,22 @@ async function listProjects(railwayToken: string): Promise<RailwayProjectSummary
   return data.projects.edges.map((e) => e.node);
 }
 
-interface RailwayServiceNode {
+interface RailwayEnvironmentNode {
   id: string;
   name: string;
 }
 
-interface RailwayEnvironmentNode {
+interface RailwayServiceSummary {
   id: string;
   name: string;
+  source: { repo: string | null } | null;
 }
 
 interface RailwayProjectDetail {
   id: string;
   name: string;
   baseEnvironmentId: string | null;
-  services: { edges: { node: RailwayServiceNode & { repo?: string | null } }[] };
+  services: { edges: { node: RailwayServiceSummary }[] };
   environments: { edges: { node: RailwayEnvironmentNode }[] };
 }
 
@@ -161,7 +162,7 @@ async function getProjectDetail(projectId: string, railwayToken: string): Promis
         id
         name
         baseEnvironmentId
-        services { edges { node { id name } } }
+        services { edges { node { id name source { repo } } } }
         environments { edges { node { id name } } }
       }
     }`,
@@ -180,6 +181,30 @@ async function findProjectByName(
   const match = projects.find((p) => p.name === projectName);
   if (!match) return null;
   return getProjectDetail(match.id, railwayToken);
+}
+
+/**
+ * Finds an existing project whose service is already wired to this exact
+ * GitHub repo, regardless of what project name it was created under.
+ * Prevents deploying the same repo again under a different `projectName`
+ * (e.g. during testing) from spinning up a brand-new Railway project every
+ * time — which quickly burns through the free plan's resource limit.
+ */
+async function findProjectByRepo(
+  owner: string,
+  repo: string,
+  railwayToken: string
+): Promise<RailwayProjectDetail | null> {
+  const target = `${owner}/${repo}`.toLowerCase();
+  const projects = await listProjects(railwayToken);
+  for (const p of projects) {
+    const detail = await getProjectDetail(p.id, railwayToken);
+    const hasMatch = detail.services.edges.some(
+      (e) => e.node.source?.repo?.toLowerCase() === target
+    );
+    if (hasMatch) return detail;
+  }
+  return null;
 }
 
 export interface RailwayProjectStatus {
@@ -324,7 +349,14 @@ export async function createRailwayDeployment(
 ): Promise<RailwayDeploymentResult> {
   const { projectName, owner, repo, ref, railwayToken, startCommand, env } = params;
 
-  let project = await findProjectByName(projectName, railwayToken);
+  // Match by exact project name first (normal redeploy case), then fall
+  // back to matching by the linked GitHub repo — so deploying the same repo
+  // again under a different `projectName` (e.g. while testing) reuses the
+  // existing Railway project + service instead of provisioning a brand-new
+  // one every time, which burns through the free plan's resource limit fast.
+  let project =
+    (await findProjectByName(projectName, railwayToken)) ??
+    (await findProjectByRepo(owner, repo, railwayToken));
 
   if (!project) {
     const workspaceId = await getDefaultWorkspaceId(railwayToken);
@@ -349,7 +381,11 @@ export async function createRailwayDeployment(
     );
   }
 
-  let service = project.services.edges[0]?.node ?? null;
+  const targetRepo = `${owner}/${repo}`.toLowerCase();
+  let service =
+    project.services.edges.find((e) => e.node.source?.repo?.toLowerCase() === targetRepo)?.node ??
+    project.services.edges[0]?.node ??
+    null;
 
   if (!service) {
     const createdService = await railwayGraphQL<{ serviceCreate: { id: string; name: string } }>(
@@ -368,7 +404,7 @@ export async function createRailwayDeployment(
       },
       railwayToken
     );
-    service = createdService.serviceCreate;
+    service = { ...createdService.serviceCreate, source: { repo: `${owner}/${repo}` } };
   } else if (env && Object.keys(env).length > 0) {
     // Existing service being redeployed with (possibly new/updated) env vars.
     await railwayGraphQL(
