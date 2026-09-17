@@ -63,7 +63,7 @@ function TokenField({
           <button
             type="button"
             onClick={onTest}
-            disabled={!value.trim() || check.status === "checking"}
+            disabled={!value?.trim() || check.status === "checking"}
             className="inline-flex items-center gap-1 text-[11px] font-medium text-violet-400 hover:brightness-110 disabled:opacity-40"
           >
             {check.status === "checking" && <Loader2 size={11} className="animate-spin" />}
@@ -76,7 +76,7 @@ function TokenField({
           id={id}
           type={visible ? "text" : "password"}
           placeholder="••••••••••••••••••••"
-          value={value}
+          value={value ?? ""}
           onChange={(e) => onChange(e.target.value)}
           className="input-solid mono h-11 w-full px-3.5 pr-11 text-[13px]"
         />

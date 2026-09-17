@@ -116,8 +116,17 @@ export function useCloudStorage<T>(
         const serverValue = body.data[key];
 
         if (isNonEmpty(serverValue)) {
-          setState(serverValue as T);
-          writeFallbackCache(email, key, serverValue);
+          // Merge dengan `initial` supaya field baru yang ditambahkan belakangan
+          // (mis. railwayToken) tidak jadi `undefined` untuk akun yang datanya
+          // sudah kesimpen di KV dari sebelum field itu ada — objek lama akan
+          // menimpa field yang sama tapi tetap punya key yang belum pernah
+          // tersimpan, sehingga selalu berupa string "" bukan undefined.
+          const merged =
+            serverValue && typeof serverValue === "object" && !Array.isArray(serverValue)
+              ? { ...(initial as object), ...(serverValue as object) }
+              : serverValue;
+          setState(merged as T);
+          writeFallbackCache(email, key, merged);
           return;
         }
 
@@ -132,12 +141,16 @@ export function useCloudStorage<T>(
           try {
             const parsed = JSON.parse(legacy);
             if (isNonEmpty(parsed)) {
-              setState(parsed as T);
+              const mergedParsed =
+                parsed && typeof parsed === "object" && !Array.isArray(parsed)
+                  ? { ...(initial as object), ...(parsed as object) }
+                  : parsed;
+              setState(mergedParsed as T);
               await fetch("/api/user-data", {
                 method: "PUT",
                 credentials: "include",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ [key]: parsed }),
+                body: JSON.stringify({ [key]: mergedParsed }),
               });
               window.localStorage.removeItem(legacyKey);
               return;
