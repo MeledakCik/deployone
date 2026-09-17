@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ChevronDown, ExternalLink, KeyRound, Github, ShieldCheck, BarChart2, Cloud, Link2, AlertTriangle } from "lucide-react";
+import { ChevronDown, ExternalLink, KeyRound, Github, ShieldCheck, BarChart2, Cloud, Link2, AlertTriangle, TramFront } from "lucide-react";
 import { ViewFade } from "@/components/ui/ViewFade";
 import { Surface } from "@/components/ui/Surface";
 
@@ -70,6 +70,35 @@ const GUIDES: Guide[] = [
       'Di halaman Cloudflare, klik "Connect GitHub" lalu login/authorize GitHub App Cloudflare Pages (pilih "All repositories" atau repo tertentu saja).',
       "Setelah authorize berhasil, kembali ke tab Depup dan klik \"Sudah connect, cek lagi\".",
       "Begitu status berubah jadi terhubung, klik Deploy Project lagi — deploy langsung jalan otomatis tanpa langkah manual lagi untuk deploy-deploy berikutnya.",
+    ],
+  },
+  {
+    icon: TramFront,
+    title: "Railway di Depup — buat apa & bedanya sama Vercel/Cloudflare?",
+    desc: "Baca ini dulu sebelum deploy ke Railway, biar tahu kapan platform ini cocok dipakai lewat Depup.",
+    link: { label: "Buka Railway Docs", href: "https://docs.railway.com/" },
+    steps: [
+      "Vercel & Cloudflare Pages didesain untuk frontend/edge — cocok buat Next.js, static site, dan API routes ringan. Railway sebaliknya: full backend platform, jalan sebagai container yang always-on, cocok buat aplikasi yang butuh proses jalan terus (server Express/Nest/Fastify, worker/queue, cron job, WebSocket, dsb).",
+      "Railway tidak butuh package.json/Node.js seperti syarat deploy Vercel di Depup — repo apapun yang bisa di-build Railway (lewat Railpack otomatis, atau Dockerfile kalau ada) bisa dipakai: Python, Go, Rust, PHP, Ruby, dan lainnya.",
+      'Waktu deploy pertama kali, Depup otomatis: buat project baru di akun Railway kamu (kalau nama project belum ada), buat service yang terhubung ke repo GitHub tersebut, generate domain publik "*.up.railway.app", lalu trigger deployment. Deploy berikutnya dengan nama project yang sama otomatis dianggap redeploy ke service yang sama.',
+      'Field "Start Command" di form Deploy Railway itu opsional — kosongkan saja kalau mau Railway auto-detect (misalnya baca script "start" di package.json, atau ikuti CMD di Dockerfile). Isi manual cuma kalau auto-detect-nya salah.',
+      'Field "Environment Variables" (format KEY=value per baris) dikirim ke service Railway sebelum deploy pertama jalan — praktis untuk isi credential database, API key, dsb dari awal.',
+      "Railway itu platform berbayar berdasarkan pemakaian resource (CPU/RAM/network), beda dari Vercel/Cloudflare yang punya free tier lebih murah hati untuk project kecil — pastikan akun Railway kamu punya kredit/metode pembayaran aktif sebelum deploy dari Depup, atau deployment bisa gagal/di-pause oleh Railway.",
+      "Custom domain & sinkronisasi env var dua-arah untuk Railway belum didukung penuh di Depup (baru deploy, cek status, redeploy, dan kelola env var dasar) — untuk custom domain, atur manual dulu lewat Railway Dashboard → project kamu → service → Settings → Networking.",
+    ],
+  },
+  {
+    icon: KeyRound,
+    title: "Cara dapetin Railway Token",
+    desc: "Token ini dipakai Depup untuk membuat project & service di akun Railway kamu, lalu deploy dari repo GitHub.",
+    link: { label: "Buka Railway Tokens", href: "https://railway.com/account/tokens" },
+    steps: [
+      "Login ke akun Railway kamu di railway.com.",
+      'Buka foto profil (kanan atas) → "Account Settings" → tab "Tokens" (atau langsung ke railway.com/account/tokens).',
+      'Di bagian "Personal Tokens", klik "Create Token" — token jenis ini (bukan Project Token / Team Token) yang dipakai Depup karena butuh izin bikin project baru.',
+      'Kasih nama bebas (misal "depup"), lalu klik "Create".',
+      "Salin token yang muncul — token ini cuma ditampilkan sekali, jadi langsung simpan di tempat aman.",
+      'Tempel token itu ke field Railway Token di form Deploy atau di halaman Settings Depup, lalu klik "Test Koneksi" untuk memastikan token-nya valid.',
     ],
   },
   {
