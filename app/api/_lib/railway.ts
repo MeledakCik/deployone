@@ -99,6 +99,27 @@ export async function getRailwayUser(
   return data.me;
 }
 
+/**
+ * Railway's `projectCreate` mutation requires a `workspaceId` — creating a
+ * project without one fails with "You must specify a workspaceId to create
+ * a project". Every account has at least a personal workspace, so we just
+ * grab the first one available to this token and use it as the default
+ * target when deploying.
+ */
+async function getDefaultWorkspaceId(railwayToken: string): Promise<string> {
+  const data = await railwayGraphQL<{
+    me: { workspaces: { id: string; name: string }[] };
+  }>(`query { me { workspaces { id name } } }`, {}, railwayToken);
+  const workspace = data.me.workspaces[0];
+  if (!workspace) {
+    throw new RailwayApiError(
+      "Akun Railway ini belum punya workspace. Buat workspace dulu di railway.com sebelum deploy.",
+      "railway_error"
+    );
+  }
+  return workspace.id;
+}
+
 interface RailwayProjectSummary {
   id: string;
   name: string;
@@ -306,13 +327,14 @@ export async function createRailwayDeployment(
   let project = await findProjectByName(projectName, railwayToken);
 
   if (!project) {
+    const workspaceId = await getDefaultWorkspaceId(railwayToken);
     const created = await railwayGraphQL<{
       projectCreate: { id: string; baseEnvironmentId: string | null; name: string };
     }>(
       `mutation projectCreate($input: ProjectCreateInput!) {
         projectCreate(input: $input) { id name baseEnvironmentId }
       }`,
-      { input: { name: projectName } },
+      { input: { name: projectName, workspaceId } },
       railwayToken
     );
     project = await getProjectDetail(created.projectCreate.id, railwayToken);
