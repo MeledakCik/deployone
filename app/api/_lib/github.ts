@@ -65,6 +65,27 @@ function detectFramework(pkg: Record<string, unknown>): string | null {
 }
 
 /**
+ * Railway's builder (railpack) runs a mandatory security scan on the
+ * lockfile before it will even attempt `npm run build` — a HIGH-severity
+ * CVE in a dependency hard-fails the deploy with no way to opt out on
+ * Railway's side. Next.js 14.x below 14.2.35 is the version people most
+ * often still have pinned (CVE-2025-55184 / CVE-2025-67779), so we flag it
+ * here — before a deploy is even attempted — rather than let the user burn
+ * a full build cycle discovering it from Railway's error output.
+ * Best-effort / not exhaustive: only catches this one known-common case.
+ */
+function checkKnownVulnerableNext(depsVersion: string | undefined): string | null {
+  if (!depsVersion) return null;
+  const m = /(\d+)\.(\d+)\.(\d+)/.exec(depsVersion);
+  if (!m) return null;
+  const [major, minor, patch] = [Number(m[1]), Number(m[2]), Number(m[3])];
+  if (major === 14 && minor === 2 && patch < 35) {
+    return `next@${depsVersion} punya CVE HIGH (CVE-2025-55184, CVE-2025-67779) yang bakal diblokir Railway saat build. Update ke next@^14.2.35 di package.json sebelum deploy ke Railway.`;
+  }
+  return null;
+}
+
+/**
  * Env var names that are commonly referenced via `process.env.X` but are
  * injected automatically by the platform/runtime, not something a user
  * needs to configure manually — filtered out of detection results.
@@ -93,10 +114,11 @@ const ENV_VAR_NAME_RE = /^[A-Z][A-Z0-9_]{1,}$/;
 /** Extracts `process.env.SOME_NAME` references from arbitrary source text. */
 function extractProcessEnvRefs(source: string): string[] {
   const found = new Set<string>();
-  const re = /process\.env\.([A-Za-z_][A-Za-z0-9_]*)/g;
+  // Matches both `process.env.NAME` and `process.env["NAME"]` / `process.env['NAME']`.
+  const re = /process\.env(?:\.([A-Za-z_][A-Za-z0-9_]*)|\[["']([A-Za-z_][A-Za-z0-9_]*)["']\])/g;
   let m: RegExpExecArray | null;
   while ((m = re.exec(source))) {
-    const name = m[1];
+    const name = m[1] ?? m[2];
     if (ENV_VAR_NAME_RE.test(name) && !IGNORED_ENV_NAMES.has(name)) found.add(name);
   }
   return [...found];
@@ -230,6 +252,9 @@ export async function validateGithubRepo(
       if (!framework) {
         warnings.push("Framework tidak terdeteksi otomatis, pastikan project bisa di-build oleh Vercel.");
       }
+      const nextVersion = (pkg.dependencies as Record<string, string> | undefined)?.next;
+      const vulnWarning = checkKnownVulnerableNext(nextVersion);
+      if (vulnWarning) warnings.push(vulnWarning);
     } catch {
       warnings.push("package.json ditemukan tapi gagal di-parse.");
     }

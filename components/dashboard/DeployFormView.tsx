@@ -1148,6 +1148,16 @@ export function DeployFormView() {
                                 </span>
                               </div>
                             )}
+                          {repoEnvCheck.status === "ok" &&
+                            repoEnvCheck.warnings.map((w, i) => (
+                              <div
+                                key={i}
+                                className="mt-2 text-[10.5px] sm:text-[11px] text-amber-600 dark:text-amber-300/70 flex items-start gap-1.5"
+                              >
+                                <CircleAlert className="w-3 h-3 shrink-0 mt-0.5" />
+                                <span>{w}</span>
+                              </div>
+                            ))}
                         </div>
                       )}
 

@@ -166,6 +166,7 @@ interface DeployContextValue {
     status: "idle" | "checking" | "ok" | "error";
     detectedEnvVars: string[];
     framework: string | null;
+    warnings: string[];
   };
 
   /** Legacy derived view — dipakai DeployModal.tsx. */
@@ -307,13 +308,14 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     status: "idle" | "checking" | "ok" | "error";
     detectedEnvVars: string[];
     framework: string | null;
-  }>({ status: "idle", detectedEnvVars: [], framework: null });
+    warnings: string[];
+  }>({ status: "idle", detectedEnvVars: [], framework: null, warnings: [] });
   const lastCheckedRepoRef = React.useRef<string | null>(null);
 
   React.useEffect(() => {
     const raw = form.githubUrl?.trim();
     if (!raw || !GITHUB_REPO_RE.test(raw)) {
-      setRepoEnvCheck({ status: "idle", detectedEnvVars: [], framework: null });
+      setRepoEnvCheck({ status: "idle", detectedEnvVars: [], framework: null, warnings: [] });
       lastCheckedRepoRef.current = null;
       return;
     }
@@ -332,10 +334,16 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           body: JSON.stringify({ githubUrl: raw, githubPat: form.githubPat }),
         });
         if (cancelled) return;
+        // The env-var line is already shown separately (with the auto-fill
+        // callout below), so drop it here to avoid saying the same thing twice.
+        const otherWarnings = result.warnings.filter(
+          (w) => !w.startsWith("Repo ini kemungkinan butuh env var"),
+        );
         setRepoEnvCheck({
           status: "ok",
           detectedEnvVars: result.detectedEnvVars,
           framework: result.framework,
+          warnings: otherWarnings,
         });
         // Auto-fill the Environment Variables step with `KEY=` placeholders
         // for anything detected — only when the user hasn't typed anything
@@ -348,7 +356,8 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           });
         }
       } catch {
-        if (!cancelled) setRepoEnvCheck({ status: "error", detectedEnvVars: [], framework: null });
+        if (!cancelled)
+          setRepoEnvCheck({ status: "error", detectedEnvVars: [], framework: null, warnings: [] });
       }
     }, 700);
 
