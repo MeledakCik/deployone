@@ -138,6 +138,8 @@ export interface GithubValidation {
   structureOk: boolean;
   /** Human-readable notes surfaced to the user, e.g. missing build script. */
   warnings: string[];
+  /** Env var names the repo appears to require (from .env.example / process.env.* usage in config files), best-effort. */
+  detectedEnvVars: string[];
 }
 
 /** Body of POST /api/deploy */

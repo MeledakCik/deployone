@@ -162,6 +162,11 @@ interface DeployContextValue {
     value: DeployFormValues[K],
   ) => void;
   platformTokenLabel: string;
+  repoEnvCheck: {
+    status: "idle" | "checking" | "ok" | "error";
+    detectedEnvVars: string[];
+    framework: string | null;
+  };
 
   /** Legacy derived view — dipakai DeployModal.tsx. */
   modal: ModalState;
@@ -296,6 +301,62 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
   const [form, setForm] = React.useState<DeployFormValues>(emptyForm);
   const [deployState, setDeployState] =
     React.useState<DeployState>(defaultDeployState);
+
+  /* ---------- auto-detect env vars needed by the repo ---------- */
+  const [repoEnvCheck, setRepoEnvCheck] = React.useState<{
+    status: "idle" | "checking" | "ok" | "error";
+    detectedEnvVars: string[];
+    framework: string | null;
+  }>({ status: "idle", detectedEnvVars: [], framework: null });
+  const lastCheckedRepoRef = React.useRef<string | null>(null);
+
+  React.useEffect(() => {
+    const raw = form.githubUrl?.trim();
+    if (!raw || !GITHUB_REPO_RE.test(raw)) {
+      setRepoEnvCheck({ status: "idle", detectedEnvVars: [], framework: null });
+      lastCheckedRepoRef.current = null;
+      return;
+    }
+
+    const key = `${raw}::${form.githubPat}`;
+    if (lastCheckedRepoRef.current === key) return;
+
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      lastCheckedRepoRef.current = key;
+      setRepoEnvCheck((prev) => ({ ...prev, status: "checking" }));
+      try {
+        const result = await callApi<GithubValidation>("/api/github/validate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ githubUrl: raw, githubPat: form.githubPat }),
+        });
+        if (cancelled) return;
+        setRepoEnvCheck({
+          status: "ok",
+          detectedEnvVars: result.detectedEnvVars,
+          framework: result.framework,
+        });
+        // Auto-fill the Environment Variables step with `KEY=` placeholders
+        // for anything detected — only when the user hasn't typed anything
+        // there yet, so this never clobbers a value they already entered.
+        if (result.detectedEnvVars.length > 0) {
+          setForm((prev) => {
+            if (prev.envText.trim()) return prev;
+            const template = result.detectedEnvVars.map((k) => `${k}=`).join("\n");
+            return { ...prev, envText: template };
+          });
+        }
+      } catch {
+        if (!cancelled) setRepoEnvCheck({ status: "error", detectedEnvVars: [], framework: null });
+      }
+    }, 700);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [form.githubUrl, form.githubPat]);
 
   const [domains, setDomains] = useCloudStorage<DomainItem[]>(
     "domains",
@@ -2154,6 +2215,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     form,
     setFormField,
     platformTokenLabel,
+    repoEnvCheck,
 
     // legacy + modern deploy views
     modal,

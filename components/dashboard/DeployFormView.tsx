@@ -557,7 +557,7 @@ function RailwayTokenField() {
 /* ================================================================ */
 
 export function DeployFormView() {
-  const { form, setFormField, submitDeploy } = useDeploy();
+  const { form, setFormField, submitDeploy, repoEnvCheck } = useDeploy();
 
   const [isModalOpen, setModalOpen] = React.useState(false);
   const [currentStep, setCurrentStep] = React.useState(0);
@@ -1128,6 +1128,26 @@ export function DeployFormView() {
                                 harus mengandung github.com
                               </div>
                             )}
+                          {repoEnvCheck.status === "checking" && (
+                            <div className="mt-2 text-[10.5px] sm:text-[11px] text-[var(--dc-text-faint)] flex items-center gap-1.5">
+                              <Loader2 className="w-3 h-3 shrink-0 animate-spin" />{" "}
+                              Mengecek env var yang dibutuhkan repo...
+                            </div>
+                          )}
+                          {repoEnvCheck.status === "ok" &&
+                            repoEnvCheck.detectedEnvVars.length > 0 && (
+                              <div className="mt-2 text-[10.5px] sm:text-[11px] text-violet-600 dark:text-violet-300 flex items-start gap-1.5">
+                                <CircleAlert className="w-3 h-3 shrink-0 mt-0.5" />
+                                <span>
+                                  Repo ini butuh env var:{" "}
+                                  <span className="font-mono">
+                                    {repoEnvCheck.detectedEnvVars.join(", ")}
+                                  </span>{" "}
+                                  — sudah diisi otomatis di step Environment
+                                  Variables, tinggal isi value-nya.
+                                </span>
+                              </div>
+                            )}
                         </div>
                       )}
 
@@ -1272,6 +1292,19 @@ export function DeployFormView() {
                           <FieldLabel htmlFor="envText" optional>
                             Environment Variables
                           </FieldLabel>
+                          {repoEnvCheck.status === "ok" &&
+                            repoEnvCheck.detectedEnvVars.length > 0 && (
+                              <div className="mb-2 text-[10.5px] sm:text-[11px] text-violet-600 dark:text-violet-300 flex items-start gap-1.5">
+                                <CircleAlert className="w-3 h-3 shrink-0 mt-0.5" />
+                                <span>
+                                  Terdeteksi dari repo:{" "}
+                                  <span className="font-mono">
+                                    {repoEnvCheck.detectedEnvVars.join(", ")}
+                                  </span>
+                                  . Isi value-nya di bawah sebelum deploy.
+                                </span>
+                              </div>
+                            )}
                           <textarea
                             id="envText"
                             rows={4}

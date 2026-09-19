@@ -65,6 +65,116 @@ function detectFramework(pkg: Record<string, unknown>): string | null {
 }
 
 /**
+ * Env var names that are commonly referenced via `process.env.X` but are
+ * injected automatically by the platform/runtime, not something a user
+ * needs to configure manually — filtered out of detection results.
+ */
+const IGNORED_ENV_NAMES = new Set([
+  "NODE_ENV",
+  "PORT",
+  "HOSTNAME",
+  "CI",
+  "VERCEL",
+  "VERCEL_ENV",
+  "VERCEL_URL",
+  "VERCEL_REGION",
+  "RAILWAY_ENVIRONMENT",
+  "RAILWAY_PUBLIC_DOMAIN",
+  "RAILWAY_PRIVATE_DOMAIN",
+  "RAILWAY_STATIC_URL",
+  "RAILWAY_PROJECT_ID",
+  "RAILWAY_SERVICE_ID",
+  "ANALYZE",
+  "NEXT_RUNTIME",
+]);
+
+const ENV_VAR_NAME_RE = /^[A-Z][A-Z0-9_]{1,}$/;
+
+/** Extracts `process.env.SOME_NAME` references from arbitrary source text. */
+function extractProcessEnvRefs(source: string): string[] {
+  const found = new Set<string>();
+  const re = /process\.env\.([A-Za-z_][A-Za-z0-9_]*)/g;
+  let m: RegExpExecArray | null;
+  while ((m = re.exec(source))) {
+    const name = m[1];
+    if (ENV_VAR_NAME_RE.test(name) && !IGNORED_ENV_NAMES.has(name)) found.add(name);
+  }
+  return [...found];
+}
+
+/** Extracts `KEY=...` lines from an .env-style file, ignoring comments/blank lines. */
+function extractEnvFileKeys(source: string): string[] {
+  const found = new Set<string>();
+  for (const line of source.split("\n")) {
+    const trimmed = line.trim();
+    if (!trimmed || trimmed.startsWith("#")) continue;
+    const eq = trimmed.indexOf("=");
+    if (eq <= 0) continue;
+    const name = trimmed.slice(0, eq).trim();
+    if (ENV_VAR_NAME_RE.test(name) && !IGNORED_ENV_NAMES.has(name)) found.add(name);
+  }
+  return [...found];
+}
+
+async function fetchRepoFileText(
+  owner: string,
+  repo: string,
+  path: string,
+  ref: string,
+  pat?: string
+): Promise<string | null> {
+  try {
+    const res = await githubFetch(
+      `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${encodeURIComponent(ref)}`,
+      pat
+    );
+    if (!res.ok) return null;
+    const meta = await res.json();
+    if (typeof meta.content !== "string") return null;
+    return Buffer.from(meta.content, "base64").toString("utf-8");
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Best-effort scan for env vars a repo likely needs at build/runtime:
+ * checks common `.env.example`-style files for declared keys, and scans
+ * `next.config.*` for `process.env.X` references. Not exhaustive (can't see
+ * env vars only used deep in app code without fetching the whole tree), but
+ * catches the common "config file reads an env var with no fallback" case
+ * that otherwise only surfaces as a cryptic build failure.
+ */
+async function detectEnvVars(
+  owner: string,
+  repo: string,
+  defaultBranch: string,
+  githubPat?: string
+): Promise<string[]> {
+  const found = new Set<string>();
+
+  const envFileCandidates = [".env.example", ".env.sample", ".env.template"];
+  for (const path of envFileCandidates) {
+    const text = await fetchRepoFileText(owner, repo, path, defaultBranch, githubPat);
+    if (text) {
+      extractEnvFileKeys(text).forEach((k) => found.add(k));
+      break; // one env-example file is enough — they're usually kept in sync
+    }
+  }
+
+  const configCandidates = ["next.config.js", "next.config.mjs", "next.config.ts"];
+  for (const path of configCandidates) {
+    const text = await fetchRepoFileText(owner, repo, path, defaultBranch, githubPat);
+    if (text) {
+      extractProcessEnvRefs(text).forEach((k) => found.add(k));
+      break; // repos only have one active next.config.*
+    }
+  }
+
+  return [...found].sort();
+}
+
+/**
  * Validates a GitHub repo: existence, public/private visibility, default
  * branch, and a light structural check (package.json present + parseable,
  * framework guess, build script present) so we can surface useful warnings
@@ -127,6 +237,13 @@ export async function validateGithubRepo(
     warnings.push("Tidak ada package.json di root repo — pastikan ini project Node.js yang valid.");
   }
 
+  const detectedEnvVars = await detectEnvVars(owner, repo, defaultBranch, githubPat);
+  if (detectedEnvVars.length > 0) {
+    warnings.push(
+      `Repo ini kemungkinan butuh env var: ${detectedEnvVars.join(", ")}. Isi di step Environment Variables sebelum deploy.`
+    );
+  }
+
   return {
     owner,
     repo,
@@ -137,5 +254,6 @@ export async function validateGithubRepo(
     framework,
     structureOk: hasPackageJson,
     warnings,
+    detectedEnvVars,
   };
 }
