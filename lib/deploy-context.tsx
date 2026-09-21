@@ -1196,6 +1196,30 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
    *  Domain / Env / Sync / Delete — tidak berubah dari aslinya
    * ================================================================ */
 
+  /**
+   * How long after a deploy we hold off on letting sync treat a "not found"
+   * result as real. `HistoryItem.id` is `Date.now()` at deploy time (see
+   * `addHistory`), so this is exact to the millisecond.
+   *
+   * This exists because the two previous Railway "project vanishes after a
+   * successful deploy" fixes (pagination in `listProjects`, saving the
+   * platform's *actual* resolved name instead of the typed one) turned out
+   * not to be the whole story: even with the right name and full pagination,
+   * a project that was *just* created can still come back as "not found" if
+   * the remote platform's list/read endpoint hasn't caught up yet with the
+   * mutation that created it (ordinary read-after-write lag). The user's
+   * report — the project shows up in history right after a successful
+   * deploy, then vanishes the moment the Projects page's auto-sync runs —
+   * matches this exactly. A newly-created entry simply shouldn't be treated
+   * as delete-eligible yet.
+   */
+  const RECENTLY_DEPLOYED_GRACE_MS = 3 * 60 * 1000;
+
+  function isRecentlyDeployed(item: HistoryItem): boolean {
+    const createdAt = Number(item.id);
+    return Number.isFinite(createdAt) && Date.now() - createdAt < RECENTLY_DEPLOYED_GRACE_MS;
+  }
+
   const syncProjectStatus = React.useCallback(
     async (
       name: string,
@@ -1214,6 +1238,10 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       );
       if (!targetItem) return "skipped";
 
+      // Give a freshly-deployed project a grace period before it's even
+      // eligible to be checked — see RECENTLY_DEPLOYED_GRACE_MS above.
+      if (isRecentlyDeployed(targetItem)) return "skipped";
+
       const removeThisEntry = () => {
         setHistory((prev) =>
           (Array.isArray(prev) ? prev : []).filter(
@@ -1222,9 +1250,32 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         );
       };
 
+      // A single "not found" can also just mean the remote platform hasn't
+      // finished propagating a very recent write yet (read-after-write lag),
+      // not that the project is actually gone. Require two "not found"
+      // results a few seconds apart, and only remove the local entry once
+      // both agree, so a momentary lag never gets misread as a deletion.
+      const confirmMissingThenDelete = async (
+        checkOnce: () => Promise<boolean>,
+      ): Promise<"exists" | "deleted" | "error"> => {
+        try {
+          if (await checkOnce()) return "exists";
+        } catch {
+          return "error";
+        }
+        await new Promise((resolve) => setTimeout(resolve, 4000));
+        try {
+          if (await checkOnce()) return "exists";
+        } catch {
+          return "error";
+        }
+        removeThisEntry();
+        return "deleted";
+      };
+
       if (platform === "cloudflare") {
         if (!savedCloudflareToken) return "skipped";
-        try {
+        return confirmMissingThenDelete(async () => {
           const status = await callApi<CloudflareProjectStatusResult>(
             `/api/cloudflare/status?project=${encodeURIComponent(
               name,
@@ -1233,46 +1284,28 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
             )}`,
             { headers: { "x-cloudflare-token": savedCloudflareToken.token } },
           );
-          if (!status.exists) {
-            removeThisEntry();
-            return "deleted";
-          }
-          return "exists";
-        } catch {
-          return "error";
-        }
+          return status.exists;
+        });
       }
       if (platform === "railway") {
         if (!savedRailwayToken) return "skipped";
-        try {
+        return confirmMissingThenDelete(async () => {
           const status = await callApi<RailwayProjectStatusResult>(
             `/api/railway/status?project=${encodeURIComponent(name)}`,
             { headers: { "x-railway-token": savedRailwayToken.token } },
           );
-          if (!status.exists) {
-            removeThisEntry();
-            return "deleted";
-          }
-          return "exists";
-        } catch {
-          return "error";
-        }
+          return status.exists;
+        });
       }
       if (platform === "vercel") {
         if (!vercelToken) return "skipped";
-        try {
+        return confirmMissingThenDelete(async () => {
           const status = await callApi<ProjectStatusResult>(
             `/api/vercel/status?project=${encodeURIComponent(name)}`,
             { headers: { "x-vercel-token": vercelToken } },
           );
-          if (!status.exists) {
-            removeThisEntry();
-            return "deleted";
-          }
-          return "exists";
-        } catch {
-          return "error";
-        }
+          return status.exists;
+        });
       }
       // "render" (or any future platform with no real API behind it yet) —
       // nothing to check against, so leave it alone rather than guessing.
