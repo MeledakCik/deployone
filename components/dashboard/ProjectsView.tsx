@@ -21,9 +21,14 @@ import type { CloudflareProjectSummary, HistoryItem, Platform, VercelProjectSumm
 
 function groupByProject(history: HistoryItem[]) {
   const safeHistory = Array.isArray(history) ? history : [];
+  // Key by name+platform, not name alone — the same project name can
+  // legitimately exist on more than one platform (e.g. deployed to Vercel
+  // once, then again to Railway under the same name), and each should show
+  // up as its own card rather than one hiding the other.
   const map = new Map<string, HistoryItem>();
   for (const item of safeHistory) {
-    if (!map.has(item.name)) map.set(item.name, item);
+    const key = `${item.name}::${item.platform}`;
+    if (!map.has(key)) map.set(key, item);
   }
   return Array.from(map.values());
 }
@@ -45,7 +50,7 @@ function DeleteProjectModal({
   const busy = deletingProject === project.name;
 
   async function handleChoice(alsoDelete: boolean) {
-    await deleteProject(project!.name, {
+    await deleteProject(project!.name, project!.platform, {
       alsoDeleteFromVercel: alsoDelete && isVercelProject,
       alsoDeleteFromCloudflare: alsoDelete && isCloudflareProject,
       alsoDeleteFromRailway: alsoDelete && isRailwayProject,
@@ -269,7 +274,7 @@ export function ProjectsView() {
   const safeHistory = Array.isArray(history) ? history : [];
   const [platformTab, setPlatformTab] = React.useState<"all" | Platform>("all");
   const projects = groupByProject(safeHistory).filter((p) => platformTab === "all" || p.platform === platformTab);
-  const [checkingName, setCheckingName] = React.useState<string | null>(null);
+  const [checkingKey, setCheckingKey] = React.useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = React.useState<HistoryItem | null>(null);
   const [importOpen, setImportOpen] = React.useState(false);
   const didAutoSync = React.useRef(false);
@@ -286,10 +291,11 @@ export function ProjectsView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vercelToken, savedCloudflareToken, savedRailwayToken]);
 
-  async function handleCheck(name: string) {
-    setCheckingName(name);
-    await syncProjectStatus(name);
-    setCheckingName(null);
+  async function handleCheck(name: string, platform: Platform) {
+    const key = `${name}::${platform}`;
+    setCheckingKey(key);
+    await syncProjectStatus(name, platform);
+    setCheckingKey(null);
   }
 
   return (
@@ -357,9 +363,9 @@ export function ProjectsView() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {(Array.isArray(projects) ? projects : []).map((project) => {
               const isReady = project.status === "ready";
-              const isChecking = checkingName === project.name;
+              const isChecking = checkingKey === `${project.name}::${project.platform}`;
               return (
-                <Surface key={project.name} className="p-5">
+                <Surface key={`${project.name}::${project.platform}`} className="p-5">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <h3 className="truncate text-base light:text-black dark:text-white font-semibold">{project.name}</h3>
@@ -405,7 +411,7 @@ export function ProjectsView() {
                     <div className="mt-2 flex items-center gap-1">
                       <button
                         type="button"
-                        onClick={() => void handleCheck(project.name)}
+                        onClick={() => void handleCheck(project.name, project.platform)}
                         disabled={isChecking}
                         className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-text-faint hover:text-text disabled:opacity-50"
                       >
@@ -426,7 +432,7 @@ export function ProjectsView() {
                     <div className="mt-2 flex items-center gap-1">
                       <button
                         type="button"
-                        onClick={() => void handleCheck(project.name)}
+                        onClick={() => void handleCheck(project.name, project.platform)}
                         disabled={isChecking}
                         className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-text-faint hover:text-text disabled:opacity-50"
                       >
@@ -440,7 +446,7 @@ export function ProjectsView() {
                     <div className="mt-2 flex items-center gap-1">
                       <button
                         type="button"
-                        onClick={() => void handleCheck(project.name)}
+                        onClick={() => void handleCheck(project.name, project.platform)}
                         disabled={isChecking}
                         className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-text-faint hover:text-text disabled:opacity-50"
                       >

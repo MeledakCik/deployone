@@ -221,12 +221,14 @@ interface DeployContextValue {
   syncingProjects: boolean;
   syncProjectStatus: (
     name: string,
+    platform: Platform,
   ) => Promise<"exists" | "deleted" | "skipped" | "error">;
   syncAllProjects: () => Promise<void>;
 
   deletingProject: string | null;
   deleteProject: (
     name: string,
+    platform: Platform,
     options: {
       alsoDeleteFromVercel?: boolean;
       alsoDeleteFromCloudflare?: boolean;
@@ -1185,10 +1187,30 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
   const syncProjectStatus = React.useCallback(
     async (
       name: string,
+      platform: Platform,
     ): Promise<"exists" | "deleted" | "skipped" | "error"> => {
+      // Project identity is (name + platform), never name alone — the same
+      // project name can legitimately exist on more than one platform (e.g.
+      // deployed to Vercel once, then again to Railway under the same
+      // name). Matching on name only here previously meant checking one
+      // platform's status could wipe *every* history entry sharing that
+      // name, including ones on a completely different, still-very-much-
+      // alive platform.
       const safeHistory = Array.isArray(history) ? history : [];
-      const targetItem = safeHistory.find((h) => h.name === name);
-      if (targetItem?.platform === "cloudflare") {
+      const targetItem = safeHistory.find(
+        (h) => h.name === name && h.platform === platform,
+      );
+      if (!targetItem) return "skipped";
+
+      const removeThisEntry = () => {
+        setHistory((prev) =>
+          (Array.isArray(prev) ? prev : []).filter(
+            (h) => !(h.name === name && h.platform === platform),
+          ),
+        );
+      };
+
+      if (platform === "cloudflare") {
         if (!savedCloudflareToken) return "skipped";
         try {
           const status = await callApi<CloudflareProjectStatusResult>(
@@ -1200,9 +1222,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
             { headers: { "x-cloudflare-token": savedCloudflareToken.token } },
           );
           if (!status.exists) {
-            setHistory((prev) =>
-              (Array.isArray(prev) ? prev : []).filter((h) => h.name !== name),
-            );
+            removeThisEntry();
             return "deleted";
           }
           return "exists";
@@ -1210,7 +1230,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           return "error";
         }
       }
-      if (targetItem?.platform === "railway") {
+      if (platform === "railway") {
         if (!savedRailwayToken) return "skipped";
         try {
           const status = await callApi<RailwayProjectStatusResult>(
@@ -1218,9 +1238,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
             { headers: { "x-railway-token": savedRailwayToken.token } },
           );
           if (!status.exists) {
-            setHistory((prev) =>
-              (Array.isArray(prev) ? prev : []).filter((h) => h.name !== name),
-            );
+            removeThisEntry();
             return "deleted";
           }
           return "exists";
@@ -1228,45 +1246,48 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           return "error";
         }
       }
-      if (!vercelToken) return "skipped";
-      try {
-        const status = await callApi<ProjectStatusResult>(
-          `/api/vercel/status?project=${encodeURIComponent(name)}`,
-          { headers: { "x-vercel-token": vercelToken } },
-        );
-        if (!status.exists) {
-          setHistory((prev) =>
-            (Array.isArray(prev) ? prev : []).filter((h) => h.name !== name),
+      if (platform === "vercel") {
+        if (!vercelToken) return "skipped";
+        try {
+          const status = await callApi<ProjectStatusResult>(
+            `/api/vercel/status?project=${encodeURIComponent(name)}`,
+            { headers: { "x-vercel-token": vercelToken } },
           );
-          return "deleted";
+          if (!status.exists) {
+            removeThisEntry();
+            return "deleted";
+          }
+          return "exists";
+        } catch {
+          return "error";
         }
-        return "exists";
-      } catch {
-        return "error";
       }
+      // "render" (or any future platform with no real API behind it yet) —
+      // nothing to check against, so leave it alone rather than guessing.
+      return "skipped";
     },
     [history, savedCloudflareToken, savedRailwayToken, vercelToken, setHistory],
   );
 
   const syncAllProjects = React.useCallback(async () => {
     const safeHistory = Array.isArray(history) ? history : [];
-    const names = Array.from(
-      new Set(
-        safeHistory
-          .filter(
-            (h) =>
-              (h.platform === "vercel" && vercelToken) ||
-              (h.platform === "cloudflare" && savedCloudflareToken) ||
-              (h.platform === "railway" && savedRailwayToken),
-          )
-          .map((h) => h.name),
-      ),
-    );
-    if (names.length === 0) return;
+    // Key by name+platform, not name alone — two different platforms can
+    // share a project name and each needs to be checked against its own
+    // remote independently (see syncProjectStatus).
+    const pairs = new Map<string, { name: string; platform: Platform }>();
+    for (const h of safeHistory) {
+      const canCheck =
+        (h.platform === "vercel" && vercelToken) ||
+        (h.platform === "cloudflare" && savedCloudflareToken) ||
+        (h.platform === "railway" && savedRailwayToken);
+      if (!canCheck) continue;
+      pairs.set(`${h.name}::${h.platform}`, { name: h.name, platform: h.platform });
+    }
+    if (pairs.size === 0) return;
     setSyncingProjects(true);
     let deletedCount = 0;
-    for (const name of names) {
-      const result = await syncProjectStatus(name);
+    for (const { name, platform } of pairs.values()) {
+      const result = await syncProjectStatus(name, platform);
       if (result === "deleted") deletedCount += 1;
     }
     setSyncingProjects(false);
@@ -1287,14 +1308,20 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
   const deleteProject = React.useCallback(
     async (
       name: string,
+      platform: Platform,
       options: {
         alsoDeleteFromVercel?: boolean;
         alsoDeleteFromCloudflare?: boolean;
         alsoDeleteFromRailway?: boolean;
       },
     ) => {
+      // Look up (and later remove) strictly by name+platform — the same
+      // project name can exist on more than one platform, and deleting one
+      // must never touch the other's still-live history entry.
       const safeHistory = Array.isArray(history) ? history : [];
-      const targetItem = safeHistory.find((h) => h.name === name);
+      const targetItem = safeHistory.find(
+        (h) => h.name === name && h.platform === platform,
+      );
       const isVercelProject = targetItem?.platform === "vercel";
       const isCloudflareProject = targetItem?.platform === "cloudflare";
       const isRailwayProject = targetItem?.platform === "railway";
@@ -1391,7 +1418,9 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       }
 
       setHistory((prev) =>
-        (Array.isArray(prev) ? prev : []).filter((h) => h.name !== name),
+        (Array.isArray(prev) ? prev : []).filter(
+          (h) => !(h.name === name && h.platform === platform),
+        ),
       );
       showToast(
         alsoDelete
