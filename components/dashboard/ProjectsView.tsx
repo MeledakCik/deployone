@@ -36,23 +36,31 @@ function DeleteProjectModal({
   project: HistoryItem | null;
   onClose: () => void;
 }) {
-  const { deleteProject, deletingProject, vercelToken, savedCloudflareToken } = useDeploy();
+  const { deleteProject, deletingProject, vercelToken, savedCloudflareToken, savedRailwayToken } = useDeploy();
   if (!project) return null;
 
   const isVercelProject = project.platform === "vercel";
   const isCloudflareProject = project.platform === "cloudflare";
+  const isRailwayProject = project.platform === "railway";
   const busy = deletingProject === project.name;
 
   async function handleChoice(alsoDelete: boolean) {
     await deleteProject(project!.name, {
       alsoDeleteFromVercel: alsoDelete && isVercelProject,
       alsoDeleteFromCloudflare: alsoDelete && isCloudflareProject,
+      alsoDeleteFromRailway: alsoDelete && isRailwayProject,
     });
     onClose();
   }
 
-  const platformLabel = isVercelProject ? "Vercel" : isCloudflareProject ? "Cloudflare" : null;
-  const canDeleteRemote = isVercelProject ? Boolean(vercelToken) : isCloudflareProject ? Boolean(savedCloudflareToken) : false;
+  const platformLabel = isVercelProject ? "Vercel" : isCloudflareProject ? "Cloudflare" : isRailwayProject ? "Railway" : null;
+  const canDeleteRemote = isVercelProject
+    ? Boolean(vercelToken)
+    : isCloudflareProject
+      ? Boolean(savedCloudflareToken)
+      : isRailwayProject
+        ? Boolean(savedRailwayToken)
+        : false;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 px-4">
@@ -74,7 +82,7 @@ function DeleteProjectModal({
         <p className="text-[13px] leading-relaxed text-text-muted mb-6">
           {platformLabel
             ? `Pilih mau dihapus di kedua sisi (${platformLabel} + Depup) atau di Depup saja — project di ${platformLabel} tetap jalan kalau kamu pilih Depup saja.`
-            : "Project ini bukan platform Vercel/Cloudflare, jadi hanya akan dihapus dari daftar Depup."}
+            : "Project ini bukan platform Vercel/Cloudflare/Railway, jadi hanya akan dihapus dari daftar Depup."}
         </p>
         <div className="space-y-2">
           {platformLabel && (
@@ -251,6 +259,7 @@ export function ProjectsView() {
     redeploy,
     vercelToken,
     savedCloudflareToken,
+    savedRailwayToken,
     syncingProjects,
     syncAllProjects,
     syncProjectStatus,
@@ -271,11 +280,11 @@ export function ProjectsView() {
   }
 
   React.useEffect(() => {
-    if (didAutoSync.current || (!vercelToken && !savedCloudflareToken)) return;
+    if (didAutoSync.current || (!vercelToken && !savedCloudflareToken && !savedRailwayToken)) return;
     didAutoSync.current = true;
     void syncAllProjects();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vercelToken, savedCloudflareToken]);
+  }, [vercelToken, savedCloudflareToken, savedRailwayToken]);
 
   async function handleCheck(name: string) {
     setCheckingName(name);
@@ -301,7 +310,7 @@ export function ProjectsView() {
             >
               <Download size={13} /> Import Project
             </button>
-            {(vercelToken || savedCloudflareToken) ? (
+            {(vercelToken || savedCloudflareToken || savedRailwayToken) ? (
               <button
                 type="button"
                 onClick={() => void syncAllProjects()}
@@ -423,6 +432,20 @@ export function ProjectsView() {
                       >
                         <RefreshCw size={11} className={isChecking ? "animate-spin" : ""} />
                         {isChecking ? "Mengecek..." : "Cek status di Cloudflare"}
+                      </button>
+                    </div>
+                  )}
+
+                  {project.platform === "railway" && savedRailwayToken && (
+                    <div className="mt-2 flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => void handleCheck(project.name)}
+                        disabled={isChecking}
+                        className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-text-faint hover:text-text disabled:opacity-50"
+                      >
+                        <RefreshCw size={11} className={isChecking ? "animate-spin" : ""} />
+                        {isChecking ? "Mengecek..." : "Cek status di Railway"}
                       </button>
                     </div>
                   )}

@@ -7,6 +7,7 @@ import { ViewFade } from "@/components/ui/ViewFade";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useDeploy } from "@/lib/deploy-context";
 import { useToast } from "@/components/ui/Toast";
+import type { DomainItem } from "@/types";
 
 /** One "Type / Name / Value" row the user copies into their DNS provider's dashboard. */
 function DnsField({ label, value }: { label: string; value: string }) {
@@ -41,6 +42,16 @@ function DnsField({ label, value }: { label: string; value: string }) {
 function useProjectNames() {
   const { history } = useDeploy();
   return React.useMemo(() => Array.from(new Set((Array.isArray(history) ? history : []).map((h) => h.name))), [history]);
+}
+
+/** Maps project name -> platform, so the modal/list knows which remote (if any) a project's domain pushes to. */
+function useProjectPlatforms() {
+  const { history } = useDeploy();
+  return React.useMemo(() => {
+    const map = new Map<string, string>();
+    for (const h of Array.isArray(history) ? history : []) if (!map.has(h.name)) map.set(h.name, h.platform);
+    return map;
+  }, [history]);
 }
 
 function AddDomainModal({ open, onClose }: { open: boolean; onClose: () => void }) {
@@ -130,22 +141,39 @@ function AddDomainModal({ open, onClose }: { open: boolean; onClose: () => void 
   );
 }
 
+/** Which remote (if any) a domain was pushed to — drives the label in the DNS instructions panel below. */
+function remoteLabelFor(d: DomainItem): string | null {
+  if (d.syncedToRailway) return "Railway";
+  if (d.syncedToCloudflare) return "Cloudflare";
+  if (d.syncedToVercel) return "Vercel";
+  return null;
+}
+
 export function DomainsView() {
-  const { domains, removeDomain, refreshDomainStatus, vercelToken, savedCloudflareToken, syncingDomains, syncAllDomains } =
-    useDeploy();
+  const {
+    domains,
+    removeDomain,
+    refreshDomainStatus,
+    vercelToken,
+    savedCloudflareToken,
+    savedRailwayToken,
+    syncingDomains,
+    syncAllDomains,
+  } = useDeploy();
+  const projectPlatforms = useProjectPlatforms();
   const [modalOpen, setModalOpen] = React.useState(false);
   const [checkingId, setCheckingId] = React.useState<string | null>(null);
   const didAutoSync = React.useRef(false);
 
   // Depup has no webhook for it, so we don't find out on our own when a
-  // domain gets removed straight from the Vercel/Cloudflare dashboard —
-  // check once per visit so the list here doesn't quietly show a domain as
-  // "Active" that no longer actually exists remotely.
+  // domain gets removed straight from the Vercel/Cloudflare/Railway
+  // dashboard — check once per visit so the list here doesn't quietly show
+  // a domain as "Active" that no longer actually exists remotely.
   React.useEffect(() => {
-    if (didAutoSync.current || (!vercelToken && !savedCloudflareToken)) return;
+    if (didAutoSync.current || (!vercelToken && !savedCloudflareToken && !savedRailwayToken)) return;
     didAutoSync.current = true;
     void syncAllDomains();
-  }, [vercelToken, savedCloudflareToken, syncAllDomains]);
+  }, [vercelToken, savedCloudflareToken, savedRailwayToken, syncAllDomains]);
 
   async function handleCheckStatus(id: string) {
     setCheckingId(id);
@@ -155,6 +183,24 @@ export function DomainsView() {
       setCheckingId(null);
     }
   }
+
+  const safeDomains = Array.isArray(domains) ? domains : [];
+
+  // Group by project (sorted) so domains for the same project sit together,
+  // with a labelled separator row between different projects.
+  const groupedDomains = React.useMemo(() => {
+    const sorted = [...safeDomains].sort((a, b) => a.project.localeCompare(b.project));
+    const groups: { project: string; items: typeof sorted }[] = [];
+    for (const item of sorted) {
+      const last = groups[groups.length - 1];
+      if (last && last.project === item.project) {
+        last.items.push(item);
+      } else {
+        groups.push({ project: item.project, items: [item] });
+      }
+    }
+    return groups;
+  }, [safeDomains]);
 
   return (
     <ViewFade>
@@ -173,7 +219,7 @@ export function DomainsView() {
           </button>
         </div>
 
-        {(vercelToken || savedCloudflareToken) && (
+        {(vercelToken || savedCloudflareToken || savedRailwayToken) && (
           <div className="flex justify-end">
             <button
               type="button"
@@ -187,7 +233,7 @@ export function DomainsView() {
           </div>
         )}
 
-        {domains.length === 0 ? (
+        {safeDomains.length === 0 ? (
           <Surface className="flex flex-col items-center justify-center gap-3 px-6 py-24 text-center">
             <Globe2 size={52} className="text-text-faint" strokeWidth={1.5} />
             <h3 className="text-[16px] font-semibold">Belum ada domain</h3>
@@ -207,73 +253,110 @@ export function DomainsView() {
                 </tr>
               </thead>
               <tbody>
-                {(Array.isArray(domains)? domains : []).map((d) => (
-                  <React.Fragment key={d.id}>
-                    <tr
-                      className="surface-solid-row border-b last:border-0 transition-colors"
-                      style={{ borderColor: d.dns ? "transparent" : "var(--surface-line)" }}
-                    >
-                      <td className="px-6 py-4 mono text-[13px]">{d.domain}</td>
-                      <td className="px-6 py-4 text-[12px] text-text-muted">{d.project}</td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={`inline-flex items-center gap-1.5 rounded-pill border px-2.5 py-0.5 text-[11px] font-medium ${d.status === "Active"
-                              ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
-                              : "border-amber-500/20 bg-amber-500/10 text-amber-400"
-                            }`}
-                        >
-                          {d.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <div className="flex items-center justify-end gap-2">
-                          {d.dns && d.status !== "Active" && (
-                            <button
-                              type="button"
-                              onClick={() => handleCheckStatus(d.id)}
-                              disabled={checkingId === d.id}
-                              aria-label={`Cek status ${d.domain}`}
-                              className="pill inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-medium hover:brightness-110 disabled:opacity-60"
-                            >
-                              <RefreshCw size={12} className={checkingId === d.id ? "animate-spin" : undefined} />
-                              Cek Status
-                            </button>
-                          )}
-                          <button
-                            type="button"
-                            onClick={() => removeDomain(d.id)}
-                            aria-label={`Hapus ${d.domain}`}
-                            className="pill inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-medium text-red-400 hover:brightness-110"
-                          >
-                            <Trash2 size={12} /> Hapus
-                          </button>
-                        </div>
+                {groupedDomains.map((group, groupIndex) => (
+                  <React.Fragment key={group.project}>
+                    <tr>
+                      <td
+                        colSpan={4}
+                        className={`px-6 py-2 text-[11px] font-semibold uppercase tracking-wide text-text-faint bg-[var(--row-hover)] ${
+                          groupIndex > 0 ? "border-t" : ""
+                        }`}
+                        style={{ borderColor: "var(--surface-line)" }}
+                      >
+                        {group.project}
+                        {projectPlatforms.get(group.project) && (
+                          <span className="ml-2 normal-case font-normal text-text-faint/80">
+                            ({projectPlatforms.get(group.project)})
+                          </span>
+                        )}
                       </td>
                     </tr>
-                    {d.dns && (
-                      <tr className="border-b last:border-0" style={{ borderColor: "var(--surface-line)" }}>
-                        <td colSpan={4} className="px-6 pb-4">
-                          <div className="space-y-2 rounded-2xl border border-[var(--surface-line)] p-3.5">
-                            <p className="text-[11.5px] text-text-muted">
-                              {d.status === "Active"
-                                ? "Sudah aktif. Ini record yang dipakai kalau kamu perlu cek ulang di DNS provider:"
-                                : `Domain sudah ditambahkan ke ${d.syncedToCloudflare ? "Cloudflare" : "Vercel"} — tinggal pasang record ini di DNS provider (Cloudflare, Niagahoster, Domainesia, dll):`}
-                            </p>
-                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                              <DnsField label="Type" value={d.dns.type} />
-                              <DnsField label="Name" value={d.dns.name} />
-                              <DnsField label="Value" value={d.dns.value} />
-                            </div>
-                            {d.status !== "Active" && (
-                              <p className="text-[11px] text-text-faint">
-                                Propagasi DNS bisa makan waktu beberapa menit sampai jam. Setelah record di atas
-                                terpasang di DNS provider kamu, klik &quot;Cek Status&quot; untuk verifikasi.
-                              </p>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    )}
+                    {group.items.map((d) => {
+                      const remoteLabel = remoteLabelFor(d);
+                      return (
+                        <React.Fragment key={d.id}>
+                          <tr
+                            className="surface-solid-row border-b last:border-0 transition-colors"
+                            style={{ borderColor: d.dns ? "transparent" : "var(--surface-line)" }}
+                          >
+                            <td className="px-6 py-4 mono text-[13px]">{d.domain}</td>
+                            <td className="px-6 py-4 text-[12px] text-text-muted">{d.project}</td>
+                            <td className="px-6 py-4">
+                              <span
+                                className={`inline-flex items-center gap-1.5 rounded-pill border px-2.5 py-0.5 text-[11px] font-medium ${d.status === "Active"
+                                    ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
+                                    : "border-amber-500/20 bg-amber-500/10 text-amber-400"
+                                  }`}
+                              >
+                                {d.status}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <div className="flex items-center justify-end gap-2">
+                                {d.dns && d.status !== "Active" && (
+                                  <button
+                                    type="button"
+                                    onClick={() => handleCheckStatus(d.id)}
+                                    disabled={checkingId === d.id}
+                                    aria-label={`Cek status ${d.domain}`}
+                                    className="pill inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-medium hover:brightness-110 disabled:opacity-60"
+                                  >
+                                    <RefreshCw size={12} className={checkingId === d.id ? "animate-spin" : undefined} />
+                                    Cek Status
+                                  </button>
+                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => removeDomain(d.id)}
+                                  aria-label={`Hapus ${d.domain}`}
+                                  className="pill inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-medium text-red-400 hover:brightness-110"
+                                >
+                                  <Trash2 size={12} /> Hapus
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                          {(d.dns || d.verificationDns) && (
+                            <tr className="border-b last:border-0" style={{ borderColor: "var(--surface-line)" }}>
+                              <td colSpan={4} className="px-6 pb-4">
+                                <div className="space-y-2 rounded-2xl border border-[var(--surface-line)] p-3.5">
+                                  <p className="text-[11.5px] text-text-muted">
+                                    {d.status === "Active"
+                                      ? "Sudah aktif. Ini record yang dipakai kalau kamu perlu cek ulang di DNS provider:"
+                                      : `Domain sudah ditambahkan ke ${remoteLabel ?? "platform"} — tinggal pasang record ini di DNS provider (Cloudflare, Niagahoster, Domainesia, dll):`}
+                                  </p>
+                                  {d.dns && (
+                                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                                      <DnsField label="Type" value={d.dns.type} />
+                                      <DnsField label="Name" value={d.dns.name} />
+                                      <DnsField label="Value" value={d.dns.value} />
+                                    </div>
+                                  )}
+                                  {d.verificationDns && (
+                                    <>
+                                      <p className="text-[11px] text-text-faint pt-1">
+                                        Railway juga butuh record TXT ini untuk verifikasi kepemilikan domain:
+                                      </p>
+                                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+                                        <DnsField label="Type" value={d.verificationDns.type} />
+                                        <DnsField label="Name" value={d.verificationDns.name} />
+                                        <DnsField label="Value" value={d.verificationDns.value} />
+                                      </div>
+                                    </>
+                                  )}
+                                  {d.status !== "Active" && (
+                                    <p className="text-[11px] text-text-faint">
+                                      Propagasi DNS bisa makan waktu beberapa menit sampai jam. Setelah record di atas
+                                      terpasang di DNS provider kamu, klik &quot;Cek Status&quot; untuk verifikasi.
+                                    </p>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
                   </React.Fragment>
                 ))}
               </tbody>

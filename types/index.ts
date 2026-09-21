@@ -52,8 +52,12 @@ export interface DomainItem {
   syncedToVercel?: boolean;
   /** true once this was successfully pushed to a real Cloudflare Pages project. */
   syncedToCloudflare?: boolean;
-  /** Key-value DNS record to add at the domain's DNS provider — present once synced to Vercel/Cloudflare. */
+  /** true once this was successfully pushed to a real Railway service as a custom domain. */
+  syncedToRailway?: boolean;
+  /** Key-value DNS record to add at the domain's DNS provider — present once synced to Vercel/Cloudflare/Railway. */
   dns?: DnsRecordInstruction;
+  /** Extra TXT verification record Railway requires alongside the CNAME above. */
+  verificationDns?: DnsRecordInstruction;
   /** Shared id linking this domain to its auto-added www/non-www counterpart, so both are removed together. */
   pairId?: string;
 }
@@ -70,6 +74,8 @@ export interface EnvItem {
   syncedToVercel?: boolean;
   /** True once this secret has been pushed to the matching project on Cloudflare Pages. */
   syncedToCloudflare?: boolean;
+  /** True once this secret has been pushed to the matching service on Railway. */
+  syncedToRailway?: boolean;
 }
 
 export interface SettingsTokens {
@@ -452,6 +458,24 @@ export interface UpsertRailwayEnvRequest {
   project: string;
   key: string;
   value: string;
+  railwayToken: string;
+}
+
+/** A single custom domain attached to a Railway service — result of GET/POST /api/railway/domains. */
+export interface RailwayDomainResult {
+  id: string;
+  domain: string;
+  verified: boolean;
+  /** The CNAME record pointing this domain at the Railway service. */
+  dns?: DnsRecordInstruction;
+  /** The TXT record Railway requires to verify domain ownership — required alongside the CNAME. */
+  verificationDns?: DnsRecordInstruction;
+}
+
+/** Body of POST /api/railway/domains */
+export interface AddRailwayDomainRequest {
+  project: string;
+  domain: string;
   railwayToken: string;
 }
 

@@ -306,6 +306,167 @@ async function getServiceDomain(
   }
 }
 
+/* ---------------------------------------------------------------------- */
+/*  Custom domains                                                         */
+/* ---------------------------------------------------------------------- */
+
+interface RailwayDnsRecordRaw {
+  hostlabel: string;
+  requiredValue: string;
+  currentValue?: string | null;
+  status?: string | null;
+  recordType?: string | null;
+  purpose?: string | null;
+}
+
+interface RailwayCustomDomainRaw {
+  id: string;
+  domain: string;
+  status: {
+    verified?: boolean | null;
+    verificationToken?: string | null;
+    dnsRecords: RailwayDnsRecordRaw[];
+  } | null;
+}
+
+/** Shape returned to the client for one Railway custom domain — mirrors VercelDomainInfo/CloudflareDomainResult. */
+export interface RailwayDomainInfo {
+  id: string;
+  domain: string;
+  verified: boolean;
+  /** The CNAME record pointing this domain at the Railway service. */
+  dns: { type: "CNAME"; name: string; value: string } | null;
+  /** The TXT record Railway requires to verify domain ownership — required alongside the CNAME. */
+  verificationDns: { type: "TXT"; name: string; value: string } | null;
+}
+
+function hostlabelToName(hostlabel: string, domain: string): string {
+  if (!hostlabel || hostlabel === domain) return "@";
+  const suffix = `.${domain}`;
+  return hostlabel.endsWith(suffix) ? hostlabel.slice(0, -suffix.length) : hostlabel;
+}
+
+function toDomainInfo(raw: RailwayCustomDomainRaw): RailwayDomainInfo {
+  const records = raw.status?.dnsRecords ?? [];
+  const cname = records.find((r) => (r.recordType ?? "CNAME").toUpperCase() !== "TXT");
+  const txt = records.find((r) => (r.recordType ?? "").toUpperCase() === "TXT");
+  const verificationToken = raw.status?.verificationToken ?? null;
+
+  return {
+    id: raw.id,
+    domain: raw.domain,
+    verified: Boolean(raw.status?.verified),
+    dns: cname
+      ? { type: "CNAME", name: hostlabelToName(cname.hostlabel, raw.domain), value: cname.requiredValue }
+      : null,
+    // Prefer the TXT record straight from dnsRecords (has the correct
+    // hostlabel) — fall back to reconstructing it from verificationToken
+    // for older API responses that don't include it in the records list.
+    verificationDns: txt
+      ? { type: "TXT", name: hostlabelToName(txt.hostlabel, raw.domain), value: txt.requiredValue }
+      : verificationToken
+        ? { type: "TXT", name: hostlabelToName(`_railway.${raw.domain}`, raw.domain), value: verificationToken }
+        : null,
+  };
+}
+
+/** Lists every custom domain attached to a Railway project's main service. */
+export async function listRailwayCustomDomains(
+  projectName: string,
+  railwayToken: string
+): Promise<RailwayDomainInfo[]> {
+  const status = await requireProjectStatus(projectName, railwayToken);
+  const data = await railwayGraphQL<{
+    domains: { customDomains: RailwayCustomDomainRaw[] };
+  }>(
+    `query domains($projectId: String!, $environmentId: String!, $serviceId: String!) {
+      domains(projectId: $projectId, environmentId: $environmentId, serviceId: $serviceId) {
+        customDomains {
+          id
+          domain
+          status {
+            verified
+            verificationToken
+            dnsRecords { hostlabel requiredValue currentValue status recordType }
+          }
+        }
+      }
+    }`,
+    { projectId: status.projectId, environmentId: status.environmentId, serviceId: status.serviceId },
+    railwayToken
+  );
+  return (data.domains.customDomains ?? []).map(toDomainInfo);
+}
+
+/** Attaches a custom domain to a Railway project's main service, returning the DNS records to configure. */
+export async function addRailwayCustomDomain(
+  projectName: string,
+  domain: string,
+  railwayToken: string
+): Promise<RailwayDomainInfo> {
+  const status = await requireProjectStatus(projectName, railwayToken);
+  const data = await railwayGraphQL<{ customDomainCreate: RailwayCustomDomainRaw }>(
+    `mutation customDomainCreate($input: CustomDomainCreateInput!) {
+      customDomainCreate(input: $input) {
+        id
+        domain
+        status {
+          verified
+          verificationToken
+          dnsRecords { hostlabel requiredValue currentValue status recordType }
+        }
+      }
+    }`,
+    {
+      input: {
+        projectId: status.projectId,
+        environmentId: status.environmentId,
+        serviceId: status.serviceId,
+        domain,
+      },
+    },
+    railwayToken
+  );
+  return toDomainInfo(data.customDomainCreate);
+}
+
+/** Removes a custom domain from a Railway project, looked up by its domain name. */
+export async function removeRailwayCustomDomain(
+  projectName: string,
+  domain: string,
+  railwayToken: string
+): Promise<void> {
+  const existing = await listRailwayCustomDomains(projectName, railwayToken);
+  const match = existing.find((d) => d.domain.toLowerCase() === domain.toLowerCase());
+  if (!match) return; // already gone — nothing to do
+
+  await railwayGraphQL(
+    `mutation customDomainDelete($id: String!) {
+      customDomainDelete(id: $id)
+    }`,
+    { id: match.id },
+    railwayToken
+  );
+}
+
+/* ---------------------------------------------------------------------- */
+/*  Project deletion                                                       */
+/* ---------------------------------------------------------------------- */
+
+/** Permanently deletes a Railway project (and every service/deployment inside it) — used by "Hapus di kedua sisi". */
+export async function deleteRailwayProject(projectName: string, railwayToken: string): Promise<void> {
+  const project = await findProjectByName(projectName, railwayToken);
+  if (!project) return; // already gone — nothing to do
+
+  await railwayGraphQL(
+    `mutation projectDelete($id: String!) {
+      projectDelete(id: $id)
+    }`,
+    { id: project.id },
+    railwayToken
+  );
+}
+
 async function getLatestDeployment(
   projectId: string,
   serviceId: string,

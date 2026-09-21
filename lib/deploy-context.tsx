@@ -25,6 +25,9 @@ import type {
   Platform,
   ProjectStatusResult,
   RailwayDeployStatusResult,
+  RailwayDomainResult,
+  RailwayEnvSummary,
+  RailwayProjectStatusResult,
   RailwayUserInfo,
   CreateRailwayDeployResult,
   RedeployResult,
@@ -227,6 +230,7 @@ interface DeployContextValue {
     options: {
       alsoDeleteFromVercel?: boolean;
       alsoDeleteFromCloudflare?: boolean;
+      alsoDeleteFromRailway?: boolean;
     },
   ) => Promise<void>;
 
@@ -251,7 +255,7 @@ interface DeployContextValue {
     value: string,
     environment: "Production" | "Preview",
     project: string,
-    options?: { pushToVercel?: boolean; pushToCloudflare?: boolean },
+    options?: { pushToVercel?: boolean; pushToCloudflare?: boolean; pushToRailway?: boolean },
   ) => Promise<void>;
   removeEnvVar: (id: string) => Promise<void>;
   toggleEnvVisible: (id: string) => void;
@@ -1206,6 +1210,24 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           return "error";
         }
       }
+      if (targetItem?.platform === "railway") {
+        if (!savedRailwayToken) return "skipped";
+        try {
+          const status = await callApi<RailwayProjectStatusResult>(
+            `/api/railway/status?project=${encodeURIComponent(name)}`,
+            { headers: { "x-railway-token": savedRailwayToken.token } },
+          );
+          if (!status.exists) {
+            setHistory((prev) =>
+              (Array.isArray(prev) ? prev : []).filter((h) => h.name !== name),
+            );
+            return "deleted";
+          }
+          return "exists";
+        } catch {
+          return "error";
+        }
+      }
       if (!vercelToken) return "skipped";
       try {
         const status = await callApi<ProjectStatusResult>(
@@ -1223,7 +1245,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         return "error";
       }
     },
-    [history, savedCloudflareToken, vercelToken, setHistory],
+    [history, savedCloudflareToken, savedRailwayToken, vercelToken, setHistory],
   );
 
   const syncAllProjects = React.useCallback(async () => {
@@ -1234,7 +1256,8 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           .filter(
             (h) =>
               (h.platform === "vercel" && vercelToken) ||
-              (h.platform === "cloudflare" && savedCloudflareToken),
+              (h.platform === "cloudflare" && savedCloudflareToken) ||
+              (h.platform === "railway" && savedRailwayToken),
           )
           .map((h) => h.name),
       ),
@@ -1257,6 +1280,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     syncProjectStatus,
     vercelToken,
     savedCloudflareToken,
+    savedRailwayToken,
     showToast,
   ]);
 
@@ -1266,14 +1290,16 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       options: {
         alsoDeleteFromVercel?: boolean;
         alsoDeleteFromCloudflare?: boolean;
+        alsoDeleteFromRailway?: boolean;
       },
     ) => {
       const safeHistory = Array.isArray(history) ? history : [];
       const targetItem = safeHistory.find((h) => h.name === name);
       const isVercelProject = targetItem?.platform === "vercel";
       const isCloudflareProject = targetItem?.platform === "cloudflare";
+      const isRailwayProject = targetItem?.platform === "railway";
       const alsoDelete = Boolean(
-        options.alsoDeleteFromVercel || options.alsoDeleteFromCloudflare,
+        options.alsoDeleteFromVercel || options.alsoDeleteFromCloudflare || options.alsoDeleteFromRailway,
       );
 
       if (options.alsoDeleteFromVercel && isVercelProject) {
@@ -1336,18 +1362,46 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         setDeletingProject(null);
       }
 
+      if (options.alsoDeleteFromRailway && isRailwayProject) {
+        if (!savedRailwayToken) {
+          showToast(
+            "Konek-kan Railway Token di Settings dulu untuk hapus project di Railway.",
+          );
+          return;
+        }
+        setDeletingProject(name);
+        try {
+          await callApi(
+            `/api/railway/project?project=${encodeURIComponent(name)}`,
+            {
+              method: "DELETE",
+              headers: { "x-railway-token": savedRailwayToken.token },
+            },
+          );
+        } catch (err) {
+          setDeletingProject(null);
+          showToast(
+            err instanceof Error
+              ? `Gagal menghapus "${name}" di Railway: ${err.message}`
+              : `Gagal menghapus "${name}" di Railway.`,
+          );
+          return;
+        }
+        setDeletingProject(null);
+      }
+
       setHistory((prev) =>
         (Array.isArray(prev) ? prev : []).filter((h) => h.name !== name),
       );
       showToast(
         alsoDelete
           ? `Project "${name}" dihapus dari Depup & ${
-              isVercelProject ? "Vercel" : "Cloudflare"
+              isVercelProject ? "Vercel" : isCloudflareProject ? "Cloudflare" : "Railway"
             }.`
           : `Project "${name}" dihapus dari Depup (tetap ada di platform aslinya).`,
       );
     },
-    [history, setHistory, showToast, vercelToken, savedCloudflareToken],
+    [history, setHistory, showToast, vercelToken, savedCloudflareToken, savedRailwayToken],
   );
 
   const fetchImportableVercelProjects = React.useCallback(async () => {
@@ -1468,6 +1522,33 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           return "error";
         }
       }
+      if (targetItem?.platform === "railway") {
+        if (!savedRailwayToken) return "skipped";
+        try {
+          const remote = await callApi<RailwayEnvSummary[]>(
+            `/api/railway/env?project=${encodeURIComponent(project)}`,
+            { headers: { "x-railway-token": savedRailwayToken.token } },
+          );
+          let removedCount = 0;
+          setEnvVars((prev) => {
+            const safePrev = Array.isArray(prev) ? prev : [];
+            return safePrev.filter((v) => {
+              if (v.project !== project || !v.syncedToRailway) return true;
+              const stillExists = remote.some((r) => r.key === v.key);
+              if (!stillExists) removedCount += 1;
+              return stillExists;
+            });
+          });
+          if (removedCount > 0) {
+            showToast(
+              `${removedCount} secret untuk "${project}" sudah dihapus di Railway — dihapus juga di sini.`,
+            );
+          }
+          return "synced";
+        } catch {
+          return "error";
+        }
+      }
       if (!vercelToken) return "skipped";
       try {
         const remote = await callApi<VercelEnvSummary[]>(
@@ -1498,7 +1579,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         return "error";
       }
     },
-    [history, savedCloudflareToken, vercelToken, setEnvVars, showToast],
+    [history, savedCloudflareToken, savedRailwayToken, vercelToken, setEnvVars, showToast],
   );
 
   const syncAllEnvVars = React.useCallback(async () => {
@@ -1509,7 +1590,8 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           .filter(
             (v) =>
               (v.syncedToVercel && vercelToken) ||
-              (v.syncedToCloudflare && savedCloudflareToken),
+              (v.syncedToCloudflare && savedCloudflareToken) ||
+              (v.syncedToRailway && savedRailwayToken),
           )
           .map((v) => v.project),
       ),
@@ -1520,7 +1602,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       await syncEnvVarsForProject(project);
     }
     setSyncingEnvVars(false);
-  }, [envVars, syncEnvVarsForProject, vercelToken, savedCloudflareToken]);
+  }, [envVars, syncEnvVarsForProject, vercelToken, savedCloudflareToken, savedRailwayToken]);
 
   const triggerAutoRedeploy = React.useCallback(
     async (projectName: string, platform: Platform) => {
@@ -1537,6 +1619,32 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
               project: projectName,
               cloudflareToken: savedCloudflareToken.token,
               accountId: savedCloudflareToken.accountId,
+            }),
+          });
+          showToast(
+            `Redeploy "${projectName}" berhasil — perubahan secret sudah live.`,
+          );
+        } catch (err) {
+          showToast(
+            err instanceof Error
+              ? `Redeploy otomatis "${projectName}" gagal: ${err.message}`
+              : `Redeploy otomatis "${projectName}" gagal.`,
+          );
+        }
+        return;
+      }
+      if (platform === "railway") {
+        if (!savedRailwayToken) return;
+        showToast(
+          `Redeploy otomatis "${projectName}" dimulai karena secret berubah...`,
+        );
+        try {
+          await callApi<RedeployResult>("/api/railway/redeploy", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              project: projectName,
+              railwayToken: savedRailwayToken.token,
             }),
           });
           showToast(
@@ -1572,7 +1680,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         );
       }
     },
-    [vercelToken, savedCloudflareToken, showToast],
+    [vercelToken, savedCloudflareToken, savedRailwayToken, showToast],
   );
 
   const addDomain = React.useCallback(
@@ -1602,8 +1710,10 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         Boolean(vercelToken) && targetItem?.platform === "vercel";
       const canSyncCloudflare =
         Boolean(savedCloudflareToken) && targetItem?.platform === "cloudflare";
+      const canSyncRailway =
+        Boolean(savedRailwayToken) && targetItem?.platform === "railway";
 
-      if (!canSyncVercel && !canSyncCloudflare) {
+      if (!canSyncVercel && !canSyncCloudflare && !canSyncRailway) {
         setDomains((prev) => {
           const safePrev = Array.isArray(prev) ? prev : [];
           return [
@@ -1614,6 +1724,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
               status: "Pending" as const,
               syncedToVercel: false,
               syncedToCloudflare: false,
+              syncedToRailway: false,
               pairId,
             },
             ...safePrev,
@@ -1622,11 +1733,16 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         if (!isPairCall) {
           showToast(
             targetItem?.platform === "vercel" ||
-              targetItem?.platform === "cloudflare"
+              targetItem?.platform === "cloudflare" ||
+              targetItem?.platform === "railway"
               ? `Domain disimpan lokal — konek-kan ${
-                  targetItem.platform === "vercel" ? "Vercel" : "Cloudflare"
+                  targetItem.platform === "vercel"
+                    ? "Vercel"
+                    : targetItem.platform === "cloudflare"
+                      ? "Cloudflare"
+                      : "Railway"
                 } Token di Settings untuk push otomatis.`
-              : "Domain disimpan lokal (project ini bukan platform Vercel/Cloudflare).",
+              : "Domain disimpan lokal (project ini bukan platform Vercel/Cloudflare/Railway).",
           );
         }
       } else if (canSyncCloudflare && savedCloudflareToken) {
@@ -1679,6 +1795,59 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
             err instanceof Error
               ? err.message
               : "Gagal menambahkan domain ke Cloudflare.",
+          );
+          return;
+        }
+      } else if (canSyncRailway && savedRailwayToken) {
+        try {
+          const result = await callApi<RailwayDomainResult>(
+            "/api/railway/domains",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                project,
+                domain: trimmedDomain,
+                railwayToken: savedRailwayToken.token,
+              }),
+            },
+          );
+          setDomains((prev) => {
+            const safePrev = Array.isArray(prev) ? prev : [];
+            return [
+              {
+                id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                domain: result.domain,
+                project,
+                status: result.verified ? "Active" : "Pending",
+                syncedToRailway: true,
+                dns: result.dns,
+                verificationDns: result.verificationDns,
+                pairId,
+              },
+              ...safePrev,
+            ];
+          });
+          if (!isPairCall) {
+            showToast(
+              result.verified
+                ? "Domain berhasil ditambahkan & terverifikasi di Railway."
+                : "Domain ditambahkan di Railway — arahkan DNS (CNAME + TXT) sesuai instruksi untuk verifikasi.",
+            );
+          }
+        } catch (err) {
+          if (isPairCall) {
+            showToast(
+              `Domain utama tersimpan, tapi gagal menambahkan pasangan "${trimmedDomain}" otomatis: ${
+                err instanceof Error ? err.message : "unknown error"
+              }`,
+            );
+            return;
+          }
+          showToast(
+            err instanceof Error
+              ? err.message
+              : "Gagal menambahkan domain ke Railway.",
           );
           return;
         }
@@ -1748,6 +1917,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       showToast,
       vercelToken,
       savedCloudflareToken,
+      savedRailwayToken,
     ],
   );
 
@@ -1804,6 +1974,25 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
             );
             continue;
           }
+        } else if (target.syncedToRailway && savedRailwayToken) {
+          try {
+            await callApi(
+              `/api/railway/domains/${encodeURIComponent(
+                target.domain,
+              )}?project=${encodeURIComponent(target.project)}`,
+              {
+                method: "DELETE",
+                headers: { "x-railway-token": savedRailwayToken.token },
+              },
+            );
+          } catch (err) {
+            showToast(
+              err instanceof Error
+                ? `Gagal menghapus "${target.domain}" di Railway: ${err.message}`
+                : `Gagal menghapus "${target.domain}" di Railway.`,
+            );
+            continue;
+          }
         }
         removedIds.push(target.id);
       }
@@ -1822,7 +2011,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         );
       }
     },
-    [domains, setDomains, showToast, vercelToken, savedCloudflareToken],
+    [domains, setDomains, showToast, vercelToken, savedCloudflareToken, savedRailwayToken],
   );
 
   const syncDomainsForProject = React.useCallback(
@@ -1860,6 +2049,33 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           return "error";
         }
       }
+      if (targetItem?.platform === "railway") {
+        if (!savedRailwayToken) return "skipped";
+        try {
+          const remote = await callApi<RailwayDomainResult[]>(
+            `/api/railway/domains?project=${encodeURIComponent(project)}`,
+            { headers: { "x-railway-token": savedRailwayToken.token } },
+          );
+          let removedCount = 0;
+          setDomains((prev) => {
+            const safePrev = Array.isArray(prev) ? prev : [];
+            return safePrev.filter((d) => {
+              if (d.project !== project || !d.syncedToRailway) return true;
+              const stillExists = remote.some((r) => r.domain === d.domain);
+              if (!stillExists) removedCount += 1;
+              return stillExists;
+            });
+          });
+          if (removedCount > 0) {
+            showToast(
+              `${removedCount} domain untuk "${project}" sudah dihapus di Railway — dihapus juga di sini.`,
+            );
+          }
+          return "synced";
+        } catch {
+          return "error";
+        }
+      }
       if (!vercelToken) return "skipped";
       try {
         const remote = await callApi<{ name: string; verified: boolean }[]>(
@@ -1886,7 +2102,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         return "error";
       }
     },
-    [history, savedCloudflareToken, vercelToken, setDomains, showToast],
+    [history, savedCloudflareToken, savedRailwayToken, vercelToken, setDomains, showToast],
   );
 
   const syncAllDomains = React.useCallback(async () => {
@@ -1897,7 +2113,8 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           .filter(
             (d) =>
               (d.syncedToVercel && vercelToken) ||
-              (d.syncedToCloudflare && savedCloudflareToken),
+              (d.syncedToCloudflare && savedCloudflareToken) ||
+              (d.syncedToRailway && savedRailwayToken),
           )
           .map((d) => d.project),
       ),
@@ -1908,7 +2125,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       await syncDomainsForProject(project);
     }
     setSyncingDomains(false);
-  }, [domains, syncDomainsForProject, vercelToken, savedCloudflareToken]);
+  }, [domains, syncDomainsForProject, vercelToken, savedCloudflareToken, savedRailwayToken]);
 
   const refreshDomainStatus = React.useCallback(
     async (id: string) => {
@@ -1944,6 +2161,49 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
                     status: match.verified
                       ? ("Active" as const)
                       : ("Pending" as const),
+                  }
+                : d,
+            ),
+          );
+          showToast(
+            match.verified
+              ? `${item.domain} sudah aktif — DNS terverifikasi.`
+              : `${item.domain} masih menunggu DNS provider (belum terverifikasi).`,
+          );
+        } catch (err) {
+          showToast(
+            err instanceof Error ? err.message : "Gagal cek status domain.",
+          );
+        }
+        return;
+      }
+
+      if (item.syncedToRailway && savedRailwayToken) {
+        try {
+          const list = await callApi<RailwayDomainResult[]>(
+            `/api/railway/domains?project=${encodeURIComponent(item.project)}`,
+            { headers: { "x-railway-token": savedRailwayToken.token } },
+          );
+          const match = list.find((d) => d.domain === item.domain);
+          if (!match) {
+            setDomains((prev) =>
+              (Array.isArray(prev) ? prev : []).filter((d) => d.id !== id),
+            );
+            showToast(
+              `${item.domain} sudah tidak ada di Railway — dihapus juga di sini.`,
+            );
+            return;
+          }
+          setDomains((prev) =>
+            (Array.isArray(prev) ? prev : []).map((d) =>
+              d.id === id
+                ? {
+                    ...d,
+                    status: match.verified
+                      ? ("Active" as const)
+                      : ("Pending" as const),
+                    dns: match.dns ?? d.dns,
+                    verificationDns: match.verificationDns ?? d.verificationDns,
                   }
                 : d,
             ),
@@ -2000,7 +2260,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         );
       }
     },
-    [domains, setDomains, showToast, vercelToken, savedCloudflareToken],
+    [domains, setDomains, showToast, vercelToken, savedCloudflareToken, savedRailwayToken],
   );
 
   const addEnvVar = React.useCallback(
@@ -2009,7 +2269,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       value: string,
       environment: "Production" | "Preview",
       project: string,
-      options?: { pushToVercel?: boolean; pushToCloudflare?: boolean },
+      options?: { pushToVercel?: boolean; pushToCloudflare?: boolean; pushToRailway?: boolean },
     ) => {
       const trimmedKey = key.trim();
       const trimmedProject = project.trim();
@@ -2041,6 +2301,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       }
       let syncedToVercel = false;
       let syncedToCloudflare = false;
+      let syncedToRailway = false;
       if (options?.pushToVercel) {
         if (!vercelToken) {
           showToast(
@@ -2100,6 +2361,33 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           );
           return;
         }
+      } else if (options?.pushToRailway) {
+        if (!savedRailwayToken) {
+          showToast(
+            "Konek-kan Railway Token di Settings dulu untuk push env ke Railway.",
+          );
+          return;
+        }
+        try {
+          await callApi("/api/railway/env", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              project: trimmedProject,
+              key: trimmedKey,
+              value,
+              railwayToken: savedRailwayToken.token,
+            }),
+          });
+          syncedToRailway = true;
+        } catch (err) {
+          showToast(
+            err instanceof Error
+              ? err.message
+              : "Gagal push env var ke Railway.",
+          );
+          return;
+        }
       }
       setEnvVars((prev) => {
         const safePrev = Array.isArray(prev) ? prev : [];
@@ -2113,6 +2401,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
             project: trimmedProject,
             syncedToVercel,
             syncedToCloudflare,
+            syncedToRailway,
           },
           ...safePrev,
         ];
@@ -2122,12 +2411,16 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           ? `Secret disimpan untuk "${trimmedProject}" & di-push ke Vercel.`
           : syncedToCloudflare
             ? `Secret disimpan untuk "${trimmedProject}" & di-push ke Cloudflare.`
-            : `Secret disimpan untuk project "${trimmedProject}".`,
+            : syncedToRailway
+              ? `Secret disimpan untuk "${trimmedProject}" & di-push ke Railway.`
+              : `Secret disimpan untuk project "${trimmedProject}".`,
       );
       if (syncedToVercel) {
         void triggerAutoRedeploy(trimmedProject, "vercel");
       } else if (syncedToCloudflare) {
         void triggerAutoRedeploy(trimmedProject, "cloudflare");
+      } else if (syncedToRailway) {
+        void triggerAutoRedeploy(trimmedProject, "railway");
       }
     },
     [
@@ -2136,6 +2429,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       showToast,
       vercelToken,
       savedCloudflareToken,
+      savedRailwayToken,
       triggerAutoRedeploy,
     ],
   );
@@ -2181,6 +2475,25 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           );
           return;
         }
+      } else if (item?.syncedToRailway && savedRailwayToken) {
+        try {
+          await callApi(
+            `/api/railway/env?project=${encodeURIComponent(
+              item.project,
+            )}&key=${encodeURIComponent(item.key)}`,
+            {
+              method: "DELETE",
+              headers: { "x-railway-token": savedRailwayToken.token },
+            },
+          );
+        } catch (err) {
+          showToast(
+            err instanceof Error
+              ? err.message
+              : "Gagal menghapus env var di Railway.",
+          );
+          return;
+        }
       }
       setEnvVars((prev) =>
         (Array.isArray(prev) ? prev : []).filter((v) => v.id !== id),
@@ -2189,6 +2502,8 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         void triggerAutoRedeploy(item.project, "vercel");
       } else if (item?.syncedToCloudflare && savedCloudflareToken) {
         void triggerAutoRedeploy(item.project, "cloudflare");
+      } else if (item?.syncedToRailway && savedRailwayToken) {
+        void triggerAutoRedeploy(item.project, "railway");
       }
     },
     [
@@ -2197,6 +2512,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       showToast,
       vercelToken,
       savedCloudflareToken,
+      savedRailwayToken,
       triggerAutoRedeploy,
     ],
   );

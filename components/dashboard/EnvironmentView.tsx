@@ -33,7 +33,7 @@ function AddSecretModal({
   onClose: () => void;
   defaultProject?: string;
 }) {
-  const { addEnvVar, vercelToken, savedCloudflareToken } = useDeploy();
+  const { addEnvVar, vercelToken, savedCloudflareToken, savedRailwayToken } = useDeploy();
   const { showToast } = useToast();
   const projectNames = useProjectNames();
   const projectPlatforms = useProjectPlatforms();
@@ -52,7 +52,12 @@ function AddSecretModal({
   const projectPlatform = projectPlatforms.get(project);
   const isVercelProject = projectPlatform === "vercel";
   const isCloudflareProject = projectPlatform === "cloudflare";
-  const canPush = (isVercelProject && Boolean(vercelToken)) || (isCloudflareProject && Boolean(savedCloudflareToken));
+  const isRailwayProject = projectPlatform === "railway";
+  const canPush =
+    (isVercelProject && Boolean(vercelToken)) ||
+    (isCloudflareProject && Boolean(savedCloudflareToken)) ||
+    (isRailwayProject && Boolean(savedRailwayToken));
+  const remotePlatformLabel = isVercelProject ? "Vercel" : isCloudflareProject ? "Cloudflare" : "Railway";
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -67,6 +72,7 @@ function AddSecretModal({
     addEnvVar(key.trim(), value.trim(), environment, project, {
       pushToVercel: canPush && pushToRemote && isVercelProject,
       pushToCloudflare: canPush && pushToRemote && isCloudflareProject,
+      pushToRailway: canPush && pushToRemote && isRailwayProject,
     });
     setKey("");
     setValue("");
@@ -152,7 +158,7 @@ function AddSecretModal({
             </Select>
           </div>
 
-          {isVercelProject || isCloudflareProject ? (
+          {isVercelProject || isCloudflareProject || isRailwayProject ? (
             canPush ? (
               <div className="space-y-2 rounded-2xl border border-[var(--surface-line)] p-3.5">
                 <label className="flex items-center gap-2.5 text-[12.5px] font-medium">
@@ -162,17 +168,17 @@ function AddSecretModal({
                     onChange={(e) => setPushToRemote(e.target.checked)}
                     className="h-4 w-4 accent-violet-500"
                   />
-                  Push otomatis ke project &quot;{project}&quot; di {isVercelProject ? "Vercel" : "Cloudflare"}
+                  Push otomatis ke project &quot;{project}&quot; di {remotePlatformLabel}
                 </label>
               </div>
             ) : (
               <p className="text-[11.5px] text-text-faint">
-                Konek-kan {isVercelProject ? "Vercel" : "Cloudflare"} Token di Settings untuk push otomatis.
+                Konek-kan {remotePlatformLabel} Token di Settings untuk push otomatis.
               </p>
             )
           ) : (
             <p className="text-[11.5px] text-text-faint">
-              Project ini bukan platform Vercel/Cloudflare — secret akan disimpan lokal saja untuk project ini.
+              Project ini bukan platform Vercel/Cloudflare/Railway — secret akan disimpan lokal saja untuk project ini.
             </p>
           )}
 
@@ -186,21 +192,29 @@ function AddSecretModal({
 }
 
 export function EnvironmentView() {
-  const { envVars, removeEnvVar, toggleEnvVisible, vercelToken, savedCloudflareToken, syncingEnvVars, syncAllEnvVars } =
-    useDeploy();
+  const {
+    envVars,
+    removeEnvVar,
+    toggleEnvVisible,
+    vercelToken,
+    savedCloudflareToken,
+    savedRailwayToken,
+    syncingEnvVars,
+    syncAllEnvVars,
+  } = useDeploy();
   const projectNames = useProjectNames();
   const [modalOpen, setModalOpen] = React.useState(false);
   const [activeProject, setActiveProject] = React.useState<string>("all");
   const didAutoSync = React.useRef(false);
 
   // Depup has no webhook for it, so we don't find out on our own when a
-  // secret gets deleted straight from the Vercel/Cloudflare dashboard —
+  // secret gets deleted straight from the Vercel/Cloudflare/Railway dashboard —
   // check once per visit so the list here doesn't quietly go stale.
   React.useEffect(() => {
-    if (didAutoSync.current || (!vercelToken && !savedCloudflareToken)) return;
+    if (didAutoSync.current || (!vercelToken && !savedCloudflareToken && !savedRailwayToken)) return;
     didAutoSync.current = true;
     void syncAllEnvVars();
-  }, [vercelToken, savedCloudflareToken, syncAllEnvVars]);
+  }, [vercelToken, savedCloudflareToken, savedRailwayToken, syncAllEnvVars]);
 
   // Keep the filter valid if the underlying project list changes.
   React.useEffect(() => {
@@ -216,6 +230,23 @@ export function EnvironmentView() {
     },
     [envVars, activeProject]
   );
+
+  // Stable-sort by project so rows from the same project sit together, then
+  // bucket the (now-contiguous) runs into groups — each gets a small header
+  // row as a visual separator when browsing "Semua project".
+  const groupedEnvVars = React.useMemo(() => {
+    const sorted = [...filteredEnvVars].sort((a, b) => a.project.localeCompare(b.project));
+    const groups: { project: string; items: typeof sorted }[] = [];
+    for (const item of sorted) {
+      const last = groups[groups.length - 1];
+      if (last && last.project === item.project) {
+        last.items.push(item);
+      } else {
+        groups.push({ project: item.project, items: [item] });
+      }
+    }
+    return groups;
+  }, [filteredEnvVars]);
 
   return (
     <ViewFade>
@@ -236,7 +267,7 @@ export function EnvironmentView() {
           </button>
         </div>
 
-        {(vercelToken || savedCloudflareToken) && (
+        {(vercelToken || savedCloudflareToken || savedRailwayToken) && (
           <div className="flex justify-end">
             <button
               type="button"
@@ -300,52 +331,74 @@ export function EnvironmentView() {
                 </tr>
               </thead>
               <tbody>
-                {filteredEnvVars.map((item) => (
-                  <tr
-                    key={item.id}
-                    className="surface-solid-row border-b last:border-0 transition-colors"
-                    style={{ borderColor: "var(--surface-line)" }}
-                  >
-                    <td className="px-6 py-4 mono text-[13px] font-medium">{item.key}</td>
-                    <td className="px-6 py-4 mono text-[12px] text-text-muted">
-                      {item.visible ? item.value : "•".repeat(Math.min(item.value.length, 14) || 8)}
-                    </td>
-                    <td className="px-6 py-4 text-[12px] text-text-muted">{item.project}</td>
-                    <td className="px-6 py-4">
-                      <span className="pill px-2.5 py-0.5 text-[11px] font-medium">{item.environment}</span>
-                      {item.syncedToVercel && (
-                        <span className="ml-1.5 inline-flex items-center gap-1 rounded-pill border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10.5px] font-medium text-emerald-400">
-                          ✓ Vercel
-                        </span>
-                      )}
-                      {item.syncedToCloudflare && (
-                        <span className="ml-1.5 inline-flex items-center gap-1 rounded-pill border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10.5px] font-medium text-emerald-400">
-                          ✓ Cloudflare
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center justify-end gap-2">
-                        <button
-                          type="button"
-                          onClick={() => toggleEnvVisible(item.id)}
-                          aria-label={item.visible ? "Sembunyikan value" : "Tampilkan value"}
-                          className="pill inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-medium hover:brightness-110"
+                {groupedEnvVars.map((group, groupIndex) => (
+                  <React.Fragment key={group.project}>
+                    {activeProject === "all" && (
+                      <tr>
+                        <td
+                          colSpan={5}
+                          className={`px-6 py-2 text-[11px] font-semibold uppercase tracking-wide text-text-faint bg-[var(--row-hover)] ${
+                            groupIndex > 0 ? "border-t" : ""
+                          }`}
+                          style={{ borderColor: "var(--surface-line)" }}
                         >
-                          {item.visible ? <EyeOff size={12} /> : <Eye size={12} />}
-                          {item.visible ? "Hide" : "Show"}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => removeEnvVar(item.id)}
-                          aria-label={`Hapus ${item.key}`}
-                          className="pill inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-medium text-red-400 hover:brightness-110"
-                        >
-                          <Trash2 size={12} />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
+                          {group.project}
+                        </td>
+                      </tr>
+                    )}
+                    {group.items.map((item) => (
+                      <tr
+                        key={item.id}
+                        className="surface-solid-row border-b last:border-0 transition-colors"
+                        style={{ borderColor: "var(--surface-line)" }}
+                      >
+                        <td className="px-6 py-4 mono text-[13px] font-medium">{item.key}</td>
+                        <td className="px-6 py-4 mono text-[12px] text-text-muted">
+                          {item.visible ? item.value : "•".repeat(Math.min(item.value.length, 14) || 8)}
+                        </td>
+                        <td className="px-6 py-4 text-[12px] text-text-muted">{item.project}</td>
+                        <td className="px-6 py-4">
+                          <span className="pill px-2.5 py-0.5 text-[11px] font-medium">{item.environment}</span>
+                          {item.syncedToVercel && (
+                            <span className="ml-1.5 inline-flex items-center gap-1 rounded-pill border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10.5px] font-medium text-emerald-400">
+                              ✓ Vercel
+                            </span>
+                          )}
+                          {item.syncedToCloudflare && (
+                            <span className="ml-1.5 inline-flex items-center gap-1 rounded-pill border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10.5px] font-medium text-emerald-400">
+                              ✓ Cloudflare
+                            </span>
+                          )}
+                          {item.syncedToRailway && (
+                            <span className="ml-1.5 inline-flex items-center gap-1 rounded-pill border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10.5px] font-medium text-emerald-400">
+                              ✓ Railway
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => toggleEnvVisible(item.id)}
+                              aria-label={item.visible ? "Sembunyikan value" : "Tampilkan value"}
+                              className="pill inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-medium hover:brightness-110"
+                            >
+                              {item.visible ? <EyeOff size={12} /> : <Eye size={12} />}
+                              {item.visible ? "Hide" : "Show"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => removeEnvVar(item.id)}
+                              aria-label={`Hapus ${item.key}`}
+                              className="pill inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-medium text-red-400 hover:brightness-110"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </React.Fragment>
                 ))}
               </tbody>
             </table>
