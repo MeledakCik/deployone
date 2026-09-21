@@ -28,6 +28,7 @@ import type {
   RailwayDomainResult,
   RailwayEnvSummary,
   RailwayProjectStatusResult,
+  RailwayProjectSummary,
   RailwayUserInfo,
   CreateRailwayDeployResult,
   RedeployResult,
@@ -240,6 +241,8 @@ interface DeployContextValue {
   importVercelProject: (project: VercelProjectSummary) => void;
   fetchImportableCloudflareProjects: () => Promise<CloudflareProjectSummary[]>;
   importCloudflareProject: (project: CloudflareProjectSummary) => void;
+  fetchImportableRailwayProjects: () => Promise<RailwayProjectSummary[]>;
+  importRailwayProject: (project: RailwayProjectSummary) => void;
 
   domains: DomainItem[];
   addDomain: (domain: string, project: string) => Promise<void>;
@@ -1512,6 +1515,43 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     [history, addHistory, showToast],
   );
 
+  const fetchImportableRailwayProjects = React.useCallback(async () => {
+    if (!savedRailwayToken) {
+      throw new Error(
+        "Konek-kan Railway Token di Settings dulu untuk konek ke Railway.",
+      );
+    }
+    const remote = await callApi<RailwayProjectSummary[]>("/api/railway/project", {
+      headers: { "x-railway-token": savedRailwayToken.token },
+    });
+    const safeHistory = Array.isArray(history) ? history : [];
+    const existingNames = new Set(safeHistory.map((h) => h.name));
+    return remote.filter((p) => !existingNames.has(p.name));
+  }, [savedRailwayToken, history]);
+
+  const importRailwayProject = React.useCallback(
+    (project: RailwayProjectSummary) => {
+      const safeHistory = Array.isArray(history) ? history : [];
+      if (safeHistory.some((h) => h.name === project.name)) {
+        showToast(`Project "${project.name}" sudah ada di Depup.`);
+        return;
+      }
+      const readyState = project.latestDeploymentReadyState;
+      const status: HistoryItem["status"] =
+        readyState === "ERROR" || readyState === "CANCELED"
+          ? "failed"
+          : "ready";
+      addHistory(
+        project.name,
+        "railway",
+        project.domain ?? `${project.name}.up.railway.app`,
+        status,
+      );
+      showToast(`Project "${project.name}" berhasil diimport dari Railway.`);
+    },
+    [history, addHistory, showToast],
+  );
+
   const syncEnvVarsForProject = React.useCallback(
     async (project: string): Promise<"synced" | "skipped" | "error"> => {
       const safeHistory = Array.isArray(history) ? history : [];
@@ -2610,6 +2650,8 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     importVercelProject,
     fetchImportableCloudflareProjects,
     importCloudflareProject,
+    fetchImportableRailwayProjects,
+    importRailwayProject,
 
     domains: Array.isArray(domains) ? domains : [],
     addDomain,

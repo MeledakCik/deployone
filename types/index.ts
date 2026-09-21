@@ -361,6 +361,14 @@ export interface CloudflareProjectSummary {
   latestDeploymentReadyState: VercelReadyState | null;
 }
 
+/** One project already existing on Railway — result of GET /api/railway/project, used by "Import Project". */
+export interface RailwayProjectSummary {
+  id: string;
+  name: string;
+  domain: string | null;
+  latestDeploymentReadyState: VercelReadyState | null;
+}
+
 /** A single custom domain attached to a Cloudflare Pages project. */
 export interface CloudflareDomainResult {
   name: string;

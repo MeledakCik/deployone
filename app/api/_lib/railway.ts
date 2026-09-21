@@ -140,15 +140,48 @@ interface RailwayProjectSummary {
   name: string;
 }
 
+/**
+ * Fetches every project visible to this token, following Railway's cursor
+ * pagination to the end instead of trusting whatever the default page size
+ * happens to be.
+ *
+ * Without this, an account with more than one page of projects (easy to
+ * reach after repeated test deploys, since every failed/renamed deploy used
+ * to spin up a new Railway project before the reuse-by-repo fix) would
+ * silently truncate the list. A project sitting past the first page would
+ * come back as "not found" from `findProjectByName`/`findProjectByRepo` even
+ * though it's alive and running on Railway — which is exactly what made
+ * `getRailwayProject` report `exists: false` and made `syncProjectStatus`
+ * (in deploy-context.tsx) wrongly treat a perfectly live project as deleted
+ * and drop it from the local history list.
+ */
 async function listProjects(railwayToken: string): Promise<RailwayProjectSummary[]> {
-  const data = await railwayGraphQL<{
-    projects: { edges: { node: RailwayProjectSummary }[] };
-  }>(
-    `query { projects { edges { node { id name } } } }`,
-    {},
-    railwayToken
-  );
-  return data.projects.edges.map((e) => e.node);
+  const all: RailwayProjectSummary[] = [];
+  let after: string | null = null;
+
+  for (;;) {
+    const data: {
+      projects: {
+        edges: { node: RailwayProjectSummary }[];
+        pageInfo: { hasNextPage: boolean; endCursor: string | null };
+      };
+    } = await railwayGraphQL(
+      `query projects($after: String) {
+        projects(first: 100, after: $after) {
+          edges { node { id name } }
+          pageInfo { hasNextPage endCursor }
+        }
+      }`,
+      { after },
+      railwayToken
+    );
+    all.push(...data.projects.edges.map((e) => e.node));
+    if (!data.projects.pageInfo.hasNextPage) break;
+    after = data.projects.pageInfo.endCursor;
+    if (!after) break; // safety net against a malformed response looping forever
+  }
+
+  return all;
 }
 
 interface RailwayEnvironmentNode {
@@ -485,6 +518,48 @@ async function getLatestDeployment(
     railwayToken
   );
   return data.deployments.edges[0]?.node ?? null;
+}
+
+export interface RailwayProjectImportSummary {
+  id: string;
+  name: string;
+  domain: string | null;
+  latestDeploymentReadyState: VercelReadyState | null;
+}
+
+/** Lists every project on the caller's real Railway account, with enough detail to import — used by "Import Project", mirrors `listVercelProjects`/`listCloudflarePagesProjects`. */
+export async function listRailwayProjectSummaries(
+  railwayToken: string
+): Promise<RailwayProjectImportSummary[]> {
+  const projects = await listProjects(railwayToken);
+  return Promise.all(
+    projects.map(async (p): Promise<RailwayProjectImportSummary> => {
+      try {
+        const detail = await getProjectDetail(p.id, railwayToken);
+        const service = detail.services.edges[0]?.node ?? null;
+        const environmentId =
+          detail.baseEnvironmentId ?? detail.environments.edges[0]?.node.id ?? null;
+        if (!service || !environmentId) {
+          return { id: p.id, name: p.name, domain: null, latestDeploymentReadyState: null };
+        }
+        const [latest, domain] = await Promise.all([
+          getLatestDeployment(detail.id, service.id, environmentId, railwayToken),
+          getServiceDomain(service.id, environmentId, railwayToken),
+        ]);
+        return {
+          id: p.id,
+          name: p.name,
+          domain,
+          latestDeploymentReadyState: latest ? toReadyState(latest.status) : null,
+        };
+      } catch {
+        // A project that fails to fetch full detail (e.g. mid-deletion, or a
+        // stray empty project with no service yet) shouldn't block importing
+        // the rest of the list — just show it with what little we know.
+        return { id: p.id, name: p.name, domain: null, latestDeploymentReadyState: null };
+      }
+    })
+  );
 }
 
 /**

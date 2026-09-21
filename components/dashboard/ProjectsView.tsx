@@ -17,7 +17,7 @@ import {
 import { Surface } from "@/components/ui/Surface";
 import { ViewFade } from "@/components/ui/ViewFade";
 import { useDeploy } from "@/lib/deploy-context";
-import type { CloudflareProjectSummary, HistoryItem, Platform, VercelProjectSummary } from "@/types";
+import type { CloudflareProjectSummary, HistoryItem, Platform, RailwayProjectSummary, VercelProjectSummary } from "@/types";
 
 function groupByProject(history: HistoryItem[]) {
   const safeHistory = Array.isArray(history) ? history : [];
@@ -127,7 +127,7 @@ function DeleteProjectModal({
   );
 }
 
-/** Lists real Vercel or Cloudflare projects not yet tracked in Depup, so the user can pull one in without re-deploying it. */
+/** Lists real Vercel, Cloudflare, or Railway projects not yet tracked in Depup, so the user can pull one in without re-deploying it. */
 function ImportProjectModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const {
     vercelToken,
@@ -136,41 +136,58 @@ function ImportProjectModal({ open, onClose }: { open: boolean; onClose: () => v
     savedCloudflareToken,
     fetchImportableCloudflareProjects,
     importCloudflareProject,
+    savedRailwayToken,
+    fetchImportableRailwayProjects,
+    importRailwayProject,
   } = useDeploy();
-  const [tab, setTab] = React.useState<"vercel" | "cloudflare">("vercel");
+  const [tab, setTab] = React.useState<"railway" | "vercel" | "cloudflare">("railway");
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
-  const [candidates, setCandidates] = React.useState<(VercelProjectSummary | CloudflareProjectSummary)[]>([]);
+  const [candidates, setCandidates] = React.useState<
+    (VercelProjectSummary | CloudflareProjectSummary | RailwayProjectSummary)[]
+  >([]);
   const [importingName, setImportingName] = React.useState<string | null>(null);
 
-  const connected = tab === "vercel" ? Boolean(vercelToken) : Boolean(savedCloudflareToken);
+  const platformLabel = tab === "vercel" ? "Vercel" : tab === "cloudflare" ? "Cloudflare" : "Railway";
+  const connected =
+    tab === "vercel" ? Boolean(vercelToken) : tab === "cloudflare" ? Boolean(savedCloudflareToken) : Boolean(savedRailwayToken);
 
   React.useEffect(() => {
     if (!open) return;
     if (!connected) {
-      setError(
-        tab === "vercel"
-          ? "Isi Vercel Token di Settings dulu untuk konek ke Vercel."
-          : "Konek-kan Cloudflare Token di Settings dulu untuk konek ke Cloudflare."
-      );
+      setError(`Konek-kan ${platformLabel} Token di Settings dulu untuk konek ke ${platformLabel}.`);
       setCandidates([]);
       return;
     }
     setLoading(true);
     setError(null);
-    const fetcher = tab === "vercel" ? fetchImportableVercelProjects : fetchImportableCloudflareProjects;
+    const fetcher =
+      tab === "vercel"
+        ? fetchImportableVercelProjects
+        : tab === "cloudflare"
+          ? fetchImportableCloudflareProjects
+          : fetchImportableRailwayProjects;
     fetcher()
       .then((result) => setCandidates(result))
       .catch((err) => setError(err instanceof Error ? err.message : "Gagal konek."))
       .finally(() => setLoading(false));
-  }, [open, tab, connected, fetchImportableVercelProjects, fetchImportableCloudflareProjects]);
+  }, [
+    open,
+    tab,
+    connected,
+    platformLabel,
+    fetchImportableVercelProjects,
+    fetchImportableCloudflareProjects,
+    fetchImportableRailwayProjects,
+  ]);
 
   if (!open) return null;
 
-  function handleImport(project: VercelProjectSummary | CloudflareProjectSummary) {
+  function handleImport(project: VercelProjectSummary | CloudflareProjectSummary | RailwayProjectSummary) {
     setImportingName(project.name);
     if (tab === "vercel") importVercelProject(project as VercelProjectSummary);
-    else importCloudflareProject(project as CloudflareProjectSummary);
+    else if (tab === "cloudflare") importCloudflareProject(project as CloudflareProjectSummary);
+    else importRailwayProject(project as RailwayProjectSummary);
     setCandidates((prev) => prev.filter((p) => p.name !== project.name));
     setImportingName(null);
   }
@@ -191,7 +208,7 @@ function ImportProjectModal({ open, onClose }: { open: boolean; onClose: () => v
         </div>
 
         <div className="mb-4 flex gap-2">
-          {(["vercel", "cloudflare"] as const).map((t) => (
+          {(["railway", "vercel", "cloudflare"] as const).map((t) => (
             <button
               key={t}
               type="button"
@@ -215,7 +232,7 @@ function ImportProjectModal({ open, onClose }: { open: boolean; onClose: () => v
         ) : loading ? (
           <div className="flex flex-col items-center gap-3 py-10 text-center">
             <RefreshCw size={24} className="animate-spin text-text-faint" />
-            <p className="text-[13px] text-text-muted">Menghubungkan ke {tab === "vercel" ? "Vercel" : "Cloudflare"}...</p>
+            <p className="text-[13px] text-text-muted">Menghubungkan ke {platformLabel}...</p>
           </div>
         ) : error ? (
           <div className="flex flex-col items-center gap-3 py-10 text-center">
@@ -226,8 +243,7 @@ function ImportProjectModal({ open, onClose }: { open: boolean; onClose: () => v
           <div className="flex flex-col items-center gap-3 py-10 text-center">
             <FolderOpen size={36} className="text-text-faint" />
             <p className="text-[13px] text-text-muted max-w-xs">
-              Semua project di {tab === "vercel" ? "Vercel" : "Cloudflare"} kamu sudah ada di Depup — tidak ada yang
-              bisa diimport.
+              Semua project di {platformLabel} kamu sudah ada di Depup — tidak ada yang bisa diimport.
             </p>
           </div>
         ) : (
