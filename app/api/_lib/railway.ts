@@ -141,22 +141,14 @@ interface RailwayProjectSummary {
 }
 
 /**
- * Fetches every project visible to this token, following Railway's cursor
- * pagination to the end instead of trusting whatever the default page size
- * happens to be.
- *
- * Without this, an account with more than one page of projects (easy to
- * reach after repeated test deploys, since every failed/renamed deploy used
- * to spin up a new Railway project before the reuse-by-repo fix) would
- * silently truncate the list. A project sitting past the first page would
- * come back as "not found" from `findProjectByName`/`findProjectByRepo` even
- * though it's alive and running on Railway — which is exactly what made
- * `getRailwayProject` report `exists: false` and made `syncProjectStatus`
- * (in deploy-context.tsx) wrongly treat a perfectly live project as deleted
- * and drop it from the local history list.
+ * Fetches a single page range of a `projects` connection, optionally scoped
+ * to one workspace, following cursor pagination to the end.
  */
-async function listProjects(railwayToken: string): Promise<RailwayProjectSummary[]> {
-  const all: RailwayProjectSummary[] = [];
+async function listProjectsPage(
+  railwayToken: string,
+  workspaceId: string | null
+): Promise<RailwayProjectSummary[]> {
+  const page: RailwayProjectSummary[] = [];
   let after: string | null = null;
 
   for (;;) {
@@ -166,19 +158,68 @@ async function listProjects(railwayToken: string): Promise<RailwayProjectSummary
         pageInfo: { hasNextPage: boolean; endCursor: string | null };
       };
     } = await railwayGraphQL(
-      `query projects($after: String) {
-        projects(first: 100, after: $after) {
-          edges { node { id name } }
-          pageInfo { hasNextPage endCursor }
-        }
-      }`,
-      { after },
+      workspaceId
+        ? `query projects($after: String, $workspaceId: String!) {
+            projects(first: 100, after: $after, workspaceId: $workspaceId) {
+              edges { node { id name } }
+              pageInfo { hasNextPage endCursor }
+            }
+          }`
+        : `query projects($after: String) {
+            projects(first: 100, after: $after) {
+              edges { node { id name } }
+              pageInfo { hasNextPage endCursor }
+            }
+          }`,
+      workspaceId ? { after, workspaceId } : { after },
       railwayToken
     );
-    all.push(...data.projects.edges.map((e) => e.node));
+    page.push(...data.projects.edges.map((e) => e.node));
     if (!data.projects.pageInfo.hasNextPage) break;
     after = data.projects.pageInfo.endCursor;
     if (!after) break; // safety net against a malformed response looping forever
+  }
+
+  return page;
+}
+
+/**
+ * Fetches every project visible to this token — across the caller's
+ * personal account *and* every workspace they belong to — following
+ * Railway's cursor pagination to the end on each.
+ *
+ * This used to call the bare `projects` query with no scope, which Railway's
+ * own docs confirm only returns projects in the caller's *personal*
+ * account (docs.railway.com/integrations/api/manage-projects — listing a
+ * workspace's projects requires `projects(workspaceId: ...)`). Every project
+ * Depup creates goes through `createRailwayDeployment` -> `getDefaultWorkspaceId()`,
+ * which just grabs `me.workspaces[0]` — if that first workspace is a team
+ * workspace rather than "Personal Workspace", the project lands there, and
+ * the unscoped query would *never* see it, no matter how much pagination or
+ * retry-before-delete logic wraps around it (this is what made a project
+ * come back "not found" twice in a row, 6 minutes after a confirmed
+ * successful deploy — not a propagation-lag issue, a permanently wrong
+ * scope). Fixed by listing the personal account and every workspace
+ * separately and merging the results (de-duped by id, since the same
+ * project should never show up twice, but nothing should break if it did).
+ */
+async function listProjects(railwayToken: string): Promise<RailwayProjectSummary[]> {
+  const workspacesData = await railwayGraphQL<{
+    me: { workspaces: { id: string }[] };
+  }>(`query { me { workspaces { id } } }`, {}, railwayToken);
+  const workspaceIds = workspacesData.me.workspaces.map((w) => w.id);
+
+  const pages = await Promise.all([
+    listProjectsPage(railwayToken, null),
+    ...workspaceIds.map((id) => listProjectsPage(railwayToken, id)),
+  ]);
+
+  const seen = new Set<string>();
+  const all: RailwayProjectSummary[] = [];
+  for (const project of pages.flat()) {
+    if (seen.has(project.id)) continue;
+    seen.add(project.id);
+    all.push(project);
   }
 
   return all;
