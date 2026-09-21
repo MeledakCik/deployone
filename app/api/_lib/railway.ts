@@ -632,6 +632,18 @@ interface CreateDeploymentParams {
 export interface RailwayDeploymentResult {
   deploymentId: string;
   projectId: string;
+  /**
+   * The project's *actual* name on Railway — not necessarily the same as
+   * the `projectName` the caller passed in. When `findProjectByRepo` reuses
+   * an existing project (same repo, different name than this deploy's
+   * `projectName`), the deploy lands on that existing project under *its*
+   * name. Callers must save this name to history, not the input
+   * `projectName` — saving the wrong one means every later exact-name
+   * lookup against Railway (status checks, sync, redeploy) misses, gets
+   * treated as "deleted", and silently drops the project from Depup even
+   * though it's still alive and running on Railway.
+   */
+  name: string;
   serviceId: string;
   environmentId: string;
   url: string;
@@ -759,6 +771,7 @@ export async function createRailwayDeployment(
   return {
     deploymentId,
     projectId: project.id,
+    name: project.name,
     serviceId: service.id,
     environmentId,
     url: domain ?? "",

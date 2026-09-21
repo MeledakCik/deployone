@@ -1071,21 +1071,30 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         }
         if (status.readyState === "READY") {
           if (intervalRef.current) clearInterval(intervalRef.current);
-          const domain = status.url || created.url || resolveDomain(projectName, "railway");
+          // Use the project's *actual* Railway name, not the raw form input —
+          // createRailwayDeployment can silently reuse an existing project
+          // (matched by repo) that's named differently than what was typed
+          // this time. Saving the typed name instead of the real one meant
+          // every later status/sync check did an exact-name lookup that
+          // could never match, got read as "deleted", and the project
+          // vanished from Depup's history on its own right after a
+          // successful deploy.
+          const actualName = created.name || projectName;
+          const domain = status.url || created.url || resolveDomain(actualName, "railway");
           setDeployState((prev) => ({
             ...prev,
             status: "success",
             stepIndex: 5,
             barWidth: 100,
             title: "Deploy Berhasil!",
-            subtitle: `Project ${projectName} siap di ${domain}`,
+            subtitle: `Project ${actualName} siap di ${domain}`,
             result: {
-              name: projectName,
+              name: actualName,
               domain,
               inspectorUrl: status.inspectorUrl,
             },
           }));
-          addHistory(projectName, "railway", domain, "ready");
+          addHistory(actualName, "railway", domain, "ready");
           return;
         }
         if (

@@ -419,6 +419,8 @@ export interface CreateRailwayDeployRequest {
 export interface CreateRailwayDeployResult {
   deploymentId: string;
   projectId: string;
+  /** The project's actual name on Railway — may differ from the requested projectName when an existing project (matched by repo) was reused. Use this for history, not the input name. */
+  name: string;
   serviceId: string;
   environmentId: string;
   url: string;
