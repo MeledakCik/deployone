@@ -1,6 +1,6 @@
 "use client";
 
-import { CheckCircle2, XCircle } from "lucide-react";
+import { CheckCircle2, XCircle, Trash2 } from "lucide-react";
 import { Surface } from "@/components/ui/Surface";
 import { useDeploy } from "@/lib/deploy-context";
 
@@ -34,22 +34,31 @@ export function HistoryTable() {
             )}
             {history.map((item) => {
               const isReady = item.status === "ready";
+              const isDeleted = item.status === "deleted";
               return (
                 <tr
                   key={item.id}
-                  className="surface-solid-row border-b last:border-0 transition-colors"
+                  className={`surface-solid-row border-b last:border-0 transition-colors ${isDeleted ? "opacity-60" : ""}`}
                   style={{ borderColor: "var(--surface-line)" }}
                 >
                   <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
                       <span
                         className={`grid h-8 w-8 place-items-center rounded-full border ${
-                          isReady
-                            ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-                            : "bg-red-500/10 text-red-400 border-red-500/20"
+                          isDeleted
+                            ? "bg-zinc-500/10 text-zinc-400 border-zinc-500/20"
+                            : isReady
+                              ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                              : "bg-red-500/10 text-red-400 border-red-500/20"
                         }`}
                       >
-                        {isReady ? <CheckCircle2 size={16} /> : <XCircle size={16} />}
+                        {isDeleted ? (
+                          <Trash2 size={16} />
+                        ) : isReady ? (
+                          <CheckCircle2 size={16} />
+                        ) : (
+                          <XCircle size={16} />
+                        )}
                       </span>
                       <div>
                         <div className="text-[13px] font-semibold">{item.name}</div>
@@ -64,13 +73,19 @@ export function HistoryTable() {
                   <td className="px-6 py-4">
                     <span
                       className={`inline-flex items-center gap-1.5 rounded-pill border px-2.5 py-0.5 text-[11px] font-medium ${
-                        isReady
-                          ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
-                          : "border-red-500/20 bg-red-500/10 text-red-400"
+                        isDeleted
+                          ? "border-zinc-500/20 bg-zinc-500/10 text-zinc-400"
+                          : isReady
+                            ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
+                            : "border-red-500/20 bg-red-500/10 text-red-400"
                       }`}
                     >
-                      <span className={`dot-flat h-1.5 w-1.5 rounded-full ${isReady ? "bg-emerald-400" : "bg-red-400"}`} />
-                      {isReady ? "Ready" : "Failed"}
+                      <span
+                        className={`dot-flat h-1.5 w-1.5 rounded-full ${
+                          isDeleted ? "bg-zinc-400" : isReady ? "bg-emerald-400" : "bg-red-400"
+                        }`}
+                      />
+                      {isDeleted ? "Deleted" : isReady ? "Ready" : "Failed"}
                     </span>
                   </td>
                   <td className="px-6 py-4 text-right">
@@ -79,7 +94,7 @@ export function HistoryTable() {
                       onClick={() => redeploy(item.name)}
                       className="pill px-3 py-1 text-[11px] font-medium hover:brightness-110"
                     >
-                      Redeploy
+                      {isDeleted ? "Deploy Ulang" : "Redeploy"}
                     </button>
                   </td>
                 </tr>

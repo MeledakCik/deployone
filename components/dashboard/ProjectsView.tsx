@@ -25,8 +25,14 @@ function groupByProject(history: HistoryItem[]) {
   // legitimately exist on more than one platform (e.g. deployed to Vercel
   // once, then again to Railway under the same name), and each should show
   // up as its own card rather than one hiding the other.
+  //
+  // Entries marked "deleted" are excluded here — this view is "currently
+  // live projects", not the full deploy log — but they're never removed
+  // from `history` itself, so the Dashboard's "Riwayat Deploy" table still
+  // shows them as a permanent record.
   const map = new Map<string, HistoryItem>();
   for (const item of safeHistory) {
+    if (item.status === "deleted") continue;
     const key = `${item.name}::${item.platform}`;
     if (!map.has(key)) map.set(key, item);
   }

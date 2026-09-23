@@ -1237,15 +1237,26 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         (h) => h.name === name && h.platform === platform,
       );
       if (!targetItem) return "skipped";
+      // Already marked deleted — nothing left to confirm.
+      if (targetItem.status === "deleted") return "skipped";
 
       // Give a freshly-deployed project a grace period before it's even
       // eligible to be checked — see RECENTLY_DEPLOYED_GRACE_MS above.
       if (isRecentlyDeployed(targetItem)) return "skipped";
 
       const removeThisEntry = () => {
+        // Keep the row — mark it "deleted" instead of filtering it out —
+        // so the Dashboard's "Riwayat Deploy" table stays a permanent
+        // record of everything ever deployed through Depup, proof included,
+        // even after the real project is gone. The Projects page hides
+        // "deleted" entries from its active-project cards (see
+        // groupByProject in ProjectsView.tsx), so this doesn't bring a dead
+        // project back as if it were still live.
         setHistory((prev) =>
-          (Array.isArray(prev) ? prev : []).filter(
-            (h) => !(h.name === name && h.platform === platform),
+          (Array.isArray(prev) ? prev : []).map((h) =>
+            h.name === name && h.platform === platform
+              ? { ...h, status: "deleted" as const }
+              : h,
           ),
         );
       };
@@ -1321,6 +1332,11 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     // remote independently (see syncProjectStatus).
     const pairs = new Map<string, { name: string; platform: Platform }>();
     for (const h of safeHistory) {
+      // Skip entries already marked deleted — nothing left to check, and
+      // re-checking them on every sync would just waste requests (and
+      // trigger the double-check-before-delete delay in syncProjectStatus
+      // for no reason).
+      if (h.status === "deleted") continue;
       const canCheck =
         (h.platform === "vercel" && vercelToken) ||
         (h.platform === "cloudflare" && savedCloudflareToken) ||
@@ -1338,7 +1354,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     setSyncingProjects(false);
     if (deletedCount > 0) {
       showToast(
-        `${deletedCount} project sudah dihapus di platform aslinya — dihapus juga dari daftar di sini.`,
+        `${deletedCount} project sudah dihapus di platform aslinya — ditandai "Deleted" di riwayat (riwayatnya tetap kesimpen).`,
       );
     }
   }, [
@@ -1462,11 +1478,28 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         setDeletingProject(null);
       }
 
-      setHistory((prev) =>
-        (Array.isArray(prev) ? prev : []).filter(
-          (h) => !(h.name === name && h.platform === platform),
-        ),
-      );
+      if (alsoDelete) {
+        // The real project is actually gone now — keep the row as a
+        // permanent record instead of dropping it, so the Dashboard's
+        // "Riwayat Deploy" table still shows proof of what was deployed.
+        setHistory((prev) =>
+          (Array.isArray(prev) ? prev : []).map((h) =>
+            h.name === name && h.platform === platform
+              ? { ...h, status: "deleted" as const }
+              : h,
+          ),
+        );
+      } else {
+        // "Hapus di Depup saja" — the real project is still alive on its
+        // platform, so nothing was actually deleted; this just stops
+        // Depup from tracking it. There's no deletion to keep a record of,
+        // so the entry is simply removed.
+        setHistory((prev) =>
+          (Array.isArray(prev) ? prev : []).filter(
+            (h) => !(h.name === name && h.platform === platform),
+          ),
+        );
+      }
       showToast(
         alsoDelete
           ? `Project "${name}" dihapus dari Depup & ${
@@ -1488,7 +1521,13 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       headers: { "x-vercel-token": vercelToken },
     });
     const safeHistory = Array.isArray(history) ? history : [];
-    const existingNames = new Set(safeHistory.map((h) => h.name));
+    // A name only marked "deleted" doesn't count as still tracked —
+    // the whole point of keeping a deleted entry around is a history
+    // record, not a reservation that blocks re-importing that same
+    // project once it's live again.
+    const existingNames = new Set(
+      safeHistory.filter((h) => h.status !== "deleted").map((h) => h.name),
+    );
     return remote.filter((p) => !existingNames.has(p.name));
   }, [vercelToken, history]);
 
@@ -1528,7 +1567,13 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       { headers: { "x-cloudflare-token": savedCloudflareToken.token } },
     );
     const safeHistory = Array.isArray(history) ? history : [];
-    const existingNames = new Set(safeHistory.map((h) => h.name));
+    // A name only marked "deleted" doesn't count as still tracked —
+    // the whole point of keeping a deleted entry around is a history
+    // record, not a reservation that blocks re-importing that same
+    // project once it's live again.
+    const existingNames = new Set(
+      safeHistory.filter((h) => h.status !== "deleted").map((h) => h.name),
+    );
     return remote.filter((p) => !existingNames.has(p.name));
   }, [savedCloudflareToken, history]);
 
@@ -1567,7 +1612,13 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       headers: { "x-railway-token": savedRailwayToken.token },
     });
     const safeHistory = Array.isArray(history) ? history : [];
-    const existingNames = new Set(safeHistory.map((h) => h.name));
+    // A name only marked "deleted" doesn't count as still tracked —
+    // the whole point of keeping a deleted entry around is a history
+    // record, not a reservation that blocks re-importing that same
+    // project once it's live again.
+    const existingNames = new Set(
+      safeHistory.filter((h) => h.status !== "deleted").map((h) => h.name),
+    );
     return remote.filter((p) => !existingNames.has(p.name));
   }, [savedRailwayToken, history]);
 

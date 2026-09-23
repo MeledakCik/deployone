@@ -1,6 +1,6 @@
 export type Platform = "vercel" | "cloudflare" | "railway" | "render";
 
-export type DeployStatus = "ready" | "failed" | "building";
+export type DeployStatus = "ready" | "failed" | "building" | "deleted";
 
 export interface HistoryItem {
   id: string;
