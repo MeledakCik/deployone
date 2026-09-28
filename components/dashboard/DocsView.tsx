@@ -102,6 +102,33 @@ const GUIDES: Guide[] = [
     ],
   },
   {
+    icon: TramFront,
+    title: "Render di Depup — buat apa & apa yang perlu diketahui?",
+    desc: "Baca ini dulu sebelum deploy ke Render, terutama soal runtime dan free plan.",
+    link: { label: "Buka Render Docs", href: "https://render.com/docs" },
+    steps: [
+      "Render menjalankan repo kamu sebagai Web Service always-on (bukan edge/static seperti Vercel & Cloudflare Pages) — cocok untuk server Express/Nest/Fastify, API, dan aplikasi yang butuh proses jalan terus.",
+      'Berbeda dengan Railway, Render tidak auto-detect bahasa: Depup membuat service dengan runtime Node.js (build "npm install", start "npm start"), jadi repo harus punya package.json. Kalau start command project kamu beda, isi di field "Start Command".',
+      'Waktu deploy pertama kali, Depup otomatis membuat Web Service baru di workspace Render kamu (plan Free, region Oregon) yang terhubung ke repo GitHub, lalu deploy berjalan otomatis. Deploy berikutnya dengan nama project yang sama (atau repo yang sama) dianggap redeploy ke service yang sama.',
+      'Field "Environment Variables" (format KEY=value per baris) dikirim ke service Render saat dibuat — praktis untuk isi credential database, API key, dsb dari awal.',
+      "Plan Free Render akan tidur (spin down) kalau lama tidak ada traffic, jadi request pertama setelahnya bisa lambat beberapa detik. Upgrade plan langsung dari dashboard Render kalau butuh always-on sungguhan.",
+      'Custom domain didukung: domain apex diarahkan dengan A record ke 216.24.57.1, subdomain dengan CNAME ke "*.onrender.com". Setelah record terpasang di DNS provider, klik "Cek Status" di halaman Domains.',
+    ],
+  },
+  {
+    icon: KeyRound,
+    title: "Cara dapetin Render API Key",
+    desc: "API Key ini dipakai Depup untuk membuat service & deploy dari repo GitHub di akun Render kamu.",
+    link: { label: "Buka Render API Keys", href: "https://dashboard.render.com/u/settings#api-keys" },
+    steps: [
+      "Login ke dashboard.render.com.",
+      'Klik foto profil / nama akun (kiri bawah) → "Account Settings", lalu scroll ke bagian "API Keys".',
+      'Klik "Create API Key", beri nama bebas (misal "depup"), lalu simpan.',
+      "Salin key yang muncul — sama seperti token lain, simpan di tempat aman.",
+      'Tempel ke field Render API Key di form Deploy atau halaman Settings Depup, lalu klik "Test Koneksi".',
+    ],
+  },
+  {
     icon: Github,
     title: "Cara bikin GitHub Token (PAT)",
     desc: "Token ini opsional untuk repo public, tapi wajib kalau repo yang mau di-deploy itu private.",

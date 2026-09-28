@@ -13,6 +13,7 @@ import type {
   GithubUserInfo,
   CloudflareAccountInfo,
   RailwayUserInfo,
+  RenderUserInfo,
 } from "@/types";
 
 const DEFAULT_TOKENS: SettingsTokens = {
@@ -21,6 +22,7 @@ const DEFAULT_TOKENS: SettingsTokens = {
   cloudflareAccountId: "",
   githubPat: "",
   railwayToken: "",
+  renderToken: "",
 };
 
 async function callApi<T>(url: string, init?: RequestInit): Promise<T> {
@@ -115,6 +117,7 @@ export function SettingsView() {
   const [cloudflareAccounts, setCloudflareAccounts] = React.useState<CloudflareAccountInfo[]>([]);
   const [githubCheck, setGithubCheck] = React.useState<CheckState>({ status: "idle" });
   const [railwayCheck, setRailwayCheck] = React.useState<CheckState>({ status: "idle" });
+  const [renderCheck, setRenderCheck] = React.useState<CheckState>({ status: "idle" });
   const { showToast } = useToast();
 
   React.useEffect(() => {
@@ -164,6 +167,21 @@ export function SettingsView() {
       });
     } catch (err) {
       setRailwayCheck({ status: "error", message: err instanceof Error ? err.message : "Token tidak valid." });
+    }
+  }
+
+  async function testRender() {
+    setRenderCheck({ status: "checking" });
+    try {
+      const user = await callApi<RenderUserInfo>("/api/render/whoami", {
+        headers: { "x-render-token": draft.renderToken },
+      });
+      setRenderCheck({
+        status: "ok",
+        label: `Terhubung sebagai ${user.name ?? user.email ?? user.id}`,
+      });
+    } catch (err) {
+      setRenderCheck({ status: "error", message: err instanceof Error ? err.message : "Token tidak valid." });
     }
   }
 
@@ -273,6 +291,17 @@ export function SettingsView() {
               }}
               check={railwayCheck}
               onTest={testRailway}
+            />
+            <TokenField
+              id="settingsRenderToken"
+              label="Render API Key"
+              value={draft.renderToken}
+              onChange={(v) => {
+                setDraft((prev) => ({ ...prev, renderToken: v }));
+                setRenderCheck({ status: "idle" });
+              }}
+              check={renderCheck}
+              onTest={testRender}
             />
 
             <button type="submit" className="btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-[13px]">

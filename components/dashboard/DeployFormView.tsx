@@ -197,11 +197,18 @@ function getStepsForPlatform(p: Platform): StepDef[] {
       icon: KeyRound,
     },
     {
-      id: "build",
-      title: "Build & Start Command",
-      desc: "Opsional, kosongkan untuk auto-detect.",
+      id: "startCommand",
+      title: "Start Command",
+      desc: 'Opsional. Kosongkan = "npm start". Render butuh start command untuk service Node.js.',
       optional: true,
       icon: Hammer,
+    },
+    {
+      id: "env",
+      title: "Environment Variables",
+      desc: "Opsional. Format KEY=value per baris.",
+      optional: true,
+      icon: FolderOutput,
     },
   ];
 }
@@ -540,6 +547,104 @@ function RailwayTokenField() {
         <KeyRound className="absolute right-3 sm:right-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-[var(--dc-text-faint)]" />
       </div>
       {savedRailwayToken && (
+        <button
+          type="button"
+          onClick={() => setManualOverride(false)}
+          className="mt-2 sm:mt-2.5 text-[10.5px] sm:text-[11px] text-[var(--dc-text-muted)] hover:text-[var(--dc-text)] underline underline-offset-4"
+        >
+          Pakai token tersimpan lagi
+        </button>
+      )}
+    </div>
+  );
+}
+
+function RenderTokenField() {
+  const { form, setFormField, savedRenderToken, savedRenderTokenStatus } =
+    useDeploy();
+  const [manualOverride, setManualOverride] = React.useState(false);
+  const usingSaved =
+    savedRenderTokenStatus === "ok" && !!savedRenderToken && !manualOverride;
+
+  React.useEffect(() => {
+    if (usingSaved && savedRenderToken) {
+      setFormField("platformToken", savedRenderToken.token);
+    }
+  }, [usingSaved, savedRenderToken, setFormField]);
+
+  if (savedRenderTokenStatus === "checking") {
+    return (
+      <p className="inline-flex items-center gap-2 text-[11.5px] sm:text-xs text-[var(--dc-text-muted)]">
+        <Loader2 size={13} className="animate-spin" /> Mengecek token...
+      </p>
+    );
+  }
+
+  if (usingSaved && savedRenderToken) {
+    return (
+      <div>
+        <FieldLabel htmlFor="platformToken" required>
+          Render API Key
+        </FieldLabel>
+        <div className="rounded-xl sm:rounded-[14px] border border-[var(--dc-green-line)] bg-[var(--dc-green-bg)] p-3.5 sm:p-4">
+          <div className="flex items-center gap-3">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-500/15 dark:bg-emerald-400/20 flex items-center justify-center shrink-0">
+              <ShieldCheck
+                size={14}
+                className="sm:hidden text-emerald-600 dark:text-emerald-300"
+              />
+              <ShieldCheck
+                size={16}
+                className="hidden sm:block text-emerald-600 dark:text-emerald-300"
+              />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[12px] sm:text-[13px] font-medium text-[var(--dc-green-fg)] truncate">
+                {savedRenderToken.name}
+              </div>
+              <div className="text-[10.5px] sm:text-[11px] text-[var(--dc-green-fg-muted)] mt-0.5">
+                Token dari Settings
+              </div>
+            </div>
+          </div>
+          <div className="mt-3 sm:mt-4 grid grid-cols-2 gap-2 sm:gap-2.5">
+            <button
+              type="button"
+              onClick={() => setManualOverride(false)}
+              className="h-9 rounded-full bg-emerald-500 text-white dark:bg-emerald-400 dark:text-black text-[12px] sm:text-[13px] font-medium hover:opacity-90 transition-opacity"
+            >
+              Pakai token ini
+            </button>
+            <button
+              type="button"
+              onClick={() => setManualOverride(true)}
+              className="h-9 rounded-full bg-[var(--dc-pill)] border border-[var(--dc-line)] text-[var(--dc-text-muted)] text-[12px] sm:text-[13px] font-medium hover:bg-[var(--dc-hover)] transition-colors"
+            >
+              Ganti token
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <FieldLabel htmlFor="platformToken" required help="Render API Key">
+        Render API Key
+      </FieldLabel>
+      <div className="relative">
+        <input
+          id="platformToken"
+          type="password"
+          placeholder="••••••••••••••••"
+          value={form.platformToken}
+          onChange={(e) => setFormField("platformToken", e.target.value)}
+          className={cn(inputCls, "pr-10 font-mono text-[12.5px] sm:text-[13px]")}
+        />
+        <KeyRound className="absolute right-3 sm:right-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-[var(--dc-text-faint)]" />
+      </div>
+      {savedRenderToken && (
         <button
           type="button"
           onClick={() => setManualOverride(false)}
@@ -1170,35 +1275,7 @@ export function DeployFormView() {
                         platform === "railway" && <RailwayTokenField />}
 
                       {step.id === "platformToken" &&
-                        platform === "render" && (
-                          <div>
-                            <FieldLabel htmlFor="platformToken" required>
-                              Render API Key
-                            </FieldLabel>
-                            <div className="relative">
-                              <input
-                                id="platformToken"
-                                type="password"
-                                autoFocus
-                                placeholder="••••••••••••••••"
-                                value={form.platformToken}
-                                onChange={(e) =>
-                                  setFormField("platformToken", e.target.value)
-                                }
-                                className={cn(
-                                  inputCls,
-                                  "pr-10 font-mono text-[12.5px] sm:text-[13px]",
-                                )}
-                              />
-                              <KeyRound className="absolute right-3 sm:right-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-[var(--dc-text-faint)]" />
-                            </div>
-                            <div className="mt-2 sm:mt-2.5 flex items-center justify-between">
-                              <span className="text-[10.5px] sm:text-[11px] text-[var(--dc-text-faint)]">
-                                Disimpan lokal • terenkripsi
-                              </span>
-                            </div>
-                          </div>
-                        )}
+                        platform === "render" && <RenderTokenField />}
 
                       {step.id === "accountId" && (
                         <div>
@@ -1294,6 +1371,28 @@ export function DeployFormView() {
                             <ExternalLink className="w-3 h-3 shrink-0" />
                             Token tidak pernah dikirim ke server manapun
                           </div>
+                        </div>
+                      )}
+
+                      {step.id === "startCommand" && (
+                        <div>
+                          <FieldLabel htmlFor="startCommand" optional>
+                            Start Command
+                          </FieldLabel>
+                          <input
+                            id="startCommand"
+                            type="text"
+                            autoFocus
+                            placeholder="npm start"
+                            value={form.startCommand}
+                            onChange={(e) =>
+                              setFormField("startCommand", e.target.value)
+                            }
+                            className={cn(
+                              inputCls,
+                              "font-mono text-[12.5px] sm:text-[13px]",
+                            )}
+                          />
                         </div>
                       )}
 

@@ -17,7 +17,7 @@ import {
 import { Surface } from "@/components/ui/Surface";
 import { ViewFade } from "@/components/ui/ViewFade";
 import { useDeploy } from "@/lib/deploy-context";
-import type { CloudflareProjectSummary, HistoryItem, Platform, RailwayProjectSummary, VercelProjectSummary } from "@/types";
+import type { CloudflareProjectSummary, HistoryItem, Platform, RailwayProjectSummary, RenderProjectSummary, VercelProjectSummary } from "@/types";
 
 function groupByProject(history: HistoryItem[]) {
   const safeHistory = Array.isArray(history) ? history : [];
@@ -47,12 +47,13 @@ function DeleteProjectModal({
   project: HistoryItem | null;
   onClose: () => void;
 }) {
-  const { deleteProject, deletingProject, vercelToken, savedCloudflareToken, savedRailwayToken } = useDeploy();
+  const { deleteProject, deletingProject, vercelToken, savedCloudflareToken, savedRailwayToken, savedRenderToken } = useDeploy();
   if (!project) return null;
 
   const isVercelProject = project.platform === "vercel";
   const isCloudflareProject = project.platform === "cloudflare";
   const isRailwayProject = project.platform === "railway";
+  const isRenderProject = project.platform === "render";
   const busy = deletingProject === project.name;
 
   async function handleChoice(alsoDelete: boolean) {
@@ -60,18 +61,29 @@ function DeleteProjectModal({
       alsoDeleteFromVercel: alsoDelete && isVercelProject,
       alsoDeleteFromCloudflare: alsoDelete && isCloudflareProject,
       alsoDeleteFromRailway: alsoDelete && isRailwayProject,
+      alsoDeleteFromRender: alsoDelete && isRenderProject,
     });
     onClose();
   }
 
-  const platformLabel = isVercelProject ? "Vercel" : isCloudflareProject ? "Cloudflare" : isRailwayProject ? "Railway" : null;
+  const platformLabel = isVercelProject
+    ? "Vercel"
+    : isCloudflareProject
+      ? "Cloudflare"
+      : isRailwayProject
+        ? "Railway"
+        : isRenderProject
+          ? "Render"
+          : null;
   const canDeleteRemote = isVercelProject
     ? Boolean(vercelToken)
     : isCloudflareProject
       ? Boolean(savedCloudflareToken)
       : isRailwayProject
         ? Boolean(savedRailwayToken)
-        : false;
+        : isRenderProject
+          ? Boolean(savedRenderToken)
+          : false;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 px-4">
@@ -93,7 +105,7 @@ function DeleteProjectModal({
         <p className="text-[13px] leading-relaxed text-text-muted mb-6">
           {platformLabel
             ? `Pilih mau dihapus di kedua sisi (${platformLabel} + Depup) atau di Depup saja — project di ${platformLabel} tetap jalan kalau kamu pilih Depup saja.`
-            : "Project ini bukan platform Vercel/Cloudflare/Railway, jadi hanya akan dihapus dari daftar Depup."}
+            : "Project ini bukan platform Vercel/Cloudflare/Railway/Render, jadi hanya akan dihapus dari daftar Depup."}
         </p>
         <div className="space-y-2">
           {platformLabel && (
@@ -133,7 +145,7 @@ function DeleteProjectModal({
   );
 }
 
-/** Lists real Vercel, Cloudflare, or Railway projects not yet tracked in Depup, so the user can pull one in without re-deploying it. */
+/** Lists real Vercel, Cloudflare, Railway, or Render projects not yet tracked in Depup, so the user can pull one in without re-deploying it. */
 function ImportProjectModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const {
     vercelToken,
@@ -145,18 +157,28 @@ function ImportProjectModal({ open, onClose }: { open: boolean; onClose: () => v
     savedRailwayToken,
     fetchImportableRailwayProjects,
     importRailwayProject,
+    savedRenderToken,
+    fetchImportableRenderProjects,
+    importRenderProject,
   } = useDeploy();
-  const [tab, setTab] = React.useState<"railway" | "vercel" | "cloudflare">("railway");
+  const [tab, setTab] = React.useState<"railway" | "render" | "vercel" | "cloudflare">("railway");
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [candidates, setCandidates] = React.useState<
-    (VercelProjectSummary | CloudflareProjectSummary | RailwayProjectSummary)[]
+    (VercelProjectSummary | CloudflareProjectSummary | RailwayProjectSummary | RenderProjectSummary)[]
   >([]);
   const [importingName, setImportingName] = React.useState<string | null>(null);
 
-  const platformLabel = tab === "vercel" ? "Vercel" : tab === "cloudflare" ? "Cloudflare" : "Railway";
+  const platformLabel =
+    tab === "vercel" ? "Vercel" : tab === "cloudflare" ? "Cloudflare" : tab === "render" ? "Render" : "Railway";
   const connected =
-    tab === "vercel" ? Boolean(vercelToken) : tab === "cloudflare" ? Boolean(savedCloudflareToken) : Boolean(savedRailwayToken);
+    tab === "vercel"
+      ? Boolean(vercelToken)
+      : tab === "cloudflare"
+        ? Boolean(savedCloudflareToken)
+        : tab === "render"
+          ? Boolean(savedRenderToken)
+          : Boolean(savedRailwayToken);
 
   React.useEffect(() => {
     if (!open) return;
@@ -172,7 +194,9 @@ function ImportProjectModal({ open, onClose }: { open: boolean; onClose: () => v
         ? fetchImportableVercelProjects
         : tab === "cloudflare"
           ? fetchImportableCloudflareProjects
-          : fetchImportableRailwayProjects;
+          : tab === "render"
+            ? fetchImportableRenderProjects
+            : fetchImportableRailwayProjects;
     fetcher()
       .then((result) => setCandidates(result))
       .catch((err) => setError(err instanceof Error ? err.message : "Gagal konek."))
@@ -185,14 +209,18 @@ function ImportProjectModal({ open, onClose }: { open: boolean; onClose: () => v
     fetchImportableVercelProjects,
     fetchImportableCloudflareProjects,
     fetchImportableRailwayProjects,
+    fetchImportableRenderProjects,
   ]);
 
   if (!open) return null;
 
-  function handleImport(project: VercelProjectSummary | CloudflareProjectSummary | RailwayProjectSummary) {
+  function handleImport(
+    project: VercelProjectSummary | CloudflareProjectSummary | RailwayProjectSummary | RenderProjectSummary,
+  ) {
     setImportingName(project.name);
     if (tab === "vercel") importVercelProject(project as VercelProjectSummary);
     else if (tab === "cloudflare") importCloudflareProject(project as CloudflareProjectSummary);
+    else if (tab === "render") importRenderProject(project as RenderProjectSummary);
     else importRailwayProject(project as RailwayProjectSummary);
     setCandidates((prev) => prev.filter((p) => p.name !== project.name));
     setImportingName(null);
@@ -214,7 +242,7 @@ function ImportProjectModal({ open, onClose }: { open: boolean; onClose: () => v
         </div>
 
         <div className="mb-4 flex gap-2">
-          {(["railway", "vercel", "cloudflare"] as const).map((t) => (
+          {(["railway", "render", "vercel", "cloudflare"] as const).map((t) => (
             <button
               key={t}
               type="button"
@@ -287,6 +315,7 @@ export function ProjectsView() {
     vercelToken,
     savedCloudflareToken,
     savedRailwayToken,
+    savedRenderToken,
     syncingProjects,
     syncAllProjects,
     syncProjectStatus,
@@ -307,11 +336,11 @@ export function ProjectsView() {
   }
 
   React.useEffect(() => {
-    if (didAutoSync.current || (!vercelToken && !savedCloudflareToken && !savedRailwayToken)) return;
+    if (didAutoSync.current || (!vercelToken && !savedCloudflareToken && !savedRailwayToken && !savedRenderToken)) return;
     didAutoSync.current = true;
     void syncAllProjects();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [vercelToken, savedCloudflareToken, savedRailwayToken]);
+  }, [vercelToken, savedCloudflareToken, savedRailwayToken, savedRenderToken]);
 
   async function handleCheck(name: string, platform: Platform) {
     const key = `${name}::${platform}`;
@@ -338,7 +367,7 @@ export function ProjectsView() {
             >
               <Download size={13} /> Import Project
             </button>
-            {(vercelToken || savedCloudflareToken || savedRailwayToken) ? (
+            {(vercelToken || savedCloudflareToken || savedRailwayToken || savedRenderToken) ? (
               <button
                 type="button"
                 onClick={() => void syncAllProjects()}
@@ -474,6 +503,20 @@ export function ProjectsView() {
                       >
                         <RefreshCw size={11} className={isChecking ? "animate-spin" : ""} />
                         {isChecking ? "Mengecek..." : "Cek status di Railway"}
+                      </button>
+                    </div>
+                  )}
+
+                  {project.platform === "render" && savedRenderToken && (
+                    <div className="mt-2 flex items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => void handleCheck(project.name, project.platform)}
+                        disabled={isChecking}
+                        className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-text-faint hover:text-text disabled:opacity-50"
+                      >
+                        <RefreshCw size={11} className={isChecking ? "animate-spin" : ""} />
+                        {isChecking ? "Mengecek..." : "Cek status di Render"}
                       </button>
                     </div>
                   )}

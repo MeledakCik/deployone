@@ -33,7 +33,7 @@ function AddSecretModal({
   onClose: () => void;
   defaultProject?: string;
 }) {
-  const { addEnvVar, vercelToken, savedCloudflareToken, savedRailwayToken } = useDeploy();
+  const { addEnvVar, vercelToken, savedCloudflareToken, savedRailwayToken, savedRenderToken } = useDeploy();
   const { showToast } = useToast();
   const projectNames = useProjectNames();
   const projectPlatforms = useProjectPlatforms();
@@ -53,11 +53,19 @@ function AddSecretModal({
   const isVercelProject = projectPlatform === "vercel";
   const isCloudflareProject = projectPlatform === "cloudflare";
   const isRailwayProject = projectPlatform === "railway";
+  const isRenderProject = projectPlatform === "render";
   const canPush =
     (isVercelProject && Boolean(vercelToken)) ||
     (isCloudflareProject && Boolean(savedCloudflareToken)) ||
-    (isRailwayProject && Boolean(savedRailwayToken));
-  const remotePlatformLabel = isVercelProject ? "Vercel" : isCloudflareProject ? "Cloudflare" : "Railway";
+    (isRailwayProject && Boolean(savedRailwayToken)) ||
+    (isRenderProject && Boolean(savedRenderToken));
+  const remotePlatformLabel = isVercelProject
+    ? "Vercel"
+    : isCloudflareProject
+      ? "Cloudflare"
+      : isRenderProject
+        ? "Render"
+        : "Railway";
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -73,6 +81,7 @@ function AddSecretModal({
       pushToVercel: canPush && pushToRemote && isVercelProject,
       pushToCloudflare: canPush && pushToRemote && isCloudflareProject,
       pushToRailway: canPush && pushToRemote && isRailwayProject,
+      pushToRender: canPush && pushToRemote && isRenderProject,
     });
     setKey("");
     setValue("");
@@ -158,7 +167,7 @@ function AddSecretModal({
             </Select>
           </div>
 
-          {isVercelProject || isCloudflareProject || isRailwayProject ? (
+          {isVercelProject || isCloudflareProject || isRailwayProject || isRenderProject ? (
             canPush ? (
               <div className="space-y-2 rounded-2xl border border-[var(--surface-line)] p-3.5">
                 <label className="flex items-center gap-2.5 text-[12.5px] font-medium">
@@ -178,7 +187,7 @@ function AddSecretModal({
             )
           ) : (
             <p className="text-[11.5px] text-text-faint">
-              Project ini bukan platform Vercel/Cloudflare/Railway — secret akan disimpan lokal saja untuk project ini.
+              Project ini bukan platform Vercel/Cloudflare/Railway/Render — secret akan disimpan lokal saja untuk project ini.
             </p>
           )}
 
@@ -199,6 +208,7 @@ export function EnvironmentView() {
     vercelToken,
     savedCloudflareToken,
     savedRailwayToken,
+    savedRenderToken,
     syncingEnvVars,
     syncAllEnvVars,
   } = useDeploy();
@@ -208,13 +218,13 @@ export function EnvironmentView() {
   const didAutoSync = React.useRef(false);
 
   // Depup has no webhook for it, so we don't find out on our own when a
-  // secret gets deleted straight from the Vercel/Cloudflare/Railway dashboard —
+  // secret gets deleted straight from the Vercel/Cloudflare/Railway/Render dashboard —
   // check once per visit so the list here doesn't quietly go stale.
   React.useEffect(() => {
-    if (didAutoSync.current || (!vercelToken && !savedCloudflareToken && !savedRailwayToken)) return;
+    if (didAutoSync.current || (!vercelToken && !savedCloudflareToken && !savedRailwayToken && !savedRenderToken)) return;
     didAutoSync.current = true;
     void syncAllEnvVars();
-  }, [vercelToken, savedCloudflareToken, savedRailwayToken, syncAllEnvVars]);
+  }, [vercelToken, savedCloudflareToken, savedRailwayToken, savedRenderToken, syncAllEnvVars]);
 
   // Keep the filter valid if the underlying project list changes.
   React.useEffect(() => {
@@ -267,7 +277,7 @@ export function EnvironmentView() {
           </button>
         </div>
 
-        {(vercelToken || savedCloudflareToken || savedRailwayToken) && (
+        {(vercelToken || savedCloudflareToken || savedRailwayToken || savedRenderToken) && (
           <div className="flex justify-end">
             <button
               type="button"
@@ -372,6 +382,11 @@ export function EnvironmentView() {
                           {item.syncedToRailway && (
                             <span className="ml-1.5 inline-flex items-center gap-1 rounded-pill border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10.5px] font-medium text-emerald-400">
                               ✓ Railway
+                            </span>
+                          )}
+                          {item.syncedToRender && (
+                            <span className="ml-1.5 inline-flex items-center gap-1 rounded-pill border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10.5px] font-medium text-emerald-400">
+                              ✓ Render
                             </span>
                           )}
                         </td>
