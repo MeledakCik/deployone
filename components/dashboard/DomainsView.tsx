@@ -144,7 +144,6 @@ function AddDomainModal({ open, onClose }: { open: boolean; onClose: () => void 
 /** Which remote (if any) a domain was pushed to — drives the label in the DNS instructions panel below. */
 function remoteLabelFor(d: DomainItem): string | null {
   if (d.syncedToRailway) return "Railway";
-  if (d.syncedToRender) return "Render";
   if (d.syncedToCloudflare) return "Cloudflare";
   if (d.syncedToVercel) return "Vercel";
   return null;
@@ -158,7 +157,6 @@ export function DomainsView() {
     vercelToken,
     savedCloudflareToken,
     savedRailwayToken,
-    savedRenderToken,
     syncingDomains,
     syncAllDomains,
   } = useDeploy();
@@ -168,14 +166,14 @@ export function DomainsView() {
   const didAutoSync = React.useRef(false);
 
   // Depup has no webhook for it, so we don't find out on our own when a
-  // domain gets removed straight from the Vercel/Cloudflare/Railway/Render
+  // domain gets removed straight from the Vercel/Cloudflare/Railway
   // dashboard — check once per visit so the list here doesn't quietly show
   // a domain as "Active" that no longer actually exists remotely.
   React.useEffect(() => {
-    if (didAutoSync.current || (!vercelToken && !savedCloudflareToken && !savedRailwayToken && !savedRenderToken)) return;
+    if (didAutoSync.current || (!vercelToken && !savedCloudflareToken && !savedRailwayToken)) return;
     didAutoSync.current = true;
     void syncAllDomains();
-  }, [vercelToken, savedCloudflareToken, savedRailwayToken, savedRenderToken, syncAllDomains]);
+  }, [vercelToken, savedCloudflareToken, savedRailwayToken, syncAllDomains]);
 
   async function handleCheckStatus(id: string) {
     setCheckingId(id);
@@ -221,7 +219,7 @@ export function DomainsView() {
           </button>
         </div>
 
-        {(vercelToken || savedCloudflareToken || savedRailwayToken || savedRenderToken) && (
+        {(vercelToken || savedCloudflareToken || savedRailwayToken) && (
           <div className="flex justify-end">
             <button
               type="button"

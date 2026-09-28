@@ -14,7 +14,7 @@ export const runtime = "nodejs";
 
 const ENV_LINE_RE = /^([A-Z][A-Z0-9_]*)=(.*)$/;
 
-/** Parses the "KEY=value per line" textarea format used by the Railway/Render deploy step. */
+/** Parses the "KEY=value per line" textarea format used by the Railway deploy step. */
 function parseEnvText(text: string | undefined): Record<string, string> {
   if (!text) return {};
   const env: Record<string, string> = {};

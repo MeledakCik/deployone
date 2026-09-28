@@ -1,4 +1,4 @@
-export type Platform = "vercel" | "cloudflare" | "railway" | "render";
+export type Platform = "vercel" | "cloudflare" | "railway";
 
 export type DeployStatus = "ready" | "failed" | "building" | "deleted";
 
@@ -30,7 +30,7 @@ export interface DeployFormValues {
   accountId: string;
   buildCommand: string;
   outputDir: string;
-  // Railway / Render specific
+  // Railway specific
   startCommand: string;
   envText: string;
 }
@@ -54,9 +54,7 @@ export interface DomainItem {
   syncedToCloudflare?: boolean;
   /** true once this was successfully pushed to a real Railway service as a custom domain. */
   syncedToRailway?: boolean;
-  /** true once this was successfully pushed to a real Render service as a custom domain. */
-  syncedToRender?: boolean;
-  /** Key-value DNS record to add at the domain's DNS provider — present once synced to Vercel/Cloudflare/Railway/Render. */
+  /** Key-value DNS record to add at the domain's DNS provider — present once synced to Vercel/Cloudflare/Railway. */
   dns?: DnsRecordInstruction;
   /** Extra TXT verification record Railway requires alongside the CNAME above. */
   verificationDns?: DnsRecordInstruction;
@@ -78,8 +76,6 @@ export interface EnvItem {
   syncedToCloudflare?: boolean;
   /** True once this secret has been pushed to the matching service on Railway. */
   syncedToRailway?: boolean;
-  /** True once this secret has been pushed to the matching service on Render. */
-  syncedToRender?: boolean;
 }
 
 export interface SettingsTokens {
@@ -90,8 +86,6 @@ export interface SettingsTokens {
   githubPat: string;
   /** Railway account/workspace API token (from railway.com/account/tokens). */
   railwayToken: string;
-  /** Render account API key (from dashboard.render.com/settings#api-keys). */
-  renderToken: string;
 }
 
 export type DashboardView =
@@ -123,7 +117,6 @@ export interface ApiError {
     | "vercel_error"
     | "cloudflare_error"
     | "railway_error"
-    | "render_error"
     | "github_not_connected"
     | "missing_account"
     | "project_conflict"
@@ -494,104 +487,5 @@ export interface AddRailwayDomainRequest {
   project: string;
   domain: string;
   railwayToken: string;
-}
-
-/* ---------------------------------------------------------------------- */
-/*  Render                                                                  */
-/* ---------------------------------------------------------------------- */
-
-/** Result of GET /api/render/whoami — used by Settings & the deploy form to prove a token actually works. */
-export interface RenderUserInfo {
-  id: string;
-  name: string | null;
-  email: string | null;
-}
-
-/** Body of POST /api/render/deploy */
-export interface CreateRenderDeployRequest {
-  projectName: string;
-  githubUrl: string;
-  renderToken: string;
-  githubPat?: string;
-  /** Optional custom start command (leave empty to let Depup default to "npm start"). */
-  startCommand?: string;
-  /** Optional env vars to seed the service with, format `KEY=value` per line. */
-  envText?: string;
-}
-
-/** Result of POST /api/render/deploy */
-export interface CreateRenderDeployResult {
-  deploymentId: string;
-  /** The service's actual name on Render — may differ from the requested projectName when an existing service (matched by repo) was reused. Use this for history, not the input name. */
-  name: string;
-  serviceId: string;
-  url: string;
-  inspectorUrl: string;
-  readyState: VercelReadyState;
-}
-
-/** Result of GET /api/render/deploy/[id] */
-export interface RenderDeployStatusResult {
-  deploymentId: string;
-  url: string;
-  inspectorUrl: string;
-  readyState: VercelReadyState;
-  errorMessage: string | null;
-}
-
-/** Result of GET /api/render/status */
-export interface RenderProjectStatusResult {
-  exists: boolean;
-  linkedRepoFullName: string | null;
-  latestDeploymentReadyState: VercelReadyState | null;
-  latestDeploymentId: string | null;
-  serviceId: string | null;
-  /** The service's public `{name}.onrender.com` domain, once available. */
-  domain: string | null;
-}
-
-/** Result of POST /api/render/redeploy */
-export interface RenderRedeployResult {
-  deploymentId: string;
-  url: string;
-  inspectorUrl: string;
-  readyState: VercelReadyState;
-}
-
-/** One entry from GET /api/render/env — a variable as it currently exists on the Render service. */
-export interface RenderEnvSummary {
-  key: string;
-}
-
-/** Body of POST /api/render/env */
-export interface UpsertRenderEnvRequest {
-  project: string;
-  key: string;
-  value: string;
-  renderToken: string;
-}
-
-/** A single custom domain attached to a Render service — result of GET/POST /api/render/domains. */
-export interface RenderDomainResult {
-  id: string;
-  domain: string;
-  verified: boolean;
-  /** The A (apex) or CNAME (subdomain) record pointing this domain at the Render service. */
-  dns?: DnsRecordInstruction;
-}
-
-/** Body of POST /api/render/domains */
-export interface AddRenderDomainRequest {
-  project: string;
-  domain: string;
-  renderToken: string;
-}
-
-/** One project already existing on Render — result of GET /api/render/project, used by "Import Project". */
-export interface RenderProjectSummary {
-  id: string;
-  name: string;
-  domain: string | null;
-  latestDeploymentReadyState: VercelReadyState | null;
 }
 

@@ -16,8 +16,8 @@ export const runtime = "nodejs";
  * Deploy orchestration, currently Vercel-only:
  *   1. Re-validate the GitHub repo server-side (never trust the client).
  *   2. Kick off a real deployment via the Vercel REST API.
- * Cloudflare / Railway / Render integrations are planned but not wired up
- * yet — the client keeps its simulated flow for those platforms for now.
+ * Cloudflare and Railway have their own routes under /api/cloudflare and
+ * /api/railway.
  */
 export const POST = withErrorHandling(async (req: NextRequest) => {
   const body = (await req.json().catch(() => ({}))) as Partial<CreateDeployRequest>;

@@ -26,7 +26,6 @@ export function resolveDomain(projectName: string, platform: string): string {
   const p = platform.toLowerCase();
   if (p.includes("cloudflare") || p.includes("pages")) return `${slug}.pages.dev`;
   if (p.includes("railway")) return `${slug}.up.railway.app`;
-  if (p.includes("render")) return `${slug}.onrender.com`;
   return `${slug}.vercel.app`;
 }
 

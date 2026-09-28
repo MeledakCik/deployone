@@ -12,7 +12,7 @@ const SITE_NAME = "Depup";
 const SITE_TAGLINE = "Deploy without the hassle.";
 
 const SITE_DESCRIPTION =
-  "Depup adalah dashboard modern untuk mengelola deployment Vercel, Cloudflare, Railway, Render Pages dalam satu tempat. Import repo, deploy, atur domain & environment variables, semua dari satu dashboard glass yang cantik — tanpa perlu buka banyak tab.";
+  "Depup adalah dashboard modern untuk mengelola deployment Vercel, Cloudflare Pages, dan Railway dalam satu tempat. Import repo, deploy, atur domain & environment variables, semua dari satu dashboard glass yang cantik — tanpa perlu buka banyak tab.";
 
 const SITE_KEYWORDS = [
   "depup",
@@ -93,7 +93,7 @@ export const metadata: Metadata = {
         url: "/logo.png",
         width: 1200,
         height: 630,
-        alt: `${SITE_NAME} — Deploy dashboard untuk Vercel, Cloudflare, Railway, Render`,
+        alt: `${SITE_NAME} — Deploy dashboard untuk Vercel, Cloudflare, Railway`,
         type: "image/svg+xml",
       },
       {
