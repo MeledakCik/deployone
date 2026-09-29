@@ -1,11 +1,16 @@
 import type { NextRequest } from "next/server";
 import { ok, fail, withErrorHandling } from "@/app/api/_lib/response";
 import { validateGithubRepo, GithubApiError } from "@/app/api/_lib/github";
+import { getSessionEmail } from "@/app/api/_lib/session";
 import { requireString, optionalString, BadRequestError } from "@/app/api/_lib/validators";
 
 export const runtime = "nodejs";
 
 export const POST = withErrorHandling(async (req: NextRequest) => {
+  // Route ini bisa memakai GITHUB_TOKEN milik server — wajib login supaya
+  // tidak bisa dipakai orang luar untuk menghabiskan kuota.
+  if (!getSessionEmail(req)) return fail("Belum login.", 401, "unauthorized");
+
   const body = await req.json().catch(() => ({}));
 
   let githubUrl: string;

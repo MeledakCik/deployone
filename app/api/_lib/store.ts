@@ -1,4 +1,5 @@
 import { kv } from "@vercel/kv";
+import { encryptJson, decryptJson } from "@/app/api/_lib/crypto";
 
 export type UserData = {
   history: any[];
@@ -40,14 +41,18 @@ export async function getUserData(email: string): Promise<UserData> {
     return { ...EMPTY_USER_DATA };
   }
 
+  // envVars & settingsTokens berisi secret (token platform, value env var) —
+  // di KV disimpan terenkripsi (AES-256-GCM). decryptJson otomatis
+  // meloloskan data lama yang masih plaintext, jadi tidak ada migrasi manual.
+  const envVars = decryptJson<any[]>(data.envVars, []);
+  const settingsTokens = decryptJson<Record<string, any>>(data.settingsTokens, {});
+
   return {
     history: Array.isArray(data.history) ? data.history : [],
     domains: Array.isArray(data.domains) ? data.domains : [],
-    envVars: Array.isArray(data.envVars) ? data.envVars : [],
+    envVars: Array.isArray(envVars) ? envVars : [],
     settingsTokens:
-      data.settingsTokens && typeof data.settingsTokens === "object"
-        ? data.settingsTokens
-        : {},
+      settingsTokens && typeof settingsTokens === "object" ? settingsTokens : {},
   };
 }
 
@@ -73,7 +78,11 @@ export async function putUserData(
         : {},
   };
 
-  await kv.set(key, safeData);
+  await kv.set(key, {
+    ...safeData,
+    envVars: encryptJson(safeData.envVars),
+    settingsTokens: encryptJson(safeData.settingsTokens),
+  });
   return safeData;
 }
 

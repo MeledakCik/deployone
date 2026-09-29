@@ -22,8 +22,8 @@ export function withErrorHandling<A extends unknown[]>(
       return await handler(...args);
     } catch (err) {
       console.error("[api] unhandled error", err);
-      const message = err instanceof Error ? err.message : "Internal server error";
-      return fail(message, 500);
+      // Detail error cuma di log server — jangan bocor ke client.
+      return fail("Terjadi kesalahan di server. Coba lagi sebentar lagi.", 500);
     }
   };
 }

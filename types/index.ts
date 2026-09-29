@@ -117,6 +117,7 @@ export interface ApiError {
     | "vercel_error"
     | "cloudflare_error"
     | "railway_error"
+    | "rate_limited"
     | "github_not_connected"
     | "missing_account"
     | "project_conflict"

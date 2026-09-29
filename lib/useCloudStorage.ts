@@ -211,11 +211,16 @@ export function useCloudStorage<T>(
       signal: controller.signal,
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ [key]: state }),
-    }).catch((err) => {
-      if (err?.name !== "AbortError") {
-        console.error(`useCloudStorage[${key}] sync error:`, err);
-      }
-    });
+    })
+      .then((res) => {
+        if (!res.ok) window.dispatchEvent(new CustomEvent("depup:sync-error"));
+      })
+      .catch((err) => {
+        if (err?.name !== "AbortError") {
+          console.error(`useCloudStorage[${key}] sync error:`, err);
+          window.dispatchEvent(new CustomEvent("depup:sync-error"));
+        }
+      });
 
     return () => controller.abort();
   }, [state, email, isInitialized, key]);

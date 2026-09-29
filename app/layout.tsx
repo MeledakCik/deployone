@@ -5,8 +5,11 @@ import { AuthProvider } from "@/lib/auth-context";
 import { ToastProvider } from "@/components/ui/Toast";
 
 const SITE_URL =
-  process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ??
-  "https://depup.app";
+  (
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    process.env.NEXT_PUBLIC_APP_URL ??
+    "https://depup.app"
+  ).replace(/\/$/, "");
 
 const SITE_NAME = "Depup";
 const SITE_TAGLINE = "Deploy without the hassle.";

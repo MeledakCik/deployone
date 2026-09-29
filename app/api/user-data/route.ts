@@ -7,6 +7,29 @@ export const runtime = "nodejs";
 
 type UserDataPayload = Partial<UserData>;
 
+const MAX_BODY_BYTES = 1_000_000; // ~1 MB per request
+const MAX_ITEMS = 2000;
+const ALLOWED_TOKEN_KEYS = [
+  "vercelToken",
+  "cloudflareToken",
+  "cloudflareAccountId",
+  "githubPat",
+  "railwayToken",
+] as const;
+
+/** Hanya izinkan key token yang dikenal, value string, panjang dibatasi. */
+function sanitizeTokens(input: unknown): Record<string, string> | null {
+  if (!input || typeof input !== "object" || Array.isArray(input)) return null;
+  const out: Record<string, string> = {};
+  for (const k of ALLOWED_TOKEN_KEYS) {
+    const v = (input as Record<string, unknown>)[k];
+    if (typeof v === "string" && v.length <= 4000) out[k] = v;
+  }
+  return out;
+}
+
+const okArray = (v: unknown): v is unknown[] => Array.isArray(v) && v.length <= MAX_ITEMS;
+
 export const GET = withErrorHandling(async (req: NextRequest) => {
   const email = getSessionEmail(req);
   if (!email) return fail("Belum login.", 401, "unauthorized");
@@ -27,18 +50,28 @@ export const PUT = withErrorHandling(async (req: NextRequest) => {
   const email = getSessionEmail(req);
   if (!email) return fail("Belum login.", 401, "unauthorized");
 
-  const body = (await req.json().catch(() => null)) as UserDataPayload | null;
+  const raw = await req.text().catch(() => "");
+  if (raw.length > MAX_BODY_BYTES) {
+    return fail("Data terlalu besar untuk disimpan.", 413, "bad_request");
+  }
+  let parsed: UserDataPayload | null = null;
+  try {
+    parsed = JSON.parse(raw) as UserDataPayload;
+  } catch {
+    parsed = null;
+  }
 
   // Guard krusial: body kosong / bukan object / tidak ada field apapun
   // JANGAN dianggap "user memang mau kosongin semua data". Ini biasanya
   // sinyal bug di client (state belum ke-hydrate sebelum PUT terpanggil,
   // atau race condition setelah logout/login). Tolak, jangan proses.
   const looksEmpty =
-    !body || typeof body !== "object" || Object.keys(body).length === 0;
+    !parsed || typeof parsed !== "object" || Object.keys(parsed).length === 0;
 
-  if (looksEmpty) {
+  if (looksEmpty || !parsed) {
     return fail("Payload kosong ditolak — tidak ada perubahan disimpan.", 400, "bad_request");
   }
+  const body: UserDataPayload = parsed;
 
   // Merge, BUKAN overwrite: ambil data lama dulu, timpa hanya field yang
   // benar-benar dikirim client dan valid tipenya. Field yang tidak dikirim
@@ -47,13 +80,13 @@ export const PUT = withErrorHandling(async (req: NextRequest) => {
   const existing = await getUserData(email);
 
   const merged: UserData = {
-    history: Array.isArray(body.history) ? body.history : existing.history,
-    domains: Array.isArray(body.domains) ? body.domains : existing.domains,
-    envVars: Array.isArray(body.envVars) ? body.envVars : existing.envVars,
-    settingsTokens:
-      body.settingsTokens && typeof body.settingsTokens === "object"
-        ? { ...existing.settingsTokens, ...body.settingsTokens }
-        : existing.settingsTokens,
+    history: okArray(body.history) ? body.history : existing.history,
+    domains: okArray(body.domains) ? body.domains : existing.domains,
+    envVars: okArray(body.envVars) ? body.envVars : existing.envVars,
+    settingsTokens: (() => {
+      const clean = sanitizeTokens(body.settingsTokens);
+      return clean ? { ...existing.settingsTokens, ...clean } : existing.settingsTokens;
+    })(),
   };
 
   const saved = await putUserData(email, merged);

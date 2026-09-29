@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { useToast } from "@/components/ui/Toast";
 import { useDeploy } from "@/lib/deploy-context";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { DashboardHomeView } from "@/components/dashboard/DashboardHomeView";
@@ -20,6 +21,19 @@ export default function DashboardPage() {
   const router = useRouter();
   const { user, ready } = useAuth();
   const { view } = useDeploy();
+  const { showToast } = useToast();
+
+  // Kabari user kalau perubahan gagal tersimpan ke cloud (max 1x / 10 detik).
+  React.useEffect(() => {
+    let last = 0;
+    const onError = () => {
+      if (Date.now() - last < 10_000) return;
+      last = Date.now();
+      showToast("Perubahan belum tersimpan ke server — cek koneksi, lalu coba lagi.");
+    };
+    window.addEventListener("depup:sync-error", onError);
+    return () => window.removeEventListener("depup:sync-error", onError);
+  }, [showToast]);
 
   React.useEffect(() => {
     if (ready && !user) router.replace("/");

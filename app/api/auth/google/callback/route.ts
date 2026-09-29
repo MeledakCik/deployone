@@ -12,6 +12,7 @@ interface GoogleTokenResponse {
 
 interface GoogleProfile {
   email?: string;
+  email_verified?: boolean;
   name?: string;
   picture?: string;
 }
@@ -68,6 +69,10 @@ export async function GET(req: NextRequest) {
 
   if (!profile.email) {
     return fail("Akun Google tidak punya email publik yang bisa dipakai.");
+  }
+
+  if (profile.email_verified === false) {
+    return fail("Email akun Google ini belum terverifikasi.");
   }
 
   let sessionToken: string;

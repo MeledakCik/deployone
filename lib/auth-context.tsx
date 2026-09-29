@@ -48,6 +48,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       await fetch("/api/auth/logout", { method: "POST" });
     } finally {
+      // Cache lokal berisi token/env var — jangan tertinggal di browser
+      // (mis. komputer bersama) setelah logout.
+      try {
+        Object.keys(window.localStorage)
+          .filter((k) => k.startsWith("depup-fallback:"))
+          .forEach((k) => window.localStorage.removeItem(k));
+      } catch {
+        /* storage tidak tersedia — abaikan */
+      }
       setUser(null);
     }
   }, []);
