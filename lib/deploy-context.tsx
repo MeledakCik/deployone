@@ -209,6 +209,15 @@ interface DeployContextValue {
 
   submitDeploy: (e: React.FormEvent<HTMLFormElement>) => void;
 
+  /**
+   * Konfirmasi saat riwayat deploy sudah penuh (MAX_HISTORY).
+   * DeployFormView memanggil submitDeploy → kalau history.length >= MAX_HISTORY,
+   * modal konfirmasi dibuka dan deploy ditahan sampai user memilih.
+   */
+  confirmOpen: boolean;
+  closeConfirm: () => void;
+  proceedDeploy: () => void;
+
   redeploy: (name: string) => void;
 
   vercelToken: string;
@@ -349,6 +358,10 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
   const [form, setForm] = React.useState<DeployFormValues>(emptyForm);
   const [deployState, setDeployState] =
     React.useState<DeployState>(defaultDeployState);
+
+  /* ---------- konfirmasi riwayat penuh ---------- */
+  const [confirmOpen, setConfirmOpen] = React.useState(false);
+  const pendingDeployRef = React.useRef<DeployFormValues | null>(null);
 
   /* ---------- auto-detect env vars needed by the repo ---------- */
   const [repoEnvCheck, setRepoEnvCheck] = React.useState<{
@@ -1109,6 +1122,22 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     [addHistory, beginDeploy, failDeploy, showToast],
   );
 
+  /* ---------- dispatcher deploy (dipakai submitDeploy & proceedDeploy) ---------- */
+  const runDeploy = React.useCallback(
+    (data: DeployFormValues) => {
+      if (data.platform === "vercel") {
+        void startVercelDeploy(data);
+      } else if (data.platform === "cloudflare") {
+        void startCloudflareDeploy(data);
+      } else if (data.platform === "railway") {
+        void startRailwayDeploy(data);
+      } else {
+        showToast("Pilih platform tujuan deploy dulu.");
+      }
+    },
+    [showToast, startVercelDeploy, startCloudflareDeploy, startRailwayDeploy],
+  );
+
   /* ---------- submit ---------- */
   const submitDeploy = React.useCallback(
     (e: React.FormEvent<HTMLFormElement>) => {
@@ -1118,24 +1147,34 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         showToast("Format URL GitHub belum benar");
         return;
       }
-      if (form.platform === "vercel") {
-        void startVercelDeploy(form);
-      } else if (form.platform === "cloudflare") {
-        void startCloudflareDeploy(form);
-      } else if (form.platform === "railway") {
-        void startRailwayDeploy(form);
-      } else {
-        showToast("Pilih platform tujuan deploy dulu.");
+
+      // Riwayat deploy sudah penuh → tahan deploy dan minta konfirmasi dulu,
+      // karena entri terlama akan otomatis terhapus saat deploy ini berhasil.
+      const safeHistory = Array.isArray(history) ? history : [];
+      if (safeHistory.length >= MAX_HISTORY) {
+        pendingDeployRef.current = form;
+        setConfirmOpen(true);
+        return;
       }
+
+      runDeploy(form);
     },
-    [
-      form,
-      showToast,
-      startCloudflareDeploy,
-      startRailwayDeploy,
-      startVercelDeploy,
-    ],
+    [form, history, showToast, runDeploy],
   );
+
+  /* ---------- konfirmasi handler ---------- */
+  const closeConfirm = React.useCallback(() => {
+    setConfirmOpen(false);
+    pendingDeployRef.current = null;
+  }, []);
+
+  const proceedDeploy = React.useCallback(() => {
+    const data = pendingDeployRef.current;
+    setConfirmOpen(false);
+    pendingDeployRef.current = null;
+    if (!data) return;
+    runDeploy(data);
+  }, [runDeploy]);
 
   /* legacy no-ops */
 
@@ -2714,6 +2753,11 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     checkGithubConnection,
 
     submitDeploy,
+
+    // konfirmasi riwayat penuh
+    confirmOpen,
+    closeConfirm,
+    proceedDeploy,
 
     redeploy,
 
