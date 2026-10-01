@@ -1,5 +1,7 @@
 "use client";
 
+import { notifySessionExpired } from "@/lib/session-expired";
+import { useDialogA11y } from "@/components/ui/useDialogA11y";
 import * as React from "react";
 import {
   Activity,
@@ -50,6 +52,7 @@ async function fetchAnalytics(project: string, vercelToken: string): Promise<Ana
     cache: "no-store",
   });
   const body = (await res.json().catch(() => null)) as ApiResponse<AnalyticsApiResult> | null;
+  notifySessionExpired(body);
   if (!body || !body.ok) {
     throw new Error(body?.error ?? `Request gagal (${res.status})`);
   }
@@ -92,6 +95,8 @@ export function ObservabilityModal({ projectName, open, onClose }: Observability
     };
   }, [open, projectName, vercelToken]);
 
+  const dialogRef = useDialogA11y<HTMLDivElement>(open && !!projectName, onClose);
+
   if (!open || !projectName) return null;
 
   const ready = state.status === "ready" ? state.data : null;
@@ -109,7 +114,17 @@ export function ObservabilityModal({ projectName, open, onClose }: Observability
     : 1;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 px-4">
+    <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Observability ${projectName}`}
+      tabIndex={-1}
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 px-4 outline-none"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
       <Surface className="w-full max-w-2xl max-h-[85vh] overflow-y-auto p-6">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">

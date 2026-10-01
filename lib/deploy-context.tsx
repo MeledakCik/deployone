@@ -1,5 +1,6 @@
 "use client";
 
+import { notifySessionExpired } from "@/lib/session-expired";
 import * as React from "react";
 import { useToast } from "@/components/ui/Toast";
 import { resolveDomain, formatDate } from "@/lib/utils";
@@ -47,8 +48,6 @@ export const DEPLOY_STEPS = [
 ] as const;
 
 const MAX_HISTORY = 10;
-const STEP_INTERVAL_MS = 700;
-const FINISH_DELAY_MS = 300;
 const POLL_INTERVAL_MS = 2000;
 
 const GITHUB_REPO_RE = /^https:\/\/github\.com\/[^/]+\/[^/]+/;
@@ -72,6 +71,7 @@ const DEFAULT_SETTINGS_TOKENS: SettingsTokens = {
 async function callApi<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
   const body = (await res.json().catch(() => null)) as ApiResponse<T> | null;
+  notifySessionExpired(body);
   if (!body || !body.ok) {
     throw new Error(body?.error ?? `Request gagal (${res.status})`);
   }
@@ -207,10 +207,7 @@ interface DeployContextValue {
   };
   checkGithubConnection: () => Promise<void>;
 
-  confirmOpen: boolean;
   submitDeploy: (e: React.FormEvent<HTMLFormElement>) => void;
-  proceedDeploy: () => void;
-  closeConfirm: () => void;
 
   redeploy: (name: string) => void;
 
@@ -282,14 +279,55 @@ export function useDeploy() {
   return ctx;
 }
 
+const DASHBOARD_VIEWS: readonly DashboardView[] = [
+  "dashboard",
+  "deploy",
+  "projects",
+  "domains",
+  "env",
+  "observability",
+  "docs",
+  "settings",
+];
+
+function isDashboardView(v: string | null): v is DashboardView {
+  return !!v && (DASHBOARD_VIEWS as readonly string[]).includes(v);
+}
+
 /* ================================================================
  *  Provider
  * ================================================================ */
 
+/** Entri history yang lebih muda dari ini tidak boleh dianggap 'hilang' oleh sync. */
+const RECENTLY_DEPLOYED_GRACE_MS = 3 * 60 * 1000;
+
 export function DeployProvider({ children }: { children: React.ReactNode }) {
   const { showToast } = useToast();
 
-  const [view, setView] = React.useState<DashboardView>("dashboard");
+  // View aktif disinkronkan ke URL (?view=deploy) supaya refresh, tombol Back,
+  // dan bookmark bekerja seperti yang user harapkan.
+  const [view, setViewState] = React.useState<DashboardView>("dashboard");
+
+  React.useEffect(() => {
+    const readFromUrl = () => {
+      const v = new URLSearchParams(window.location.search).get("view");
+      setViewState(isDashboardView(v) ? v : "dashboard");
+    };
+    readFromUrl();
+    window.addEventListener("popstate", readFromUrl);
+    return () => window.removeEventListener("popstate", readFromUrl);
+  }, []);
+
+  const setView = React.useCallback((v: DashboardView) => {
+    setViewState(v);
+    const url = new URL(window.location.href);
+    if (v === "dashboard") url.searchParams.delete("view");
+    else url.searchParams.set("view", v);
+    if (url.href !== window.location.href) {
+      window.history.pushState(null, "", url.pathname + url.search + url.hash);
+    }
+    window.scrollTo({ top: 0 });
+  }, []);
   const [focusedTrafficProject, setFocusedTrafficProject] = React.useState<
     string | null
   >(null);
@@ -618,26 +656,6 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     setDeployState({ ...defaultDeployState, status: "deploying" });
   }, []);
 
-  const finishDeploy = React.useCallback(
-    (data: DeployFormValues) => {
-      const projectName =
-        (data.projectName || "my-project").trim() || "my-project";
-      const domain = resolveDomain(projectName, data.platform);
-      setDeployState((prev) => ({
-        ...prev,
-        status: "success",
-        stepIndex: 5,
-        barWidth: 100,
-        title: "Deploy Berhasil!",
-        subtitle: `Project ${projectName} siap di ${domain}`,
-        result: { name: projectName, domain },
-        error: null,
-      }));
-      addHistory(projectName, data.platform, domain);
-    },
-    [addHistory],
-  );
-
   const failDeploy = React.useCallback(
     (data: DeployFormValues, message: string) => {
       const projectName =
@@ -658,28 +676,6 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     if (intervalRef.current) clearInterval(intervalRef.current);
     setDeployState(defaultDeployState);
   }, []);
-
-  /* ---------- simulated (fallback for any platform with no real API behind it) ---------- */
-  const startSimulatedDeploy = React.useCallback(
-    (data: DeployFormValues) => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-      beginDeploy();
-      let step = 0;
-      intervalRef.current = setInterval(() => {
-        step += 1;
-        setDeployState((prev) => ({
-          ...prev,
-          stepIndex: step,
-          barWidth: (step / 5) * 100,
-        }));
-        if (step >= 5) {
-          if (intervalRef.current) clearInterval(intervalRef.current);
-          setTimeout(() => finishDeploy(data), FINISH_DELAY_MS);
-        }
-      }, STEP_INTERVAL_MS);
-    },
-    [beginDeploy, finishDeploy],
-  );
 
   /* ---------- Vercel ---------- */
   const startVercelDeploy = React.useCallback(
@@ -1129,7 +1125,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       } else if (form.platform === "railway") {
         void startRailwayDeploy(form);
       } else {
-        startSimulatedDeploy(form);
+        showToast("Pilih platform tujuan deploy dulu.");
       }
     },
     [
@@ -1137,14 +1133,11 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       showToast,
       startCloudflareDeploy,
       startRailwayDeploy,
-      startSimulatedDeploy,
       startVercelDeploy,
     ],
   );
 
   /* legacy no-ops */
-  const proceedDeploy = React.useCallback(() => {}, []);
-  const closeConfirm = React.useCallback(() => {}, []);
 
   const redeploy = React.useCallback(
     (name: string) => {
@@ -1152,7 +1145,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       setView("deploy");
       showToast("Project dimuat ke form deploy");
     },
-    [showToast],
+    [showToast, setView],
   );
 
   /* ================================================================
@@ -1190,7 +1183,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     setView("dashboard");
     setForm(emptyForm);
     showToast("Deploy berhasil — cek dashboard!");
-  }, [deployState.status, resetDeployState, showToast]);
+  }, [deployState.status, resetDeployState, showToast, setView]);
 
   /* ================================================================
    *  Domain / Env / Sync / Delete — tidak berubah dari aslinya
@@ -1213,12 +1206,11 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
    * matches this exactly. A newly-created entry simply shouldn't be treated
    * as delete-eligible yet.
    */
-  const RECENTLY_DEPLOYED_GRACE_MS = 3 * 60 * 1000;
 
-  function isRecentlyDeployed(item: HistoryItem): boolean {
+  const isRecentlyDeployed = React.useCallback((item: HistoryItem): boolean => {
     const createdAt = Number(item.id);
     return Number.isFinite(createdAt) && Date.now() - createdAt < RECENTLY_DEPLOYED_GRACE_MS;
-  }
+  }, []);
 
   const syncProjectStatus = React.useCallback(
     async (
@@ -1322,7 +1314,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       // nothing to check against, so leave it alone rather than guessing.
       return "skipped";
     },
-    [history, savedCloudflareToken, savedRailwayToken, vercelToken, setHistory],
+    [history, savedCloudflareToken, savedRailwayToken, vercelToken, setHistory, isRecentlyDeployed],
   );
 
   const syncAllProjects = React.useCallback(async () => {
@@ -2721,10 +2713,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     githubConnectionStatus,
     checkGithubConnection,
 
-    confirmOpen: false,
     submitDeploy,
-    proceedDeploy,
-    closeConfirm,
 
     redeploy,
 

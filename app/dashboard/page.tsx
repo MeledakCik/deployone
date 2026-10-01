@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
+import { SESSION_EXPIRED_EVENT } from "@/lib/session-expired";
 import { useToast } from "@/components/ui/Toast";
 import { useDeploy } from "@/lib/deploy-context";
 import { Sidebar } from "@/components/dashboard/Sidebar";
@@ -15,11 +16,10 @@ import { ObservabilityView } from "@/components/dashboard/ObservabilityView";
 import { DocsView } from "@/components/dashboard/DocsView";
 import { SettingsView } from "@/components/dashboard/SettingsView";
 import { DeployModal } from "@/components/dashboard/DeployModal";
-import { ConfirmModal } from "@/components/dashboard/ConfirmModal";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { user, ready } = useAuth();
+  const { user, ready, refresh } = useAuth();
   const { view } = useDeploy();
   const { showToast } = useToast();
 
@@ -34,6 +34,19 @@ export default function DashboardPage() {
     window.addEventListener("depup:sync-error", onError);
     return () => window.removeEventListener("depup:sync-error", onError);
   }, [showToast]);
+
+  // Sesi login habis di tengah pemakaian: kabari sekali, lalu balik ke halaman login.
+  React.useEffect(() => {
+    let handled = false;
+    const onExpired = () => {
+      if (handled) return;
+      handled = true;
+      showToast("Sesi login habis — silakan login lagi.");
+      void refresh();
+    };
+    window.addEventListener(SESSION_EXPIRED_EVENT, onExpired);
+    return () => window.removeEventListener(SESSION_EXPIRED_EVENT, onExpired);
+  }, [refresh, showToast]);
 
   React.useEffect(() => {
     if (ready && !user) router.replace("/");
@@ -64,7 +77,6 @@ export default function DashboardPage() {
       </div>
 
       <DeployModal />
-      <ConfirmModal />
     </div>
   );
 }

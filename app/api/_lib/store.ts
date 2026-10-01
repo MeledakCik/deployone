@@ -1,11 +1,13 @@
 import { kv } from "@vercel/kv";
 import { encryptJson, decryptJson } from "@/app/api/_lib/crypto";
+import type { HistoryItem, DomainItem, EnvItem, SettingsTokens } from "@/types";
 
 export type UserData = {
-  history: any[];
-  domains: any[];
-  envVars: any[];
-  settingsTokens: Record<string, any>;
+  history: HistoryItem[];
+  domains: DomainItem[];
+  envVars: EnvItem[];
+  // Partial: field token yang belum pernah diisi user tidak ada di sini.
+  settingsTokens: Partial<SettingsTokens>;
 };
 
 const EMPTY_USER_DATA: UserData = {
@@ -44,8 +46,8 @@ export async function getUserData(email: string): Promise<UserData> {
   // envVars & settingsTokens berisi secret (token platform, value env var) —
   // di KV disimpan terenkripsi (AES-256-GCM). decryptJson otomatis
   // meloloskan data lama yang masih plaintext, jadi tidak ada migrasi manual.
-  const envVars = decryptJson<any[]>(data.envVars, []);
-  const settingsTokens = decryptJson<Record<string, any>>(data.settingsTokens, {});
+  const envVars = decryptJson<EnvItem[]>(data.envVars, []);
+  const settingsTokens = decryptJson<Partial<SettingsTokens>>(data.settingsTokens, {});
 
   return {
     history: Array.isArray(data.history) ? data.history : [],

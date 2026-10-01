@@ -1,5 +1,6 @@
 "use client";
 
+import { notifySessionExpired } from "@/lib/session-expired";
 import * as React from "react";
 import { Eye, EyeOff, Save, ShieldCheck, ShieldAlert, Loader2 } from "lucide-react";
 import { Surface } from "@/components/ui/Surface";
@@ -26,6 +27,7 @@ const DEFAULT_TOKENS: SettingsTokens = {
 async function callApi<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
   const body = (await res.json().catch(() => null)) as ApiResponse<T> | null;
+  notifySessionExpired(body);
   if (!body || !body.ok) throw new Error(body?.error ?? `Request gagal (${res.status})`);
   return body.data;
 }

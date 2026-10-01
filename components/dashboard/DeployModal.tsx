@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDeploy } from "@/lib/deploy-context";
+import { useDialogA11y } from "@/components/ui/useDialogA11y";
 
 const DEPLOY_STEPS_LABELS = [
   "Menghubungkan ke GitHub",
@@ -26,9 +27,18 @@ export function DeployModal() {
   const { status, stepIndex, barWidth, title, subtitle, error, result } =
     deployState;
 
+  const isDeploying = status === "deploying";
+  // Saat deploy berjalan, Esc & klik backdrop sengaja tidak menutup modal.
+  const dialogRef = useDialogA11y<HTMLDivElement>(
+    status !== "idle",
+    () => {
+      if (!isDeploying) closeModal();
+    },
+    { closeOnEscape: !isDeploying }
+  );
+
   if (status === "idle") return null;
 
-  const isDeploying = status === "deploying";
   const isDone = status === "success";
   const isError = status === "error";
 
@@ -57,7 +67,12 @@ export function DeployModal() {
 
         {/* modal */}
         <div
-          className="relative w-full max-w-[520px] rounded-[28px] bg-[#15151f] border border-white/[0.08] shadow-[0_20px_80px_-20px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.05)_inset] overflow-hidden flex flex-col max-h-[90vh]"
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-label={title || "Proses deploy"}
+          tabIndex={-1}
+          className="relative w-full max-w-[520px] rounded-[28px] bg-[#15151f] border border-white/[0.08] shadow-[0_20px_80px_-20px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.05)_inset] overflow-hidden flex flex-col max-h-[90vh] outline-none"
           style={{ animation: "dcModalIn .3s ease" }}
         >
           <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-white/15 to-transparent shrink-0" />

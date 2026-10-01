@@ -1,5 +1,6 @@
 "use client";
 
+import { useDialogA11y } from "@/components/ui/useDialogA11y";
 import * as React from "react";
 import {
   HelpCircle,
@@ -607,6 +608,8 @@ export function DeployFormView() {
     }, 200);
   };
 
+  const dialogRef = useDialogA11y<HTMLDivElement>(isModalOpen, closeModal);
+
   const goNext = () => {
     if (isLast) return;
     if (!canNext) return;
@@ -907,8 +910,13 @@ export function DeployFormView() {
             />
 
             <div
+              ref={dialogRef}
+              role="dialog"
+              aria-modal="true"
+              aria-label={`Deploy ke ${activePlatformInfo?.label ?? "platform"}`}
+              tabIndex={-1}
               className={cn(
-                "relative w-full bg-[var(--dc-surface)] border border-[var(--dc-line)] shadow-[var(--dc-shadow-modal)] overflow-hidden flex flex-col",
+                "relative w-full bg-[var(--dc-surface)] border border-[var(--dc-line)] shadow-[var(--dc-shadow-modal)] overflow-hidden flex flex-col outline-none",
                 "max-w-full rounded-t-[24px] max-h-[92vh]",
                 "sm:max-w-[520px] sm:rounded-[28px] sm:max-h-[90vh]",
               )}

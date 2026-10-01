@@ -122,6 +122,7 @@ export function Sidebar() {
                 key={item.id}
                 type="button"
                 data-view={item.id}
+                aria-current={active ? "page" : undefined}
                 className={`nav flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-[13px] font-medium transition ${active ? "bg-[var(--card-hover)] text-text" : "text-text-muted hover:text-text hover:bg-[var(--card-hover)]"
                   }`}
                 onClick={() => setView(item.id)}

@@ -302,7 +302,7 @@ export async function getVercelDeployment(
   deploymentId: string,
   vercelToken: string
 ): Promise<{ deploymentId: string; url: string; inspectorUrl: string; readyState: VercelReadyState; errorMessage: string | null }> {
-  const res = await fetch(`${VERCEL_API}/v13/deployments/${deploymentId}`, {
+  const res = await fetch(`${VERCEL_API}/v13/deployments/${encodeURIComponent(deploymentId)}`, {
     headers: { Authorization: `Bearer ${vercelToken}` },
     cache: "no-store",
   });
@@ -476,7 +476,7 @@ export async function deleteProjectEnv(
   const id = await findProjectEnvId(projectName, key, vercelToken);
   if (!id) return; // already gone — nothing to do
   const res = await fetch(
-    `${VERCEL_API}/v9/projects/${encodeURIComponent(projectName)}/env/${id}`,
+    `${VERCEL_API}/v9/projects/${encodeURIComponent(projectName)}/env/${encodeURIComponent(id)}`,
     { method: "DELETE", headers: { Authorization: `Bearer ${vercelToken}` } }
   );
   if (!res.ok) throw await parseVercelError(res);
@@ -512,7 +512,7 @@ export async function upsertProjectEnv(
   if (!existingId) throw await parseVercelError(createRes);
 
   const patchRes = await fetch(
-    `${VERCEL_API}/v9/projects/${encodeURIComponent(projectName)}/env/${existingId}`,
+    `${VERCEL_API}/v9/projects/${encodeURIComponent(projectName)}/env/${encodeURIComponent(existingId)}`,
     {
       method: "PATCH",
       headers: {

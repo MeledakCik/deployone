@@ -184,7 +184,7 @@ export function DomainsView() {
     }
   }
 
-  const safeDomains = Array.isArray(domains) ? domains : [];
+  const safeDomains = React.useMemo(() => (Array.isArray(domains) ? domains : []), [domains]);
 
   // Group by project (sorted) so domains for the same project sit together,
   // with a labelled separator row between different projects.

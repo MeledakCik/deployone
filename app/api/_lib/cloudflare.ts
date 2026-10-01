@@ -90,7 +90,7 @@ export async function getCloudflareAccounts(token: string): Promise<CloudflareAc
 
 /** Deep link to Cloudflare's own dashboard screen for connecting the GitHub App to an account. */
 export function cloudflareGithubConnectUrl(accountId: string): string {
-  return `https://dash.cloudflare.com/${accountId}/pages/new/provider/github`;
+  return `https://dash.cloudflare.com/${encodeURIComponent(accountId)}/pages/new/provider/github`;
 }
 
 /**
@@ -108,7 +108,7 @@ export async function checkCloudflareGithubConnected(
   // options provided" (unlike most other Cloudflare v4 list endpoints which
   // allow up to 50/100) — cap it here so this best-effort check doesn't fail
   // outright with a 502.
-  const res = await cfFetch(`/accounts/${accountId}/pages/projects?per_page=25`, token);
+  const res = await cfFetch(`/accounts/${encodeURIComponent(accountId)}/pages/projects?per_page=25`, token);
   if (!res.ok) throw await parseCloudflareError(res);
   const data = await res.json();
   const projects = Array.isArray(data.result) ? data.result : [];
@@ -141,7 +141,7 @@ function readyStateFor(d: CfDeploymentResponse): VercelReadyState {
 }
 
 function inspectorUrlFor(accountId: string, projectName: string, deploymentId: string): string {
-  return `https://dash.cloudflare.com/${accountId}/pages/view/${encodeURIComponent(projectName)}/${deploymentId}`;
+  return `https://dash.cloudflare.com/${encodeURIComponent(accountId)}/pages/view/${encodeURIComponent(projectName)}/${encodeURIComponent(deploymentId)}`;
 }
 
 interface CfProjectResponse {
@@ -168,7 +168,7 @@ export async function getCloudflarePagesProject(
   projectName: string,
   token: string
 ): Promise<CloudflareProjectStatusResult> {
-  const res = await cfFetch(`/accounts/${accountId}/pages/projects/${encodeURIComponent(projectName)}`, token);
+  const res = await cfFetch(`/accounts/${encodeURIComponent(accountId)}/pages/projects/${encodeURIComponent(projectName)}`, token);
   if (res.status === 404) {
     return { exists: false, linkedRepoFullName: null, latestDeploymentReadyState: null, latestDeploymentId: null, subdomain: null };
   }
@@ -195,7 +195,7 @@ export async function listCloudflarePagesProjects(
 ): Promise<CloudflareProjectSummary[]> {
   // Same `per_page` cap as checkCloudflareGithubConnected() above — Cloudflare
   // rejects values over 25 on this endpoint with "Invalid list options provided".
-  const res = await cfFetch(`/accounts/${accountId}/pages/projects?per_page=25`, token);
+  const res = await cfFetch(`/accounts/${encodeURIComponent(accountId)}/pages/projects?per_page=25`, token);
   if (!res.ok) throw await parseCloudflareError(res);
   const data = await res.json();
   const projects = (Array.isArray(data.result) ? data.result : []) as CfProjectResponse[];
@@ -293,7 +293,7 @@ interface CreateCfProjectParams {
  * it and we surface that as CloudflareApiError("github_not_connected").
  */
 export async function createCloudflarePagesProject(params: CreateCfProjectParams): Promise<CfProjectResponse> {
-  const res = await cfFetch(`/accounts/${params.accountId}/pages/projects`, params.token, {
+  const res = await cfFetch(`/accounts/${encodeURIComponent(params.accountId)}/pages/projects`, params.token, {
     method: "POST",
     body: JSON.stringify({
       name: params.projectName,
@@ -343,7 +343,7 @@ export async function triggerCloudflareDeployment(
   projectName: string,
   token: string
 ): Promise<{ deploymentId: string; url: string; inspectorUrl: string; readyState: VercelReadyState }> {
-  const res = await cfFetch(`/accounts/${accountId}/pages/projects/${encodeURIComponent(projectName)}/deployments`, token, {
+  const res = await cfFetch(`/accounts/${encodeURIComponent(accountId)}/pages/projects/${encodeURIComponent(projectName)}/deployments`, token, {
     method: "POST",
   });
   if (!res.ok) throw await parseCloudflareError(res);
@@ -370,7 +370,7 @@ export async function getCloudflareDeploymentLogs(
   token: string
 ): Promise<string[]> {
   const res = await cfFetch(
-    `/accounts/${accountId}/pages/projects/${encodeURIComponent(projectName)}/deployments/${deploymentId}/history/logs`,
+    `/accounts/${encodeURIComponent(accountId)}/pages/projects/${encodeURIComponent(projectName)}/deployments/${encodeURIComponent(deploymentId)}/history/logs`,
     token
   );
   if (!res.ok) return [];
@@ -395,7 +395,7 @@ export async function getCloudflareDeployment(
   token: string
 ): Promise<{ deploymentId: string; url: string; inspectorUrl: string; readyState: VercelReadyState; errorMessage: string | null }> {
   const res = await cfFetch(
-    `/accounts/${accountId}/pages/projects/${encodeURIComponent(projectName)}/deployments/${deploymentId}`,
+    `/accounts/${encodeURIComponent(accountId)}/pages/projects/${encodeURIComponent(projectName)}/deployments/${encodeURIComponent(deploymentId)}`,
     token
   );
   if (!res.ok) throw await parseCloudflareError(res);
@@ -429,7 +429,7 @@ export async function getCloudflareDeployment(
 
 /** Permanently deletes a Pages project — used by "Hapus di kedua sisi" (Cloudflare tab). */
 export async function deleteCloudflarePagesProject(accountId: string, projectName: string, token: string): Promise<void> {
-  const res = await cfFetch(`/accounts/${accountId}/pages/projects/${encodeURIComponent(projectName)}`, token, {
+  const res = await cfFetch(`/accounts/${encodeURIComponent(accountId)}/pages/projects/${encodeURIComponent(projectName)}`, token, {
     method: "DELETE",
   });
   if (res.status === 404) return;
@@ -475,7 +475,7 @@ export async function listCloudflareDomains(
   projectName: string,
   token: string
 ): Promise<CloudflareDomainResult[]> {
-  const res = await cfFetch(`/accounts/${accountId}/pages/projects/${encodeURIComponent(projectName)}/domains`, token);
+  const res = await cfFetch(`/accounts/${encodeURIComponent(accountId)}/pages/projects/${encodeURIComponent(projectName)}/domains`, token);
   if (!res.ok) throw await parseCloudflareError(res);
   const data = await res.json();
   const domains = (Array.isArray(data.result) ? data.result : []) as CfDomainResponse[];
@@ -488,7 +488,7 @@ export async function addCloudflareDomain(
   domain: string,
   token: string
 ): Promise<CloudflareDomainResult> {
-  const res = await cfFetch(`/accounts/${accountId}/pages/projects/${encodeURIComponent(projectName)}/domains`, token, {
+  const res = await cfFetch(`/accounts/${encodeURIComponent(accountId)}/pages/projects/${encodeURIComponent(projectName)}/domains`, token, {
     method: "POST",
     body: JSON.stringify({ name: domain }),
   });
@@ -513,7 +513,7 @@ export async function removeCloudflareDomain(
   token: string
 ): Promise<void> {
   const res = await cfFetch(
-    `/accounts/${accountId}/pages/projects/${encodeURIComponent(projectName)}/domains/${encodeURIComponent(domain)}`,
+    `/accounts/${encodeURIComponent(accountId)}/pages/projects/${encodeURIComponent(projectName)}/domains/${encodeURIComponent(domain)}`,
     token,
     { method: "DELETE" }
   );
@@ -536,7 +536,7 @@ async function getCurrentEnvVars(
   projectName: string,
   token: string
 ): Promise<{ production: Record<string, { value: string }>; preview: Record<string, { value: string }> }> {
-  const res = await cfFetch(`/accounts/${accountId}/pages/projects/${encodeURIComponent(projectName)}`, token);
+  const res = await cfFetch(`/accounts/${encodeURIComponent(accountId)}/pages/projects/${encodeURIComponent(projectName)}`, token);
   if (!res.ok) throw await parseCloudflareError(res);
   const data = await res.json();
   const project = data.result as CfProjectResponse;
@@ -577,7 +577,7 @@ export async function upsertCloudflareEnv(
   if (targets.includes("production")) current.production[key] = { value };
   if (targets.includes("preview")) current.preview[key] = { value };
 
-  const res = await cfFetch(`/accounts/${accountId}/pages/projects/${encodeURIComponent(projectName)}`, token, {
+  const res = await cfFetch(`/accounts/${encodeURIComponent(accountId)}/pages/projects/${encodeURIComponent(projectName)}`, token, {
     method: "PATCH",
     body: JSON.stringify({
       deployment_configs: {
@@ -603,7 +603,7 @@ export async function deleteCloudflareEnv(
   if (key in current.preview) previewPayload[key] = null;
   if (!(key in current.production) && !(key in current.preview)) return; // already gone
 
-  const res = await cfFetch(`/accounts/${accountId}/pages/projects/${encodeURIComponent(projectName)}`, token, {
+  const res = await cfFetch(`/accounts/${encodeURIComponent(accountId)}/pages/projects/${encodeURIComponent(projectName)}`, token, {
     method: "PATCH",
     body: JSON.stringify({
       deployment_configs: {

@@ -1,135 +1,96 @@
 # Depup
 
-**Depup** adalah landing page + dashboard untuk mengelola deployment Vercel dan Cloudflare
-Pages dari satu tempat — dibangun dengan Next.js 14 (App Router), TypeScript, dan Tailwind CSS.
+**Depup** adalah dashboard untuk men-deploy dan mengelola project dari repo GitHub ke **Vercel**,
+**Cloudflare Pages**, dan **Railway** dari satu tempat. Dibangun dengan Next.js 14 (App Router),
+TypeScript, dan Tailwind CSS. Semua integrasi memanggil API platform asli — tidak ada data
+simulasi.
 
-## Halaman
+## Fitur
 
-- **`/` — Landing Page**
-  Company profile bergaya Linear/Vercel dengan glassmorphism: hero section, social proof, grid
-  fitur, alur "How it Works", dan CTA. Termasuk flow "Login with Google" (dummy) untuk masuk ke
-  dashboard.
+- **Login Google (OAuth2 asli)** — session berupa cookie `httpOnly` bertanda tangan HMAC.
+- **Deploy** — wizard bertahap: validasi repo GitHub → buat deployment → pantau status build
+  sampai selesai (atau tampilkan error asli dari platform).
+- **Projects** — project unik dari riwayat deploy, dengan tombol Visit & Redeploy.
+- **Domains** — tambah/cek/hapus custom domain per project, lengkap dengan instruksi DNS.
+- **Environment** — kelola environment variable; nilai bisa disembunyikan.
+- **Observability** — traffic 7 hari terakhir dari Vercel Web Analytics.
+- **Settings** — simpan token platform + tombol *Test Koneksi* yang benar-benar memanggil API.
+- **Docs** — panduan singkat di dalam aplikasi (token, GitHub PAT, OAuth, CNAME).
 
-- **`/dashboard` — Deploy Dashboard**
-  Aplikasi manajemen deployment dengan sidebar responsif (mobile: off-canvas drawer, desktop:
-  sidebar statis) dan beberapa halaman:
-  - **Dashboard** — ringkasan total deployment, status Ready/Failed, dan riwayat deploy terbaru.
-  - **Projects** — daftar project unik yang dikelompokkan dari riwayat deploy, lengkap dengan
-    tombol Visit & Redeploy.
-  - **Deploy** — form untuk deploy project baru (nama, platform, domain custom, token, catatan).
-    Untuk platform **Vercel**, ini memicu deployment sungguhan lewat backend di `app/api`
-    (validasi repo GitHub → create deployment → polling status). Platform lain (Cloudflare,
-    Railway, Render) masih simulasi 5 langkah sambil menunggu integrasi backend-nya menyusul.
-  - **Domains** — kelola custom domain per project.
-  - **Environment** — kelola environment variable/secret dengan value yang bisa disembunyikan.
-  - **Docs** — panduan singkat (token Vercel, GitHub PAT, setup CNAME domain).
-  - **Settings** — token platform global (Vercel, Cloudflare, GitHub PAT).
+Navigasi dashboard tersimpan di URL (`/dashboard?view=deploy`), jadi refresh, tombol Back, dan
+bookmark bekerja normal.
 
-## Backend (`app/api`)
+## Menjalankan
 
-Semua logic backend disatukan di satu folder, sebagai Next.js Route Handlers — jadi otomatis
-ikut ter-deploy sebagai serverless functions setiap kali project di-push ke Vercel, tanpa server
-terpisah.
+```bash
+npm ci
+npm run dev        # http://localhost:3000
+npm run build && npm start
+npm run lint
+```
+
+## Environment variable
+
+Set di Vercel → Project Settings → Environment Variables (jangan commit file `.env`).
+Lihat `.env.example`.
+
+| Env var | Wajib | Keterangan |
+|---|---|---|
+| `GOOGLE_CLIENT_ID` | ya | Google Cloud Console → Credentials → OAuth client ID |
+| `GOOGLE_CLIENT_SECRET` | ya | Secret dari client ID di atas |
+| `AUTH_SECRET` | ya | String acak ≥ 16 karakter. Dipakai menandatangani session **dan** menurunkan kunci enkripsi token tersimpan — mengganti nilainya membuat session lama tidak valid dan token tersimpan tidak bisa didekripsi |
+| `KV_REST_API_URL`, `KV_REST_API_TOKEN` | ya (production) | Terisi otomatis saat database KV di-connect ke project |
+| `GITHUB_TOKEN` | tidak | Menaikkan rate limit GitHub untuk validasi repo publik. Dipakai untuk SEMUA user yang login — buat fine-grained token tanpa akses ke repo private (hanya data publik), atau kosongkan |
+
+Redirect URI yang didaftarkan di Google Cloud Console:
+`https://<domain-kamu>/api/auth/google/callback`.
+
+> **Tanpa KV, data dashboard tidak bisa disimpan** (`/api/user-data` mengembalikan error),
+> termasuk saat `next dev`. Rate limiting juga nonaktif tanpa KV (fail-open); gerbang session
+> tetap aktif.
+
+## Arsitektur singkat
+
+Backend adalah Route Handlers di `app/api/`, ikut ter-deploy sebagai serverless function:
 
 ```
 app/api/
-├── _lib/                     # helper yang dipakai bersama semua route
-│   ├── github.ts             # parse URL + validasi repo (public/private, struktur)
-│   ├── vercel.ts             # client tipis untuk Vercel REST API
-│   ├── validators.ts         # validasi input request (tanpa dependency tambahan)
-│   └── response.ts           # helper response JSON seragam + error wrapper
-├── github/validate/route.ts  # POST — cek repo sebelum deploy
-├── deploy/route.ts           # POST — validasi ulang di server, lalu create deployment Vercel
-└── deploy/[id]/route.ts      # GET  — polling status build (dipanggil tiap 2 detik dari client)
+├── _lib/          # client tipis per platform (vercel, cloudflare, railway, github),
+│                  # session, crypto, store (KV), rate-limit, validators, response
+├── auth/          # login Google, callback, logout, session
+├── deploy/        # create + polling status deployment (Vercel)
+├── vercel|cloudflare|railway/   # whoami, project, status, redeploy, domains, env, dst.
+├── github/        # validate repo, whoami
+└── user-data/     # baca/simpan data dashboard per akun
 ```
 
-**Alur deploy (platform Vercel):**
-1. Client kirim `githubUrl` + `githubPat` (opsional) ke `POST /api/github/validate`.
-2. Server memanggil GitHub API: memastikan repo ada, mendeteksi **public/private**, cek apakah
-   `package.json` ada di root, coba tebak framework-nya, dan kumpulkan warning (mis. tidak ada
-   script `build`) — semua ini yang dimaksud "validasi fungsi & struktur".
-3. Kalau lolos, client kirim `POST /api/deploy` (server **validasi ulang** repo, jangan percaya
-   input client begitu saja). Sebelum create deployment, server juga cek `GET /v9/projects/{name}`
-   ke Vercel — kalau nama project itu **sudah ada tapi ke-link ke repo GitHub yang beda**, request
-   ditolak (409, `project_conflict`) supaya tidak ada project yang ke-relink diam-diam ke repo
-   salah. Kalau project belum ada, atau sudah ada dan repo-nya sama (redeploy normal), lanjut ke
-   `POST /v13/deployments` di Vercel API pakai token Vercel yang diisi user di form.
-4. Client polling `GET /api/deploy/{id}` tiap 2 detik (token dikirim lewat header
-   `x-vercel-token`, bukan query string) sampai `readyState` jadi `READY` (sukses, tampil domain +
-   link inspector/build logs) atau `ERROR`/`CANCELED` (modal menampilkan pesan error asli dari
-   Vercel).
+State client ada di `lib/deploy-context.tsx`; data dashboard (riwayat, domain, env var, token)
+disinkronkan ke server lewat `lib/useCloudStorage.ts`.
 
-**Keamanan token:** token Vercel/GitHub yang diisi di form **tidak pernah disimpan** di server —
-hanya diteruskan langsung ke GitHub/Vercel API untuk request itu saja, lalu hilang begitu request
-selesai. Untuk menaikkan rate limit GitHub API saat validasi repo publik tanpa PAT, bisa set env
-var `GITHUB_TOKEN` (opsional, server-side only, tidak wajib).
+## Keamanan
 
-**Roadmap:** Cloudflare Pages, Railway, dan Render masih pakai simulasi di client. Saat mau
-dikerjakan, tambahkan helper baru di `app/api/_lib/` (mis. `cloudflare.ts`) dan route baru di
-`app/api/deploy/` mengikuti pola yang sama seperti Vercel — supaya backend tetap satu folder.
+- **Semua `/api/*` selain `/api/auth/*` wajib session valid.** Gerbangnya ada di `middleware.ts`
+  (tanda tangan HMAC diverifikasi di edge). Request tanpa session mendapat `401`, sehingga server
+  ini tidak bisa dipakai orang luar sebagai proxy ke API platform.
+- **Rate limit** per user (email dari session yang sudah terverifikasi) atau per IP untuk request
+  anonim, memakai KV. Batas lebih ketat untuk endpoint auth dan GitHub.
+- **Token platform** (Vercel/Cloudflare/Railway/GitHub PAT) dan nilai env var yang disimpan
+  dienkripsi AES-256-GCM sebelum masuk KV. Token yang diketik di form deploy hanya diteruskan ke
+  platform untuk request itu dan tidak disimpan oleh server.
+- Header keamanan (HSTS, CSP, X-Frame-Options, dll.) diatur di `next.config.js`. CSP masih
+  mengizinkan `'unsafe-inline'`/`'unsafe-eval'` untuk script karena kebutuhan Next.js 14 tanpa nonce.
+- Logout menghapus cache lokal (`depup-fallback:*`) dari browser.
 
-Domains (`app/api/vercel/domains/*`) dan Environment Variables (`app/api/vercel/env/*`) pakai
-pola yang sama persis: validasi input → panggil Vercel REST API asli → tidak ada data statis.
-Settings punya tombol **Test Koneksi** yang benar-benar memanggil `GET /v2/user` (Vercel) dan
-`GET /user` (GitHub) untuk membuktikan token valid, bukan sekadar cek format.
+## Catatan perilaku
 
-## Penyimpanan data dashboard (per akun Google, bukan localStorage)
+- **Riwayat deploy dibatasi 10 entri.** Saat penuh, entri terlama dihapus otomatis tanpa konfirmasi.
+- **Domain deployment** dibentuk dari nama project: `*.vercel.app`, `*.pages.dev`, atau
+  `*.up.railway.app` sesuai platform.
+- Project yang sudah dihapus langsung di dashboard platform ditandai `deleted` di riwayat dan
+  tidak muncul lagi di halaman Projects.
 
-Deploy history, domains, environment variables, dan settings tokens **tidak** lagi disimpan di
-`localStorage` browser — semua disimpan di server lewat `GET`/`PUT /api/user-data`
-(`app/api/user-data/route.ts`), di-keyed pakai email dari session cookie yang sedang login. Jadi
-kalau login dengan akun Google yang sama di device/browser lain, data yang sama akan muncul,
-bukannya kosong.
+## Keamanan — checklist sebelum publik
 
-Backend-nya (`app/api/_lib/store.ts`) pakai **Vercel KV** (REST API yang kompatibel dengan
-Upstash) — tinggal buka **Vercel dashboard -> Storage -> Create Database -> KV**, connect ke
-project ini, lalu redeploy; Vercel otomatis mengisi env var `KV_REST_API_URL` dan
-`KV_REST_API_TOKEN`. Tanpa KV di-attach, di production route ini akan menolak request dengan
-pesan error yang jelas (bukan diam-diam gagal). Untuk `next dev` tanpa KV, ada fallback nulis ke
-file JSON lokal di `.data/` supaya tetap bisa dites — fallback ini **hanya untuk dev**, tidak
-jalan di production karena filesystem Vercel serverless read-only.
-
-Data lama yang masih ada di `localStorage` browser (dari sebelum perubahan ini) otomatis
-di-migrasikan sekali ke server saat pertama kali dashboard dibuka, lalu dihapus dari
-`localStorage` (lihat `lib/useCloudStorage.ts`).
-
-## Login Google (OAuth2 asli)
-
-Depup pakai OAuth2 Google beneran — bukan simulasi/akun dummy. Alurnya standar Authorization
-Code flow, session disimpan sebagai cookie `httpOnly` yang ditandatangani HMAC (lihat
-`app/api/_lib/session.ts`), tanpa dependency tambahan (`next-auth`, dll).
-
-**Environment variable yang wajib di-set** (di Vercel Project Settings → Environment Variables,
-lalu redeploy):
-
-| Env var | Keterangan |
-|---|---|
-| `GOOGLE_CLIENT_ID` | Dari Google Cloud Console → Credentials → OAuth client ID |
-| `GOOGLE_CLIENT_SECRET` | Pasangan secret dari client ID di atas — **jangan pernah** ditaruh di kode atau dikirim ke chat manapun |
-| `AUTH_SECRET` | String acak bebas (minimal 16 karakter) untuk menandatangani session cookie |
-
-Redirect URI yang harus didaftarkan di Google Cloud Console (Authorized redirect URIs):
-`https://<domain-vercel-kamu>/api/auth/google/callback`. Panduan lengkap langkah-demi-langkah ada
-di halaman **Docs** dalam aplikasi (juga mencakup cara bikin Vercel Token & GitHub PAT).
-
-Alur teknis: `GET /api/auth/google` redirect ke consent screen Google asli →
-`GET /api/auth/google/callback` menukar `code` jadi access token, ambil profil asli
-(`name`, `email`, `picture`) dari Google, lalu set cookie session → `GET /api/auth/session`
-dipakai `auth-context.tsx` untuk hydrate status login di client → `/dashboard` dikunci lewat
-`AuthGuard` yang redirect ke `/` kalau belum ada session valid.
-
-## Desain
-
-Dual theme (dark/light) dengan token warna dan glassmorphism yang konsisten — blur dipakai secara
-selektif (hanya sidebar & stat card) supaya UI tetap ringan di perangkat mobile, sementara elemen
-lain (tabel, form, modal) memakai permukaan solid untuk performa.
-
-## Catatan
-
-- **Auth adalah dummy flow.** Tidak memakai NextAuth/OAuth asli — "Login with Google" membuka
-  pemilih akun dengan dua akun contoh, mensimulasikan proses login, lalu menyimpan sesi di
-  `localStorage`. Logout akan menghapus sesi tersebut dan kembali ke halaman utama.
-- **Riwayat deploy** dibatasi maksimal 10 entri — entri terlama otomatis terhapus saat penuh, dan
-  akan muncul konfirmasi sebelum itu terjadi.
-- **Domain deployment** di-generate otomatis dari nama project: `*.pages.dev` untuk Cloudflare,
-  `*.vercel.app` untuk platform lainnya.
+- Jangan pernah commit/zip file `.env`. Kalau pernah terkirim ke pihak lain, ganti `GOOGLE_CLIENT_SECRET`, `AUTH_SECRET`, dan token KV.
+- Semua route `/api/*` (kecuali `/api/auth/*`) wajib session valid — dicek di `middleware.ts` **dan** lagi di `withErrorHandling` (`app/api/_lib/response.ts`). Route baru otomatis terlindungi; hanya tambahkan `{ public: true }` bila memang sengaja publik.
+- Jalankan `npm audit` secara berkala; `next@14.2.x` punya advisory yang perbaikannya hanya di Next 15/16 (lihat catatan upgrade).

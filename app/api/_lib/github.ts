@@ -1,6 +1,10 @@
 import type { GithubValidation } from "@/types";
 
-const GITHUB_URL_RE = /^https?:\/\/github\.com\/([^/\s]+)\/([^/\s#?]+?)(?:\.git)?\/?(?:[#?].*)?$/i;
+// Owner: sesuai aturan username GitHub. Repo: huruf/angka/titik/underscore/strip.
+// Sengaja ketat supaya "owner" atau "repo" tidak bisa berisi ".." / "%2F" yang
+// mengubah path ke endpoint api.github.com lain (request membawa token server).
+const GITHUB_URL_RE =
+  /^https?:\/\/github\.com\/([A-Za-z0-9](?:[A-Za-z0-9-]{0,38}))\/([A-Za-z0-9._-]+?)(?:\.git)?\/?(?:[#?].*)?$/i;
 
 export class GithubApiError extends Error {
   code: "invalid_url" | "repo_not_found" | "github_auth_required" | "bad_request";
@@ -13,6 +17,12 @@ export class GithubApiError extends Error {
 export function parseGithubUrl(input: string): { owner: string; repo: string } {
   const match = GITHUB_URL_RE.exec(input.trim());
   if (!match) {
+    throw new GithubApiError(
+      "URL GitHub tidak valid. Gunakan format https://github.com/owner/repo",
+      "invalid_url"
+    );
+  }
+  if (match[2] === "." || match[2] === "..") {
     throw new GithubApiError(
       "URL GitHub tidak valid. Gunakan format https://github.com/owner/repo",
       "invalid_url"
@@ -147,7 +157,7 @@ async function fetchRepoFileText(
 ): Promise<string | null> {
   try {
     const res = await githubFetch(
-      `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${encodeURIComponent(ref)}`,
+      `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/${path}?ref=${encodeURIComponent(ref)}`,
       pat
     );
     if (!res.ok) return null;
@@ -208,7 +218,10 @@ export async function validateGithubRepo(
 ): Promise<GithubValidation> {
   const { owner, repo } = parseGithubUrl(repoUrl);
 
-  const repoRes = await githubFetch(`https://api.github.com/repos/${owner}/${repo}`, githubPat);
+  const repoRes = await githubFetch(
+    `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`,
+    githubPat
+  );
 
   if (repoRes.status === 404) {
     throw new GithubApiError(
@@ -235,7 +248,7 @@ export async function validateGithubRepo(
   let framework: string | null = null;
 
   const pkgRes = await githubFetch(
-    `https://api.github.com/repos/${owner}/${repo}/contents/package.json?ref=${defaultBranch}`,
+    `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/package.json?ref=${encodeURIComponent(defaultBranch)}`,
     githubPat
   );
 

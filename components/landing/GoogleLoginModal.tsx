@@ -3,6 +3,7 @@
 import * as React from "react";
 import { X } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
+import { useDialogA11y } from "@/components/ui/useDialogA11y";
 
 export function GoogleMark({ size = 18 }: { size?: number }) {
   return (
@@ -17,6 +18,7 @@ export function GoogleMark({ size = 18 }: { size?: number }) {
 
 export function GoogleLoginModal({ open, onClose }: { open: boolean; onClose: () => void }) {
   const { login } = useAuth();
+  const dialogRef = useDialogA11y<HTMLDivElement>(open, onClose);
 
   if (!open) return null;
 
@@ -26,7 +28,12 @@ export function GoogleLoginModal({ open, onClose }: { open: boolean; onClose: ()
       onClick={onClose}
     >
       <div
-        className="glass w-full max-w-sm !rounded-[22px] p-6 text-[var(--text)]"
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Masuk ke Depup"
+        tabIndex={-1}
+        className="glass w-full max-w-sm !rounded-[22px] p-6 text-[var(--text)] outline-none"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-1">

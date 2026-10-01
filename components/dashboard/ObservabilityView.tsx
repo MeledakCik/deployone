@@ -1,5 +1,6 @@
 "use client";
 
+import { notifySessionExpired } from "@/lib/session-expired";
 import * as React from "react";
 import { Activity, Loader2, RefreshCw, ShieldAlert } from "lucide-react";
 import { Surface } from "@/components/ui/Surface";
@@ -28,6 +29,7 @@ async function fetchAnalytics(project: string, vercelToken: string): Promise<Ana
     cache: "no-store",
   });
   const body = (await res.json().catch(() => null)) as ApiResponse<AnalyticsApiResult> | null;
+  notifySessionExpired(body);
   if (!body || !body.ok) throw new Error(body?.error ?? `Request gagal (${res.status})`);
   return body.data;
 }
