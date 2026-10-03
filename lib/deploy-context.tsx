@@ -5,6 +5,7 @@ import * as React from "react";
 import { useToast } from "@/components/ui/Toast";
 import { resolveDomain, formatDate } from "@/lib/utils";
 import { useCloudStorage } from "@/lib/useCloudStorage";
+import { ApiRequestError, toFriendlyError, type ErrorStage } from "@/lib/friendly-error";
 import type {
   ApiResponse,
   CloudflareAccountInfo,
@@ -20,6 +21,7 @@ import type {
   DeployStatusResult,
   DomainItem,
   EnvItem,
+  ErrorGuide,
   GithubConnectionStatus,
   GithubValidation,
   HistoryItem,
@@ -50,7 +52,7 @@ export const DEPLOY_STEPS = [
 const MAX_HISTORY = 10;
 const POLL_INTERVAL_MS = 2000;
 
-const GITHUB_REPO_RE = /^https:\/\/github\.com\/[^/]+\/[^/]+/;
+const GITHUB_REPO_RE = /^(?:https?:\/\/)?(?:www\.)?github\.com\/[^/\s]+\/[^/\s]+/i;
 const ENV_KEY_RE = /^[A-Z][A-Z0-9_]*$/;
 
 function wwwPairFor(domain: string): string {
@@ -69,14 +71,33 @@ const DEFAULT_SETTINGS_TOKENS: SettingsTokens = {
 };
 
 async function callApi<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, init);
+  let res: Response;
+  try {
+    res = await fetch(url, init);
+  } catch {
+    // fetch hanya melempar error kalau tidak ada respons sama sekali (offline / DNS / diblokir).
+    throw new ApiRequestError("Tidak bisa menghubungi server.", { code: "network" });
+  }
   const body = (await res.json().catch(() => null)) as ApiResponse<T> | null;
   notifySessionExpired(body);
   if (!body || !body.ok) {
-    throw new Error(body?.error ?? `Request gagal (${res.status})`);
+    throw new ApiRequestError(body?.error ?? `Request gagal (${res.status})`, {
+      code: body && !body.ok ? body.code : undefined,
+      status: res.status,
+      guide: body && !body.ok ? body.guide : undefined,
+    });
   }
   return body.data;
 }
+
+const EMPTY_REPO_CHECK = {
+  status: "idle" as "idle" | "checking" | "ok" | "error",
+  detectedEnvVars: [] as string[],
+  framework: null as string | null,
+  warnings: [] as string[],
+  validation: null as GithubValidation | null,
+  errorGuide: null as ErrorGuide | null,
+};
 
 const DEFAULT_MODAL_TITLE = "Deploy Project";
 const DEFAULT_MODAL_SUBTITLE =
@@ -110,6 +131,8 @@ export interface DeployState {
   title: string;
   subtitle: string;
   error: string | null;
+  /** Penjelasan ramah + langkah perbaikan saat deploy gagal. */
+  errorGuide: ErrorGuide | null;
   result: {
     name: string;
     domain: string;
@@ -126,6 +149,7 @@ const defaultDeployState: DeployState = {
   title: DEFAULT_MODAL_TITLE,
   subtitle: DEFAULT_MODAL_SUBTITLE,
   error: null,
+  errorGuide: null,
   result: null,
 };
 
@@ -171,7 +195,15 @@ interface DeployContextValue {
     detectedEnvVars: string[];
     framework: string | null;
     warnings: string[];
+    /** Hasil lengkap cek repo (tipe project + kecocokan per platform). */
+    validation: GithubValidation | null;
+    /** Penjelasan ramah kalau pengecekan repo gagal. */
+    errorGuide: ErrorGuide | null;
   };
+  /** Ulangi pengecekan repo (mis. setelah rate limit / jaringan putus). */
+  recheckRepo: () => void;
+  /** Ulangi deploy terakhir dengan isi form yang sama. */
+  retryDeploy: () => void;
 
   /** Legacy derived view — dipakai DeployModal.tsx. */
   modal: ModalState;
@@ -208,15 +240,6 @@ interface DeployContextValue {
   checkGithubConnection: () => Promise<void>;
 
   submitDeploy: (e: React.FormEvent<HTMLFormElement>) => void;
-
-  /**
-   * Konfirmasi saat riwayat deploy sudah penuh (MAX_HISTORY).
-   * DeployFormView memanggil submitDeploy → kalau history.length >= MAX_HISTORY,
-   * modal konfirmasi dibuka dan deploy ditahan sampai user memilih.
-   */
-  confirmOpen: boolean;
-  closeConfirm: () => void;
-  proceedDeploy: () => void;
 
   redeploy: (name: string) => void;
 
@@ -307,9 +330,6 @@ function isDashboardView(v: string | null): v is DashboardView {
  *  Provider
  * ================================================================ */
 
-/** Entri history yang lebih muda dari ini tidak boleh dianggap 'hilang' oleh sync. */
-const RECENTLY_DEPLOYED_GRACE_MS = 3 * 60 * 1000;
-
 export function DeployProvider({ children }: { children: React.ReactNode }) {
   const { showToast } = useToast();
 
@@ -356,12 +376,12 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
   }, [history]);
 
   const [form, setForm] = React.useState<DeployFormValues>(emptyForm);
+  React.useEffect(() => {
+    platformForCheckRef.current = form.platform;
+  }, [form.platform]);
+
   const [deployState, setDeployState] =
     React.useState<DeployState>(defaultDeployState);
-
-  /* ---------- konfirmasi riwayat penuh ---------- */
-  const [confirmOpen, setConfirmOpen] = React.useState(false);
-  const pendingDeployRef = React.useRef<DeployFormValues | null>(null);
 
   /* ---------- auto-detect env vars needed by the repo ---------- */
   const [repoEnvCheck, setRepoEnvCheck] = React.useState<{
@@ -369,24 +389,29 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     detectedEnvVars: string[];
     framework: string | null;
     warnings: string[];
-  }>({ status: "idle", detectedEnvVars: [], framework: null, warnings: [] });
+    validation: GithubValidation | null;
+    errorGuide: ErrorGuide | null;
+  }>(EMPTY_REPO_CHECK);
+  const [repoCheckNonce, setRepoCheckNonce] = React.useState(0);
   const lastCheckedRepoRef = React.useRef<string | null>(null);
+  const platformForCheckRef = React.useRef<Platform>("vercel");
+  const lastDeployDataRef = React.useRef<DeployFormValues | null>(null);
 
   React.useEffect(() => {
     const raw = form.githubUrl?.trim();
     if (!raw || !GITHUB_REPO_RE.test(raw)) {
-      setRepoEnvCheck({ status: "idle", detectedEnvVars: [], framework: null, warnings: [] });
+      setRepoEnvCheck(EMPTY_REPO_CHECK);
       lastCheckedRepoRef.current = null;
       return;
     }
 
-    const key = `${raw}::${form.githubPat}`;
+    const key = `${raw}::${form.githubPat}::${repoCheckNonce}`;
     if (lastCheckedRepoRef.current === key) return;
 
     let cancelled = false;
     const timer = setTimeout(async () => {
       lastCheckedRepoRef.current = key;
-      setRepoEnvCheck((prev) => ({ ...prev, status: "checking" }));
+      setRepoEnvCheck((prev) => ({ ...prev, status: "checking", errorGuide: null }));
       try {
         const result = await callApi<GithubValidation>("/api/github/validate", {
           method: "POST",
@@ -404,6 +429,8 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           detectedEnvVars: result.detectedEnvVars,
           framework: result.framework,
           warnings: otherWarnings,
+          validation: result,
+          errorGuide: null,
         });
         // Auto-fill the Environment Variables step with `KEY=` placeholders
         // for anything detected — only when the user hasn't typed anything
@@ -415,9 +442,13 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
             return { ...prev, envText: template };
           });
         }
-      } catch {
+      } catch (err) {
         if (!cancelled)
-          setRepoEnvCheck({ status: "error", detectedEnvVars: [], framework: null, warnings: [] });
+          setRepoEnvCheck({
+            ...EMPTY_REPO_CHECK,
+            status: "error",
+            errorGuide: toFriendlyError(err, { platform: platformForCheckRef.current, stage: "check" }),
+          });
       }
     }, 700);
 
@@ -425,7 +456,12 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [form.githubUrl, form.githubPat]);
+  }, [form.githubUrl, form.githubPat, repoCheckNonce]);
+
+  const recheckRepo = React.useCallback(() => {
+    lastCheckedRepoRef.current = null;
+    setRepoCheckNonce((n) => n + 1);
+  }, []);
 
   const [domains, setDomains] = useCloudStorage<DomainItem[]>(
     "domains",
@@ -669,20 +705,64 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     setDeployState({ ...defaultDeployState, status: "deploying" });
   }, []);
 
+  /**
+   * Menandai deploy gagal dan menyiapkan penjelasan yang mudah dipahami.
+   * `source` boleh Error apa pun (ApiRequestError, TypeError jaringan, dst.).
+   */
   const failDeploy = React.useCallback(
-    (data: DeployFormValues, message: string) => {
+    (
+      data: DeployFormValues,
+      source: unknown,
+      stage: ErrorStage = "create",
+      validation?: GithubValidation,
+    ) => {
       const projectName =
         (data.projectName || "my-project").trim() || "my-project";
+      const guide = toFriendlyError(source, {
+        platform: data.platform,
+        stage,
+        project: validation?.project,
+        repoFullName: validation?.fullName,
+      });
       setDeployState((prev) => ({
         ...prev,
         status: "error",
-        title: "Deploy Gagal",
-        subtitle: message,
-        error: message,
+        title: guide.title,
+        subtitle: guide.message,
+        error: guide.message,
+        errorGuide: guide,
       }));
-      addHistory(projectName, data.platform, "-", "failed");
+      // Repo yang ditolak SEBELUM deploy dimulai tidak perlu masuk riwayat "gagal".
+      if (stage !== "check") addHistory(projectName, data.platform, "-", "failed");
     },
     [addHistory],
+  );
+
+  /**
+   * Gerbang kecocokan: dipanggil tepat setelah repo dicek. Kalau jenis project
+   * tidak cocok dengan platform tujuan, deploy DIHENTIKAN di sini (belum ada
+   * yang dibuat di platform) dan user diberi penjelasan + panduan manual.
+   * Mengembalikan true kalau deploy harus berhenti.
+   */
+  const stopIfIncompatible = React.useCallback(
+    (data: DeployFormValues, validation: GithubValidation): boolean => {
+      const compat = validation.compat[data.platform];
+      if (compat.level === "blocked") {
+        failDeploy(
+          data,
+          new ApiRequestError(compat.guide?.message ?? compat.summary, {
+            code: validation.project.type === "empty" ? "empty_repo" : "unsupported_project",
+            guide: compat.guide,
+          }),
+          "check",
+          validation,
+        );
+        return true;
+      }
+      compat.notes.forEach((n) => showToast(n));
+      return false;
+    },
+    [failDeploy, showToast],
   );
 
   const resetDeployState = React.useCallback(() => {
@@ -709,17 +789,16 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           }),
         });
       } catch (err) {
-        failDeploy(
-          data,
-          err instanceof Error ? err.message : "Validasi GitHub gagal.",
-        );
+        failDeploy(data, err, "check");
         return;
       }
+      // Cek jenis project dulu — jangan lanjut kalau tidak cocok dengan platform ini.
+      if (stopIfIncompatible(data, validation)) return;
       setDeployState((prev) => ({
         ...prev,
         stepIndex: 1,
         barWidth: 20,
-        subtitle: `Repo ${validation.fullName} (${validation.visibility}) terverifikasi.`,
+        subtitle: `Repo ${validation.fullName} (${validation.visibility}) terverifikasi — terdeteksi: ${validation.project.label}.`,
       }));
       validation.warnings.forEach((w) => showToast(w));
 
@@ -736,12 +815,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           }),
         });
       } catch (err) {
-        failDeploy(
-          data,
-          err instanceof Error
-            ? err.message
-            : "Gagal membuat deployment di Vercel.",
-        );
+        failDeploy(data, err, "create", validation);
         return;
       }
       setDeployState((prev) => ({ ...prev, stepIndex: 2, barWidth: 40 }));
@@ -755,12 +829,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           );
         } catch (err) {
           if (intervalRef.current) clearInterval(intervalRef.current);
-          failDeploy(
-            data,
-            err instanceof Error
-              ? err.message
-              : "Gagal memantau status deploy.",
-          );
+          failDeploy(data, err, "status", validation);
           return;
         }
         if (
@@ -838,13 +907,14 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           if (intervalRef.current) clearInterval(intervalRef.current);
           failDeploy(
             data,
-            status.errorMessage ??
-              "Build gagal di Vercel. Cek inspector url untuk detail log.",
+            new Error(status.errorMessage ?? "Build gagal di Vercel. Cek inspector url untuk detail log."),
+            "build",
+            validation,
           );
         }
       }, POLL_INTERVAL_MS);
     },
-    [addHistory, beginDeploy, failDeploy, showToast],
+    [addHistory, beginDeploy, failDeploy, showToast, stopIfIncompatible],
   );
 
   /* ---------- Cloudflare ---------- */
@@ -872,17 +942,16 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           }),
         });
       } catch (err) {
-        failDeploy(
-          data,
-          err instanceof Error ? err.message : "Validasi GitHub gagal.",
-        );
+        failDeploy(data, err, "check");
         return;
       }
+      // Cek jenis project dulu — jangan lanjut kalau tidak cocok dengan platform ini.
+      if (stopIfIncompatible(data, validation)) return;
       setDeployState((prev) => ({
         ...prev,
         stepIndex: 1,
         barWidth: 20,
-        subtitle: `Repo ${validation.fullName} (${validation.visibility}) terverifikasi.`,
+        subtitle: `Repo ${validation.fullName} (${validation.visibility}) terverifikasi — terdeteksi: ${validation.project.label}.`,
       }));
       validation.warnings.forEach((w) => showToast(w));
 
@@ -906,17 +975,13 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         );
       } catch (err) {
         if (
-          err instanceof Error &&
-          err.message.toLowerCase().includes("github belum terhubung")
+          (err instanceof ApiRequestError && err.code === "github_not_connected") ||
+          (err instanceof Error &&
+            err.message.toLowerCase().includes("github belum terhubung"))
         ) {
           void checkGithubConnection();
         }
-        failDeploy(
-          data,
-          err instanceof Error
-            ? err.message
-            : "Gagal membuat deployment di Cloudflare Pages.",
-        );
+        failDeploy(data, err, "create", validation);
         return;
       }
       if (created.frameworkWarning) showToast(created.frameworkWarning);
@@ -933,12 +998,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           );
         } catch (err) {
           if (intervalRef.current) clearInterval(intervalRef.current);
-          failDeploy(
-            data,
-            err instanceof Error
-              ? err.message
-              : "Gagal memantau status deploy.",
-          );
+          failDeploy(data, err, "status", validation);
           return;
         }
         if (
@@ -978,13 +1038,14 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           if (intervalRef.current) clearInterval(intervalRef.current);
           failDeploy(
             data,
-            status.errorMessage ??
-              "Build gagal di Cloudflare Pages. Cek dashboard untuk detail log.",
+            new Error(status.errorMessage ?? "Build gagal di Cloudflare Pages. Cek dashboard untuk detail log."),
+            "build",
+            validation,
           );
         }
       }, POLL_INTERVAL_MS);
     },
-    [addHistory, beginDeploy, checkGithubConnection, failDeploy, showToast],
+    [addHistory, beginDeploy, checkGithubConnection, failDeploy, showToast, stopIfIncompatible],
   );
 
   /* ---------- Railway ---------- */
@@ -1011,17 +1072,16 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           }),
         });
       } catch (err) {
-        failDeploy(
-          data,
-          err instanceof Error ? err.message : "Validasi GitHub gagal.",
-        );
+        failDeploy(data, err, "check");
         return;
       }
+      // Cek jenis project dulu — jangan lanjut kalau tidak cocok dengan platform ini.
+      if (stopIfIncompatible(data, validation)) return;
       setDeployState((prev) => ({
         ...prev,
         stepIndex: 1,
         barWidth: 20,
-        subtitle: `Repo ${validation.fullName} (${validation.visibility}) terverifikasi.`,
+        subtitle: `Repo ${validation.fullName} (${validation.visibility}) terverifikasi — terdeteksi: ${validation.project.label}.`,
       }));
       validation.warnings.forEach((w) => showToast(w));
 
@@ -1043,12 +1103,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           },
         );
       } catch (err) {
-        failDeploy(
-          data,
-          err instanceof Error
-            ? err.message
-            : "Gagal membuat deployment di Railway.",
-        );
+        failDeploy(data, err, "create", validation);
         return;
       }
       setDeployState((prev) => ({ ...prev, stepIndex: 2, barWidth: 40 }));
@@ -1062,12 +1117,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           );
         } catch (err) {
           if (intervalRef.current) clearInterval(intervalRef.current);
-          failDeploy(
-            data,
-            err instanceof Error
-              ? err.message
-              : "Gagal memantau status deploy.",
-          );
+          failDeploy(data, err, "status", validation);
           return;
         }
         if (status.readyState === "BUILDING" || status.readyState === "QUEUED") {
@@ -1113,29 +1163,14 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           if (intervalRef.current) clearInterval(intervalRef.current);
           failDeploy(
             data,
-            status.errorMessage ??
-              "Build gagal di Railway. Cek log di dashboard Railway untuk detail.",
+            new Error(status.errorMessage ?? "Build gagal di Railway. Cek log di dashboard Railway untuk detail."),
+            "build",
+            validation,
           );
         }
       }, POLL_INTERVAL_MS);
     },
-    [addHistory, beginDeploy, failDeploy, showToast],
-  );
-
-  /* ---------- dispatcher deploy (dipakai submitDeploy & proceedDeploy) ---------- */
-  const runDeploy = React.useCallback(
-    (data: DeployFormValues) => {
-      if (data.platform === "vercel") {
-        void startVercelDeploy(data);
-      } else if (data.platform === "cloudflare") {
-        void startCloudflareDeploy(data);
-      } else if (data.platform === "railway") {
-        void startRailwayDeploy(data);
-      } else {
-        showToast("Pilih platform tujuan deploy dulu.");
-      }
-    },
-    [showToast, startVercelDeploy, startCloudflareDeploy, startRailwayDeploy],
+    [addHistory, beginDeploy, failDeploy, showToast, stopIfIncompatible],
   );
 
   /* ---------- submit ---------- */
@@ -1147,34 +1182,33 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         showToast("Format URL GitHub belum benar");
         return;
       }
-
-      // Riwayat deploy sudah penuh → tahan deploy dan minta konfirmasi dulu,
-      // karena entri terlama akan otomatis terhapus saat deploy ini berhasil.
-      const safeHistory = Array.isArray(history) ? history : [];
-      if (safeHistory.length >= MAX_HISTORY) {
-        pendingDeployRef.current = form;
-        setConfirmOpen(true);
-        return;
+      lastDeployDataRef.current = form;
+      if (form.platform === "vercel") {
+        void startVercelDeploy(form);
+      } else if (form.platform === "cloudflare") {
+        void startCloudflareDeploy(form);
+      } else if (form.platform === "railway") {
+        void startRailwayDeploy(form);
+      } else {
+        showToast("Pilih platform tujuan deploy dulu.");
       }
-
-      runDeploy(form);
     },
-    [form, history, showToast, runDeploy],
+    [
+      form,
+      showToast,
+      startCloudflareDeploy,
+      startRailwayDeploy,
+      startVercelDeploy,
+    ],
   );
 
-  /* ---------- konfirmasi handler ---------- */
-  const closeConfirm = React.useCallback(() => {
-    setConfirmOpen(false);
-    pendingDeployRef.current = null;
-  }, []);
-
-  const proceedDeploy = React.useCallback(() => {
-    const data = pendingDeployRef.current;
-    setConfirmOpen(false);
-    pendingDeployRef.current = null;
-    if (!data) return;
-    runDeploy(data);
-  }, [runDeploy]);
+  /** Ulangi deploy terakhir dengan isi form yang sama (tombol "Coba lagi" di modal error). */
+  const retryDeploy = React.useCallback(() => {
+    const data = lastDeployDataRef.current ?? form;
+    if (data.platform === "vercel") void startVercelDeploy(data);
+    else if (data.platform === "cloudflare") void startCloudflareDeploy(data);
+    else if (data.platform === "railway") void startRailwayDeploy(data);
+  }, [form, startCloudflareDeploy, startRailwayDeploy, startVercelDeploy]);
 
   /* legacy no-ops */
 
@@ -1245,11 +1279,12 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
    * matches this exactly. A newly-created entry simply shouldn't be treated
    * as delete-eligible yet.
    */
+  const RECENTLY_DEPLOYED_GRACE_MS = 3 * 60 * 1000;
 
-  const isRecentlyDeployed = React.useCallback((item: HistoryItem): boolean => {
+  function isRecentlyDeployed(item: HistoryItem): boolean {
     const createdAt = Number(item.id);
     return Number.isFinite(createdAt) && Date.now() - createdAt < RECENTLY_DEPLOYED_GRACE_MS;
-  }, []);
+  }
 
   const syncProjectStatus = React.useCallback(
     async (
@@ -1353,7 +1388,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       // nothing to check against, so leave it alone rather than guessing.
       return "skipped";
     },
-    [history, savedCloudflareToken, savedRailwayToken, vercelToken, setHistory, isRecentlyDeployed],
+    [history, savedCloudflareToken, savedRailwayToken, vercelToken, setHistory],
   );
 
   const syncAllProjects = React.useCallback(async () => {
@@ -2734,6 +2769,8 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     setFormField,
     platformTokenLabel,
     repoEnvCheck,
+    recheckRepo,
+    retryDeploy,
 
     // legacy + modern deploy views
     modal,
@@ -2753,11 +2790,6 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     checkGithubConnection,
 
     submitDeploy,
-
-    // konfirmasi riwayat penuh
-    confirmOpen,
-    closeConfirm,
-    proceedDeploy,
 
     redeploy,
 

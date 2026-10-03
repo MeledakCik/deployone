@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import type { ApiError, ApiOk } from "@/types";
-import { getSessionEmail } from "@/app/api/_lib/session";
+import type { ApiError, ApiOk, ErrorGuide } from "@/types";
 
 export function ok<T>(data: T, init?: number): NextResponse<ApiOk<T>> {
   return NextResponse.json({ ok: true, data }, { status: init ?? 200 });
@@ -9,35 +8,18 @@ export function ok<T>(data: T, init?: number): NextResponse<ApiOk<T>> {
 export function fail(
   error: string,
   status: number,
-  code?: ApiError["code"]
+  code?: ApiError["code"],
+  guide?: ErrorGuide
 ): NextResponse<ApiError> {
-  return NextResponse.json({ ok: false, error, code }, { status });
+  return NextResponse.json({ ok: false, error, code, guide }, { status });
 }
 
-interface HandlerOptions {
-  /** true = route boleh diakses tanpa login (hanya /api/auth/session). */
-  public?: boolean;
-}
-
-/**
- * Wraps a route handler so unexpected throws never leak a raw 500 HTML page.
- *
- * Secara default juga MEWAJIBKAN session valid — lapis kedua di belakang
- * middleware.ts, supaya kalau matcher middleware suatu saat bocor/dilewati
- * (mis. advisory middleware di Next), route proxy tetap tidak terbuka.
- */
+/** Wraps a route handler so unexpected throws never leak a raw 500 HTML page. */
 export function withErrorHandling<A extends unknown[]>(
-  handler: (...args: A) => Promise<NextResponse>,
-  options: HandlerOptions = {}
+  handler: (...args: A) => Promise<NextResponse>
 ) {
   return async (...args: A): Promise<NextResponse> => {
     try {
-      if (!options.public) {
-        const req = args[0] as { cookies?: unknown } | undefined;
-        if (!req || !req.cookies || !getSessionEmail(req as Parameters<typeof getSessionEmail>[0])) {
-          return fail("Sesi login habis. Silakan login lagi.", 401, "unauthorized");
-        }
-      }
       return await handler(...args);
     } catch (err) {
       // Sinyal internal Next.js (route ini dinamis) harus diteruskan, bukan ditelan

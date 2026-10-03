@@ -211,7 +211,7 @@ async function findServiceByRepo(
 }
 
 async function getService(serviceId: string, renderToken: string): Promise<RenderServiceRaw> {
-  return renderFetch<RenderServiceRaw>(`/services/${encodeURIComponent(serviceId)}`, renderToken);
+  return renderFetch<RenderServiceRaw>(`/services/${serviceId}`, renderToken);
 }
 
 interface RenderDeployRaw {
@@ -221,7 +221,7 @@ interface RenderDeployRaw {
 
 async function getLatestDeploy(serviceId: string, renderToken: string): Promise<RenderDeployRaw | null> {
   const page = await renderFetch<{ cursor: string; deploy: RenderDeployRaw }[]>(
-    `/services/${encodeURIComponent(serviceId)}/deploys?limit=1`,
+    `/services/${serviceId}/deploys?limit=1`,
     renderToken
   );
   return page[0]?.deploy ?? null;
@@ -366,7 +366,7 @@ export async function createRenderDeployment(
   if (envVars && envVars.length > 0) {
     await Promise.all(
       envVars.map((v) =>
-        renderFetch(`/services/${encodeURIComponent(existing.id)}/env-vars/${encodeURIComponent(v.key)}`, renderToken, {
+        renderFetch(`/services/${existing.id}/env-vars/${encodeURIComponent(v.key)}`, renderToken, {
           method: "PUT",
           body: { value: v.value },
         }).catch(() => {
@@ -377,7 +377,7 @@ export async function createRenderDeployment(
   }
 
   if (startCommand && startCommand.trim()) {
-    await renderFetch(`/services/${encodeURIComponent(existing.id)}`, renderToken, {
+    await renderFetch(`/services/${existing.id}`, renderToken, {
       method: "PATCH",
       body: { serviceDetails: { envSpecificDetails: { startCommand: startCommand.trim() } } },
     }).catch(() => {
@@ -385,7 +385,7 @@ export async function createRenderDeployment(
     });
   }
 
-  const deploy = await renderFetch<RenderDeployRaw>(`/services/${encodeURIComponent(existing.id)}/deploys`, renderToken, {
+  const deploy = await renderFetch<RenderDeployRaw>(`/services/${existing.id}/deploys`, renderToken, {
     method: "POST",
     body: {},
   });
@@ -415,7 +415,7 @@ export async function getRenderDeployment(
   errorMessage: string | null;
 }> {
   const [deploy, service] = await Promise.all([
-    renderFetch<RenderDeployRaw>(`/services/${encodeURIComponent(serviceId)}/deploys/${encodeURIComponent(deploymentId)}`, renderToken),
+    renderFetch<RenderDeployRaw>(`/services/${serviceId}/deploys/${deploymentId}`, renderToken),
     getService(serviceId, renderToken).catch(() => null),
   ]);
 
@@ -449,7 +449,7 @@ export async function redeployRenderProject(
   }
 
   const [deploy, service] = await Promise.all([
-    renderFetch<RenderDeployRaw>(`/services/${encodeURIComponent(status.serviceId)}/deploys`, renderToken, {
+    renderFetch<RenderDeployRaw>(`/services/${status.serviceId}/deploys`, renderToken, {
       method: "POST",
       body: {},
     }),
@@ -505,7 +505,7 @@ export async function listRenderProjectSummaries(
 export async function deleteRenderProject(projectName: string, renderToken: string): Promise<void> {
   const match = await findServiceByName(projectName, renderToken);
   if (!match) return; // already gone — nothing to do
-  await renderFetch(`/services/${encodeURIComponent(match.id)}`, renderToken, { method: "DELETE" });
+  await renderFetch(`/services/${match.id}`, renderToken, { method: "DELETE" });
 }
 
 /* ---------------------------------------------------------------------- */
@@ -529,15 +529,12 @@ function domainDnsInstruction(raw: RenderCustomDomainRaw, onrenderHost: string):
   return { type: "CNAME", name, value: onrenderHost };
 }
 
-async function requireProjectStatus(
-  projectName: string,
-  renderToken: string
-): Promise<RenderProjectStatus & { serviceId: string }> {
+async function requireProjectStatus(projectName: string, renderToken: string): Promise<RenderProjectStatus> {
   const status = await getRenderProject(projectName, renderToken);
   if (!status.exists || !status.serviceId) {
     throw new RenderApiError(`Service "${projectName}" tidak ditemukan di Render.`, "not_found");
   }
-  return { ...status, serviceId: status.serviceId };
+  return status;
 }
 
 /** The bare `{name}.onrender.com` host to CNAME subdomains at, derived from the service's own URL. */
@@ -558,7 +555,7 @@ export async function listRenderCustomDomains(
   const status = await requireProjectStatus(projectName, renderToken);
   const host = onrenderHostFrom(status);
   const page = await renderFetch<{ cursor: string; customDomain: RenderCustomDomainRaw }[]>(
-    `/services/${encodeURIComponent(status.serviceId)}/custom-domains?limit=100`,
+    `/services/${status.serviceId}/custom-domains?limit=100`,
     renderToken
   );
   return page.map(({ customDomain: d }) => ({
@@ -578,7 +575,7 @@ export async function addRenderCustomDomain(
   const status = await requireProjectStatus(projectName, renderToken);
   const host = onrenderHostFrom(status);
   const res = await renderFetch<RenderCustomDomainRaw | RenderCustomDomainRaw[]>(
-    `/services/${encodeURIComponent(status.serviceId)}/custom-domains`,
+    `/services/${status.serviceId}/custom-domains`,
     renderToken,
     { method: "POST", body: { name: domain } }
   );
@@ -602,7 +599,7 @@ export async function removeRenderCustomDomain(
 ): Promise<void> {
   const status = await requireProjectStatus(projectName, renderToken);
   await renderFetch(
-    `/services/${encodeURIComponent(status.serviceId)}/custom-domains/${encodeURIComponent(domain)}`,
+    `/services/${status.serviceId}/custom-domains/${encodeURIComponent(domain)}`,
     renderToken,
     { method: "DELETE" }
   ).catch((e) => {
@@ -619,7 +616,7 @@ export async function removeRenderCustomDomain(
 export async function listRenderEnv(projectName: string, renderToken: string): Promise<string[]> {
   const status = await requireProjectStatus(projectName, renderToken);
   const page = await renderFetch<{ cursor: string; envVar: { key: string } }[]>(
-    `/services/${encodeURIComponent(status.serviceId)}/env-vars?limit=100`,
+    `/services/${status.serviceId}/env-vars?limit=100`,
     renderToken
   );
   return page.map((p) => p.envVar.key);
@@ -633,7 +630,7 @@ export async function upsertRenderEnv(
   renderToken: string
 ): Promise<void> {
   const status = await requireProjectStatus(projectName, renderToken);
-  await renderFetch(`/services/${encodeURIComponent(status.serviceId)}/env-vars/${encodeURIComponent(key)}`, renderToken, {
+  await renderFetch(`/services/${status.serviceId}/env-vars/${encodeURIComponent(key)}`, renderToken, {
     method: "PUT",
     body: { value },
   });
@@ -642,7 +639,7 @@ export async function upsertRenderEnv(
 /** Removes an environment variable from a real Render service, looked up by key. */
 export async function deleteRenderEnv(projectName: string, key: string, renderToken: string): Promise<void> {
   const status = await requireProjectStatus(projectName, renderToken);
-  await renderFetch(`/services/${encodeURIComponent(status.serviceId)}/env-vars/${encodeURIComponent(key)}`, renderToken, {
+  await renderFetch(`/services/${status.serviceId}/env-vars/${encodeURIComponent(key)}`, renderToken, {
     method: "DELETE",
   });
 }

@@ -3,16 +3,20 @@
 import * as React from "react";
 import {
   Check,
+  Copy,
   Loader2,
   Rocket,
   CircleAlert,
   ExternalLink,
+  RotateCw,
   Terminal,
   X,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useDeploy } from "@/lib/deploy-context";
 import { useDialogA11y } from "@/components/ui/useDialogA11y";
+import { PLATFORM_NAME } from "@/lib/deploy-guides";
+import type { ErrorGuide } from "@/types";
 
 const DEPLOY_STEPS_LABELS = [
   "Menghubungkan ke GitHub",
@@ -23,8 +27,9 @@ const DEPLOY_STEPS_LABELS = [
 ];
 
 export function DeployModal() {
-  const { deployState, closeModal, handleCloseAfterDeploy } = useDeploy();
-  const { status, stepIndex, barWidth, title, subtitle, error, result } =
+  const { deployState, closeModal, handleCloseAfterDeploy, retryDeploy } =
+    useDeploy();
+  const { status, stepIndex, barWidth, title, subtitle, error, errorGuide, result } =
     deployState;
 
   const isDeploying = status === "deploying";
@@ -101,7 +106,7 @@ export function DeployModal() {
               <div>
                 <div className="text-[13px] font-semibold leading-none">
                   {isError
-                    ? "Deploy Gagal"
+                    ? "Deploy Belum Berhasil"
                     : isDone
                       ? "Deploy Berhasil"
                       : "Deploy Console"}
@@ -111,7 +116,7 @@ export function DeployModal() {
                     ? "Sedang menyiapkan deploy..."
                     : isDone
                       ? "Selesai"
-                      : "Terjadi error"}
+                      : "Ada yang perlu dicek"}
                 </div>
               </div>
             </div>
@@ -349,35 +354,164 @@ export function DeployModal() {
 
             {/* ---------- ERROR ---------- */}
             {isError && (
-              <div
-                className="py-6 text-center"
-                style={{ animation: "dcFadeIn .4s ease" }}
-              >
-                <div className="w-14 h-14 mx-auto rounded-full bg-red-400/15 border border-red-400/20 flex items-center justify-center">
-                  <CircleAlert className="w-7 h-7 text-red-300" />
-                </div>
-
-                <div className="mt-5 text-[18px] font-semibold">
-                  Deploy Gagal
-                </div>
-                <div className="mt-1.5 text-[13px] text-white/50 max-w-[340px] mx-auto leading-relaxed">
-                  {error || subtitle}
-                </div>
-
-                <div className="mt-6 flex gap-2.5 justify-center">
-                  <button
-                    type="button"
-                    onClick={handleCloseAfterDeploy}
-                    className="h-10 px-5 rounded-full bg-white text-black text-[13px] font-medium hover:bg-white/90 transition-colors"
-                  >
-                    Tutup
-                  </button>
-                </div>
-              </div>
+              <ErrorPanel
+                guide={errorGuide}
+                fallbackMessage={error || subtitle}
+                onClose={handleCloseAfterDeploy}
+                onRetry={retryDeploy}
+                retryable={errorGuide?.retryable !== false}
+                logsUrl={result?.inspectorUrl}
+              />
             )}
           </div>
         </div>
       </div>
     </>
+  );
+}
+
+/* ================================================================
+ *  Panel error ramah — penjelasan, langkah, link, dan salin detail
+ * ================================================================ */
+
+function ErrorPanel({
+  guide,
+  fallbackMessage,
+  onClose,
+  onRetry,
+  retryable,
+  logsUrl,
+}: {
+  guide: ErrorGuide | null;
+  fallbackMessage: string | null;
+  onClose: () => void;
+  onRetry: () => void;
+  retryable: boolean;
+  logsUrl?: string;
+}) {
+  const [copied, setCopied] = React.useState(false);
+
+  const copyDetail = async () => {
+    const text = guide?.technical ?? fallbackMessage ?? "";
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* clipboard bisa diblokir browser — detail tetap terlihat di layar */
+    }
+  };
+
+  const title = guide?.title ?? "Deploy belum berhasil";
+  const message = guide?.message ?? fallbackMessage ?? "Terjadi kesalahan. Coba lagi sebentar lagi.";
+
+  return (
+    <div className="py-2" style={{ animation: "dcFadeIn .4s ease" }}>
+      <div className="text-center">
+        <div className="w-12 h-12 mx-auto rounded-full bg-red-400/15 border border-red-400/20 flex items-center justify-center">
+          <CircleAlert className="w-6 h-6 text-red-300" />
+        </div>
+        <div className="mt-4 text-[17px] font-semibold">{title}</div>
+        <div className="mt-1.5 text-[13px] text-white/55 max-w-[400px] mx-auto leading-relaxed">
+          {message}
+        </div>
+      </div>
+
+      {guide && guide.steps.length > 0 && (
+        <div className="mt-5 rounded-2xl bg-white/[0.04] border border-white/[0.08] p-4 text-left">
+          <div className="text-[11px] uppercase tracking-wider text-white/40 font-medium mb-2.5">
+            Yang bisa kamu lakukan
+          </div>
+          <ol className="space-y-2">
+            {guide.steps.map((step, i) => (
+              <li key={i} className="flex gap-2.5 text-[12.5px] text-white/75 leading-relaxed">
+                <span className="shrink-0 w-5 h-5 rounded-full bg-white/10 text-white/70 text-[11px] flex items-center justify-center mt-px">
+                  {i + 1}
+                </span>
+                <span>{step}</span>
+              </li>
+            ))}
+          </ol>
+        </div>
+      )}
+
+      {guide?.suggestPlatform && (
+        <div className="mt-3 text-[12px] text-violet-300/90 text-center">
+          Saran: pilih <span className="font-semibold">{PLATFORM_NAME[guide.suggestPlatform]}</span> sebagai
+          platform tujuan.
+        </div>
+      )}
+
+      {guide?.links && guide.links.length > 0 && (
+        <div className="mt-4 flex flex-wrap gap-2 justify-center">
+          {guide.links.map((l) => (
+            <a
+              key={l.url}
+              href={l.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="h-9 px-4 rounded-full bg-white/[0.08] border border-white/10 text-white/80 text-[12px] font-medium flex items-center gap-1.5 hover:bg-white/[0.12] transition-colors"
+            >
+              <ExternalLink className="w-3.5 h-3.5" /> {l.label}
+            </a>
+          ))}
+        </div>
+      )}
+
+      {guide?.technical && (
+        <details className="mt-4 group">
+          <summary className="cursor-pointer text-[11.5px] text-white/35 hover:text-white/55 text-center select-none">
+            Detail teknis (untuk dilaporkan)
+          </summary>
+          <pre className="mt-2 max-h-28 overflow-auto rounded-xl bg-black/30 border border-white/[0.06] p-3 text-[11px] text-white/50 whitespace-pre-wrap break-words font-mono">
+            {guide.technical}
+          </pre>
+          <div className="mt-2 text-center">
+            <button
+              type="button"
+              onClick={copyDetail}
+              className="text-[11.5px] text-white/50 hover:text-white/80 inline-flex items-center gap-1.5"
+            >
+              {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
+              {copied ? "Tersalin" : "Salin detail"}
+            </button>
+          </div>
+        </details>
+      )}
+
+      <div className="mt-6 flex flex-wrap gap-2.5 justify-center">
+        {retryable && (
+          <button
+            type="button"
+            onClick={onRetry}
+            className="h-10 px-5 rounded-full bg-white text-black text-[13px] font-medium hover:bg-white/90 transition-colors flex items-center gap-2"
+          >
+            <RotateCw className="w-3.5 h-3.5" /> Coba lagi
+          </button>
+        )}
+        {logsUrl && (
+          <a
+            href={logsUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="h-10 px-5 rounded-full bg-white/[0.08] border border-white/10 text-white/70 text-[13px] font-medium flex items-center gap-2 hover:bg-white/[0.12] transition-colors"
+          >
+            <ExternalLink className="w-3.5 h-3.5" /> Lihat log
+          </a>
+        )}
+        <button
+          type="button"
+          onClick={onClose}
+          className={cn(
+            "h-10 px-5 rounded-full text-[13px] font-medium transition-colors",
+            retryable
+              ? "bg-white/[0.08] border border-white/10 text-white/70 hover:bg-white/[0.12]"
+              : "bg-white text-black hover:bg-white/90",
+          )}
+        >
+          {retryable ? "Tutup" : "Mengerti"}
+        </button>
+      </div>
+    </div>
   );
 }

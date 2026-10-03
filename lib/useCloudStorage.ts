@@ -39,24 +39,7 @@ function fallbackCacheKey(email: string, key: string): string {
   return `depup-fallback:${email}:${key}`;
 }
 
-/** Field yang berisi secret (token platform, value env var). Di production
- *  TIDAK boleh disalin plaintext ke localStorage — sumber kebenarannya KV
- *  terenkripsi. Cache lokal untuk field ini hanya dipakai saat dev. */
-const SECRET_KEYS = new Set(["settingsTokens", "envVars"]);
-function cacheDisabledFor(key: string): boolean {
-  return process.env.NODE_ENV === "production" && SECRET_KEYS.has(key);
-}
-
 function readFallbackCache<T>(email: string, key: string): T | null {
-  if (cacheDisabledFor(key)) {
-    // Bersihkan sisa cache dari versi lama yang masih menyimpan secret.
-    try {
-      window.localStorage.removeItem(fallbackCacheKey(email, key));
-    } catch {
-      /* abaikan */
-    }
-    return null;
-  }
   try {
     const raw = window.localStorage.getItem(fallbackCacheKey(email, key));
     if (!raw) return null;
@@ -68,7 +51,6 @@ function readFallbackCache<T>(email: string, key: string): T | null {
 }
 
 function writeFallbackCache<T>(email: string, key: string, value: T): void {
-  if (cacheDisabledFor(key)) return;
   try {
     window.localStorage.setItem(fallbackCacheKey(email, key), JSON.stringify(value));
   } catch {

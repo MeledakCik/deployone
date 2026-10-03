@@ -53,12 +53,7 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
     );
   }
 
-  type EnvTarget = "production" | "preview";
-  const ALLOWED_TARGETS: EnvTarget[] = ["production", "preview"];
-  const requested: EnvTarget[] = Array.isArray(body.target)
-    ? ALLOWED_TARGETS.filter((t) => (body.target as unknown[]).includes(t))
-    : [];
-  const target: EnvTarget[] = requested.length > 0 ? requested : ["production", "preview"];
+  const target = Array.isArray(body.target) && body.target.length > 0 ? body.target : (["production", "preview"] as const);
 
   try {
     await upsertProjectEnv(project, key, value, [...target], vercelToken);

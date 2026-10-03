@@ -20,6 +20,21 @@ simulasi.
 Navigasi dashboard tersimpan di URL (`/dashboard?view=deploy`), jadi refresh, tombol Back, dan
 bookmark bekerja normal.
 
+## Cek jenis repo sebelum deploy
+
+Sebelum deploy dimulai, `POST /api/github/validate` membaca isi root repo lalu mengklasifikasikannya
+(`app/api/_lib/project-detect.ts`): HTML statis, Node.js (+ framework & TypeScript), Docker, Python, Go,
+PHP, Ruby, Java, Rust, .NET, repo kosong, atau tidak dikenali. Hasilnya dinilai per platform
+(`lib/deploy-guides.ts` → `ok` / `warn` / `blocked`):
+
+- Repo HTML statis **tidak** butuh `package.json` (Vercel, Cloudflare Pages, Railway semuanya didukung).
+- Repo yang tidak cocok dengan platform tujuan dihentikan **sebelum** menyentuh API platform, lengkap dengan
+  penjelasan, saran platform lain, dan panduan deploy manual. Pagar yang sama dipasang di sisi server
+  (`app/api/_lib/compat-guard.ts`) sebagai pengaman terakhir.
+- Error (token salah, jaringan putus, rate limit GitHub, build gagal, dll.) diterjemahkan menjadi pesan
+  ramah + langkah perbaikan oleh `lib/friendly-error.ts`, ditampilkan di modal deploy dengan tombol
+  "Coba lagi", link dashboard, dan "Salin detail".
+
 ## Menjalankan
 
 ```bash
@@ -40,7 +55,7 @@ Lihat `.env.example`.
 | `GOOGLE_CLIENT_SECRET` | ya | Secret dari client ID di atas |
 | `AUTH_SECRET` | ya | String acak ≥ 16 karakter. Dipakai menandatangani session **dan** menurunkan kunci enkripsi token tersimpan — mengganti nilainya membuat session lama tidak valid dan token tersimpan tidak bisa didekripsi |
 | `KV_REST_API_URL`, `KV_REST_API_TOKEN` | ya (production) | Terisi otomatis saat database KV di-connect ke project |
-| `GITHUB_TOKEN` | tidak | Menaikkan rate limit GitHub untuk validasi repo publik. Dipakai untuk SEMUA user yang login — buat fine-grained token tanpa akses ke repo private (hanya data publik), atau kosongkan |
+| `GITHUB_TOKEN` | tidak | Menaikkan rate limit GitHub untuk validasi repo publik |
 
 Redirect URI yang didaftarkan di Google Cloud Console:
 `https://<domain-kamu>/api/auth/google/callback`.
@@ -88,9 +103,3 @@ disinkronkan ke server lewat `lib/useCloudStorage.ts`.
   `*.up.railway.app` sesuai platform.
 - Project yang sudah dihapus langsung di dashboard platform ditandai `deleted` di riwayat dan
   tidak muncul lagi di halaman Projects.
-
-## Keamanan — checklist sebelum publik
-
-- Jangan pernah commit/zip file `.env`. Kalau pernah terkirim ke pihak lain, ganti `GOOGLE_CLIENT_SECRET`, `AUTH_SECRET`, dan token KV.
-- Semua route `/api/*` (kecuali `/api/auth/*`) wajib session valid — dicek di `middleware.ts` **dan** lagi di `withErrorHandling` (`app/api/_lib/response.ts`). Route baru otomatis terlindungi; hanya tambahkan `{ public: true }` bila memang sengaja publik.
-- Jalankan `npm audit` secara berkala; `next@14.2.x` punya advisory yang perbaikannya hanya di Next 15/16 (lihat catatan upgrade).

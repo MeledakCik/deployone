@@ -28,5 +28,10 @@ export async function POST(_req: NextRequest) {
   return res;
 }
 
-// Sengaja TIDAK ada handler GET: logout lewat link/gambar dari situs lain
-// (CSRF) akan ikut mengeluarkan user. Logout hanya lewat POST.
+// Kalau suatu saat ada link logout via GET (mis. <a href="/api/auth/logout">),
+// guard yang sama tetap berlaku: hanya hapus cookie, lalu redirect ke home.
+export async function GET(req: NextRequest) {
+  const res = NextResponse.redirect(new URL("/", req.url));
+  clearSessionCookie(res);
+  return res;
+}

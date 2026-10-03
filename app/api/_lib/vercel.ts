@@ -21,6 +21,11 @@ interface CreateDeploymentParams {
   repo: string;
   ref: string;
   vercelToken: string;
+  /**
+   * Diisi untuk repo HTML statis (tanpa package.json): memberi tahu Vercel
+   * "tidak ada build, sajikan folder ini apa adanya". outputDirectory null = root repo.
+   */
+  staticSite?: { outputDirectory: string | null };
 }
 
 export interface VercelDomainInfo {
@@ -283,6 +288,16 @@ export async function createVercelDeployment(
         repo: params.repo,
         ref: params.ref,
       },
+      ...(params.staticSite
+        ? {
+            projectSettings: {
+              framework: null,
+              buildCommand: null,
+              installCommand: null,
+              outputDirectory: params.staticSite.outputDirectory,
+            },
+          }
+        : {}),
     }),
   });
 
@@ -302,7 +317,7 @@ export async function getVercelDeployment(
   deploymentId: string,
   vercelToken: string
 ): Promise<{ deploymentId: string; url: string; inspectorUrl: string; readyState: VercelReadyState; errorMessage: string | null }> {
-  const res = await fetch(`${VERCEL_API}/v13/deployments/${encodeURIComponent(deploymentId)}`, {
+  const res = await fetch(`${VERCEL_API}/v13/deployments/${deploymentId}`, {
     headers: { Authorization: `Bearer ${vercelToken}` },
     cache: "no-store",
   });
@@ -476,7 +491,7 @@ export async function deleteProjectEnv(
   const id = await findProjectEnvId(projectName, key, vercelToken);
   if (!id) return; // already gone — nothing to do
   const res = await fetch(
-    `${VERCEL_API}/v9/projects/${encodeURIComponent(projectName)}/env/${encodeURIComponent(id)}`,
+    `${VERCEL_API}/v9/projects/${encodeURIComponent(projectName)}/env/${id}`,
     { method: "DELETE", headers: { Authorization: `Bearer ${vercelToken}` } }
   );
   if (!res.ok) throw await parseVercelError(res);
@@ -512,7 +527,7 @@ export async function upsertProjectEnv(
   if (!existingId) throw await parseVercelError(createRes);
 
   const patchRes = await fetch(
-    `${VERCEL_API}/v9/projects/${encodeURIComponent(projectName)}/env/${encodeURIComponent(existingId)}`,
+    `${VERCEL_API}/v9/projects/${encodeURIComponent(projectName)}/env/${existingId}`,
     {
       method: "PATCH",
       headers: {

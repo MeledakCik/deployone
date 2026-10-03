@@ -123,7 +123,37 @@ export interface ApiError {
     | "project_conflict"
     | "not_found"
     | "bad_request"
-    | "unauthorized";
+    | "unauthorized"
+    | "unsupported_project"
+    | "empty_repo"
+    | "network";
+  /** Panduan ramah untuk user: apa yang terjadi, apa yang bisa dilakukan, dan langkah manual. */
+  guide?: ErrorGuide;
+}
+
+/** Link bantuan yang ditampilkan di panel error (mis. dashboard platform). */
+export interface GuideLink {
+  label: string;
+  url: string;
+}
+
+/**
+ * Penjelasan error yang bisa dibaca orang awam. Dipakai server (untuk repo yang
+ * tidak cocok) dan client (untuk error umum seperti token salah / jaringan putus).
+ */
+export interface ErrorGuide {
+  title: string;
+  /** Satu-dua kalimat, bahasa sederhana, tanpa istilah teknis berlebihan. */
+  message: string;
+  /** Langkah konkret yang bisa user lakukan. */
+  steps: string[];
+  links?: GuideLink[];
+  /** Platform lain yang lebih cocok untuk repo ini, kalau ada. */
+  suggestPlatform?: Platform;
+  /** Detail teknis mentah (untuk disalin & dikirim ke developer). */
+  technical?: string;
+  /** false = "Coba lagi" tidak ada gunanya (mis. platform tidak cocok, user harus ganti platform dulu). */
+  retryable?: boolean;
 }
 
 export interface ApiOk<T> {
@@ -147,6 +177,50 @@ export interface GithubValidation {
   warnings: string[];
   /** Env var names the repo appears to require (from .env.example / process.env.* usage in config files), best-effort. */
   detectedEnvVars: string[];
+  /** Hasil deteksi tipe project (HTML statis, Node.js, Docker, Python, dst.). */
+  project: ProjectProfile;
+  /** Kecocokan project ini dengan tiap platform deploy. */
+  compat: Record<Platform, PlatformCompat>;
+}
+
+export type ProjectType =
+  | "static"
+  | "node"
+  | "docker"
+  | "python"
+  | "go"
+  | "php"
+  | "ruby"
+  | "java"
+  | "rust"
+  | "dotnet"
+  | "elixir"
+  | "empty"
+  | "unknown";
+
+export interface ProjectProfile {
+  type: ProjectType;
+  /** Label siap tampil, mis. "HTML statis", "Vue + Vite (TypeScript)". */
+  label: string;
+  framework: string | null;
+  usesTypeScript: boolean;
+  /** package.json ada tapi bukan JSON valid — build pasti gagal sampai diperbaiki. */
+  invalidPackageJson?: boolean;
+  /** Folder yang berisi index.html untuk project statis ("" = root repo). */
+  staticDir: string | null;
+  /** Subfolder yang tampaknya berisi project sebenarnya (kasus monorepo / repo bertingkat). */
+  nestedProjectDir: string | null;
+  /** Nama file/folder di root repo (dibatasi), untuk debugging & ditampilkan ke user. */
+  rootEntries: string[];
+}
+
+export interface PlatformCompat {
+  /** ok = lanjut; warn = bisa lanjut tapi ada catatan; blocked = jangan lanjut (pakai panduan). */
+  level: "ok" | "warn" | "blocked";
+  summary: string;
+  notes: string[];
+  /** Hanya ada saat level = "blocked": penjelasan + langkah manual. */
+  guide?: ErrorGuide;
 }
 
 /** Body of POST /api/deploy */

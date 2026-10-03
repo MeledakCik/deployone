@@ -28,9 +28,7 @@ export function Navbar() {
   React.useEffect(() => {
     const error = searchParams.get("login_error");
     if (error) {
-      // Teks datang dari URL (bisa dibuat siapa saja) — batasi supaya tidak
-      // dipakai menampilkan pesan panjang/menyesatkan di toast.
-      showToast(error.replace(/[\u0000-\u001f]/g, " ").slice(0, 160));
+      showToast(error);
       router.replace("/");
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps

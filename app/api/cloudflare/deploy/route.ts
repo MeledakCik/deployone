@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { ok, fail, withErrorHandling } from "@/app/api/_lib/response";
 import { validateGithubRepo, GithubApiError } from "@/app/api/_lib/github";
+import { guardCompat } from "@/app/api/_lib/compat-guard";
 import {
   createCloudflarePagesProject,
   getCloudflarePagesProject,
@@ -62,10 +63,13 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
     throw e;
   }
 
+  const blockedResponse = guardCompat(validation, "cloudflare");
+  if (blockedResponse) return blockedResponse;
+
   // Cloudflare Pages has no zero-config framework detection like Vercel —
   // if the caller didn't explicitly set a build command/output dir, fill in
   // Cloudflare's own documented preset for the detected framework.
-  const preset = cloudflareBuildPreset(validation.framework);
+  const preset = cloudflareBuildPreset(validation.framework, validation.project);
   const effectiveBuildCommand = buildCommand || preset.buildCommand;
   const effectiveOutputDir = outputDir || preset.outputDir;
 

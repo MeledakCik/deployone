@@ -15,6 +15,35 @@ interface Guide {
 
 const GUIDES: Guide[] = [
   {
+    icon: Github,
+    title: "Jenis repo apa yang bisa di-deploy?",
+    desc: "Depup mengecek isi repo kamu dulu (HTML, TypeScript, Vue, Docker, dll) sebelum deploy — supaya tidak gagal di tengah jalan.",
+    link: { label: "Buka Railway (untuk Docker/Python/Go/dll)", href: "https://railway.com/new" },
+    steps: [
+      "HTML / CSS / JS biasa (tanpa package.json): bisa ke Vercel, Cloudflare Pages, dan Railway. Pastikan ada file index.html di root repo (atau di folder public/ atau docs/).",
+      "Node.js dengan package.json — termasuk TypeScript, React, Vue, Svelte, Angular, Astro, Next.js, dan lainnya: bisa ke ketiga platform. Pastikan ada script \"build\" di package.json.",
+      "Server Node.js (Express, NestJS, Fastify): paling cocok ke Railway. Di Cloudflare Pages tidak bisa jalan; di Vercel butuh penyesuaian khusus.",
+      "Docker, Python, Go, PHP, Ruby, Java, Rust, .NET: pilih Railway — platform lain hanya untuk situs web.",
+      "Project ada di dalam subfolder (mis. frontend/)? Deploy otomatis hanya membaca root repo. Pindahkan ke root, atau deploy manual lalu isi \"Root Directory\" di dashboard platform.",
+      "Repo private: isi GitHub Token (izin \"repo\") di form deploy.",
+    ],
+  },
+  {
+    icon: AlertTriangle,
+    title: "Deploy gagal atau tidak bisa lanjut — harus bagaimana?",
+    desc: "Setiap pesan error di Depup menyertakan langkah perbaikan. Kalau masih buntu, deploy manual lewat dashboard platform hanya butuh 2–3 menit.",
+    link: { label: "Deploy manual di Vercel", href: "https://vercel.com/new" },
+    steps: [
+      "Baca kotak \"Yang bisa kamu lakukan\" di pesan error — isinya langkah spesifik untuk masalah kamu.",
+      "Klik \"Coba lagi\" kalau masalahnya sementara (internet putus, server platform sedang sibuk, batas GitHub tanpa token).",
+      "Repo tidak cocok dengan platform yang dipilih? Pakai tombol \"Pakai Railway\" (atau platform yang disarankan) di kartu hasil cek repo.",
+      "Deploy manual Vercel: vercel.com/new → pilih repo → Deploy. Untuk situs HTML, pilih Framework Preset \"Other\" dan kosongkan Build Command.",
+      "Deploy manual Cloudflare: Workers & Pages → Create → Pages → Connect to Git → pilih repo. Untuk situs HTML, Framework preset \"None\" dan kosongkan Build command.",
+      "Deploy manual Railway: railway.com/new → Deploy from GitHub repo → pilih repo, lalu Settings → Networking → Generate Domain.",
+      "Mau melaporkan masalah? Buka \"Detail teknis\" di pesan error, klik \"Salin detail\", lalu kirim ke developer.",
+    ],
+  },
+  {
     icon: AlertTriangle,
     title: "Next.js di Cloudflare Pages vs Vercel — apa bedanya?",
     desc: "Penting dibaca kalau repo yang di-deploy ke Cloudflare pakai Next.js dengan API routes — perilakunya beda dari Vercel.",

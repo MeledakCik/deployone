@@ -1,13 +1,18 @@
 import type { GithubValidation } from "@/types";
+import { evaluateAllPlatforms } from "@/lib/deploy-guides";
+import {
+  classifyProject,
+  NESTED_CANDIDATES,
+  STATIC_SUBDIR_CANDIDATES,
+  type RepoEntry,
+} from "@/app/api/_lib/project-detect";
 
-// Owner: sesuai aturan username GitHub. Repo: huruf/angka/titik/underscore/strip.
-// Sengaja ketat supaya "owner" atau "repo" tidak bisa berisi ".." / "%2F" yang
-// mengubah path ke endpoint api.github.com lain (request membawa token server).
+// Menerima link repo apa adanya: https://github.com/o/r, .../r.git, .../r/tree/main, www.github.com, dst.
 const GITHUB_URL_RE =
-  /^https?:\/\/github\.com\/([A-Za-z0-9](?:[A-Za-z0-9-]{0,38}))\/([A-Za-z0-9._-]+?)(?:\.git)?\/?(?:[#?].*)?$/i;
+  /^https?:\/\/(?:www\.)?github\.com\/([^/\s]+)\/([^/\s#?]+?)(?:\.git)?(?:\/[^\s#?]*)?(?:[#?].*)?$/i;
 
 export class GithubApiError extends Error {
-  code: "invalid_url" | "repo_not_found" | "github_auth_required" | "bad_request";
+  code: "invalid_url" | "repo_not_found" | "github_auth_required" | "bad_request" | "rate_limited";
   constructor(message: string, code: GithubApiError["code"]) {
     super(message);
     this.code = code;
@@ -15,16 +20,13 @@ export class GithubApiError extends Error {
 }
 
 export function parseGithubUrl(input: string): { owner: string; repo: string } {
-  const match = GITHUB_URL_RE.exec(input.trim());
+  const trimmed = input.trim();
+  // Boleh ditulis tanpa "https://" (mis. "github.com/user/repo").
+  const normalized = /^(?:www\.)?github\.com\//i.test(trimmed) ? `https://${trimmed}` : trimmed;
+  const match = GITHUB_URL_RE.exec(normalized);
   if (!match) {
     throw new GithubApiError(
-      "URL GitHub tidak valid. Gunakan format https://github.com/owner/repo",
-      "invalid_url"
-    );
-  }
-  if (match[2] === "." || match[2] === "..") {
-    throw new GithubApiError(
-      "URL GitHub tidak valid. Gunakan format https://github.com/owner/repo",
+      "Link GitHub tidak valid. Gunakan format https://github.com/nama-akun/nama-repo",
       "invalid_url"
     );
   }
@@ -54,24 +56,6 @@ export async function getGithubUser(pat: string): Promise<{ login: string; name:
   }
   const data = await res.json();
   return { login: data.login, name: data.name ?? null };
-}
-
-/** Detects the framework from a package.json's dependencies, best-effort. */
-function detectFramework(pkg: Record<string, unknown>): string | null {
-  const deps = {
-    ...((pkg.dependencies as Record<string, string>) ?? {}),
-    ...((pkg.devDependencies as Record<string, string>) ?? {}),
-  };
-  if (deps.next) return "Next.js";
-  if (deps["@remix-run/react"]) return "Remix";
-  if (deps.nuxt) return "Nuxt";
-  if (deps["@sveltejs/kit"]) return "SvelteKit";
-  if (deps.astro) return "Astro";
-  if (deps.vite && deps.react) return "Vite + React";
-  if (deps.vite) return "Vite";
-  if (deps["react-scripts"]) return "Create React App";
-  if (deps.gatsby) return "Gatsby";
-  return null;
 }
 
 /**
@@ -157,7 +141,7 @@ async function fetchRepoFileText(
 ): Promise<string | null> {
   try {
     const res = await githubFetch(
-      `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/${path}?ref=${encodeURIComponent(ref)}`,
+      `https://api.github.com/repos/${owner}/${repo}/contents/${path}?ref=${encodeURIComponent(ref)}`,
       pat
     );
     if (!res.ok) return null;
@@ -206,11 +190,60 @@ async function detectEnvVars(
   return [...found].sort();
 }
 
+function describeGithubFailure(res: Response, hadToken: boolean): GithubApiError {
+  const remaining = res.headers.get("x-ratelimit-remaining");
+  if (res.status === 429 || (res.status === 403 && remaining === "0")) {
+    return new GithubApiError(
+      hadToken
+        ? "Batas permintaan ke GitHub sedang penuh. Tunggu beberapa menit lalu coba lagi."
+        : "Batas permintaan ke GitHub (tanpa token) sedang penuh. Isi GitHub Token di form, atau tunggu sekitar 1 jam lalu coba lagi.",
+      "rate_limited"
+    );
+  }
+  if (res.status === 401 || res.status === 403) {
+    return new GithubApiError(
+      "GitHub menolak akses ke repo ini. Kalau repo-nya private, isi GitHub Token (izin: repo). Kalau sudah diisi, cek apakah token masih berlaku.",
+      "github_auth_required"
+    );
+  }
+  return new GithubApiError(`GitHub sedang bermasalah (kode ${res.status}). Coba lagi sebentar lagi.`, "bad_request");
+}
+
+/** Daftar file/folder di sebuah path repo. `null` = path tidak ada / tidak bisa dibaca. */
+async function listRepoDir(
+  owner: string,
+  repo: string,
+  path: string,
+  ref: string,
+  pat?: string
+): Promise<RepoEntry[] | null> {
+  try {
+    const url = `https://api.github.com/repos/${owner}/${repo}/contents${path ? `/${path}` : ""}?ref=${encodeURIComponent(ref)}`;
+    const res = await githubFetch(url, pat);
+    if (!res.ok) return null;
+    const data = await res.json();
+    if (!Array.isArray(data)) return null;
+    return data
+      .filter((e: { name?: unknown }) => typeof e.name === "string")
+      .map((e: { name: string; type: string }) => ({
+        name: e.name,
+        type: e.type === "dir" ? "dir" : "file",
+      }));
+  } catch {
+    return null;
+  }
+}
+
+// Cache pendek supaya satu kali deploy (cek di form + cek ulang di server)
+// tidak menghabiskan kuota GitHub 3x lipat.
+const VALIDATION_CACHE_TTL_MS = 45_000;
+const validationCache = new Map<string, { at: number; value: GithubValidation }>();
+
 /**
  * Validates a GitHub repo: existence, public/private visibility, default
- * branch, and a light structural check (package.json present + parseable,
- * framework guess, build script present) so we can surface useful warnings
- * before handing the repo off to Vercel.
+ * branch, and — yang terpenting — JENIS project-nya (HTML statis, Node.js,
+ * TypeScript, Vue, Docker, Python, ...). Hasilnya dipakai untuk memutuskan
+ * boleh/tidaknya lanjut deploy ke tiap platform SEBELUM deploy dimulai.
  */
 export async function validateGithubRepo(
   repoUrl: string,
@@ -218,80 +251,133 @@ export async function validateGithubRepo(
 ): Promise<GithubValidation> {
   const { owner, repo } = parseGithubUrl(repoUrl);
 
-  const repoRes = await githubFetch(
-    `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`,
-    githubPat
-  );
+  const cacheKey = `${owner}/${repo}`.toLowerCase() + `::${githubPat ? githubPat.slice(-6) : ""}`;
+  const cached = validationCache.get(cacheKey);
+  if (cached && Date.now() - cached.at < VALIDATION_CACHE_TTL_MS) return cached.value;
+
+  const repoRes = await githubFetch(`https://api.github.com/repos/${owner}/${repo}`, githubPat);
 
   if (repoRes.status === 404) {
     throw new GithubApiError(
-      "Repository tidak ditemukan. Jika private, isi GitHub Token di atas.",
+      githubPat || process.env.GITHUB_TOKEN
+        ? "Repository tidak ditemukan. Cek penulisan URL-nya, atau pastikan GitHub Token punya akses ke repo ini."
+        : "Repository tidak ditemukan. Cek penulisan URL-nya. Kalau repo ini private, isi GitHub Token di form.",
       "repo_not_found"
     );
   }
-  if (repoRes.status === 401 || repoRes.status === 403) {
-    throw new GithubApiError(
-      "GitHub menolak akses. Token tidak valid atau rate limit tercapai.",
-      "github_auth_required"
-    );
-  }
-  if (!repoRes.ok) {
-    throw new GithubApiError(`GitHub API error (${repoRes.status})`, "bad_request");
-  }
+  if (!repoRes.ok) throw describeGithubFailure(repoRes, !!(githubPat || process.env.GITHUB_TOKEN));
 
   const repoData = await repoRes.json();
   const defaultBranch: string = repoData.default_branch ?? "main";
   const visibility: "public" | "private" = repoData.private ? "private" : "public";
 
-  const warnings: string[] = [];
-  let hasPackageJson = false;
-  let framework: string | null = null;
-
-  const pkgRes = await githubFetch(
-    `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}/contents/package.json?ref=${encodeURIComponent(defaultBranch)}`,
+  /* ---- 1. Baca isi root repo ---- */
+  const listRes = await githubFetch(
+    `https://api.github.com/repos/${owner}/${repo}/contents?ref=${encodeURIComponent(defaultBranch)}`,
     githubPat
   );
-
-  if (pkgRes.ok) {
-    hasPackageJson = true;
-    try {
-      const pkgMeta = await pkgRes.json();
-      const raw = Buffer.from(pkgMeta.content, "base64").toString("utf-8");
-      const pkg = JSON.parse(raw);
-      framework = detectFramework(pkg);
-      if (!pkg.scripts?.build) {
-        warnings.push('Tidak ada script "build" di package.json — Vercel akan pakai default framework.');
-      }
-      if (!framework) {
-        warnings.push("Framework tidak terdeteksi otomatis, pastikan project bisa di-build oleh Vercel.");
-      }
-      const nextVersion = (pkg.dependencies as Record<string, string> | undefined)?.next;
-      const vulnWarning = checkKnownVulnerableNext(nextVersion);
-      if (vulnWarning) warnings.push(vulnWarning);
-    } catch {
-      warnings.push("package.json ditemukan tapi gagal di-parse.");
+  let entries: RepoEntry[] = [];
+  if (listRes.ok) {
+    const data = await listRes.json();
+    if (Array.isArray(data)) {
+      entries = data
+        .filter((e: { name?: unknown }) => typeof e.name === "string")
+        .map((e: { name: string; type: string }) => ({
+          name: e.name,
+          type: e.type === "dir" ? "dir" : "file",
+        }));
     }
-  } else {
-    warnings.push("Tidak ada package.json di root repo — pastikan ini project Node.js yang valid.");
+  } else if (listRes.status !== 404) {
+    // 404 = repo kosong (belum ada commit). Selain itu = masalah akses / rate limit.
+    throw describeGithubFailure(listRes, !!(githubPat || process.env.GITHUB_TOKEN));
   }
 
-  const detectedEnvVars = await detectEnvVars(owner, repo, defaultBranch, githubPat);
+  /* ---- 2. package.json (kalau ada) ---- */
+  let pkg: Record<string, unknown> | null = null;
+  let pkgBroken = false;
+  const warnings: string[] = [];
+  if (entries.some((e) => e.type === "file" && e.name === "package.json")) {
+    const raw = await fetchRepoFileText(owner, repo, "package.json", defaultBranch, githubPat);
+    try {
+      if (raw === null) throw new Error("empty");
+      pkg = JSON.parse(raw) as Record<string, unknown>;
+    } catch {
+      pkgBroken = true;
+      warnings.push("package.json ditemukan tapi isinya tidak valid (format JSON rusak). Perbaiki dulu sebelum deploy.");
+    }
+  }
+
+  /* ---- 3. Klasifikasi tipe project ---- */
+  let project = classifyProject({ entries, pkg, pkgBroken, staticSubdir: null, nestedProjectDir: null });
+
+  // Kalau root tidak menunjukkan project apa pun, intip subfolder umum
+  // (public/, docs/, frontend/, ...) sebelum menyerah.
+  if (project.type === "unknown" || (project.type === "static" && project.staticDir === null)) {
+    const dirNames = new Set(entries.filter((e) => e.type === "dir").map((e) => e.name));
+    const candidates = [...new Set([...STATIC_SUBDIR_CANDIDATES, ...NESTED_CANDIDATES])].filter((d) =>
+      dirNames.has(d)
+    );
+    const listings = await Promise.all(
+      candidates.slice(0, 8).map(async (d) => ({
+        dir: d,
+        list: await listRepoDir(owner, repo, d, defaultBranch, githubPat),
+      }))
+    );
+    const hasFile = (l: RepoEntry[] | null, name: string) =>
+      !!l?.some((e) => e.type === "file" && e.name.toLowerCase() === name);
+    const staticSubdir =
+      listings.find((x) => STATIC_SUBDIR_CANDIDATES.includes(x.dir) && hasFile(x.list, "index.html"))?.dir ?? null;
+    const nestedProjectDir =
+      listings.find(
+        (x) => NESTED_CANDIDATES.includes(x.dir) && (hasFile(x.list, "package.json") || hasFile(x.list, "index.html"))
+      )?.dir ?? null;
+    project = classifyProject({ entries, pkg, pkgBroken, staticSubdir, nestedProjectDir });
+  }
+
+  /* ---- 4. Catatan khusus Node.js ---- */
+  if (project.type === "node" && pkg) {
+    if (!(pkg.scripts as Record<string, string> | undefined)?.build) {
+      warnings.push(
+        'Tidak ada script "build" di package.json — platform akan memakai pengaturan default framework. Kalau build gagal, tambahkan script "build".'
+      );
+    }
+    if (!project.framework) {
+      warnings.push("Framework web tidak terdeteksi otomatis — pastikan project ini bisa di-build.");
+    }
+    const nextVersion = (pkg.dependencies as Record<string, string> | undefined)?.next;
+    const vulnWarning = checkKnownVulnerableNext(nextVersion);
+    if (vulnWarning) warnings.push(vulnWarning);
+  }
+
+  /* ---- 5. Env var yang mungkin dibutuhkan (tidak relevan untuk HTML statis) ---- */
+  const needsEnvScan = project.type !== "static" && project.type !== "empty" && project.type !== "unknown";
+  const detectedEnvVars = needsEnvScan ? await detectEnvVars(owner, repo, defaultBranch, githubPat) : [];
   if (detectedEnvVars.length > 0) {
     warnings.push(
       `Repo ini kemungkinan butuh env var: ${detectedEnvVars.join(", ")}. Isi di step Environment Variables sebelum deploy.`
     );
   }
 
-  return {
+  const fullName = `${owner}/${repo}`;
+  const result: GithubValidation = {
     owner,
     repo,
-    fullName: `${owner}/${repo}`,
+    fullName,
     visibility,
     defaultBranch,
-    hasPackageJson,
-    framework,
-    structureOk: hasPackageJson,
+    hasPackageJson: entries.some((e) => e.type === "file" && e.name === "package.json"),
+    framework: project.framework,
+    structureOk: project.type !== "empty" && project.type !== "unknown",
     warnings,
     detectedEnvVars,
+    project,
+    compat: evaluateAllPlatforms(project, fullName),
   };
+
+  validationCache.set(cacheKey, { at: Date.now(), value: result });
+  if (validationCache.size > 200) {
+    const oldest = validationCache.keys().next().value;
+    if (oldest) validationCache.delete(oldest);
+  }
+  return result;
 }

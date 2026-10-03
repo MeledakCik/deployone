@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { ok, fail, withErrorHandling } from "@/app/api/_lib/response";
 import { validateGithubRepo, GithubApiError } from "@/app/api/_lib/github";
+import { guardCompat } from "@/app/api/_lib/compat-guard";
 import { createRailwayDeployment, getRailwayProject, RailwayApiError } from "@/app/api/_lib/railway";
 import {
   requireString,
@@ -30,8 +31,8 @@ function parseEnvText(text: string | undefined): Record<string, string> {
 /**
  * Deploy orchestration for Railway:
  *   1. Re-validate the GitHub repo server-side (never trust the client).
- *      Unlike the Vercel flow, a package.json isn't required — Railway can
- *      build Dockerfiles and many other stacks via Railpack.
+ *      Jenis repo dicek dulu: package.json tidak wajib — Railway bisa membangun
+ *      HTML statis, Dockerfile, dan banyak stack lain via Railpack.
  *   2. Create (or reuse) a Railway project + service wired to that repo and
  *      trigger a real deployment via the Railway GraphQL API.
  */
@@ -63,6 +64,9 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
     }
     throw e;
   }
+
+  const blockedResponse = guardCompat(validation, "railway");
+  if (blockedResponse) return blockedResponse;
 
   // Validates the token up front (and confirms the account is reachable)
   // before we start creating/mutating anything on Railway.

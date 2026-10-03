@@ -1,6 +1,4 @@
 /** @type {import('next').NextConfig} */
-const isDev = process.env.NODE_ENV !== "production";
-
 const nextConfig = {
   reactStrictMode: true,
   // Jangan bocorkan versi framework lewat header X-Powered-By.
@@ -37,17 +35,13 @@ const nextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              // unsafe-eval hanya dibutuhkan Next saat dev (HMR); production tidak perlu.
-              isDev
-                ? "script-src 'self' 'unsafe-inline' 'unsafe-eval'"
-                : "script-src 'self' 'unsafe-inline'",
-              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https:",
-              "font-src 'self' data: https://fonts.gstatic.com",
+              "font-src 'self' data:",
               "connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com https://www.googleapis.com",
               "frame-ancestors 'none'",
               "base-uri 'self'",
-              "object-src 'none'",
               "form-action 'self' https://accounts.google.com",
             ].join("; "),
           },

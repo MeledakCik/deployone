@@ -26,6 +26,7 @@ import { ViewFade } from "@/components/ui/ViewFade";
 import { cn } from "@/lib/utils";
 import { useDeploy } from "@/lib/deploy-context";
 import type { Platform } from "@/types";
+import { RepoCheckCard } from "@/components/dashboard/RepoCheckCard";
 
 /* ---------------- Platform config ---------------- */
 
@@ -567,7 +568,13 @@ export function DeployFormView() {
           !!form.projectName?.trim() && form.projectName.trim().length >= 3
         );
       case "githubUrl":
-        return !!form.githubUrl?.trim() && form.githubUrl.includes("github.com");
+        // Jangan lanjut sebelum repo selesai dicek dan terbukti cocok dengan platform tujuan.
+        return (
+          !!form.githubUrl?.trim() &&
+          form.githubUrl.includes("github.com") &&
+          repoEnvCheck.status === "ok" &&
+          repoEnvCheck.validation?.compat[platform].level !== "blocked"
+        );
       case "platformToken":
         return !!form.platformToken?.trim();
       case "accountId":
@@ -575,7 +582,7 @@ export function DeployFormView() {
       default:
         return true;
     }
-  }, [step, form]);
+  }, [step, form, repoEnvCheck.status, repoEnvCheck.validation, platform]);
 
   const repoHost = React.useMemo(() => {
     const raw = form.githubUrl?.trim();
@@ -1109,12 +1116,7 @@ export function DeployFormView() {
                                 harus mengandung github.com
                               </div>
                             )}
-                          {repoEnvCheck.status === "checking" && (
-                            <div className="mt-2 text-[10.5px] sm:text-[11px] text-[var(--dc-text-faint)] flex items-center gap-1.5">
-                              <Loader2 className="w-3 h-3 shrink-0 animate-spin" />{" "}
-                              Mengecek env var yang dibutuhkan repo...
-                            </div>
-                          )}
+                          <RepoCheckCard platform={platform} />
                           {repoEnvCheck.status === "ok" &&
                             repoEnvCheck.detectedEnvVars.length > 0 && (
                               <div className="mt-2 text-[10.5px] sm:text-[11px] text-violet-600 dark:text-violet-300 flex items-start gap-1.5">

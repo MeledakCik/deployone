@@ -14,4 +14,4 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
     : null;
 
   return ok({ user });
-}, { public: true });
+});

@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { ok, fail, withErrorHandling } from "@/app/api/_lib/response";
 import { validateGithubRepo, GithubApiError } from "@/app/api/_lib/github";
+import { guardCompat } from "@/app/api/_lib/compat-guard";
 import { createVercelDeployment, getVercelProject, VercelApiError } from "@/app/api/_lib/vercel";
 import {
   requireString,
@@ -14,7 +15,8 @@ export const runtime = "nodejs";
 
 /**
  * Deploy orchestration, currently Vercel-only:
- *   1. Re-validate the GitHub repo server-side (never trust the client).
+ *   1. Re-validate the GitHub repo server-side (never trust the client) dan
+ *      cek jenis project-nya (HTML statis / Node.js / lainnya).
  *   2. Kick off a real deployment via the Vercel REST API.
  * Cloudflare and Railway have their own routes under /api/cloudflare and
  * /api/railway.
@@ -48,13 +50,10 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
     throw e;
   }
 
-  if (!validation.hasPackageJson) {
-    return fail(
-      "Repo tidak punya package.json di root — bukan project Node.js yang bisa di-deploy Vercel.",
-      422,
-      "no_package_json"
-    );
-  }
+  // Cek jenis repo dulu — HTML statis boleh tanpa package.json, repo yang
+  // memang tidak cocok dengan Vercel dihentikan di sini dengan panduan manual.
+  const blockedResponse = guardCompat(validation, "vercel");
+  if (blockedResponse) return blockedResponse;
 
   // Guard against name collisions: if `projectName` already exists in this
   // Vercel account but is linked to a *different* GitHub repo, creating a
@@ -85,6 +84,10 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
       repo: validation.repo,
       ref: validation.defaultBranch,
       vercelToken,
+      staticSite:
+        validation.project.type === "static"
+          ? { outputDirectory: validation.project.staticDir || null }
+          : undefined,
     });
     return ok(deployment, 201);
   } catch (e) {
