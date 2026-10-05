@@ -24,6 +24,31 @@ const config: Config = {
         "text-faint": "var(--text-faint)",
         line: "var(--line)",
         "line-strong": "var(--line-strong)",
+        // Token landing "Obsidian Edge" (dari Stitch). Diberi prefix obs- agar
+        // tidak bentrok dengan token dashboard.
+        obs: {
+          base: "#0A0A0E",
+          subtle: "#111118",
+          elevated: "#181822",
+          lowest: "#0e0e12",
+          low: "#1b1b1f",
+          container: "#1f1f24",
+          high: "#2a292e",
+          highest: "#353439",
+          bright: "#39393d",
+          ink: "#FFFFFF",
+          sec: "#94A3B8",
+          mute: "#64748B",
+          violet: "#8B5CF6",
+          purple: "#A855F7",
+          pink: "#EC4899",
+          lilac: "#e9ddff",
+          mint: "#4edea3",
+          rose: "#ffb0cd",
+          ok: "#10B981",
+          warn: "#F59E0B",
+          bad: "#EF4444",
+        },
       },
       keyframes: {
         "fade-up": {

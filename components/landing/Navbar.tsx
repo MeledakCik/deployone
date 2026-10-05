@@ -1,18 +1,18 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Menu, X } from "lucide-react";
+import { ArrowUpRight, Menu, X } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/components/ui/Toast";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { GoogleLoginModal, GoogleMark } from "./GoogleLoginModal";
 
 const NAV_LINKS = [
+  { href: "#fitur", label: "Fitur" },
+  { href: "#cara-kerja", label: "Cara kerja" },
   { href: "#support", label: "Repo yang didukung" },
-  { href: "#how-it-works", label: "Cara kerja" },
-  { href: "#features", label: "Setelah live" },
 ];
 
 export function Navbar() {
@@ -22,7 +22,6 @@ export function Navbar() {
   const searchParams = useSearchParams();
   const [loginOpen, setLoginOpen] = React.useState(false);
   const [menuOpen, setMenuOpen] = React.useState(false);
-  const [scrolled, setScrolled] = React.useState(false);
 
   React.useEffect(() => {
     const error = searchParams.get("login_error");
@@ -33,108 +32,109 @@ export function Navbar() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
-  React.useEffect(() => {
-    const onScroll = () => setScrolled(window.scrollY > 20);
-    onScroll();
-    window.addEventListener("scroll", onScroll);
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+  const loggedIn = ready && !!user;
 
   return (
     <>
-      <header
-        className="sticky top-0 z-50 backdrop-blur-md"
-        style={{
-          background: scrolled ? "var(--glass-bg)" : "transparent",
-          borderBottom: scrolled ? "1px solid var(--line)" : "1px solid transparent",
-          transition: "var(--theme-transition), background-color 300ms ease, border-color 300ms ease",
-        }}
-      >
-        <div className="mx-auto max-w-[1200px] px-6 h-[72px] flex items-center justify-between">
+      <header className="fixed inset-x-0 top-0 z-50 border-b border-white/[0.06] bg-obs-subtle/80 backdrop-blur-xl">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-8">
           <div className="flex items-center gap-10">
-            <Link href="/" className="flex items-center gap-2.5 group">
-              <div className="w-8 h-8 rounded-full bg-white flex items-center justify-center relative shadow-[0_0_0_1px_rgba(15,23,42,0.06)]">
-                <div className="w-2.5 h-2.5 rounded-full bg-[#3B82F6] absolute left-[9px] top-[11px] group-hover:scale-110 transition" />
-              </div>
-              <span className="font-bold text-[18px] tracking-[-0.02em] text-[var(--text)]">Depup</span>
+            <Link href="/" className="flex items-center gap-2.5" aria-label="Depup, beranda">
+              <Image src="/logo.png" alt="" width={32} height={32} priority className="h-8 w-8 rounded-lg" />
+              <span className="f-display text-[20px] font-bold tracking-tight text-white">Depup</span>
             </Link>
-
-            <nav className="hidden md:flex items-center gap-8 text-[14px] text-[var(--text-muted)]">
-              {NAV_LINKS.map((link) => (
-                <a key={link.href} href={link.href} className="hover:text-[var(--text)] transition">
-                  {link.label}
+            <nav className="hidden items-center gap-7 md:flex" aria-label="Utama">
+              {NAV_LINKS.map((l) => (
+                <a key={l.href} href={l.href} className="text-[13px] text-obs-sec transition-colors hover:text-white">
+                  {l.label}
                 </a>
               ))}
             </nav>
           </div>
 
-          <div className="hidden md:flex items-center gap-3">
-            <ThemeToggle />
-            {ready && user ? (
-              <Link href="/dashboard" className="btn-primary h-9 px-5 text-[13.5px] flex items-center gap-2">
-                Dashboard
+          <div className="hidden items-center gap-2.5 md:flex">
+            {loggedIn ? (
+              <Link
+                href="/dashboard"
+                className="obs-btn-primary inline-flex h-9 items-center gap-1.5 rounded-lg px-4 text-[13px] font-semibold text-white"
+              >
+                Buka dashboard <ArrowUpRight size={14} />
               </Link>
             ) : (
-              <button
-                type="button"
-                onClick={() => setLoginOpen(true)}
-                className="btn-primary h-9 px-5 text-[13.5px] flex items-center gap-2"
-              >
-                <GoogleMark size={16} />
-                Masuk dengan Google
-              </button>
+              <>
+                <button
+                  type="button"
+                  onClick={() => setLoginOpen(true)}
+                  className="obs-btn-glass inline-flex h-9 items-center gap-2 rounded-lg px-4 text-[13px] font-medium text-white"
+                >
+                  <GoogleMark size={14} />
+                  Masuk
+                </button>
+                <Link
+                  href="/dashboard"
+                  className="obs-btn-primary inline-flex h-9 items-center gap-1.5 rounded-lg px-4 text-[13px] font-semibold text-white"
+                >
+                  Deploy sekarang <ArrowUpRight size={14} />
+                </Link>
+              </>
             )}
           </div>
 
-          <div className="md:hidden flex items-center gap-2">
-            <ThemeToggle />
-            <button
-              type="button"
-              className="pill w-9 h-9 flex items-center justify-center text-[var(--text)]"
-              onClick={() => setMenuOpen((v) => !v)}
-              aria-label="Buka menu"
-            >
-              {menuOpen ? <X size={18} /> : <Menu size={18} />}
-            </button>
-          </div>
+          <button
+            type="button"
+            className="obs-btn-glass grid h-9 w-9 place-items-center rounded-lg text-white md:hidden"
+            onClick={() => setMenuOpen((v) => !v)}
+            aria-label={menuOpen ? "Tutup menu" : "Buka menu"}
+            aria-expanded={menuOpen}
+          >
+            {menuOpen ? <X size={18} /> : <Menu size={18} />}
+          </button>
         </div>
 
         {menuOpen && (
-          <div
-            className="md:hidden backdrop-blur-md px-6 py-6 flex flex-col gap-5 text-[15px]"
-            style={{ borderTop: "1px solid var(--line)", background: "var(--glass-bg)" }}
-          >
-            {NAV_LINKS.map((link) => (
+          <div className="flex flex-col gap-1 border-t border-white/[0.06] bg-obs-subtle/95 px-4 py-4 backdrop-blur-xl md:hidden">
+            {NAV_LINKS.map((l) => (
               <a
-                key={link.href}
-                href={link.href}
+                key={l.href}
+                href={l.href}
                 onClick={() => setMenuOpen(false)}
-                className="text-[var(--text-muted)]"
+                className="rounded-lg px-3 py-3 text-[15px] text-obs-sec hover:bg-white/5 hover:text-white"
               >
-                {link.label}
+                {l.label}
               </a>
             ))}
-            {ready && user ? (
-              <Link
-                href="/dashboard"
-                onClick={() => setMenuOpen(false)}
-                className="btn-primary mt-2 h-11 flex items-center justify-center gap-2"
-              >
-                Dashboard
-              </Link>
-            ) : (
-              <button
-                type="button"
-                onClick={() => {
-                  setMenuOpen(false);
-                  setLoginOpen(true);
-                }}
-                className="btn-primary mt-2 h-11 flex items-center justify-center gap-2"
-              >
-                <GoogleMark size={16} />
-                Masuk dengan Google
-              </button>
-            )}
+            <div className="mt-3 flex flex-col gap-2">
+              {loggedIn ? (
+                <Link
+                  href="/dashboard"
+                  onClick={() => setMenuOpen(false)}
+                  className="obs-btn-primary flex h-11 items-center justify-center gap-1.5 rounded-lg text-[14px] font-semibold text-white"
+                >
+                  Buka dashboard <ArrowUpRight size={15} />
+                </Link>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      setLoginOpen(true);
+                    }}
+                    className="obs-btn-glass flex h-11 items-center justify-center gap-2 rounded-lg text-[14px] font-medium text-white"
+                  >
+                    <GoogleMark size={16} />
+                    Masuk dengan Google
+                  </button>
+                  <Link
+                    href="/dashboard"
+                    onClick={() => setMenuOpen(false)}
+                    className="obs-btn-primary flex h-11 items-center justify-center gap-1.5 rounded-lg text-[14px] font-semibold text-white"
+                  >
+                    Deploy sekarang <ArrowUpRight size={15} />
+                  </Link>
+                </>
+              )}
+            </div>
           </div>
         )}
       </header>

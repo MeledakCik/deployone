@@ -24,7 +24,7 @@ export function GoogleLoginModal({ open, onClose }: { open: boolean; onClose: ()
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 backdrop-blur-md px-4"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 px-4 backdrop-blur-md"
       onClick={onClose}
     >
       <div
@@ -33,36 +33,33 @@ export function GoogleLoginModal({ open, onClose }: { open: boolean; onClose: ()
         aria-modal="true"
         aria-label="Masuk ke Depup"
         tabIndex={-1}
-        className="glass w-full max-w-sm !rounded-[22px] p-6 text-[var(--text)] outline-none"
+        className="obs-overlay w-full max-w-sm rounded-2xl p-6 text-white outline-none"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center justify-between mb-1">
-          <h3 className="text-[17px] font-semibold tracking-tight">Masuk ke Depup</h3>
+        <div className="mb-1 flex items-center justify-between">
+          <h3 className="f-display text-[18px] font-semibold tracking-tight">Masuk ke Depup</h3>
           <button
             type="button"
             onClick={onClose}
             aria-label="Tutup"
-            className="grid h-8 w-8 place-items-center rounded-full text-[var(--text-faint)] hover:text-[var(--text)] transition-colors"
-            style={{ background: "transparent" }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = "var(--pill-bg)")}
-            onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
+            className="grid h-8 w-8 place-items-center rounded-lg text-obs-mute transition-colors hover:bg-white/10 hover:text-white"
           >
             <X size={18} />
           </button>
         </div>
 
-        <p className="text-[12px] text-[var(--text-faint)] mb-6">untuk melanjutkan ke dashboard Depup</p>
+        <p className="mb-6 text-[13px] text-obs-sec">untuk melanjutkan ke dashboard Depup</p>
 
         <button
           type="button"
           onClick={login}
-          className="flex w-full items-center justify-center gap-3 rounded-full bg-white px-4 py-3 text-[14px] font-semibold text-black border border-[var(--line)] hover:bg-white/90 active:scale-[0.99] transition"
+          className="flex w-full items-center justify-center gap-3 rounded-lg bg-white px-4 py-3 text-[14px] font-semibold text-black transition hover:bg-white/90 active:scale-[0.99]"
         >
           <GoogleMark size={18} />
           <span>Lanjutkan dengan Google</span>
         </button>
 
-        <p className="mt-5 text-[11px] leading-relaxed text-[var(--text-faint)] text-center">
+        <p className="mt-5 text-center text-[12px] leading-relaxed text-obs-mute">
           Kamu akan diarahkan ke halaman login Google asli, lalu kembali otomatis ke dashboard.
         </p>
       </div>
