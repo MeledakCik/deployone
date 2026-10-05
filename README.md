@@ -35,6 +35,25 @@ PHP, Ruby, Java, Rust, .NET, repo kosong, atau tidak dikenali. Hasilnya dinilai 
   ramah + langkah perbaikan oleh `lib/friendly-error.ts`, ditampilkan di modal deploy dengan tombol
   "Coba lagi", link dashboard, dan "Salin detail".
 
+## Chat CS (asisten AI)
+
+Tombol **Bantuan** di pojok kanan bawah dashboard membuka chat dengan asisten AI (Groq Cloud) yang menjawab
+soal deploy, token, domain, dan error, berdasarkan aturan produk di `app/api/_lib/support-prompt.ts`.
+
+- Endpoint: `POST /api/support/chat` (wajib login, dibatasi 12 pesan/menit per akun di `middleware.ts`).
+- Env: `GROQ_API_KEY` (wajib) dan `GROQ_MODEL` (opsional, default `openai/gpt-oss-120b`).
+  `llama-3.3-70b-versatile` sudah dimatikan Groq pada 16 Agustus 2026, jadi jangan dipakai.
+- Token/secret yang terlanjur diketik user disamarkan di server sebelum dikirim ke Groq (`app/api/_lib/redact.ts`).
+- Riwayat chat hanya ada di memori halaman (hilang saat refresh) dan tidak disimpan di server.
+- Tombol **Salin percakapan** memudahkan user meneruskan masalah ke developer.
+
+### Menyambung ke laporan developer (belum dibuat)
+
+`<SupportChat onReport={...} />` di `app/dashboard/page.tsx` sudah menyiapkan titik sambungnya. Kalau `onReport`
+diisi, tombol "Laporkan ke developer" muncul setelah AI menjawab dan fungsi itu menerima seluruh percakapan.
+Yang perlu dibuat nanti: endpoint penyimpanan/pengiriman laporan (mis. ke KV, email, atau Telegram) dan
+halaman untuk developer membacanya.
+
 ## Menjalankan
 
 ```bash

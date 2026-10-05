@@ -16,6 +16,7 @@ import { ObservabilityView } from "@/components/dashboard/ObservabilityView";
 import { DocsView } from "@/components/dashboard/DocsView";
 import { SettingsView } from "@/components/dashboard/SettingsView";
 import { DeployModal } from "@/components/dashboard/DeployModal";
+import { SupportChat } from "@/components/dashboard/SupportChat";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -77,6 +78,7 @@ export default function DashboardPage() {
       </div>
 
       <DeployModal />
+      <SupportChat />
     </div>
   );
 }

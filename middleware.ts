@@ -29,6 +29,8 @@ const CUSTOM_LIMITS: Record<string, { limit: number; windowSeconds: number }> = 
   "auth/session": { limit: 120, windowSeconds: 60 },
   "github/validate": { limit: 20, windowSeconds: 60 },
   "github/whoami": { limit: 20, windowSeconds: 60 },
+  // Tiap pesan = 1 panggilan Groq berbayar/berkuota; batasi per pengguna.
+  "support/chat": { limit: 12, windowSeconds: 60 },
 };
 
 const DEFAULT_LIMIT = { limit: 60, windowSeconds: 60 };

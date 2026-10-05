@@ -118,6 +118,8 @@ export interface ApiError {
     | "cloudflare_error"
     | "railway_error"
     | "rate_limited"
+    | "ai_not_configured"
+    | "ai_unavailable"
     | "github_not_connected"
     | "missing_account"
     | "project_conflict"
