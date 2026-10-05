@@ -3,7 +3,7 @@
 import { notifySessionExpired } from "@/lib/session-expired";
 import * as React from "react";
 import { useToast } from "@/components/ui/Toast";
-import { resolveDomain, formatDate } from "@/lib/utils";
+import { resolveDomain, formatDate, normalizeDeployDomain } from "@/lib/utils";
 import { useCloudStorage } from "@/lib/useCloudStorage";
 import { ApiRequestError, toFriendlyError, type ErrorStage } from "@/lib/friendly-error";
 import type {
@@ -686,7 +686,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         id: `${Date.now()}`,
         name,
         platform,
-        domain,
+        domain: normalizeDeployDomain(domain, platform),
         date: formatDate(new Date()),
         status,
       };
@@ -1361,6 +1361,24 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
             )}`,
             { headers: { "x-cloudflare-token": savedCloudflareToken.token } },
           );
+          // Perbaiki URL lama yang tersimpan sebagai URL per-deployment
+          // (mis. 8e71bbe8.nama.pages.dev) menjadi domain utama project.
+          if (status.exists && status.subdomain) {
+            const stable = normalizeDeployDomain(status.subdomain, "cloudflare");
+            setHistory((prev) =>
+              Array.isArray(prev)
+                ? prev.map((h) =>
+                    h.platform === "cloudflare" &&
+                    h.name === name &&
+                    h.status !== "deleted" &&
+                    h.domain !== "-" &&
+                    h.domain !== stable
+                      ? { ...h, domain: stable }
+                      : h,
+                  )
+                : prev,
+            );
+          }
           return status.exists;
         });
       }

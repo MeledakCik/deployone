@@ -163,6 +163,31 @@ function primaryUrlFor(project: CfProjectResponse, deployment?: CfDeploymentResp
   return deployment?.url ?? `https://${project.name}.pages.dev`;
 }
 
+/**
+ * URL utama (stabil) project: `{subdomain}` milik project, mis. https://nama.pages.dev.
+ * Jangan pakai `deployment.url` — itu URL unik per-deployment (https://8e71bbe8.nama.pages.dev),
+ * bukan domain project yang tampil di dashboard Cloudflare. Subdomain juga bisa berbeda dari
+ * nama project (mis. nama-abc.pages.dev kalau nama sudah dipakai orang lain), jadi harus
+ * dibaca dari Cloudflare, bukan ditebak dari nama.
+ */
+export async function getCloudflareProjectUrl(
+  accountId: string,
+  projectName: string,
+  token: string
+): Promise<string> {
+  try {
+    const res = await cfFetch(`/accounts/${accountId}/pages/projects/${encodeURIComponent(projectName)}`, token);
+    if (res.ok) {
+      const data = await res.json();
+      const sub = (data.result as CfProjectResponse | undefined)?.subdomain;
+      if (sub) return `https://${sub}`;
+    }
+  } catch {
+    /* best-effort — jatuh ke tebakan dari nama project di bawah */
+  }
+  return `https://${projectName}.pages.dev`;
+}
+
 /** Looks up a Pages project by name — used before creating a deployment, to detect name/repo conflicts like the Vercel flow does. */
 export async function getCloudflarePagesProject(
   accountId: string,
@@ -385,7 +410,7 @@ export async function triggerCloudflareDeployment(
   const deployment = data.result as CfDeploymentResponse;
   return {
     deploymentId: deployment.id,
-    url: deployment.url ?? `https://${projectName}.pages.dev`,
+    url: await getCloudflareProjectUrl(accountId, projectName, token),
     inspectorUrl: inspectorUrlFor(accountId, projectName, deployment.id),
     readyState: readyStateFor(deployment),
   };
@@ -454,7 +479,7 @@ export async function getCloudflareDeployment(
 
   return {
     deploymentId: deployment.id,
-    url: deployment.url ?? `https://${projectName}.pages.dev`,
+    url: await getCloudflareProjectUrl(accountId, projectName, token),
     inspectorUrl: inspectorUrlFor(accountId, projectName, deployment.id),
     readyState,
     errorMessage,

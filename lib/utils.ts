@@ -29,6 +29,30 @@ export function resolveDomain(projectName: string, platform: string): string {
   return `${slug}.vercel.app`;
 }
 
+/**
+ * Menormalkan domain hasil deploy untuk disimpan/ditampilkan:
+ *  - membuang "https://" dan "/" di ujung (supaya link "Visit" tidak jadi https://https://...)
+ *  - Cloudflare Pages: membuang prefix hash per-deployment (8e71bbe8.nama.pages.dev -> nama.pages.dev),
+ *    karena yang dipakai dan tampil di dashboard Cloudflare adalah domain utama project.
+ */
+export function normalizeDeployDomain(domain: string | null | undefined, platform?: string): string {
+  const raw = (domain ?? "").trim();
+  if (!raw || raw === "-") return raw;
+  let host = raw.replace(/^https?:\/\//i, "").replace(/\/+$/, "");
+  const isCloudflare = platform ? platform.toLowerCase().includes("cloudflare") : host.endsWith(".pages.dev");
+  if (isCloudflare) {
+    const m = /^[0-9a-f]{8}\.([a-z0-9-]+(?:\.[a-z0-9-]+)*\.pages\.dev)$/i.exec(host);
+    if (m) host = m[1];
+  }
+  return host;
+}
+
+/** Ubah domain tersimpan menjadi URL yang bisa dibuka. */
+export function deployDomainToUrl(domain: string | null | undefined, platform?: string): string {
+  const host = normalizeDeployDomain(domain, platform);
+  return host && host !== "-" ? `https://${host}` : "";
+}
+
 export function formatDate(date: Date): string {
   return date.toLocaleDateString("en-GB", {
     day: "2-digit",

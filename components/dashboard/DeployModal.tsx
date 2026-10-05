@@ -12,7 +12,7 @@ import {
   Terminal,
   X,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, normalizeDeployDomain, deployDomainToUrl } from "@/lib/utils";
 import { useDeploy } from "@/lib/deploy-context";
 import { useDialogA11y } from "@/components/ui/useDialogA11y";
 import { PLATFORM_NAME } from "@/lib/deploy-guides";
@@ -302,7 +302,7 @@ export function DeployModal() {
                     </div>
                     {result?.domain && (
                       <div className="text-emerald-300/70">
-                        ✓ Deployed: {result.domain}
+                        ✓ Deployed: {normalizeDeployDomain(result.domain)}
                       </div>
                     )}
                     <div className="text-white/40">→ Building...</div>
@@ -314,15 +314,13 @@ export function DeployModal() {
                   <div className="mt-4">
                     <a
                       href={
-                        result.domain.startsWith("http")
-                          ? result.domain
-                          : `https://${result.domain}`
+                        deployDomainToUrl(result.domain)
                       }
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 text-[12px] text-violet-400 hover:text-white underline underline-offset-4 transition-colors"
                     >
-                      Buka {result.domain}{" "}
+                      Buka {normalizeDeployDomain(result.domain)}{" "}
                       <ExternalLink className="w-3 h-3 shrink-0" />
                     </a>
                   </div>

@@ -17,6 +17,7 @@ import {
 import { Surface } from "@/components/ui/Surface";
 import { ViewFade } from "@/components/ui/ViewFade";
 import { useDeploy } from "@/lib/deploy-context";
+import { deployDomainToUrl, normalizeDeployDomain } from "@/lib/utils";
 import type { CloudflareProjectSummary, HistoryItem, Platform, RailwayProjectSummary, VercelProjectSummary } from "@/types";
 
 function groupByProject(history: HistoryItem[]) {
@@ -34,7 +35,7 @@ function groupByProject(history: HistoryItem[]) {
   for (const item of safeHistory) {
     if (item.status === "deleted") continue;
     const key = `${item.name}::${item.platform}`;
-    if (!map.has(key)) map.set(key, item);
+    if (!map.has(key)) map.set(key, { ...item, domain: normalizeDeployDomain(item.domain, item.platform) });
   }
   return Array.from(map.values());
 }
@@ -413,7 +414,7 @@ export function ProjectsView() {
 
                   <div className="mt-5 flex items-center gap-2">
                     <a
-                      href={`https://${project.domain}`}
+                      href={deployDomainToUrl(project.domain, project.platform)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="pill flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium hover:brightness-110"

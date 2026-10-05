@@ -1,5 +1,6 @@
 "use client";
 
+import { normalizeDeployDomain } from "@/lib/utils";
 import { CheckCircle2, XCircle, Trash2 } from "lucide-react";
 import { Surface } from "@/components/ui/Surface";
 import { useDeploy } from "@/lib/deploy-context";
@@ -69,7 +70,7 @@ export function HistoryTable() {
                     </div>
                   </td>
                   <td className="px-6 py-4 text-[12px] capitalize">{item.platform}</td>
-                  <td className="px-6 py-4 mono text-[12px] opacity-70">{item.domain}</td>
+                  <td className="px-6 py-4 mono text-[12px] opacity-70">{normalizeDeployDomain(item.domain, item.platform)}</td>
                   <td className="px-6 py-4">
                     <span
                       className={`inline-flex items-center gap-1.5 rounded-pill border px-2.5 py-0.5 text-[11px] font-medium ${
