@@ -9,7 +9,8 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        sans: ["Inter Tight", "Inter", "system-ui", "sans-serif"],
+        display: ["Bricolage Grotesque Variable", "Inter Tight Variable", "system-ui", "sans-serif"],
+        sans: ["Inter Tight Variable", "Inter Tight", "Inter", "system-ui", "sans-serif"],
         mono: ["Geist Mono", "ui-monospace", "monospace"],
       },
       borderRadius: {

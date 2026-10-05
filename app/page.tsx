@@ -1,27 +1,26 @@
 import * as React from "react";
 import { Navbar } from "@/components/landing/Navbar";
 import { Hero } from "@/components/landing/Hero";
-import { SocialProof } from "@/components/landing/SocialProof";
-import { FeaturesGrid } from "@/components/landing/FeaturesGrid";
+import { SupportMatrix } from "@/components/landing/SupportMatrix";
 import { HowItWorks } from "@/components/landing/HowItWorks";
+import { FeaturesGrid } from "@/components/landing/FeaturesGrid";
 import { FinalCTA } from "@/components/landing/FinalCTA";
 import { Footer } from "@/components/landing/Footer";
 
 export default function LandingPage() {
   return (
-    <main className="relative min-h-screen text-[var(--text)] font-[Inter] antialiased overflow-x-hidden selection:bg-violet-500/30">
-      {/* Ambient background */}
-      <div className="pointer-events-none fixed inset-0 -z-10">
+    <main className="relative min-h-screen text-[var(--text)] antialiased overflow-x-hidden selection:bg-blue-500/30">
+      {/* Latar: satu warna dasar + grid tipis yang memudar ke bawah. Tanpa blob gradien. */}
+      <div className="pointer-events-none fixed inset-0 -z-10" aria-hidden="true">
         <div className="absolute inset-0" style={{ background: "var(--bg-base)" }} />
-        <div className="absolute -top-[300px] left-1/2 -translate-x-1/2 w-[1200px] h-[700px] bg-[radial-gradient(ellipse_at_center,_rgba(124,58,237,0.22),_transparent_60%)] blur-[10px]" />
-        <div className="absolute top-[200px] -right-[200px] w-[600px] h-[600px] bg-[radial-gradient(circle,_rgba(99,102,241,0.18),_transparent_70%)] blur-[20px]" />
-        <div className="absolute top-[600px] -left-[200px] w-[500px] h-[500px] bg-[radial-gradient(circle,_rgba(168,85,247,0.15),_transparent_70%)] blur-[16px]" />
         <div
-          className="absolute inset-0 opacity-[0.03]"
+          className="absolute inset-x-0 top-0 h-[640px] opacity-[0.05]"
           style={{
             backgroundImage:
               "linear-gradient(var(--text) 1px, transparent 1px), linear-gradient(90deg, var(--text) 1px, transparent 1px)",
-            backgroundSize: "40px 40px",
+            backgroundSize: "48px 48px",
+            maskImage: "linear-gradient(to bottom, #000 30%, transparent)",
+            WebkitMaskImage: "linear-gradient(to bottom, #000 30%, transparent)",
           }}
         />
       </div>
@@ -30,9 +29,9 @@ export default function LandingPage() {
         <Navbar />
       </React.Suspense>
       <Hero />
-      <SocialProof />
-      <FeaturesGrid />
+      <SupportMatrix />
       <HowItWorks />
+      <FeaturesGrid />
       <FinalCTA />
       <Footer />
     </main>

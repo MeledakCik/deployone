@@ -10,10 +10,9 @@ import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { GoogleLoginModal, GoogleMark } from "./GoogleLoginModal";
 
 const NAV_LINKS = [
-  { href: "#features", label: "Features" },
-  { href: "#how-it-works", label: "How it Works" },
-  { href: "#pricing", label: "Pricing" },
-  { href: "#docs", label: "Docs" },
+  { href: "#support", label: "Repo yang didukung" },
+  { href: "#how-it-works", label: "Cara kerja" },
+  { href: "#features", label: "Setelah live" },
 ];
 
 export function Navbar() {
@@ -82,7 +81,7 @@ export function Navbar() {
                 className="btn-primary h-9 px-5 text-[13.5px] flex items-center gap-2"
               >
                 <GoogleMark size={16} />
-                Login with Google
+                Masuk dengan Google
               </button>
             )}
           </div>
@@ -93,7 +92,7 @@ export function Navbar() {
               type="button"
               className="pill w-9 h-9 flex items-center justify-center text-[var(--text)]"
               onClick={() => setMenuOpen((v) => !v)}
-              aria-label="Toggle menu"
+              aria-label="Buka menu"
             >
               {menuOpen ? <X size={18} /> : <Menu size={18} />}
             </button>
@@ -133,7 +132,7 @@ export function Navbar() {
                 className="btn-primary mt-2 h-11 flex items-center justify-center gap-2"
               >
                 <GoogleMark size={16} />
-                Login with Google
+                Masuk dengan Google
               </button>
             )}
           </div>

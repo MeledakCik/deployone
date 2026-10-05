@@ -1,181 +1,155 @@
+"use client";
+
+import * as React from "react";
 import Link from "next/link";
-import { ArrowUpRight, Play } from "lucide-react";
+import { ArrowUpRight, Check, Minus, TriangleAlert } from "lucide-react";
 
-const DEPLOYMENTS = [
-  { name: "depup-landing-v2", platform: "VERCEL", status: "Ready", time: "2m ago", branch: "main", dot: "bg-emerald-400" },
-  { name: "api-gateway-edge", platform: "CLOUDFLARE", status: "Building", time: "now", branch: "feat/cache", dot: "bg-amber-400" },
-  { name: "docs-v3-redesign", platform: "VERCEL", status: "Ready", time: "18m ago", branch: "docs/new", dot: "bg-emerald-400" },
-  { name: "marketing-site", platform: "CLOUDFLARE", status: "Failed", time: "1h ago", branch: "main", dot: "bg-red-400" },
-  { name: "dashboard-app", platform: "VERCEL", status: "Ready", time: "3h ago", branch: "main", dot: "bg-emerald-400" },
+type Level = "ok" | "warn" | "blocked";
+
+/** Contoh nyata dari aturan pengecekan repo Depup (lihat lib/deploy-guides.ts). */
+const SAMPLES: {
+  tab: string;
+  repo: string;
+  type: string;
+  verdict: Record<"Vercel" | "Cloudflare Pages" | "Railway", [Level, string]>;
+}[] = [
+  {
+    tab: "HTML biasa",
+    repo: "tokokopi/landing",
+    type: "HTML statis",
+    verdict: {
+      Vercel: ["ok", "Siap deploy, tanpa package.json"],
+      "Cloudflare Pages": ["ok", "Siap deploy, tanpa build"],
+      Railway: ["ok", "Siap deploy"],
+    },
+  },
+  {
+    tab: "Vue + TypeScript",
+    repo: "studio/portfolio",
+    type: "Vue + Vite (TypeScript)",
+    verdict: {
+      Vercel: ["ok", "Build otomatis"],
+      "Cloudflare Pages": ["ok", "Output dist/ diatur otomatis"],
+      Railway: ["ok", "Siap deploy"],
+    },
+  },
+  {
+    tab: "Express",
+    repo: "dimas/api-toko",
+    type: "Express (server Node.js)",
+    verdict: {
+      Vercel: ["warn", "Butuh penyesuaian serverless"],
+      "Cloudflare Pages": ["blocked", "Server Node.js tidak jalan di Pages"],
+      Railway: ["ok", "Cocok untuk server"],
+    },
+  },
+  {
+    tab: "Python",
+    repo: "rani/bot-flask",
+    type: "Python",
+    verdict: {
+      Vercel: ["blocked", "Hanya untuk situs web"],
+      "Cloudflare Pages": ["blocked", "Hanya untuk situs web"],
+      Railway: ["ok", "Dibangun otomatis"],
+    },
+  },
 ];
 
-const STATS = [
-  { k: "Total Deploys", v: "1,284", d: "+12%" },
-  { k: "Success Rate", v: "98.2%", d: "+0.4%" },
-  { k: "Avg Build", v: "47s", d: "-8s" },
-];
-
-function statusClasses(status: string) {
-  if (status === "Ready") return "bg-emerald-500/10 border-emerald-400/20 text-emerald-300";
-  if (status === "Building") return "bg-amber-500/10 border-amber-400/20 text-amber-300";
-  return "bg-red-500/10 border-red-400/20 text-red-300";
-}
+const ICON = { ok: Check, warn: TriangleAlert, blocked: Minus } as const;
+const TONE: Record<Level, string> = {
+  ok: "text-emerald-700 dark:text-emerald-400",
+  warn: "text-amber-700 dark:text-amber-400",
+  blocked: "text-[var(--text-faint)]",
+};
+const LABEL: Record<Level, string> = { ok: "Cocok", warn: "Dengan catatan", blocked: "Tidak cocok" };
 
 export function Hero() {
-  return (
-    <section className="relative mx-auto max-w-[1200px] px-6 pt-12 md:pt-20 pb-10 md:pb-24">
-      <div className="grid md:grid-cols-[1.05fr_0.95fr] gap-12 md:gap-8 items-center">
-        {/* Left: copy */}
-        <div>
-          <div className="pill inline-flex items-center gap-2.5 h-8 px-3.5 backdrop-blur-sm text-[12.5px] text-[var(--text-muted)]">
-            <span
-              className="w-2 h-2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.6)]"
-              style={{ animation: "landing-blink 1.4s infinite" }}
-            />
-            Sekarang mendukung Cloudflare Pages
-            <span className="w-px h-3 mx-1 hidden sm:block" style={{ background: "var(--line-strong)" }} />
-            <span className="hidden sm:inline-flex items-center gap-1 text-[var(--text-faint)]">
-              Baru <span className="w-1 h-1 rounded-full" style={{ background: "var(--text-faint)" }} />
-            </span>
-          </div>
+  const [i, setI] = React.useState(0);
+  const s = SAMPLES[i];
 
-          <h1 className="mt-7 text-[42px] md:text-[64px] leading-[0.95] tracking-[-0.04em] font-[800] text-[var(--text)]">
-            Deploy without
+  return (
+    <section className="mx-auto max-w-[1200px] px-6 pt-14 md:pt-24 pb-20 md:pb-28">
+      <div className="grid lg:grid-cols-[1fr_540px] gap-14 lg:gap-16 items-center">
+        <div>
+          <h1 className="font-display text-[44px] sm:text-[58px] md:text-[72px] leading-[0.98] tracking-[-0.035em] font-bold">
+            Tempel link GitHub.
             <br />
-            <span className="text-[var(--text)]">the hassle.</span>
+            Dapat website yang hidup.
           </h1>
 
-          <p className="mt-5 text-[16.5px] md:text-[18px] leading-[1.6] text-[var(--text-muted)] max-w-[480px]">
-            Kelola semua deployment Vercel dan Cloudflare dari satu dashboard glass yang cantik.
-            No more tab switching.
+          <p className="mt-6 max-w-[500px] text-[17px] md:text-[18px] leading-[1.6] text-[var(--text-muted)]">
+            Depup mengecek isi repo kamu dulu, lalu men-deploy-nya ke Vercel, Cloudflare Pages, atau
+            Railway. Kalau repo tidak cocok, kamu tahu alasannya sebelum membuang waktu.
           </p>
 
-          <div className="mt-8 flex flex-wrap gap-3">
+          <div className="mt-9 flex flex-wrap items-center gap-3">
             <Link
               href="/dashboard"
-              className="group h-[44px] px-6 rounded-full bg-gradient-to-br from-violet-600 to-fuchsia-500 text-white text-[14px] font-semibold flex items-center gap-2 shadow-[0_0_30px_rgba(124,58,237,0.35)] hover:shadow-[0_0_40px_rgba(124,58,237,0.5)] hover:brightness-110 transition-shadow"
+              className="group h-12 px-6 rounded-full bg-blue-600 hover:bg-blue-500 text-white text-[15px] font-semibold inline-flex items-center gap-2 transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-400"
             >
-              Deploy Sekarang
-              <ArrowUpRight size={16} className="group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />
+              Deploy repo pertamamu
+              <ArrowUpRight size={16} className="transition-transform group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
             </Link>
-
             <a
-              href="#how-it-works"
-              className="pill h-[44px] px-6 backdrop-blur-sm text-[var(--text)] text-[14px] font-medium flex items-center gap-2 hover:brightness-105 transition"
+              href="#support"
+              className="h-12 px-5 rounded-full text-[15px] font-medium inline-flex items-center text-[var(--text-muted)] hover:text-[var(--text)] transition-colors"
             >
-              <span className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: "var(--card-hover)" }}>
-                <Play size={12} className="fill-[var(--text)] ml-0.5" />
-              </span>
-              Lihat Demo
+              Lihat repo yang didukung
             </a>
-          </div>
-
-          <div className="mt-10 flex items-center gap-6 text-[12.5px] text-[var(--text-faint)]">
-            <div className="flex -space-x-2">
-              {[1, 2, 3].map((n) => (
-                <div
-                  key={n}
-                  className="w-7 h-7 rounded-full border backdrop-blur flex items-center justify-center text-[10px] font-bold text-[var(--text)]"
-                  style={{ background: "var(--card-hover)", borderColor: "var(--line)" }}
-                >
-                  {String.fromCharCode(64 + n)}
-                </div>
-              ))}
-            </div>
-            <span>Dipercaya 2,400+ developers Indonesia</span>
           </div>
         </div>
 
-        {/* Right: glass dashboard mockup */}
-        <div className="relative md:h-[520px] flex items-center justify-center">
-          <div
-            className="absolute w-[420px] h-[420px] bg-violet-600/25 blur-[36px] rounded-full -z-10"
-            style={{ animation: "landing-glow-pulse 4s ease-in-out infinite" }}
-          />
-          <div className="absolute w-[300px] h-[300px] bg-fuchsia-500/20 blur-[28px] rounded-full top-10 right-10 -z-10" />
+        {/* Momen utama: hasil pengecekan repo, bisa dicoba */}
+        <div
+          className="rounded-[20px] overflow-hidden"
+          style={{ border: "1px solid var(--line-strong)", background: "var(--surface-solid)" }}
+        >
+          <div role="tablist" aria-label="Contoh repo" className="flex flex-wrap gap-1 p-2" style={{ borderBottom: "1px solid var(--line)" }}>
+            {SAMPLES.map((x, idx) => (
+              <button
+                key={x.tab}
+                role="tab"
+                aria-selected={idx === i}
+                onClick={() => setI(idx)}
+                className={`h-8 px-3 rounded-full whitespace-nowrap text-[12.5px] font-medium transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-400 ${
+                  idx === i ? "bg-blue-600 text-white" : "text-[var(--text-muted)] hover:text-[var(--text)]"
+                }`}
+              >
+                {x.tab}
+              </button>
+            ))}
+          </div>
 
-          <div
-            className="glass w-full max-w-[560px] !rounded-[24px] overflow-hidden"
-            style={{ animation: "landing-float 6s ease-in-out infinite" }}
-          >
-            <div
-              className="h-[48px] px-5 flex items-center justify-between"
-              style={{ borderBottom: "1px solid var(--line)", background: "var(--card-hover)" }}
-            >
-              <div className="flex items-center gap-2">
-                <div className="flex gap-1.5">
-                  <div className="w-3 h-3 rounded-full" style={{ background: "var(--line-strong)" }} />
-                  <div className="w-3 h-3 rounded-full" style={{ background: "var(--line-strong)" }} />
-                  <div className="w-3 h-3 rounded-full" style={{ background: "var(--line-strong)" }} />
-                </div>
-                <span className="ml-4 text-[12px] text-[var(--text-faint)] tracking-wide">
-                  depup.app / deployments
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="pill w-20 h-6" />
-                <div className="w-6 h-6 rounded-full bg-violet-500/20 border border-violet-400/20 flex items-center justify-center text-[10px] text-[var(--text-muted)]">
-                  ⌘K
-                </div>
-              </div>
+          <div className="p-5 md:p-6" aria-live="polite">
+            <div className="text-[12.5px] text-[var(--text-faint)]">Repo</div>
+            <div className="mt-1 font-mono text-[14px] text-[var(--text)] break-all">github.com/{s.repo}</div>
+
+            <div className="mt-5 text-[12.5px] text-[var(--text-faint)]">Terdeteksi</div>
+            <div key={s.tab} className="lp-motion mt-1 font-display text-[26px] font-semibold tracking-[-0.02em]" style={{ animation: "dcFadeIn .35s ease" }}>
+              {s.type}
             </div>
 
-            <div className="p-4 grid grid-cols-3 gap-3">
-              {STATS.map((s) => (
-                <div key={s.k} className="rounded-[14px] p-3" style={{ background: "var(--card-hover)", border: "1px solid var(--line)" }}>
-                  <div className="text-[10px] uppercase tracking-widest text-[var(--text-faint)]">{s.k}</div>
-                  <div className="mt-1 flex items-end gap-1.5">
-                    <span className="text-[18px] font-bold tracking-tight text-[var(--text)]">{s.v}</span>
-                    <span className="text-[11px] text-emerald-500 mb-[2px]">{s.d}</span>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="px-4 pb-4 space-y-2">
-              <div className="flex items-center justify-between px-1 pb-1">
-                <span className="text-[11px] tracking-widest text-[var(--text-faint)] uppercase">
-                  Recent Deployments
-                </span>
-                <span className="text-[11px] text-[var(--text-faint)]">5 active</span>
-              </div>
-
-              {DEPLOYMENTS.map((d) => (
-                <div
-                  key={d.name}
-                  className="group flex items-center gap-3 h-[54px] px-3.5 rounded-[14px] cursor-default"
-                  style={{ background: "var(--card-hover)", border: "1px solid var(--line)" }}
-                >
-                  <div className={`w-2 h-2 rounded-full ${d.dot} shadow-[0_0_8px_currentColor]`} />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-[13px] font-medium text-[var(--text)] truncate">{d.name}</span>
-                      <span className="hidden sm:inline text-[9px] px-1.5 py-0.5 rounded tracking-widest text-[var(--text-faint)]" style={{ background: "var(--pill-bg)", border: "1px solid var(--line)" }}>
-                        {d.platform}
-                      </span>
+            <ul className="mt-6 divide-y" style={{ borderTop: "1px solid var(--line)", borderColor: "var(--line)" }}>
+              {Object.entries(s.verdict).map(([name, [level, note]]) => {
+                const Icon = ICON[level];
+                return (
+                  <li key={name} className="py-3.5 flex items-start gap-3" style={{ borderColor: "var(--line)" }}>
+                    <Icon size={16} className={`mt-0.5 shrink-0 ${TONE[level]}`} strokeWidth={level === "ok" ? 3 : 2} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-baseline justify-between gap-3">
+                        <span className="text-[14px] font-medium">{name}</span>
+                        <span className={`text-[12px] ${TONE[level]}`}>{LABEL[level]}</span>
+                      </div>
+                      <div className="text-[12.5px] text-[var(--text-muted)] mt-0.5">{note}</div>
                     </div>
-                    <div className="flex items-center gap-2 mt-0.5">
-                      <span className="text-[11px] text-[var(--text-faint)]">{d.branch}</span>
-                      <span className="w-1 h-1 rounded-full" style={{ background: "var(--line-strong)" }} />
-                      <span className="text-[11px] text-[var(--text-faint)]">{d.time}</span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <span className={`text-[11px] px-2.5 py-1 rounded-full border font-medium ${statusClasses(d.status)}`}>
-                      {d.status}
-                    </span>
-                    <div className="w-6 h-6 rounded-full hidden sm:flex items-center justify-center opacity-0 group-hover:opacity-100 transition" style={{ background: "var(--pill-bg)" }}>
-                      <ArrowUpRight size={12} className="text-[var(--text-faint)]" />
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            <div className="h-10 bg-gradient-to-t from-[var(--bg-base)]/40 to-transparent pointer-events-none" />
+                  </li>
+                );
+              })}
+            </ul>
           </div>
         </div>
       </div>
+      <style>{`@keyframes dcFadeIn { from { opacity: 0; transform: translateY(4px) } to { opacity: 1; transform: none } }`}</style>
     </section>
   );
 }

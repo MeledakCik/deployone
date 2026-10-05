@@ -1,11 +1,9 @@
-@import url("https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800;900&family=Geist+Mono:wght@400;500&display=swap");
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 * {
-  font-family: "Inter Tight", Inter, system-ui, -apple-system, sans-serif;
+  font-family: "Inter Tight Variable", "Inter Tight", Inter, system-ui, -apple-system, sans-serif;
 }
 
 :root,
@@ -358,4 +356,9 @@ body {
   50% {
     opacity: 0.9;
   }
+}
+
+/* Gerakan di landing dimatikan untuk pengguna yang memilih reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .lp-motion { animation: none !important; transition: none !important; }
 }

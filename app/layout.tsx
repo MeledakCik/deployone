@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from "next";
+import "@fontsource-variable/inter-tight";
+import "@fontsource-variable/bricolage-grotesque";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import { AuthProvider } from "@/lib/auth-context";
