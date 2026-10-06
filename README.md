@@ -54,6 +54,19 @@ diisi, tombol "Laporkan ke developer" muncul setelah AI menjawab dan fungsi itu 
 Yang perlu dibuat nanti: endpoint penyimpanan/pengiriman laporan (mis. ke KV, email, atau Telegram) dan
 halaman untuk developer membacanya.
 
+## Donasi (Saweria)
+
+Menu **Donasi** di dashboard membuat kode QRIS dan memantau pembayarannya.
+
+- Env: `SAWERIA_USERNAME` (wajib untuk mengaktifkan) dan `SAWERIA_USER_ID` (opsional, lebih stabil).
+- Endpoint: `GET /api/donate` (konfigurasi), `POST /api/donate/create`, `GET /api/donate/status?id=`.
+  Semuanya wajib login, dengan rate limit di `middleware.ts`.
+- **Saweria tidak punya API publik resmi.** `app/api/_lib/saweria.ts` memakai endpoint backend yang sama dengan
+  halaman donasi publik saweria.co, tanpa login akun. Endpoint ini bisa berubah tanpa pemberitahuan. Kalau
+  gagal, UI menampilkan tautan cadangan ke halaman Saweria resmi.
+- Status "terbayar" berasal dari perilaku endpoint tidak resmi (qr_string dikosongkan setelah bayar). Untuk
+  pencatatan yang pasti, pakai dashboard atau webhook Saweria.
+
 ## Menjalankan
 
 ```bash

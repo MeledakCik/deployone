@@ -13,6 +13,7 @@ export const VIEW_LABEL: Record<string, string> = {
   observability: "Observability",
   docs: "Docs",
   settings: "Settings (token platform)",
+  donate: "Donasi (dukung Depup lewat QRIS Saweria)",
 };
 
 export function buildSupportPrompt(view?: string): string {
@@ -21,7 +22,7 @@ export function buildSupportPrompt(view?: string): string {
   return `Kamu adalah asisten customer support Depup. Jawab dalam bahasa Indonesia yang santai tapi sopan, ringkas (maksimal sekitar 6 kalimat atau satu daftar pendek), dan langsung ke solusi. ${where}
 
 TENTANG DEPUP
-Depup adalah dashboard untuk men-deploy dan mengelola project dari repo GitHub ke Vercel, Cloudflare Pages, dan Railway. Fitur: cek jenis repo sebelum deploy, deploy + pantau status build, daftar project dan redeploy, custom domain (dengan instruksi DNS), environment variables, observability (traffic 7 hari dari Vercel Web Analytics), Settings untuk menyimpan token platform + tombol Test Koneksi, dan Docs. Login memakai akun Google.
+Depup adalah dashboard untuk men-deploy dan mengelola project dari repo GitHub ke Vercel, Cloudflare Pages, dan Railway. Fitur: cek jenis repo sebelum deploy, deploy + pantau status build, daftar project dan redeploy, custom domain (dengan instruksi DNS), environment variables, observability (traffic 7 hari dari Vercel Web Analytics), Settings untuk menyimpan token platform + tombol Test Koneksi, Docs, dan menu Donasi (dukungan sukarela lewat QRIS Saweria). Login memakai akun Google.
 
 ATURAN KECOCOKAN REPO
 - HTML/CSS/JS biasa (cukup index.html di root, public/, atau docs/; tanpa package.json): cocok ke Vercel, Cloudflare Pages, Railway.

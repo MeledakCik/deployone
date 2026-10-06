@@ -4,9 +4,9 @@ import { ArrowRight } from "lucide-react";
 export function FinalCTA() {
   return (
     <section className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-8">
-      <div className="relative overflow-hidden rounded-3xl bg-obs-low/90 p-8 shadow-[0_20px_80px_rgba(0,0,0,0.7)] backdrop-blur-2xl sm:p-14">
-        <div className="pointer-events-none absolute -bottom-24 -right-24 h-96 w-96 rounded-full bg-obs-violet/25 blur-[100px]" aria-hidden="true" />
-        <div className="pointer-events-none absolute -left-20 -top-20 h-80 w-80 rounded-full bg-obs-pink/20 blur-[90px]" aria-hidden="true" />
+      <div className="relative isolate overflow-hidden rounded-3xl bg-obs-low p-8 shadow-[0_20px_60px_rgba(0,0,0,0.6)] sm:p-14">
+        <div className="pointer-events-none absolute -bottom-40 -right-40 h-[32rem] w-[32rem] bg-[radial-gradient(closest-side,rgba(139,92,246,0.32),transparent)]" aria-hidden="true" />
+        <div className="pointer-events-none absolute -left-32 -top-32 h-[26rem] w-[26rem] bg-[radial-gradient(closest-side,rgba(236,72,153,0.24),transparent)]" aria-hidden="true" />
 
         <div className="relative z-10 flex flex-col items-start justify-between gap-12 lg:flex-row lg:items-center">
           <div className="max-w-2xl">

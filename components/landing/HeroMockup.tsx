@@ -79,8 +79,8 @@ export function HeroMockup() {
 
   return (
     <section className="relative mx-auto mb-8 w-full max-w-7xl px-4 sm:px-8" id="dashboard" aria-label="Contoh tampilan dashboard">
-      <div className="rounded-2xl bg-gradient-to-b from-white/15 via-white/5 to-transparent p-1 shadow-[0_20px_70px_rgba(0,0,0,0.85)]">
-        <div className="overflow-hidden rounded-[14px] bg-obs-subtle/95 backdrop-blur-2xl">
+      <div className="rounded-2xl bg-gradient-to-b from-white/15 via-white/5 to-transparent p-1 shadow-[0_20px_60px_rgba(0,0,0,0.7)]">
+        <div className="isolate overflow-hidden rounded-[14px] bg-obs-subtle">
           {/* Bar jendela */}
           <div className="flex flex-col items-stretch justify-between gap-3 bg-obs-lowest/60 px-4 py-3 sm:flex-row sm:items-center sm:px-6">
             <div className="flex items-center gap-2">

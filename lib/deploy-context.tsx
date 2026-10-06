@@ -320,6 +320,7 @@ const DASHBOARD_VIEWS: readonly DashboardView[] = [
   "observability",
   "docs",
   "settings",
+  "donate",
 ];
 
 function isDashboardView(v: string | null): v is DashboardView {

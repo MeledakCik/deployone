@@ -15,6 +15,7 @@ import { EnvironmentView } from "@/components/dashboard/EnvironmentView";
 import { ObservabilityView } from "@/components/dashboard/ObservabilityView";
 import { DocsView } from "@/components/dashboard/DocsView";
 import { SettingsView } from "@/components/dashboard/SettingsView";
+import { DonateView } from "@/components/dashboard/DonateView";
 import { DeployModal } from "@/components/dashboard/DeployModal";
 import { SupportChat } from "@/components/dashboard/SupportChat";
 
@@ -74,6 +75,7 @@ export default function DashboardPage() {
           {view === "observability" && <ObservabilityView />}
           {view === "docs" && <DocsView />}
           {view === "settings" && <SettingsView />}
+          {view === "donate" && <DonateView />}
         </div>
       </div>
 

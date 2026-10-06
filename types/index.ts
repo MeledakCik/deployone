@@ -95,6 +95,7 @@ export type DashboardView =
   | "domains"
   | "env"
   | "observability"
+  | "donate"
   | "docs"
   | "settings";
 
@@ -119,6 +120,8 @@ export interface ApiError {
     | "railway_error"
     | "rate_limited"
     | "ai_not_configured"
+    | "donate_not_configured"
+    | "donate_unavailable"
     | "ai_unavailable"
     | "github_not_connected"
     | "missing_account"

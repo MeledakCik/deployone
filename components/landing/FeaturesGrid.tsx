@@ -23,8 +23,8 @@ export function FeaturesGrid() {
 
       <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
         {/* Besar: satu dashboard, tiga platform */}
-        <div className="obs-card group relative flex flex-col justify-between overflow-hidden rounded-2xl p-7 md:col-span-2">
-          <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-obs-violet/15 blur-3xl" aria-hidden="true" />
+        <div className="obs-card group relative isolate flex flex-col justify-between overflow-hidden rounded-2xl p-7 md:col-span-2">
+          <div className="pointer-events-none absolute -right-24 -top-24 -z-10 h-80 w-80 bg-[radial-gradient(closest-side,rgba(139,92,246,0.22),transparent)]" aria-hidden="true" />
           <div>
             <Icon tone="bg-obs-violet/20 text-obs-lilac">
               <Layers size={22} />

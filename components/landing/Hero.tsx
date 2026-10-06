@@ -20,7 +20,13 @@ export function Hero() {
         <h1 className="f-display max-w-4xl text-[34px] font-bold leading-[1.1] tracking-[-0.035em] text-white min-[400px]:text-[38px] sm:text-[56px]">
           Deploy without the
           <br />
-          <span className="obs-gradient-text drop-shadow-[0_0_35px_rgba(168,85,247,0.35)]">hassle.</span>
+          <span className="relative inline-block">
+            <span
+              className="pointer-events-none absolute -inset-x-10 -inset-y-6 -z-10 bg-[radial-gradient(closest-side,rgba(168,85,247,0.30),transparent)]"
+              aria-hidden="true"
+            />
+            <span className="obs-gradient-text">hassle.</span>
+          </span>
         </h1>
 
         <p className="mx-auto mb-10 mt-6 max-w-2xl text-[16px] leading-relaxed text-obs-sec sm:text-[18px]">

@@ -16,9 +16,9 @@ export default function LandingPage() {
     <main className="obsidian relative min-h-screen overflow-x-hidden antialiased selection:bg-obs-violet/30">
       {/* Cahaya ambient di belakang konten */}
       <div className="pointer-events-none absolute inset-0 -z-0 overflow-hidden" aria-hidden="true">
-        <div className="absolute -top-40 left-1/2 h-[600px] w-[1000px] -translate-x-1/2 bg-gradient-to-b from-obs-violet/20 via-obs-pink/10 to-transparent opacity-50 blur-3xl" />
-        <div className="absolute -left-48 top-[900px] h-[600px] w-[600px] rounded-full bg-obs-violet/10 blur-[120px]" />
-        <div className="absolute -right-48 top-[1900px] h-[700px] w-[700px] rounded-full bg-obs-pink/10 blur-[140px]" />
+        <div className="absolute -top-56 left-1/2 h-[700px] w-[1100px] -translate-x-1/2 bg-[radial-gradient(closest-side,rgba(139,92,246,0.22),rgba(236,72,153,0.08)_55%,transparent)]" />
+        <div className="absolute -left-64 top-[800px] h-[800px] w-[800px] bg-[radial-gradient(closest-side,rgba(139,92,246,0.12),transparent)]" />
+        <div className="absolute -right-64 top-[1800px] h-[900px] w-[900px] bg-[radial-gradient(closest-side,rgba(236,72,153,0.11),transparent)]" />
       </div>
 
       <div className="relative z-10">

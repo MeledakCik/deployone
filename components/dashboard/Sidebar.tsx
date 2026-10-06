@@ -12,6 +12,7 @@ import {
   Activity,
   BookOpen,
   Settings2,
+  Heart,
   LogOut,
   Menu,
   X,
@@ -31,6 +32,7 @@ const NAV_ITEMS: { id: DashboardView; label: string; icon: React.ElementType }[]
   { id: "observability", label: "Observability", icon: Activity },
   { id: "docs", label: "Docs", icon: BookOpen },
   { id: "settings", label: "Settings", icon: Settings2 },
+  { id: "donate", label: "Donasi", icon: Heart },
 ];
 
 export function Sidebar() {
