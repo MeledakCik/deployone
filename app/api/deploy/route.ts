@@ -2,13 +2,14 @@ import type { NextRequest } from "next/server";
 import { ok, fail, withErrorHandling } from "@/app/api/_lib/response";
 import { validateGithubRepo, GithubApiError } from "@/app/api/_lib/github";
 import { guardCompat } from "@/app/api/_lib/compat-guard";
-import { createVercelDeployment, getVercelProject, VercelApiError } from "@/app/api/_lib/vercel";
+import { createVercelDeployment, ensureVercelProjectWithEnv, getVercelProject, VercelApiError } from "@/app/api/_lib/vercel";
 import {
   requireString,
   optionalString,
   assertValidProjectName,
   BadRequestError,
 } from "@/app/api/_lib/validators";
+import { parseEnvText } from "@/app/api/_lib/env-text";
 import type { CreateDeployRequest } from "@/types";
 
 export const runtime = "nodejs";
@@ -75,6 +76,20 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
       return fail(e.message, status, e.code);
     }
     throw e;
+  }
+
+  // Env var dipasang ke project SEBELUM deployment dibuat, supaya build pertama sudah memakainya.
+  const env = parseEnvText(typeof body.envText === "string" ? body.envText : undefined);
+  if (Object.keys(env).length > 0) {
+    try {
+      await ensureVercelProjectWithEnv(projectName, env, vercelToken);
+    } catch (e) {
+      if (e instanceof VercelApiError) {
+        const status = e.code === "invalid_token" ? 401 : e.code === "not_found" ? 404 : 502;
+        return fail(`Gagal memasang environment variables ke Vercel: ${e.message}`, status, e.code);
+      }
+      throw e;
+    }
   }
 
   try {

@@ -6,6 +6,7 @@ import {
   createCloudflarePagesProject,
   getCloudflarePagesProject,
   triggerCloudflareDeployment,
+  upsertCloudflareEnvBulk,
   cloudflareBuildPreset,
   CloudflareApiError,
 } from "@/app/api/_lib/cloudflare";
@@ -15,6 +16,7 @@ import {
   assertValidProjectName,
   BadRequestError,
 } from "@/app/api/_lib/validators";
+import { parseEnvText } from "@/app/api/_lib/env-text";
 import type { CreateCloudflareDeployRequest } from "@/types";
 
 export const runtime = "nodejs";
@@ -73,6 +75,8 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
   const effectiveBuildCommand = buildCommand || preset.buildCommand;
   const effectiveOutputDir = outputDir || preset.outputDir;
 
+  const env = parseEnvText(typeof body.envText === "string" ? body.envText : undefined);
+
   // Same conflict guard as the Vercel flow: a project name already taken by
   // a *different* repo on this Cloudflare account is a real conflict.
   try {
@@ -86,7 +90,8 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
       );
     }
     if (existing.exists) {
-      // Already created & wired to the same repo — just kick off a fresh deployment.
+      // Already created & wired to the same repo — pasang env (kalau ada), lalu deploy ulang.
+      await upsertCloudflareEnvBulk(accountId, projectName, env, cloudflareToken);
       const deployment = await triggerCloudflareDeployment(accountId, projectName, cloudflareToken);
       return ok({ ...deployment, frameworkWarning: preset.warning }, 201);
     }
@@ -110,6 +115,8 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
       outputDir: effectiveOutputDir,
       compatibilityFlags: preset.compatFlags,
     });
+    // Env dipasang sebelum deployment pertama supaya build langsung memakainya.
+    await upsertCloudflareEnvBulk(accountId, projectName, env, cloudflareToken);
     const deployment = await triggerCloudflareDeployment(accountId, projectName, cloudflareToken);
     return ok({ ...deployment, frameworkWarning: preset.warning }, 201);
   } catch (e) {

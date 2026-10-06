@@ -9,24 +9,10 @@ import {
   assertValidProjectName,
   BadRequestError,
 } from "@/app/api/_lib/validators";
+import { parseEnvText } from "@/app/api/_lib/env-text";
 import type { CreateRailwayDeployRequest } from "@/types";
 
 export const runtime = "nodejs";
-
-const ENV_LINE_RE = /^([A-Z][A-Z0-9_]*)=(.*)$/;
-
-/** Parses the "KEY=value per line" textarea format used by the Railway deploy step. */
-function parseEnvText(text: string | undefined): Record<string, string> {
-  if (!text) return {};
-  const env: Record<string, string> = {};
-  for (const rawLine of text.split("\n")) {
-    const line = rawLine.trim();
-    if (!line || line.startsWith("#")) continue;
-    const match = ENV_LINE_RE.exec(line);
-    if (match) env[match[1]] = match[2];
-  }
-  return env;
-}
 
 /**
  * Deploy orchestration for Railway:

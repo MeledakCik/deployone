@@ -706,3 +706,41 @@ function extractAnalyticsResult(data: unknown): AnalyticsApiResult | null {
     timeseries,
   };
 }
+
+/**
+ * Memastikan project Vercel ada DAN env var-nya terpasang SEBELUM build pertama jalan
+ * (env yang dipakai saat build, mis. NEXT_PUBLIC_*, harus sudah ada saat itu).
+ * - Project belum ada → dibuat langsung bersama env-nya (satu panggilan).
+ * - Project sudah ada → tiap env di-upsert.
+ */
+export async function ensureVercelProjectWithEnv(
+  projectName: string,
+  env: Record<string, string>,
+  vercelToken: string
+): Promise<void> {
+  const entries = Object.entries(env);
+  if (entries.length === 0) return;
+
+  const existing = await getVercelProject(projectName, vercelToken);
+  if (existing.exists) {
+    for (const [key, value] of entries) {
+      await upsertProjectEnv(projectName, key, value, ["production", "preview"], vercelToken);
+    }
+    return;
+  }
+
+  const res = await fetch(`${VERCEL_API}/v10/projects`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${vercelToken}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: projectName,
+      environmentVariables: entries.map(([key, value]) => ({
+        key,
+        value,
+        type: "encrypted",
+        target: ["production", "preview"],
+      })),
+    }),
+  });
+  if (!res.ok) throw await parseVercelError(res);
+}

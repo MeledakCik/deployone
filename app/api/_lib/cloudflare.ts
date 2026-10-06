@@ -679,3 +679,29 @@ function toSecretPayload(vars: Record<string, { value: string }>): Record<string
   for (const [k, v] of Object.entries(vars)) out[k] = { value: v.value, type: "secret_text" };
   return out;
 }
+
+/** Set banyak env var sekaligus (Production + Preview) dalam SATU PATCH — dipakai saat deploy pertama. */
+export async function upsertCloudflareEnvBulk(
+  accountId: string,
+  projectName: string,
+  env: Record<string, string>,
+  token: string
+): Promise<void> {
+  const entries = Object.entries(env);
+  if (entries.length === 0) return;
+  const current = await getCurrentEnvVars(accountId, projectName, token);
+  for (const [key, value] of entries) {
+    current.production[key] = { value };
+    current.preview[key] = { value };
+  }
+  const res = await cfFetch(`/accounts/${accountId}/pages/projects/${encodeURIComponent(projectName)}`, token, {
+    method: "PATCH",
+    body: JSON.stringify({
+      deployment_configs: {
+        production: { env_vars: toSecretPayload(current.production) },
+        preview: { env_vars: toSecretPayload(current.preview) },
+      },
+    }),
+  });
+  if (!res.ok) throw await parseCloudflareError(res);
+}

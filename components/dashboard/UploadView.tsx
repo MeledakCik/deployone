@@ -84,6 +84,8 @@ export function UploadView() {
   const [allowExisting, setAllowExisting] = React.useState(false);
   const [deployNow, setDeployNow] = React.useState(false);
   const [platform, setPlatform] = React.useState<Platform | "">("");
+  const [envText, setEnvText] = React.useState("");
+  const [envFromLocal, setEnvFromLocal] = React.useState(false);
 
   const [progress, setProgress] = React.useState<UploadProgress | null>(null);
   const [result, setResult] = React.useState<UploadResult | null>(null);
@@ -114,6 +116,8 @@ export function UploadView() {
       const res = await run();
       setCollected(res);
       setRepoName(guessRepoName(res, sourceName));
+      setEnvText(res.envText);
+      setEnvFromLocal(res.envText.trim().length > 0);
       setStage("ready");
     } catch (e) {
       setCollected(null);
@@ -209,7 +213,7 @@ export function UploadView() {
       buildCommand: "",
       outputDir: "",
       startCommand: "",
-      envText: "",
+      envText: envText.trim(),
     };
     if (target === "vercel" && savedVercelToken) return { ...base, platformToken: savedVercelToken.token };
     if (target === "cloudflare" && savedCloudflareToken) {
@@ -234,6 +238,7 @@ export function UploadView() {
     setFormField("githubUrl", result.url);
     setFormField("projectName", result.repo);
     if (githubPat) setFormField("githubPat", githubPat);
+    if (envText.trim()) setFormField("envText", envText.trim());
     setView("deploy");
   }
 
@@ -245,6 +250,8 @@ export function UploadView() {
     setError(null);
     setProgress(null);
     setRepoName("");
+    setEnvText("");
+    setEnvFromLocal(false);
   }
 
   const pct = progress && progress.total > 0 ? Math.round((progress.done / progress.total) * 100) : 0;
@@ -493,13 +500,38 @@ export function UploadView() {
                         </option>
                       ))}
                     </select>
-                    <p className="mt-1.5 text-[11.5px] text-text-muted">
-                      Project butuh env var? Pilih &ldquo;Upload saja&rdquo;, lalu isi env di menu Deploy.
-                    </p>
                   </>
                 )}
               </div>
             )}
+
+            <div className="mt-4">
+              <label htmlFor="upload-env" className="mb-1.5 block text-[12px] font-medium">
+                Environment variables <span className="font-normal text-text-muted">(opsional, satu per baris: KEY=value)</span>
+              </label>
+              <textarea
+                id="upload-env"
+                value={envText}
+                disabled={busy}
+                onChange={(e) => {
+                  setEnvText(e.target.value);
+                  setEnvFromLocal(false);
+                }}
+                rows={5}
+                spellCheck={false}
+                autoComplete="off"
+                placeholder={"DATABASE_URL=postgres://...\nNEXT_PUBLIC_API_URL=https://..."}
+                className={cn(inputCls, "resize-y font-mono text-[12px]")}
+              />
+              <p className="mt-1.5 text-[11.5px] text-text-muted">
+                {envFromLocal
+                  ? "Terisi otomatis dari file .env di project-mu. File .env-nya sendiri tidak di-upload ke GitHub. "
+                  : ""}
+                {deployNow
+                  ? "Saat deploy, env ini dipasang ke platform sebelum build pertama dan otomatis muncul di menu Environment untuk project ini."
+                  : "Dipakai kalau kamu lanjut deploy dari tombol “Deploy repo ini” setelah upload."}
+              </p>
+            </div>
           </div>
 
           {stage === "uploading" && progress && (

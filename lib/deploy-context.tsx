@@ -4,6 +4,7 @@ import { notifySessionExpired } from "@/lib/session-expired";
 import * as React from "react";
 import { useToast } from "@/components/ui/Toast";
 import { resolveDomain, formatDate, normalizeDeployDomain } from "@/lib/utils";
+import { parseEnvText } from "@/app/api/_lib/env-text";
 import { useCloudStorage } from "@/lib/useCloudStorage";
 import { ApiRequestError, toFriendlyError, type ErrorStage } from "@/lib/friendly-error";
 import type {
@@ -776,6 +777,45 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     setDeployState(defaultDeployState);
   }, []);
 
+  /**
+   * Env var yang dikirim saat deploy sudah terpasang di platform — catat juga
+   * di halaman Environment (per-project, tertandai "synced") supaya langsung
+   * terlihat dan bisa dikelola di sana. Tidak menimpa entri yang sudah ada.
+   */
+  const recordDeployEnv = React.useCallback(
+    (project: string, platform: Platform, envText: string | undefined) => {
+      const parsed = parseEnvText(envText);
+      const keys = Object.keys(parsed);
+      if (keys.length === 0) return;
+      const environments: ("Production" | "Preview")[] =
+        platform === "railway" ? ["Production"] : ["Production", "Preview"];
+      setEnvVars((prev) => {
+        const safePrev = Array.isArray(prev) ? prev : [];
+        const added: EnvItem[] = [];
+        let n = 0;
+        for (const key of keys) {
+          for (const environment of environments) {
+            if (safePrev.some((v) => v.key === key && v.environment === environment && v.project === project)) continue;
+            added.push({
+              id: `${Date.now()}-${n++}`,
+              key,
+              value: parsed[key],
+              environment,
+              visible: false,
+              project,
+              syncedToVercel: platform === "vercel",
+              syncedToCloudflare: platform === "cloudflare",
+              syncedToRailway: platform === "railway",
+            });
+          }
+        }
+        return added.length > 0 ? [...added, ...safePrev] : safePrev;
+      });
+      showToast(`${keys.length} env var ikut terpasang & tercatat di halaman Environment.`);
+    },
+    [setEnvVars, showToast],
+  );
+
   /* ---------- Vercel ---------- */
   const startVercelDeploy = React.useCallback(
     async (data: DeployFormValues) => {
@@ -818,12 +858,14 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
             githubUrl: data.githubUrl,
             vercelToken: data.platformToken,
             githubPat: data.githubPat,
+            envText: data.envText,
           }),
         });
       } catch (err) {
         failDeploy(data, err, "create", validation);
         return;
       }
+      recordDeployEnv(projectName, "vercel", data.envText);
       setDeployState((prev) => ({ ...prev, stepIndex: 2, barWidth: 40 }));
 
       intervalRef.current = setInterval(async () => {
@@ -920,7 +962,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         }
       }, POLL_INTERVAL_MS);
     },
-    [addHistory, beginDeploy, failDeploy, showToast, stopIfIncompatible],
+    [addHistory, beginDeploy, failDeploy, recordDeployEnv, showToast, stopIfIncompatible],
   );
 
   /* ---------- Cloudflare ---------- */
@@ -976,9 +1018,11 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
               githubPat: data.githubPat,
               buildCommand: data.buildCommand,
               outputDir: data.outputDir,
+              envText: data.envText,
             }),
           },
         );
+        recordDeployEnv(projectName, "cloudflare", data.envText);
       } catch (err) {
         if (
           (err instanceof ApiRequestError && err.code === "github_not_connected") ||
@@ -1051,7 +1095,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         }
       }, POLL_INTERVAL_MS);
     },
-    [addHistory, beginDeploy, checkGithubConnection, failDeploy, showToast, stopIfIncompatible],
+    [addHistory, beginDeploy, checkGithubConnection, failDeploy, recordDeployEnv, showToast, stopIfIncompatible],
   );
 
   /* ---------- Railway ---------- */
@@ -1112,6 +1156,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         failDeploy(data, err, "create", validation);
         return;
       }
+      recordDeployEnv(created.name || projectName, "railway", data.envText);
       setDeployState((prev) => ({ ...prev, stepIndex: 2, barWidth: 40 }));
 
       intervalRef.current = setInterval(async () => {
@@ -1176,7 +1221,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         }
       }, POLL_INTERVAL_MS);
     },
-    [addHistory, beginDeploy, failDeploy, showToast, stopIfIncompatible],
+    [addHistory, beginDeploy, failDeploy, recordDeployEnv, showToast, stopIfIncompatible],
   );
 
   /* ---------- submit ---------- */

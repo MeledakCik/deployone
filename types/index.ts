@@ -235,6 +235,8 @@ export interface CreateDeployRequest {
   githubUrl: string;
   vercelToken: string;
   githubPat?: string;
+  /** Env var untuk dipasang ke project sebelum build pertama, format `KEY=value` per baris. */
+  envText?: string;
 }
 
 /** Result of POST /api/deploy */
@@ -403,6 +405,8 @@ export interface CreateCloudflareDeployRequest {
   githubPat?: string;
   buildCommand?: string;
   outputDir?: string;
+  /** Env var untuk dipasang ke project sebelum build pertama, format `KEY=value` per baris. */
+  envText?: string;
 }
 
 /** Result of POST /api/cloudflare/deploy */

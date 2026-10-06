@@ -10,6 +10,7 @@
  * buat tree → commit → geser ref branch ke commit itu.
  */
 import JSZip from "jszip";
+import { cleanEnvValue } from "@/app/api/_lib/env-text";
 
 /* ------------------------------------------------------------------ */
 /*  Tipe & batas                                                       */
@@ -29,6 +30,13 @@ export interface CollectResult {
   /** Nama folder pembungkus yang dibuang (mis. "my-app"), kalau ada. */
   strippedRoot: string | null;
   totalBytes: number;
+  /**
+   * Isi file .env di root project (yang TIDAK di-upload ke GitHub), digabung jadi satu teks
+   * KEY=value. Dipakai untuk mengisi otomatis kolom env saat deploy. Prioritas nilai:
+   * .env.production > .env.local > .env. Key dari .env.example yang belum punya nilai
+   * ikut sebagai `KEY=` kosong supaya user tahu apa yang harus diisi.
+   */
+  envText: string;
 }
 
 export const MAX_FILES = 3000;
@@ -109,6 +117,31 @@ function stripCommonRoot<T extends { path: string }>(items: T[]): { items: T[]; 
   };
 }
 
+const ENV_PRIORITY = [".env", ".env.local", ".env.development", ".env.production"]; // makin belakang makin menang
+const ENV_TEMPLATES = [".env.example", ".env.sample", ".env.template", ".env.dist"];
+
+function buildEnvText(items: UploadFile[]): string {
+  const dec = new TextDecoder();
+  const values = new Map<string, string>();
+  const lineRe = /^(?:export\s+)?([A-Z][A-Z0-9_]*)\s*=\s*(.*)$/;
+  const read = (name: string, assign: boolean) => {
+    const f = items.find((x) => x.path === name);
+    if (!f || f.data.byteLength === 0) return;
+    for (const raw of dec.decode(f.data).split(/\r?\n/)) {
+      const line = raw.trim();
+      if (!line || line.startsWith("#")) continue;
+      const m = lineRe.exec(line);
+      if (!m) continue;
+      const v = cleanEnvValue(m[2]);
+      if (assign) values.set(m[1], v);
+      else if (!values.has(m[1])) values.set(m[1], "");
+    }
+  };
+  for (const name of ENV_TEMPLATES) read(name, false);
+  for (const name of ENV_PRIORITY) read(name, true);
+  return [...values.entries()].map(([k, v]) => `${k}=${v}`).join("\n");
+}
+
 function finalize(rawInput: UploadFile[]): CollectResult {
   // eslint-disable-next-line no-param-reassign
   const skipped: CollectResult["skipped"] = [];
@@ -120,6 +153,7 @@ function finalize(rawInput: UploadFile[]): CollectResult {
   // 1) Buang folder pembungkus lebih dulu (supaya filter bekerja di path final).
   //    Folder pembungkus bernama "node_modules"/".git" dsb. tetap terfilter di langkah 2.
   const { items, root } = stripCommonRoot(raw);
+  const envText = buildEnvText(items);
 
   // 2) Filter.
   const files: UploadFile[] = [];
@@ -157,7 +191,7 @@ function finalize(rawInput: UploadFile[]): CollectResult {
     );
   }
   files.sort((a, b) => a.path.localeCompare(b.path));
-  return { files, skipped, strippedRoot: root, totalBytes };
+  return { files, skipped, strippedRoot: root, totalBytes, envText };
 }
 
 /* ------------------------------------------------------------------ */
@@ -183,7 +217,7 @@ export async function collectFromZip(file: File): Promise<CollectResult> {
     if (!path) continue;
     // Jangan ekstrak file yang pasti difilter (mis. node_modules di dalam zip) —
     // cukup catat path-nya supaya muncul di daftar "file dilewati".
-    if (skipReason(stripFirstSeg(path))) {
+    if (skipReason(stripFirstSeg(path)) && !isRootEnvFile(stripFirstSeg(path))) {
       raw.push({ path, data: new Uint8Array(0), executable: false });
       continue;
     }
@@ -212,13 +246,18 @@ export async function collectFromFileList(list: FileList | File[]): Promise<Coll
     const path = cleanPath(rel);
     if (!path) continue;
     // Jangan baca isi file yang akan difilter (mis. node_modules) — hemat waktu & memori.
-    if (skipReason(stripFirstSeg(path))) {
+    if (skipReason(stripFirstSeg(path)) && !isRootEnvFile(stripFirstSeg(path))) {
       raw.push({ path, data: new Uint8Array(0), executable: false });
       continue;
     }
     raw.push({ path, data: new Uint8Array(await f.arrayBuffer()), executable: false });
   }
   return finalize(raw);
+}
+
+/** File .env di root project — isinya dibaca lokal (untuk prefill env), tidak pernah di-upload. */
+function isRootEnvFile(pathWithoutRoot: string): boolean {
+  return !pathWithoutRoot.includes("/") && /^\.env(\..+)?$/i.test(pathWithoutRoot);
 }
 
 function stripFirstSeg(p: string): string {
@@ -258,7 +297,7 @@ async function walkEntry(entry: FsEntry, out: UploadFile[], counter: { n: number
     if (!path) return;
     counter.n++;
     // Lewati baca isi untuk file yang pasti difilter.
-    if (skipReason(stripFirstSeg(path))) {
+    if (skipReason(stripFirstSeg(path)) && !isRootEnvFile(stripFirstSeg(path))) {
       out.push({ path, data: new Uint8Array(0), executable: false });
       return;
     }
