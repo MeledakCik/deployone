@@ -9,6 +9,7 @@ import { useDeploy } from "@/lib/deploy-context";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { DashboardHomeView } from "@/components/dashboard/DashboardHomeView";
 import { DeployFormView } from "@/components/dashboard/DeployFormView";
+import { UploadView } from "@/components/dashboard/UploadView";
 import { ProjectsView } from "@/components/dashboard/ProjectsView";
 import { DomainsView } from "@/components/dashboard/DomainsView";
 import { EnvironmentView } from "@/components/dashboard/EnvironmentView";
@@ -69,6 +70,7 @@ export default function DashboardPage() {
         <div className="mx-auto max-w-6xl view active" id={view}>
           {view === "dashboard" && <DashboardHomeView />}
           {view === "deploy" && <DeployFormView />}
+          {view === "upload" && <UploadView />}
           {view === "projects" && <ProjectsView />}
           {view === "domains" && <DomainsView />}
           {view === "env" && <EnvironmentView />}

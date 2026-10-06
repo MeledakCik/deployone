@@ -204,6 +204,10 @@ interface DeployContextValue {
   recheckRepo: () => void;
   /** Ulangi deploy terakhir dengan isi form yang sama. */
   retryDeploy: () => void;
+  /** GitHub PAT dari Settings (dipakai fitur Upload). */
+  githubPat: string;
+  /** Jalankan deploy langsung dengan nilai yang sudah lengkap (tanpa lewat wizard form). */
+  deployFromValues: (data: DeployFormValues) => void;
 
   /** Legacy derived view — dipakai DeployModal.tsx. */
   modal: ModalState;
@@ -321,6 +325,7 @@ const DASHBOARD_VIEWS: readonly DashboardView[] = [
   "docs",
   "settings",
   "donate",
+  "upload",
 ];
 
 function isDashboardView(v: string | null): v is DashboardView {
@@ -1210,6 +1215,18 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     else if (data.platform === "cloudflare") void startCloudflareDeploy(data);
     else if (data.platform === "railway") void startRailwayDeploy(data);
   }, [form, startCloudflareDeploy, startRailwayDeploy, startVercelDeploy]);
+
+  /** Dipakai fitur Upload: deploy repo yang baru di-push, memakai token tersimpan. */
+  const deployFromValues = React.useCallback(
+    (data: DeployFormValues) => {
+      setForm(data);
+      lastDeployDataRef.current = data;
+      if (data.platform === "vercel") void startVercelDeploy(data);
+      else if (data.platform === "cloudflare") void startCloudflareDeploy(data);
+      else if (data.platform === "railway") void startRailwayDeploy(data);
+    },
+    [startCloudflareDeploy, startRailwayDeploy, startVercelDeploy],
+  );
 
   /* legacy no-ops */
 
@@ -2790,6 +2807,8 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     repoEnvCheck,
     recheckRepo,
     retryDeploy,
+    githubPat: settingsTokens.githubPat ?? "",
+    deployFromValues,
 
     // legacy + modern deploy views
     modal,
