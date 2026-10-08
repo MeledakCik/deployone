@@ -68,8 +68,8 @@ Laporan ke developer (`app/api/_lib/support-reports.ts`, disimpan di KV selama 9
   akun per 30 menit.
 - **Manual**: tombol "Laporkan ke developer" di chat menyimpan percakapan (token disamarkan) + pemeriksaan terbaru.
 - Setiap laporan baru dikirim ke **Telegram** developer (env `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID`) dan/atau webhook
-  `SUPPORT_WEBHOOK_URL` (Discord/Slack). Detail lengkap bisa dibaca lewat `GET /api/support/report` (login dengan email
-  yang ada di env `ADMIN_EMAILS`).
+  `SUPPORT_WEBHOOK_URL` (Discord/Slack). Daftar lengkap bisa dibaca lewat `GET /api/support/report`, tapi itu opsional dan
+  hanya aktif kalau env `ADMIN_EMAILS` diisi; notifikasi Telegram tidak membutuhkannya.
 
 #### Notifikasi Telegram: cara membuat bot
 
@@ -87,11 +87,11 @@ Laporan ke developer (`app/api/_lib/support-reports.ts`, disimpan di KV selama 9
      untuk melihat ID akunmu.
    - Grup: tambahkan bot ke grup, kirim satu pesan di grup, lalu buka `getUpdates` yang sama. ID grup berupa angka
      **negatif** (mis. `-1001234567890`). Kalau `result` kosong, kirim ulang pesan di grup lalu muat ulang halamannya.
-6. Isi `TELEGRAM_BOT_TOKEN` dan `TELEGRAM_CHAT_ID` di Vercel (Project Settings, Environment Variables), isi
-   `ADMIN_EMAILS` dengan email Google kamu, lalu redeploy.
-7. Tes: login ke Depup lalu buka `/api/support/report?test=telegram`. Kalau berhasil, pesan "Tes notifikasi Depup"
-   muncul di Telegram dan responsnya `ok: true`. Kalau gagal, `note` di respons menjelaskan penyebabnya
-   (token salah, Chat ID salah, atau belum menekan Start).
+6. Isi `TELEGRAM_BOT_TOKEN` dan `TELEGRAM_CHAT_ID` di Vercel (Project Settings, Environment Variables), lalu redeploy.
+7. Tes: di dashboard buka chat **Bantuan**, kirim satu keluhan, tunggu jawaban, lalu klik **Laporkan ke developer**.
+   Pesan "Laporan bantuan Depup SR-..." harus masuk ke Telegram dalam beberapa detik. Kalau tidak masuk, cek log
+   fungsi `/api/support/report` di Vercel: tertulis `telegram membalas 401` (token salah), `400` (Chat ID salah atau
+   belum menekan Start), atau `403` (bot diblokir).
 
 ## Donasi (Saweria)
 

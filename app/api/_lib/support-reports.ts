@@ -54,13 +54,6 @@ function reportText(r: SupportReport): string {
     .slice(0, 3800); // batas pesan Telegram 4096
 }
 
-export function notifyChannelsConfigured(): { telegram: boolean; webhook: boolean } {
-  return {
-    telegram: !!(process.env.TELEGRAM_BOT_TOKEN?.trim() && process.env.TELEGRAM_CHAT_ID?.trim()),
-    webhook: /^https:\/\//i.test(process.env.SUPPORT_WEBHOOK_URL?.trim() ?? ""),
-  };
-}
-
 async function postJson(url: string, body: unknown, ms = 5000): Promise<number> {
   const ctrl = new AbortController();
   const timer = setTimeout(() => ctrl.abort(), ms);
@@ -80,7 +73,7 @@ async function postJson(url: string, body: unknown, ms = 5000): Promise<number> 
 
 /**
  * Kirim teks ke Telegram. URL memuat token bot, jadi URL/error mentah TIDAK PERNAH dicatat di log —
- * hanya kode status. Mengembalikan keterangan singkat untuk tombol tes admin.
+ * hanya kode status. Mengembalikan keterangan singkat penyebab kegagalan (untuk log).
  */
 async function sendTelegram(text: string): Promise<{ ok: boolean; note: string }> {
   const token = process.env.TELEGRAM_BOT_TOKEN?.trim();
@@ -119,11 +112,6 @@ async function sendWebhook(text: string): Promise<void> {
 async function notifyDeveloper(r: SupportReport): Promise<void> {
   const text = reportText(r);
   await Promise.all([sendTelegram(text), sendWebhook(text)]);
-}
-
-/** Tes dari admin: kirim pesan contoh ke Telegram supaya konfigurasi bisa diverifikasi tanpa menunggu laporan asli. */
-export async function sendTelegramTest(): Promise<{ ok: boolean; note: string }> {
-  return sendTelegram("✅ Tes notifikasi Depup: bot Telegram sudah tersambung. Laporan bantuan dari user akan masuk ke chat ini.");
 }
 
 /**

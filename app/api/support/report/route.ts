@@ -5,13 +5,7 @@ import { redactSecrets } from "@/app/api/_lib/redact";
 import { rateLimit } from "@/app/api/_lib/rate-limit";
 import { VIEW_LABEL } from "@/app/api/_lib/support-prompt";
 import { detectFocus, runDiagnostics, type DiagnosticsResult } from "@/app/api/_lib/support-diagnostics";
-import {
-  fileSupportReport,
-  isAdminEmail,
-  listSupportReports,
-  notifyChannelsConfigured,
-  sendTelegramTest,
-} from "@/app/api/_lib/support-reports";
+import { fileSupportReport, isAdminEmail, listSupportReports } from "@/app/api/_lib/support-reports";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -74,15 +68,11 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
   return ok({ id });
 });
 
-/** Khusus developer (email di env ADMIN_EMAILS): daftar laporan terbaru, atau tes Telegram (?test=telegram). */
+/** Opsional, khusus developer (email di env ADMIN_EMAILS): daftar laporan terbaru. Tanpa ADMIN_EMAILS endpoint ini tertutup; notifikasi Telegram tidak membutuhkannya. */
 export const GET = withErrorHandling(async (req: NextRequest) => {
   const email = getSessionEmail(req);
   if (!email) return fail("Belum login.", 401, "unauthorized");
   if (!isAdminEmail(email)) return fail("Tidak punya akses.", 403, "bad_request");
-  // GET /api/support/report?test=telegram → kirim pesan tes ke Telegram untuk memverifikasi konfigurasi.
-  if (req.nextUrl.searchParams.get("test") === "telegram") {
-    return ok({ ...(await sendTelegramTest()), channels: notifyChannelsConfigured() });
-  }
   const limit = Number(req.nextUrl.searchParams.get("limit")) || 30;
   return ok({ reports: await listSupportReports(limit) });
 });
