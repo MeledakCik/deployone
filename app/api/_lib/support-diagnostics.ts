@@ -88,32 +88,79 @@ function classifyError(e: unknown, platformLabel: string): Pick<DiagCheck, "stat
   return { status: "warn", blame: "platform", detail: `${platformLabel} membalas error saat dicek (bukan karena token).` };
 }
 
-const STATUS_PAGES: Partial<Record<Platform, { label: string; url: string }>> = {
-  vercel: { label: "Vercel", url: "https://www.vercel-status.com/api/v2/status.json" },
-  cloudflare: { label: "Cloudflare", url: "https://www.cloudflarestatus.com/api/v2/status.json" },
-  github: { label: "GitHub", url: "https://www.githubstatus.com/api/v2/status.json" },
+/**
+ * Halaman status resmi (semuanya Atlassian Statuspage). Yang dibaca adalah daftar INSIDEN AKTIF,
+ * bukan indikator keseluruhan: indikator keseluruhan ikut menyala untuk gangguan kecil yang tidak
+ * ada hubungannya dengan deploy (mis. satu kota data center, atau layanan VPN/WARP di Cloudflare),
+ * sehingga user bisa salah diberi tahu "platform sedang gangguan". Insiden dianggap relevan hanya
+ * kalau nama insiden / komponennya menyangkut build, deploy, API, Git, atau dashboard.
+ */
+const STATUS_PAGES: Partial<Record<Platform, { label: string; base: string; relevant: RegExp }>> = {
+  vercel: {
+    label: "Vercel",
+    base: "https://www.vercel-status.com",
+    relevant: /build|deploy|api|dashboard|git|function|edge|cli|domain|dns/i,
+  },
+  cloudflare: {
+    label: "Cloudflare",
+    base: "https://www.cloudflarestatus.com",
+    relevant: /pages|workers|\bapi\b|dashboard|build|git|deploy|wrangler|\bdns\b|\br2\b|\bkv\b/i,
+  },
+  github: {
+    label: "GitHub",
+    base: "https://www.githubstatus.com",
+    relevant: /git operations|\bapi\b|webhook|\brepo|clone|pull request|actions|\bgit\b/i,
+  },
 };
+
+interface StatusIncident {
+  name?: string;
+  impact?: string;
+  components?: { name?: string }[];
+}
 
 async function checkPlatformStatus(p: Platform): Promise<DiagCheck | null> {
   const page = STATUS_PAGES[p];
   if (!page) return null;
+  const id = `status-${p}`;
+  const label = `Status ${page.label}`;
   try {
-    const res = await withTimeout(fetch(page.url, { cache: "no-store" }), 4000);
+    const res = await withTimeout(fetch(`${page.base}/api/v2/incidents/unresolved.json`, { cache: "no-store" }), 4000);
     if (!res.ok) throw new Error("bad status");
-    const json = (await res.json()) as { status?: { indicator?: string; description?: string } };
-    const indicator = json.status?.indicator ?? "none";
-    if (indicator === "none") {
-      return { id: `status-${p}`, label: `Status ${page.label}`, status: "ok", blame: "none", detail: "Tidak ada gangguan yang diumumkan." };
+    const json = (await res.json()) as { incidents?: StatusIncident[] };
+    const incidents = Array.isArray(json.incidents) ? json.incidents : [];
+
+    if (incidents.length === 0) {
+      return { id, label, status: "ok", blame: "none", detail: "Tidak ada insiden aktif." };
+    }
+    const isRelevant = (i: StatusIncident) =>
+      page.relevant.test(`${i.name ?? ""} ${(i.components ?? []).map((c) => c.name ?? "").join(" ")}`);
+    const relevant = incidents.filter(isRelevant);
+
+    if (relevant.length === 0) {
+      return {
+        id,
+        label,
+        status: "ok",
+        blame: "none",
+        detail: `Ada ${incidents.length} insiden aktif, tapi di layanan lain yang tidak berkaitan dengan deploy (${incidents
+          .slice(0, 2)
+          .map((i) => safeText(i.name, 60))
+          .join("; ")}).`,
+      };
     }
     return {
-      id: `status-${p}`,
-      label: `Status ${page.label}`,
+      id,
+      label,
       status: "problem",
       blame: "platform",
-      detail: `${page.label} sedang melaporkan gangguan: ${(json.status?.description ?? indicator).slice(0, 120)}.`,
+      detail: `${page.label} sedang punya insiden yang bisa mengganggu deploy: ${relevant
+        .slice(0, 2)
+        .map((i) => safeText(i.name, 80))
+        .join("; ")}.`,
     };
   } catch {
-    return { id: `status-${p}`, label: `Status ${page.label}`, status: "unknown", blame: "none", detail: "Halaman status tidak bisa dicek sekarang." };
+    return { id, label, status: "unknown", blame: "none", detail: "Halaman status tidak bisa dicek sekarang." };
   }
 }
 
