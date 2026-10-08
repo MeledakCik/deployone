@@ -3,6 +3,16 @@ import { ok, fail, withErrorHandling } from "@/app/api/_lib/response";
 import { groqChat, GroqError, type ChatMessage } from "@/app/api/_lib/groq";
 import { buildSupportPrompt, VIEW_LABEL } from "@/app/api/_lib/support-prompt";
 import { redactSecrets } from "@/app/api/_lib/redact";
+import { getSessionEmail } from "@/app/api/_lib/session";
+import { rateLimit } from "@/app/api/_lib/rate-limit";
+import {
+  detectFocus,
+  diagnosticsToPrompt,
+  looksLikeIssue,
+  runDiagnostics,
+  type DiagnosticsResult,
+} from "@/app/api/_lib/support-diagnostics";
+import { fileSupportReport } from "@/app/api/_lib/support-reports";
 
 export const runtime = "nodejs";
 export const maxDuration = 30;
@@ -46,9 +56,53 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
       ? body.view
       : undefined;
 
+  // Laporan masalah → periksa kondisi teknis akun user (token, status platform, riwayat deploy)
+  // SEBELUM menjawab, supaya jawabannya berdasar fakta. Dibatasi 3x / 5 menit per akun.
+  const email = getSessionEmail(req);
+  const latest = messages[messages.length - 1].content;
+  let diagnostics: DiagnosticsResult | null = null;
+  let diagSkipped = false;
+  let reportId: string | null = null;
+
+  if (email && looksLikeIssue(latest)) {
+    const rl = await rateLimit("support-diag", `u:${email}`, 3, 300);
+    if (!rl.allowed) {
+      diagSkipped = true;
+    } else {
+      try {
+        diagnostics = await runDiagnostics(email, detectFocus(latest));
+      } catch (e) {
+        console.error("[support/chat] diagnostik gagal", (e as Error)?.message);
+      }
+      if (diagnostics?.anomaly) {
+        reportId = await fileSupportReport({
+          email,
+          source: "auto",
+          view: view ?? null,
+          summary: latest.slice(0, 300),
+          transcript: messages.slice(-6),
+          diagnostics,
+        });
+      }
+    }
+  }
+
+  const diagPrompt = diagnostics
+    ? diagnosticsToPrompt(diagnostics, reportId)
+    : diagSkipped
+      ? "HASIL PEMERIKSAAN SISTEM: pemeriksaan otomatis dilewati karena sudah dijalankan beberapa kali barusan. Jawab dari panduan umum dan minta pengguna menunggu beberapa menit sebelum mencoba pemeriksaan lagi."
+      : undefined;
+
   try {
-    const reply = await groqChat(buildSupportPrompt(view), messages);
-    return ok({ reply });
+    const reply = await groqChat(buildSupportPrompt(view, diagPrompt), messages);
+    return ok({
+      reply,
+      // Hanya ringkasan yang aman ditampilkan ke user (tanpa token).
+      diagnostics: diagnostics
+        ? diagnostics.checks.map((c) => ({ id: c.id, label: c.label, status: c.status, detail: c.detail }))
+        : null,
+      reportId,
+    });
   } catch (e) {
     if (e instanceof GroqError) {
       switch (e.kind) {

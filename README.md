@@ -47,12 +47,51 @@ soal deploy, token, domain, dan error, berdasarkan aturan produk di `app/api/_li
 - Riwayat chat hanya ada di memori halaman (hilang saat refresh) dan tidak disimpan di server.
 - Tombol **Salin percakapan** memudahkan user meneruskan masalah ke developer.
 
-### Menyambung ke laporan developer (belum dibuat)
+### Pemeriksaan teknis & laporan ke developer
 
-`<SupportChat onReport={...} />` di `app/dashboard/page.tsx` sudah menyiapkan titik sambungnya. Kalau `onReport`
-diisi, tombol "Laporkan ke developer" muncul setelah AI menjawab dan fungsi itu menerima seluruh percakapan.
-Yang perlu dibuat nanti: endpoint penyimpanan/pengiriman laporan (mis. ke KV, email, atau Telegram) dan
-halaman untuk developer membacanya.
+Kalau pesan user terdengar seperti laporan masalah (gagal, error, tidak bisa, dst.), server menjalankan
+pemeriksaan otomatis **sebelum** AI menjawab (`app/api/_lib/support-diagnostics.ts`), memakai token yang
+tersimpan di akun user (dibaca di server; token tidak pernah dikirim ke browser maupun ke AI):
+
+- validitas token Vercel / Cloudflare / Railway / GitHub,
+- halaman status resmi Vercel, Cloudflare, dan GitHub,
+- riwayat deploy 24 jam terakhir (berapa yang gagal),
+- keterjangkauan penyimpanan data akun.
+
+Hasilnya (OK / perhatian / masalah + keterangan) diberikan ke AI sebagai fakta dan ditampilkan ke user sebagai
+kartu "Hasil pemeriksaan akunmu". Dibatasi 3 pemeriksaan per 5 menit per akun.
+
+Laporan ke developer (`app/api/_lib/support-reports.ts`, disimpan di KV selama 90 hari):
+
+- **Otomatis**: dibuat hanya kalau masalahnya ada di sisi Depup (mis. database bermasalah, atau deploy berulang
+  gagal padahal token sehat). Token user yang salah dan insiden platform tidak dilaporkan otomatis. Maksimal 1 per
+  akun per 30 menit.
+- **Manual**: tombol "Laporkan ke developer" di chat menyimpan percakapan (token disamarkan) + pemeriksaan terbaru.
+- Setiap laporan baru dikirim ke **Telegram** developer (env `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID`) dan/atau webhook
+  `SUPPORT_WEBHOOK_URL` (Discord/Slack). Detail lengkap bisa dibaca lewat `GET /api/support/report` (login dengan email
+  yang ada di env `ADMIN_EMAILS`).
+
+#### Notifikasi Telegram: cara membuat bot
+
+1. Buka Telegram, cari **@BotFather** (centang biru resmi), lalu kirim `/newbot`.
+2. Ketik nama tampilan bot (bebas, mis. `Depup Support`), lalu username bot yang **berakhiran `bot`**
+   (mis. `depup_support_bot`; harus unik).
+3. BotFather membalas **token bot**, bentuknya `123456789:AAExampleExampleExampleExample`.
+   Itu nilai `TELEGRAM_BOT_TOKEN`. Anggap seperti password: jangan di-commit atau dibagikan. Kalau bocor, kirim
+   `/revoke` ke BotFather untuk membuat token baru.
+4. **Wajib:** buka bot barumu (klik link `t.me/<username_bot>` dari BotFather), tekan **Start**, dan kirim satu pesan
+   apa saja. Bot tidak bisa mengirim pesan duluan ke orang yang belum pernah memulai chat.
+5. Cari **Chat ID**:
+   - Chat pribadi: buka `https://api.telegram.org/bot<TOKEN>/getUpdates` di browser (ganti `<TOKEN>`),
+     lalu cari `"chat":{"id":123456789,...}`. Angka itu `TELEGRAM_CHAT_ID`. Atau kirim pesan ke **@userinfobot**
+     untuk melihat ID akunmu.
+   - Grup: tambahkan bot ke grup, kirim satu pesan di grup, lalu buka `getUpdates` yang sama. ID grup berupa angka
+     **negatif** (mis. `-1001234567890`). Kalau `result` kosong, kirim ulang pesan di grup lalu muat ulang halamannya.
+6. Isi `TELEGRAM_BOT_TOKEN` dan `TELEGRAM_CHAT_ID` di Vercel (Project Settings, Environment Variables), isi
+   `ADMIN_EMAILS` dengan email Google kamu, lalu redeploy.
+7. Tes: login ke Depup lalu buka `/api/support/report?test=telegram`. Kalau berhasil, pesan "Tes notifikasi Depup"
+   muncul di Telegram dan responsnya `ok: true`. Kalau gagal, `note` di respons menjelaskan penyebabnya
+   (token salah, Chat ID salah, atau belum menekan Start).
 
 ## Donasi (Saweria)
 

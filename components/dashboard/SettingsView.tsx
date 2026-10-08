@@ -2,7 +2,7 @@
 
 import { notifySessionExpired } from "@/lib/session-expired";
 import * as React from "react";
-import { Eye, EyeOff, Save, ShieldCheck, ShieldAlert, Loader2 } from "lucide-react";
+import { Eye, EyeOff, Save, ShieldCheck, ShieldAlert, Loader2, Trash2 } from "lucide-react";
 import { Surface } from "@/components/ui/Surface";
 import { ViewFade } from "@/components/ui/ViewFade";
 import { useCloudStorage } from "@/lib/useCloudStorage";
@@ -45,6 +45,7 @@ function TokenField({
   onChange,
   check,
   onTest,
+  onRemove,
 }: {
   id: string;
   label: string;
@@ -52,8 +53,16 @@ function TokenField({
   onChange: (v: string) => void;
   check: CheckState;
   onTest?: () => void;
+  /** Hapus token ini dari akun (langsung tersimpan, setelah konfirmasi). */
+  onRemove?: () => void;
 }) {
   const [visible, setVisible] = React.useState(false);
+  const [confirming, setConfirming] = React.useState(false);
+
+  // Kalau kolom dikosongkan (mis. setelah dihapus), tutup konfirmasi yang masih terbuka.
+  React.useEffect(() => {
+    if (!value?.trim()) setConfirming(false);
+  }, [value]);
 
   return (
     <div>
@@ -61,18 +70,53 @@ function TokenField({
         <label htmlFor={id} className="block text-[12px] font-medium text-text-muted">
           {label}
         </label>
-        {onTest && (
-          <button
-            type="button"
-            onClick={onTest}
-            disabled={!value?.trim() || check.status === "checking"}
-            className="inline-flex items-center gap-1 text-[11px] font-medium text-violet-400 hover:brightness-110 disabled:opacity-40"
-          >
-            {check.status === "checking" && <Loader2 size={11} className="animate-spin" />}
-            Test Koneksi
-          </button>
-        )}
+        <div className="flex items-center gap-3">
+          {onRemove && value?.trim() && !confirming && (
+            <button
+              type="button"
+              onClick={() => setConfirming(true)}
+              aria-label={`Hapus ${label}`}
+              className="inline-flex items-center gap-1 text-[11px] font-medium text-red-400 hover:brightness-110"
+            >
+              <Trash2 size={11} /> Hapus
+            </button>
+          )}
+          {onTest && (
+            <button
+              type="button"
+              onClick={onTest}
+              disabled={!value?.trim() || check.status === "checking"}
+              className="inline-flex items-center gap-1 text-[11px] font-medium text-violet-400 hover:brightness-110 disabled:opacity-40"
+            >
+              {check.status === "checking" && <Loader2 size={11} className="animate-spin" />}
+              Test Koneksi
+            </button>
+          )}
+        </div>
       </div>
+      {confirming && onRemove && (
+        <div
+          role="alert"
+          className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-[12px] text-red-300"
+        >
+          <span>Hapus {label} dari akunmu? Deploy ke platform ini tidak bisa jalan sampai diisi lagi.</span>
+          <span className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                setConfirming(false);
+                onRemove();
+              }}
+              className="font-semibold text-red-400 underline underline-offset-2"
+            >
+              Ya, hapus
+            </button>
+            <button type="button" onClick={() => setConfirming(false)} className="text-text-muted underline underline-offset-2">
+              Batal
+            </button>
+          </span>
+        </div>
+      )}
       <div className="relative">
         <input
           id={id}
@@ -123,6 +167,18 @@ export function SettingsView() {
     if (ready) setDraft(tokens);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready]);
+
+  /** Hapus satu token: langsung tersimpan ke akun, tanpa menyentuh isian lain yang belum disimpan. */
+  function removeToken(field: keyof SettingsTokens, label: string, extra?: () => void) {
+    setTokens({ ...tokens, [field]: "", ...(field === "cloudflareToken" ? { cloudflareAccountId: "" } : {}) });
+    setDraft((prev) => ({
+      ...prev,
+      [field]: "",
+      ...(field === "cloudflareToken" ? { cloudflareAccountId: "" } : {}),
+    }));
+    extra?.();
+    showToast(`${label} dihapus.`);
+  }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -219,6 +275,7 @@ export function SettingsView() {
               }}
               check={vercelCheck}
               onTest={testVercel}
+              onRemove={() => removeToken("vercelToken", "Vercel Token", () => setVercelCheck({ status: "idle" }))}
             />
             <TokenField
               id="settingsCloudflareToken"
@@ -231,6 +288,12 @@ export function SettingsView() {
               }}
               check={cloudflareCheck}
               onTest={testCloudflare}
+              onRemove={() =>
+                removeToken("cloudflareToken", "Cloudflare Token", () => {
+                  setCloudflareCheck({ status: "idle" });
+                  setCloudflareAccounts([]);
+                })
+              }
             />
             {cloudflareAccounts.length > 1 && (
               <div>
@@ -264,6 +327,7 @@ export function SettingsView() {
               }}
               check={githubCheck}
               onTest={testGithub}
+              onRemove={() => removeToken("githubPat", "GitHub PAT", () => setGithubCheck({ status: "idle" }))}
             />
             <TokenField
               id="settingsRailwayToken"
@@ -275,6 +339,7 @@ export function SettingsView() {
               }}
               check={railwayCheck}
               onTest={testRailway}
+              onRemove={() => removeToken("railwayToken", "Railway Token", () => setRailwayCheck({ status: "idle" }))}
             />
 
             <button type="submit" className="btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-[13px]">

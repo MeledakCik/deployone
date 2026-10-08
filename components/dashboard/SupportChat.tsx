@@ -1,29 +1,32 @@
 "use client";
 
 import * as React from "react";
-import { Bot, Copy, MessageCircle, RotateCcw, SendHorizonal, X } from "lucide-react";
+import { Bot, CheckCircle2, Copy, Info, Loader2, MessageCircle, RotateCcw, SendHorizonal, TriangleAlert, X, XCircle } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useDeploy } from "@/lib/deploy-context";
 import { useToast } from "@/components/ui/Toast";
 import { notifySessionExpired } from "@/lib/session-expired";
 
+export interface DiagCheckView {
+  id: string;
+  label: string;
+  status: "ok" | "problem" | "warn" | "unknown";
+  detail: string;
+}
+
 export interface SupportMessage {
   role: "user" | "assistant";
   content: string;
-}
-
-interface SupportChatProps {
-  /**
-   * Titik sambung untuk laporan ke developer (belum dipakai).
-   * Kalau diisi, tombol "Laporkan ke developer" muncul setelah AI menjawab
-   * dan menerima seluruh percakapan. Lihat bagian "Chat CS" di README.
-   */
-  onReport?: (messages: SupportMessage[]) => void | Promise<void>;
+  /** Hasil pemeriksaan teknis otomatis yang dijalankan sebelum jawaban ini (kalau pesan berupa laporan masalah). */
+  diagnostics?: DiagCheckView[] | null;
+  /** Nomor laporan yang otomatis dibuat ke developer untuk jawaban ini. */
+  reportId?: string | null;
 }
 
 const MAX_INPUT = 1000;
 
 const SUGGESTIONS = [
+  "Deploy saya gagal, tolong cek akun saya",
   "Repo saya tidak bisa di-deploy, kenapa?",
   "Cara dapat token Vercel",
   "Kapan pakai Railway, bukan Vercel?",
@@ -101,9 +104,35 @@ function RichText({ text }: { text: string }) {
   return <>{blocks}</>;
 }
 
+/* ---------- kartu hasil pemeriksaan teknis ---------- */
+
+function DiagnosticsCard({ checks }: { checks: DiagCheckView[] }) {
+  const icon = {
+    ok: <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-emerald-500" aria-label="OK" />,
+    problem: <XCircle size={14} className="mt-0.5 shrink-0 text-red-500" aria-label="Masalah" />,
+    warn: <TriangleAlert size={14} className="mt-0.5 shrink-0 text-amber-500" aria-label="Perhatian" />,
+    unknown: <Info size={14} className="mt-0.5 shrink-0 text-text-muted" aria-label="Tidak diketahui" />,
+  } as const;
+  return (
+    <div className="w-full max-w-[92%] rounded-2xl border border-[var(--line)] px-3.5 py-3">
+      <p className="mb-2 text-[11.5px] font-semibold uppercase tracking-wide text-text-muted">Hasil pemeriksaan akunmu</p>
+      <ul className="space-y-1.5">
+        {checks.map((c) => (
+          <li key={c.id} className="flex gap-2 text-[12.5px] leading-snug">
+            {icon[c.status]}
+            <span>
+              <span className="font-medium">{c.label}:</span> <span className="text-text-muted">{c.detail}</span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
 /* ---------- komponen utama ---------- */
 
-export function SupportChat({ onReport }: SupportChatProps) {
+export function SupportChat() {
   const { user } = useAuth();
   const { view } = useDeploy();
   const { showToast } = useToast();
@@ -113,6 +142,8 @@ export function SupportChat({ onReport }: SupportChatProps) {
   const [input, setInput] = React.useState("");
   const [sending, setSending] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const [reporting, setReporting] = React.useState(false);
+  const [reportedId, setReportedId] = React.useState<string | null>(null);
 
   const listRef = React.useRef<HTMLDivElement>(null);
   const inputRef = React.useRef<HTMLTextAreaElement>(null);
@@ -146,7 +177,7 @@ export function SupportChat({ onReport }: SupportChatProps) {
         const res = await fetch("/api/support/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ messages: history, view }),
+          body: JSON.stringify({ messages: history.map(({ role, content }) => ({ role, content })), view }),
           signal: ctrl.signal,
         });
         const body = await res.json().catch(() => null);
@@ -155,7 +186,16 @@ export function SupportChat({ onReport }: SupportChatProps) {
           setError(body?.error ?? "Asisten sedang tidak bisa menjawab. Coba lagi nanti.");
           return;
         }
-        setMessages((m) => [...m, { role: "assistant", content: String(body.data.reply) }]);
+        setMessages((m) => [
+          ...m,
+          {
+            role: "assistant",
+            content: String(body.data.reply),
+            diagnostics: Array.isArray(body.data.diagnostics) ? (body.data.diagnostics as DiagCheckView[]) : null,
+            reportId: typeof body.data.reportId === "string" ? body.data.reportId : null,
+          },
+        ]);
+        if (typeof body.data.reportId === "string") setReportedId(body.data.reportId);
       } catch (e) {
         if ((e as { name?: string })?.name === "AbortError") return;
         setError("Koneksi bermasalah. Cek internet kamu lalu coba lagi.");
@@ -185,6 +225,7 @@ export function SupportChat({ onReport }: SupportChatProps) {
     setMessages([]);
     setError(null);
     setSending(false);
+    setReportedId(null);
     inputRef.current?.focus();
   }
 
@@ -208,6 +249,30 @@ export function SupportChat({ onReport }: SupportChatProps) {
   }
 
   const hasReply = messages.some((m) => m.role === "assistant");
+
+  async function reportToDeveloper() {
+    if (reporting || reportedId) return;
+    setReporting(true);
+    try {
+      const res = await fetch("/api/support/report", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ messages: messages.map(({ role, content }) => ({ role, content })), view }),
+      });
+      const body = await res.json().catch(() => null);
+      notifySessionExpired(body);
+      if (!res.ok || !body?.ok) {
+        showToast(body?.error ?? "Laporan belum bisa dikirim. Coba lagi.");
+        return;
+      }
+      setReportedId(String(body.data.id));
+      showToast(`Laporan terkirim ke developer (${body.data.id}).`);
+    } catch {
+      showToast("Koneksi bermasalah. Laporan belum terkirim.");
+    } finally {
+      setReporting(false);
+    }
+  }
 
   return (
     <>
@@ -301,10 +366,16 @@ export function SupportChat({ onReport }: SupportChatProps) {
                   </div>
                 </div>
               ) : (
-                <div key={i} className="flex">
+                <div key={i} className="flex flex-col items-start gap-2">
+                  {m.diagnostics && m.diagnostics.length > 0 && <DiagnosticsCard checks={m.diagnostics} />}
                   <div className="max-w-[92%] break-words rounded-2xl rounded-tl-md bg-[var(--pill-bg)] px-3.5 py-2.5 text-[13.5px] leading-relaxed">
                     <RichText text={m.content} />
                   </div>
+                  {m.reportId && (
+                    <p className="px-1 text-[11.5px] text-text-muted">
+                      Laporan otomatis diteruskan ke developer · <span className="font-mono">{m.reportId}</span>
+                    </p>
+                  )}
                 </div>
               )
             )}
@@ -334,14 +405,22 @@ export function SupportChat({ onReport }: SupportChatProps) {
               </div>
             )}
 
-            {onReport && hasReply && !sending && (
-              <button
-                type="button"
-                onClick={() => void onReport(messages)}
-                className="pill w-full px-3.5 py-2 text-[12.5px] font-medium hover:text-text"
-              >
-                Masalah belum selesai? Laporkan ke developer
-              </button>
+            {hasReply && !sending && (
+              reportedId ? (
+                <p className="rounded-2xl bg-emerald-500/10 px-3.5 py-2.5 text-center text-[12.5px] text-emerald-500">
+                  Laporan sudah diterima developer · <span className="font-mono">{reportedId}</span>
+                </p>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => void reportToDeveloper()}
+                  disabled={reporting}
+                  className="pill inline-flex w-full items-center justify-center gap-2 px-3.5 py-2 text-[12.5px] font-medium hover:text-text disabled:opacity-60"
+                >
+                  {reporting && <Loader2 size={13} className="animate-spin" />}
+                  Masalah belum selesai? Laporkan ke developer
+                </button>
+              )
             )}
           </div>
 

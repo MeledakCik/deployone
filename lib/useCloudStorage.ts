@@ -74,6 +74,10 @@ export function useCloudStorage<T>(
   // aksi eksplisit user.
   const skipSyncRef = useRef(true);
   const emailRef = useRef<string | null>(null);
+  // Setiap pemakai hook (mis. SettingsView dan DeployProvider) punya instance sendiri.
+  // Tanpa sinkronisasi, token yang disimpan/dihapus di Settings tidak terbaca oleh
+  // instance lain sampai halaman di-refresh. Id ini mencegah instance membalas eventnya sendiri.
+  const instanceIdRef = useRef<string>(Math.random().toString(36).slice(2));
 
   // --- 1. LOAD: fetch dari server, guard ketat terhadap status login ---
   useEffect(() => {
@@ -203,6 +207,13 @@ export function useCloudStorage<T>(
     // reload berikutnya — effect load di atas akan memulihkannya dari sini.
     writeFallbackCache(email, key, state);
 
+    // Kabari instance lain (di tab yang sama) yang memakai key ini.
+    window.dispatchEvent(
+      new CustomEvent("depup:cloud-storage", {
+        detail: { key, email, source: instanceIdRef.current, value: state },
+      })
+    );
+
     const controller = new AbortController();
 
     fetch("/api/user-data", {
@@ -224,6 +235,18 @@ export function useCloudStorage<T>(
 
     return () => controller.abort();
   }, [state, email, isInitialized, key]);
+
+  // --- 2b. Terima perubahan dari instance lain di tab yang sama (tanpa PUT ulang) ---
+  useEffect(() => {
+    const onChange = (ev: Event) => {
+      const d = (ev as CustomEvent<{ key: string; email: string | null; source: string; value: T }>).detail;
+      if (!d || d.key !== key || d.source === instanceIdRef.current || d.email !== email) return;
+      skipSyncRef.current = true; // perubahan dari luar: jangan di-PUT lagi dari sini
+      setState(d.value);
+    };
+    window.addEventListener("depup:cloud-storage", onChange);
+    return () => window.removeEventListener("depup:cloud-storage", onChange);
+  }, [key, email]);
 
   // --- 3. Setter untuk aksi eksplisit user (addHistory, addDomain, dll) ---
   // Ini yang membedakan "perubahan dari user" (wajib sync) vs "perubahan

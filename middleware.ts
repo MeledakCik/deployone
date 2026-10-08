@@ -31,6 +31,7 @@ const CUSTOM_LIMITS: Record<string, { limit: number; windowSeconds: number }> = 
   "github/whoami": { limit: 20, windowSeconds: 60 },
   // Tiap pesan = 1 panggilan Groq berbayar/berkuota; batasi per pengguna.
   "support/chat": { limit: 12, windowSeconds: 60 },
+  "support/report": { limit: 5, windowSeconds: 60 },
   // Memanggil Saweria pihak ketiga; jaga supaya tidak dipakai spam.
   "donate/create": { limit: 6, windowSeconds: 60 },
   "donate/status": { limit: 30, windowSeconds: 60 },
