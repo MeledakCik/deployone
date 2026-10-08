@@ -1,176 +1,169 @@
 # Depup
 
-**Depup** adalah dashboard untuk men-deploy dan mengelola project dari repo GitHub ke **Vercel**,
-**Cloudflare Pages**, dan **Railway** dari satu tempat. Dibangun dengan Next.js 14 (App Router),
-TypeScript, dan Tailwind CSS. Semua integrasi memanggil API platform asli — tidak ada data
-simulasi.
+**Depup membantu kamu menayangkan website ke internet tanpa ribet.** Pilih project dari GitHub (atau upload langsung
+dari komputermu), pilih tujuan, lalu klik deploy. Depup mengurus sisanya dan memberi tahu kamu kalau ada yang salah,
+lengkap dengan cara memperbaikinya.
 
-## Fitur
+Cocok untuk pelajar, freelancer, dan siapa saja yang ingin websitenya online tanpa belajar tiga dashboard sekaligus.
 
-- **Login Google (OAuth2 asli)** — session berupa cookie `httpOnly` bertanda tangan HMAC.
-- **Deploy** — wizard bertahap: validasi repo GitHub → buat deployment → pantau status build
-  sampai selesai (atau tampilkan error asli dari platform).
-- **Projects** — project unik dari riwayat deploy, dengan tombol Visit & Redeploy.
-- **Domains** — tambah/cek/hapus custom domain per project, lengkap dengan instruksi DNS.
-- **Environment** — kelola environment variable; nilai bisa disembunyikan.
-- **Observability** — traffic 7 hari terakhir dari Vercel Web Analytics.
-- **Settings** — simpan token platform + tombol *Test Koneksi* yang benar-benar memanggil API.
-- **Docs** — panduan singkat di dalam aplikasi (token, GitHub PAT, OAuth, CNAME).
+---
 
-Navigasi dashboard tersimpan di URL (`/dashboard?view=deploy`), jadi refresh, tombol Back, dan
-bookmark bekerja normal.
+## Apa yang bisa kamu lakukan di Depup
 
-## Cek jenis repo sebelum deploy
+| | |
+|---|---|
+| 🚀 **Deploy sekali klik** | Tayangkan project dari GitHub ke **Vercel**, **Cloudflare Pages**, atau **Railway** dan pantau prosesnya sampai selesai. |
+| 📦 **Upload zip atau folder** | Tarik file `.zip` atau folder project ke Depup. Isinya otomatis diekstrak dan dikirim ke repo GitHub baru, lalu pilih: upload saja, atau langsung deploy. |
+| 🗂️ **Semua project di satu tempat** | Lihat semua project, buka situsnya, deploy ulang, dan lihat riwayat deploy. |
+| 🌐 **Domain sendiri** | Pasang domain kustom dan ikuti petunjuk DNS yang jelas, langkah demi langkah. |
+| 🔐 **Environment variable** | Simpan rahasia project (API key, URL database) dan kirim ke platform otomatis. Nilainya bisa disembunyikan. |
+| 📈 **Statistik pengunjung** | Lihat traffic 7 hari terakhir untuk project di Vercel. |
+| 💬 **Asisten bantuan** | Tanya apa saja soal deploy. Kalau kamu melapor masalah, asisten ikut memeriksa akunmu. |
 
-Sebelum deploy dimulai, `POST /api/github/validate` membaca isi root repo lalu mengklasifikasikannya
-(`app/api/_lib/project-detect.ts`): HTML statis, Node.js (+ framework & TypeScript), Docker, Python, Go,
-PHP, Ruby, Java, Rust, .NET, repo kosong, atau tidak dikenali. Hasilnya dinilai per platform
-(`lib/deploy-guides.ts` → `ok` / `warn` / `blocked`):
+---
 
-- Repo HTML statis **tidak** butuh `package.json` (Vercel, Cloudflare Pages, Railway semuanya didukung).
-- Repo yang tidak cocok dengan platform tujuan dihentikan **sebelum** menyentuh API platform, lengkap dengan
-  penjelasan, saran platform lain, dan panduan deploy manual. Pagar yang sama dipasang di sisi server
-  (`app/api/_lib/compat-guard.ts`) sebagai pengaman terakhir.
-- Error (token salah, jaringan putus, rate limit GitHub, build gagal, dll.) diterjemahkan menjadi pesan
-  ramah + langkah perbaikan oleh `lib/friendly-error.ts`, ditampilkan di modal deploy dengan tombol
-  "Coba lagi", link dashboard, dan "Salin detail".
+## Mulai dalam 5 menit
 
-## Chat CS (asisten AI)
+1. **Masuk** dengan akun Google.
+2. Buka **Settings** dan isi token platform yang ingin kamu pakai (Vercel, Cloudflare, atau Railway). Cara
+   mendapatkannya ada di menu **Docs**. Tekan **Test Koneksi** untuk memastikan token benar.
+3. Buka **Deploy**, tempel link repo GitHub-mu, pilih platform, lalu klik **Deploy**.
+4. Tunggu progres selesai. Alamat situsmu muncul di layar, dan project-nya masuk ke daftar **Projects**.
 
-Tombol **Bantuan** di pojok kanan bawah dashboard membuka chat dengan asisten AI (Groq Cloud) yang menjawab
-soal deploy, token, domain, dan error, berdasarkan aturan produk di `app/api/_lib/support-prompt.ts`.
+Belum punya repo GitHub? Pakai menu **Upload**.
 
-- Endpoint: `POST /api/support/chat` (wajib login, dibatasi 12 pesan/menit per akun di `middleware.ts`).
-- Env: `GROQ_API_KEY` (wajib) dan `GROQ_MODEL` (opsional, default `openai/gpt-oss-120b`).
-  `llama-3.3-70b-versatile` sudah dimatikan Groq pada 16 Agustus 2026, jadi jangan dipakai.
-- Token/secret yang terlanjur diketik user disamarkan di server sebelum dikirim ke Groq (`app/api/_lib/redact.ts`).
-- Riwayat chat hanya ada di memori halaman (hilang saat refresh) dan tidak disimpan di server.
-- Tombol **Salin percakapan** memudahkan user meneruskan masalah ke developer.
+---
 
-### Pemeriksaan teknis & laporan ke developer
+## Menu-menu di Depup
 
-Kalau pesan user terdengar seperti laporan masalah (gagal, error, tidak bisa, dst.), server menjalankan
-pemeriksaan otomatis **sebelum** AI menjawab (`app/api/_lib/support-diagnostics.ts`), memakai token yang
-tersimpan di akun user (dibaca di server; token tidak pernah dikirim ke browser maupun ke AI):
+### Dashboard
+Ringkasan akunmu: jumlah deploy, berapa yang berhasil dan gagal, serta **Riwayat Deploy** terbaru. Project yang sudah
+kamu hapus tetap tercatat di riwayat dengan label *Deleted*, jadi kamu punya catatan lengkap.
 
-- validitas token Vercel / Cloudflare / Railway / GitHub,
-- halaman status resmi Vercel, Cloudflare, dan GitHub,
-- riwayat deploy 24 jam terakhir (berapa yang gagal),
-- keterjangkauan penyimpanan data akun.
+### Deploy
+Form deploy bertahap. Sebelum deploy dimulai, Depup mengecek isi repo-mu (HTML biasa, Node.js, Next.js, Docker,
+Python, dan lainnya) dan memberi tahu apakah cocok dengan platform pilihanmu. Kalau tidak cocok, kamu langsung
+diberi saran platform lain, sebelum ada yang terbuang.
 
-Hasilnya (OK / perhatian / masalah + keterangan) diberikan ke AI sebagai fakta dan ditampilkan ke user sebagai
-kartu "Hasil pemeriksaan akunmu". Dibatasi 3 pemeriksaan per 5 menit per akun.
+### Upload
+Cara tercepat kalau project-mu masih ada di komputer.
 
-Laporan ke developer (`app/api/_lib/support-reports.ts`, disimpan di KV selama 90 hari):
+1. Tarik file **.zip** atau **folder** project ke kotak upload (atau klik *Pilih file ZIP* / *Pilih folder*).
+2. Atur **nama repo** dan pilih **Private** atau **Public**.
+3. Pilih **Upload saja** atau **Langsung deploy** (lalu pilih platformnya).
+4. Selesai. Repo baru muncul di GitHub-mu.
 
-- **Otomatis**: dibuat hanya kalau masalahnya ada di sisi Depup (mis. database bermasalah, atau deploy berulang
-  gagal padahal token sehat). Token user yang salah dan insiden platform tidak dilaporkan otomatis. Maksimal 1 per
-  akun per 30 menit.
-- **Manual**: tombol "Laporkan ke developer" di chat menyimpan percakapan (token disamarkan) + pemeriksaan terbaru.
-- Setiap laporan baru dikirim ke **Telegram** developer (env `TELEGRAM_BOT_TOKEN` + `TELEGRAM_CHAT_ID`) dan/atau webhook
-  `SUPPORT_WEBHOOK_URL` (Discord/Slack). Daftar lengkap bisa dibaca lewat `GET /api/support/report`, tapi itu opsional dan
-  hanya aktif kalau env `ADMIN_EMAILS` diisi; notifikasi Telegram tidak membutuhkannya.
+Yang perlu kamu tahu:
+- Butuh **GitHub Token** dengan izin `repo` di Settings.
+- Folder seperti `node_modules`, `.git`, dan hasil build otomatis dilewati.
+- File **`.env` tidak ikut ke GitHub**. Isinya dibaca di komputermu dan otomatis diisikan ke kolom Environment
+  variables, lalu dipasang ke platform saat deploy. Env yang terpasang juga langsung muncul di menu Environment.
+- Batas ukuran: sampai 3.000 file, total 150 MB, maksimal 50 MB per file.
+- Nama repo yang sudah dipakai ditolak, kecuali kamu mencentang *Timpa repo yang sudah ada*.
 
-#### Notifikasi Telegram: cara membuat bot
+### Projects
+Semua project yang pernah kamu deploy. Dari sini kamu bisa membuka situsnya, deploy ulang, menghapus, atau
+mengimpor project yang sudah ada di Vercel, Cloudflare, atau Railway. Gunakan tombol sinkron kalau kamu menghapus
+sesuatu langsung di dashboard platform.
 
-1. Buka Telegram, cari **@BotFather** (centang biru resmi), lalu kirim `/newbot`.
-2. Ketik nama tampilan bot (bebas, mis. `Depup Support`), lalu username bot yang **berakhiran `bot`**
-   (mis. `depup_support_bot`; harus unik).
-3. BotFather membalas **token bot**, bentuknya `123456789:AAExampleExampleExampleExample`.
-   Itu nilai `TELEGRAM_BOT_TOKEN`. Anggap seperti password: jangan di-commit atau dibagikan. Kalau bocor, kirim
-   `/revoke` ke BotFather untuk membuat token baru.
-4. **Wajib:** buka bot barumu (klik link `t.me/<username_bot>` dari BotFather), tekan **Start**, dan kirim satu pesan
-   apa saja. Bot tidak bisa mengirim pesan duluan ke orang yang belum pernah memulai chat.
-5. Cari **Chat ID**:
-   - Chat pribadi: buka `https://api.telegram.org/bot<TOKEN>/getUpdates` di browser (ganti `<TOKEN>`),
-     lalu cari `"chat":{"id":123456789,...}`. Angka itu `TELEGRAM_CHAT_ID`. Atau kirim pesan ke **@userinfobot**
-     untuk melihat ID akunmu.
-   - Grup: tambahkan bot ke grup, kirim satu pesan di grup, lalu buka `getUpdates` yang sama. ID grup berupa angka
-     **negatif** (mis. `-1001234567890`). Kalau `result` kosong, kirim ulang pesan di grup lalu muat ulang halamannya.
-6. Isi `TELEGRAM_BOT_TOKEN` dan `TELEGRAM_CHAT_ID` di Vercel (Project Settings, Environment Variables), lalu redeploy.
-7. Tes: di dashboard buka chat **Bantuan**, kirim satu keluhan, tunggu jawaban, lalu klik **Laporkan ke developer**.
-   Pesan "Laporan bantuan Depup SR-..." harus masuk ke Telegram dalam beberapa detik. Kalau tidak masuk, cek log
-   fungsi `/api/support/report` di Vercel: tertulis `telegram membalas 401` (token salah), `400` (Chat ID salah atau
-   belum menekan Start), atau `403` (bot diblokir).
+### Domains
+Tambahkan domain sendiri ke sebuah project. Depup menampilkan record DNS yang harus kamu isi di tempat kamu membeli
+domain dan membantu mengecek apakah domainnya sudah aktif.
 
-## Donasi (Saweria)
+### Environment
+Tempat menyimpan variabel rahasia per project, misalnya `DATABASE_URL` atau `API_KEY`.
+- Nama variabel memakai huruf besar dan garis bawah, misalnya `NEXT_PUBLIC_API_URL`.
+- Bisa dikirim langsung ke Vercel, Cloudflare, atau Railway. Project akan otomatis dideploy ulang agar perubahan
+  berlaku.
+- Nilainya disembunyikan sampai kamu menekan ikon mata.
 
-Menu **Donasi** di dashboard membuat kode QRIS dan memantau pembayarannya.
+### Observability
+Grafik pengunjung 7 hari terakhir untuk project di Vercel. Aktifkan **Web Analytics** di project Vercel-mu dulu
+(petunjuknya ada di Docs).
 
-- Env: `SAWERIA_USERNAME` (wajib untuk mengaktifkan) dan `SAWERIA_USER_ID` (opsional, lebih stabil).
-- Endpoint: `GET /api/donate` (konfigurasi), `POST /api/donate/create`, `GET /api/donate/status?id=`.
-  Semuanya wajib login, dengan rate limit di `middleware.ts`.
-- **Saweria tidak punya API publik resmi.** `app/api/_lib/saweria.ts` memakai endpoint backend yang sama dengan
-  halaman donasi publik saweria.co, tanpa login akun. Endpoint ini bisa berubah tanpa pemberitahuan. Kalau
-  gagal, UI menampilkan tautan cadangan ke halaman Saweria resmi.
-- Status "terbayar" berasal dari perilaku endpoint tidak resmi (qr_string dikosongkan setelah bayar). Untuk
-  pencatatan yang pasti, pakai dashboard atau webhook Saweria.
+### Docs
+Panduan di dalam aplikasi: cara mendapatkan token tiap platform, menghubungkan GitHub ke Cloudflare, jenis repo yang
+didukung, dan apa yang dilakukan kalau deploy gagal.
 
-## Menjalankan
+### Settings
+Simpan token platform-mu di sini supaya tidak perlu mengetik ulang setiap deploy.
+- **Test Koneksi** memastikan token benar-benar valid.
+- Tombol **Hapus** di samping tiap token menghapusnya dari akunmu kapan saja (ada konfirmasi dulu).
 
-```bash
-npm ci
-npm run dev        # http://localhost:3000
-npm run build && npm start
-npm run lint
-```
+### Donasi
+Suka dengan Depup? Kamu bisa mendukung lewat QRIS. Sepenuhnya sukarela.
 
-## Environment variable
+---
 
-Set di Vercel → Project Settings → Environment Variables (jangan commit file `.env`).
-Lihat `.env.example`.
+## Asisten Bantuan 💬
 
-| Env var | Wajib | Keterangan |
-|---|---|---|
-| `GOOGLE_CLIENT_ID` | ya | Google Cloud Console → Credentials → OAuth client ID |
-| `GOOGLE_CLIENT_SECRET` | ya | Secret dari client ID di atas |
-| `AUTH_SECRET` | ya | String acak ≥ 16 karakter. Dipakai menandatangani session **dan** menurunkan kunci enkripsi token tersimpan — mengganti nilainya membuat session lama tidak valid dan token tersimpan tidak bisa didekripsi |
-| `KV_REST_API_URL`, `KV_REST_API_TOKEN` | ya (production) | Terisi otomatis saat database KV di-connect ke project |
-| `GITHUB_TOKEN` | tidak | Menaikkan rate limit GitHub untuk validasi repo publik |
+Klik tombol **Bantuan** di pojok kanan bawah.
 
-Redirect URI yang didaftarkan di Google Cloud Console:
-`https://<domain-kamu>/api/auth/google/callback`.
+- Tanya soal deploy, token, domain, atau error, dan dapatkan jawaban singkat dalam bahasa Indonesia.
+- **Kalau kamu melaporkan masalah** (misalnya "deploy saya gagal"), asisten memeriksa akunmu lebih dulu: apakah
+  token masih valid, apakah platformnya sedang ada gangguan, dan apakah deploy terakhirmu gagal. Hasilnya tampil
+  sebagai kartu **Hasil pemeriksaan akunmu**, dan jawaban asisten didasarkan pada hasil itu.
+- Masalah belum selesai? Tekan **Laporkan ke developer**. Percakapan dan hasil pemeriksaan dikirim ke developer.
+- Tombol **Salin percakapan** berguna kalau kamu ingin mengirimnya lewat jalur lain.
+- ⚠️ **Jangan tempel token atau password di chat.** Kalau sudah terlanjur, buat ulang token itu di platform terkait.
 
-> **Tanpa KV, data dashboard tidak bisa disimpan** (`/api/user-data` mengembalikan error),
-> termasuk saat `next dev`. Rate limiting juga nonaktif tanpa KV (fail-open); gerbang session
-> tetap aktif.
+Asisten adalah AI, jadi bisa saja keliru. Untuk hal penting, cek ulang di Docs atau dashboard platformnya.
 
-## Arsitektur singkat
+---
 
-Backend adalah Route Handlers di `app/api/`, ikut ter-deploy sebagai serverless function:
+## Pertanyaan yang sering muncul
 
-```
-app/api/
-├── _lib/          # client tipis per platform (vercel, cloudflare, railway, github),
-│                  # session, crypto, store (KV), rate-limit, validators, response
-├── auth/          # login Google, callback, logout, session
-├── deploy/        # create + polling status deployment (Vercel)
-├── vercel|cloudflare|railway/   # whoami, project, status, redeploy, domains, env, dst.
-├── github/        # validate repo, whoami
-└── user-data/     # baca/simpan data dashboard per akun
-```
+**Project saya jenisnya apa saja yang bisa dideploy?**
+- Website HTML/CSS/JS biasa: bisa ke ketiga platform (cukup ada `index.html`).
+- Aplikasi Node.js dengan `package.json` (React, Vue, Next.js, dan sejenisnya): bisa, pastikan ada script `build`.
+- Server (Express, NestJS) serta Docker, Python, Go, PHP, dan lainnya: pilih **Railway**.
 
-State client ada di `lib/deploy-context.tsx`; data dashboard (riwayat, domain, env var, token)
-disinkronkan ke server lewat `lib/useCloudStorage.ts`.
+**Repo saya private. Bisa?**
+Bisa. Isi **GitHub Token** dengan izin `repo` di Settings.
 
-## Keamanan
+**Deploy ke Cloudflare gagal, padahal di Vercel bisa?**
+Cloudflare Pages menjalankan Next.js lewat adaptor tambahan, sehingga fitur server yang kompleks tidak selalu
+jalan. Untuk Next.js dengan banyak API route, **Vercel paling mudah**. Cloudflare Pages unggul untuk situs statis,
+Vite, Astro, dan sejenisnya.
 
-- **Semua `/api/*` selain `/api/auth/*` wajib session valid.** Gerbangnya ada di `middleware.ts`
-  (tanda tangan HMAC diverifikasi di edge). Request tanpa session mendapat `401`, sehingga server
-  ini tidak bisa dipakai orang luar sebagai proxy ke API platform.
-- **Rate limit** per user (email dari session yang sudah terverifikasi) atau per IP untuk request
-  anonim, memakai KV. Batas lebih ketat untuk endpoint auth dan GitHub.
-- **Token platform** (Vercel/Cloudflare/Railway/GitHub PAT) dan nilai env var yang disimpan
-  dienkripsi AES-256-GCM sebelum masuk KV. Token yang diketik di form deploy hanya diteruskan ke
-  platform untuk request itu dan tidak disimpan oleh server.
-- Header keamanan (HSTS, CSP, X-Frame-Options, dll.) diatur di `next.config.js`. CSP masih
-  mengizinkan `'unsafe-inline'`/`'unsafe-eval'` untuk script karena kebutuhan Next.js 14 tanpa nonce.
-- Logout menghapus cache lokal (`depup-fallback:*`) dari browser.
+**Deploy ke Railway diblokir karena "security vulnerabilities".**
+Railway menolak project yang memakai versi dependency yang punya celah keamanan, misalnya Next.js 14 di bawah
+14.2.35. Perbarui versinya di `package.json`, lalu deploy lagi.
 
-## Catatan perilaku
+**Kenapa Cloudflare Pages meminta GitHub dihubungkan dulu?**
+Hanya sekali di awal. Ikuti tombol *Hubungkan GitHub ke Cloudflare* di Depup, lalu klik *Sudah connect, cek lagi*.
 
-- **Riwayat deploy dibatasi 10 entri.** Saat penuh, entri terlama dihapus otomatis tanpa konfirmasi.
-- **Domain deployment** dibentuk dari nama project: `*.vercel.app`, `*.pages.dev`, atau
-  `*.up.railway.app` sesuai platform.
-- Project yang sudah dihapus langsung di dashboard platform ditandai `deleted` di riwayat dan
-  tidak muncul lagi di halaman Projects.
+**Projectku sudah kuhapus di Vercel, tapi masih muncul?**
+Tekan tombol **Sinkronkan** di halaman Projects. Project yang sudah tidak ada ditandai *Deleted* di riwayat.
+
+**Riwayat deploy-ku hilang sebagian?**
+Dashboard menyimpan 10 deploy terakhir. Yang paling lama otomatis tergeser.
+
+**Deploy saya gagal. Apa yang harus dilakukan?**
+1. Baca kotak **Yang bisa kamu lakukan** di pesan error, karena langkah perbaikannya spesifik.
+2. Klik **Coba lagi** kalau masalahnya sementara (internet, server sibuk).
+3. Tanya **Asisten Bantuan** dan ceritakan error-nya.
+4. Masih buntu? Tekan **Laporkan ke developer**.
+
+---
+
+## Keamanan dan privasi
+
+- Kamu masuk lewat akun Google. Depup tidak menyimpan password-mu.
+- Token platform dan nilai environment variable disimpan **terenkripsi**, dan hanya bisa dipakai oleh akunmu.
+- Token yang kamu ketik langsung di form deploy hanya dipakai untuk deploy itu dan tidak disimpan.
+- Kamu bisa menghapus token kapan saja di **Settings**.
+- Pemeriksaan akun oleh asisten berjalan di server. **Token tidak pernah dikirim ke AI**, hanya hasil ringkasnya
+  ("valid", "ditolak", dan sebagainya).
+- Riwayat chat bantuan hanya ada di halaman dan hilang saat di-refresh, kecuali kamu menekan *Laporkan ke developer*.
+
+---
+
+## Butuh bantuan?
+
+- Klik **Bantuan** di dalam aplikasi, atau buka menu **Docs**.
+- Ada ide atau menemukan bug? Laporkan lewat chat Bantuan.
+
+---
+
+*Kamu developer yang ingin menjalankan Depup sendiri? Lihat [DEVELOPER.md](DEVELOPER.md).*
