@@ -10,7 +10,7 @@ const SITE_URL =
   (
     process.env.NEXT_PUBLIC_SITE_URL ??
     process.env.NEXT_PUBLIC_APP_URL ??
-    "https://depup.app"
+    "https://depup.web.id"
   ).replace(/\/$/, "");
 
 const SITE_NAME = "Depup";
