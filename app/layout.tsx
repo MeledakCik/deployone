@@ -10,7 +10,7 @@ const SITE_URL =
   (
     process.env.NEXT_PUBLIC_SITE_URL ??
     process.env.NEXT_PUBLIC_APP_URL ??
-    "https://www.depup.web.id"
+    "https://www.depup.app"
   ).replace(/\/$/, "");
 
 const SITE_NAME = "Depup";
@@ -135,10 +135,11 @@ export const metadata: Metadata = {
   },
 
   verification: {
-    google: "bF_v2fLxUc8QiMHG5G_XeS0dyamaz5QReZDpXahcYhU",
+    // google: "xxxxxx",
     // yandex: "xxxxxx",
     // other: { "msvalidate.01": "xxxxxx" },
   },
+
 
   appleWebApp: {
     capable: true,

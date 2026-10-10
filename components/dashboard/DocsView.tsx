@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { ChevronDown, ExternalLink, KeyRound, Github, ShieldCheck, BarChart2, Cloud, Link2, AlertTriangle, TramFront } from "lucide-react";
+import { ChevronDown, ExternalLink, KeyRound, Github, ShieldCheck, Cloud, Link2, AlertTriangle, TramFront } from "lucide-react";
 import { ViewFade } from "@/components/ui/ViewFade";
 import { Surface } from "@/components/ui/Surface";
 
@@ -158,54 +158,6 @@ const GUIDES: Guide[] = [
       'Di project Vercel Depup, buka Settings → Environment Variables, tambahkan GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, dan AUTH_SECRET (string acak bebas, minimal 16 karakter) — lalu redeploy.',
     ],
   },
-  {
-    icon: BarChart2,
-    title: "Enable Analytics di Project Target",
-    desc: "Cara mengaktifkan Vercel Analytics / Speed Insights dan memasang paket kode tracking pada repositori Next.js / React kamu.",
-    link: { label: "Buka Vercel Analytics Docs", href: "https://vercel.com/docs/analytics" },
-    steps: [
-      "Buka Dashboard Vercel → Pilih project target kamu → Masuk ke tab Analytics atau Speed Insights → Klik Enable.",
-      "Install package analytics di project kamu lewat terminal: npm i @vercel/analytics",
-      (
-        <div key="nextjs-app">
-          <p className="font-medium text-text">Untuk Next.js (App Router - Root Layout `app/layout.tsx`):</p>
-          <pre className="mt-1 overflow-x-auto rounded-lg bg-[var(--surface-solid-2)] p-2.5 text-[11.5px] text-violet-300 mono">
-{`import { Analytics } from "@vercel/analytics/react";
-
-export default function RootLayout({ children }: { children: React.ReactNode }) {
-  return (
-    <html lang="en">
-      <body>
-        {children}
-        <Analytics />
-      </body>
-    </html>
-  );
-}`}
-          </pre>
-        </div>
-      ),
-      (
-        <div key="nextjs-pages">
-          <p className="font-medium text-text">Untuk Next.js (Pages Router - `pages/_app.tsx`):</p>
-          <pre className="mt-1 overflow-x-auto rounded-lg bg-[var(--surface-solid-2)] p-2.5 text-[11.5px] text-violet-300 mono">
-{`import { Analytics } from "@vercel/analytics/react";
-import type { AppProps } from "next/app";
-
-export default function App({ Component, pageProps }: AppProps) {
-  return (
-    <>
-      <Component {...pageProps} />
-      <Analytics />
-    </>
-  );
-}`}
-          </pre>
-        </div>
-      ),
-      "Commit perubahan tersebut ke repository GitHub kamu, lalu lakukan trigger deploy via Depup.",
-    ],
-  },
 ];
 
 function GuideCard({ guide }: { guide: Guide }) {
@@ -265,7 +217,7 @@ export function DocsView() {
         <div>
           <h2 className="text-[22px] font-semibold">Docs</h2>
           <p className="text-[13px] text-text-muted">
-            Panduan lengkap setup token, OAuth, serta integrasi Analytics pada project target — semuanya real, tidak ada simulasi.
+            Panduan lengkap setup token, OAuth, serta jenis repo yang didukung — semuanya real, tidak ada simulasi.
           </p>
         </div>
 

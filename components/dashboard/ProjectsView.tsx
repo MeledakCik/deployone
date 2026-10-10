@@ -8,7 +8,6 @@ import {
   Globe2,
   RefreshCw,
   ShieldAlert,
-  BarChart3,
   Trash2,
   X,
   Download,
@@ -292,7 +291,6 @@ export function ProjectsView() {
     syncAllProjects,
     syncProjectStatus,
     setView,
-    setFocusedTrafficProject,
   } = useDeploy();
   const safeHistory = Array.isArray(history) ? history : [];
   const [platformTab, setPlatformTab] = React.useState<"all" | Platform>("all");
@@ -301,11 +299,6 @@ export function ProjectsView() {
   const [deleteTarget, setDeleteTarget] = React.useState<HistoryItem | null>(null);
   const [importOpen, setImportOpen] = React.useState(false);
   const didAutoSync = React.useRef(false);
-
-  function viewTraffic(name: string) {
-    setFocusedTrafficProject(name);
-    setView("observability");
-  }
 
   React.useEffect(() => {
     if (didAutoSync.current || (!vercelToken && !savedCloudflareToken && !savedRailwayToken)) return;
@@ -440,13 +433,6 @@ export function ProjectsView() {
                       >
                         <RefreshCw size={11} className={isChecking ? "animate-spin" : ""} />
                         {isChecking ? "Mengecek..." : "Cek status di Vercel"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => viewTraffic(project.name)}
-                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-text-faint hover:text-text"
-                      >
-                        <BarChart3 size={13} /> View Traffic
                       </button>
                     </div>
                   )}

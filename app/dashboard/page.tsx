@@ -13,7 +13,6 @@ import { UploadView } from "@/components/dashboard/UploadView";
 import { ProjectsView } from "@/components/dashboard/ProjectsView";
 import { DomainsView } from "@/components/dashboard/DomainsView";
 import { EnvironmentView } from "@/components/dashboard/EnvironmentView";
-import { ObservabilityView } from "@/components/dashboard/ObservabilityView";
 import { DocsView } from "@/components/dashboard/DocsView";
 import { SettingsView } from "@/components/dashboard/SettingsView";
 import { DonateView } from "@/components/dashboard/DonateView";
@@ -74,7 +73,6 @@ export default function DashboardPage() {
           {view === "projects" && <ProjectsView />}
           {view === "domains" && <DomainsView />}
           {view === "env" && <EnvironmentView />}
-          {view === "observability" && <ObservabilityView />}
           {view === "docs" && <DocsView />}
           {view === "settings" && <SettingsView />}
           {view === "donate" && <DonateView />}

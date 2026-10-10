@@ -94,7 +94,7 @@ export type DashboardView =
   | "projects"
   | "domains"
   | "env"
-  | "observability"
+ 
   | "donate"
   | "docs"
   | "settings"
@@ -327,44 +327,6 @@ export interface GithubUserInfo {
   login: string;
   name: string | null;
 }
-
-/* ---------------------------------------------------------------------- */
-/*  Observability / analytics                                              */
-/* ---------------------------------------------------------------------- */
-
-export interface AnalyticsTopPath {
-  path: string;
-  count: number;
-}
-
-export interface AnalyticsTimeseriesPoint {
-  timestamp: string;
-  requests: number;
-}
-
-export interface AnalyticsErrorCounts {
-  "4xx": number;
-  "5xx": number;
-}
-
-/** Result of GET /api/vercel/analytics when Web Analytics is enabled on the project. */
-export interface AnalyticsResult {
-  enabled: true;
-  totalRequests: number;
-  /** Bandwidth used, in bytes. */
-  bandwidth: number;
-  topPaths: AnalyticsTopPath[];
-  errors: AnalyticsErrorCounts;
-  timeseries: AnalyticsTimeseriesPoint[];
-}
-
-/** Result of GET /api/vercel/analytics when the project has no Web Analytics data. */
-export interface AnalyticsDisabledResult {
-  enabled: false;
-  message: string;
-}
-
-export type AnalyticsApiResult = AnalyticsResult | AnalyticsDisabledResult;
 
 /* ---------------------------------------------------------------------- */
 /*  Cloudflare Pages                                                       */

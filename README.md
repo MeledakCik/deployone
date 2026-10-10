@@ -17,7 +17,6 @@ Cocok untuk pelajar, freelancer, dan siapa saja yang ingin websitenya online tan
 | 🗂️ **Semua project di satu tempat** | Lihat semua project, buka situsnya, deploy ulang, dan lihat riwayat deploy. |
 | 🌐 **Domain sendiri** | Pasang domain kustom dan ikuti petunjuk DNS yang jelas, langkah demi langkah. |
 | 🔐 **Environment variable** | Simpan rahasia project (API key, URL database) dan kirim ke platform otomatis. Nilainya bisa disembunyikan. |
-| 📈 **Statistik pengunjung** | Lihat traffic 7 hari terakhir untuk project di Vercel. |
 | 💬 **Asisten bantuan** | Tanya apa saja soal deploy. Kalau kamu melapor masalah, asisten ikut memeriksa akunmu. |
 
 ---
@@ -76,10 +75,6 @@ Tempat menyimpan variabel rahasia per project, misalnya `DATABASE_URL` atau `API
 - Bisa dikirim langsung ke Vercel, Cloudflare, atau Railway. Project akan otomatis dideploy ulang agar perubahan
   berlaku.
 - Nilainya disembunyikan sampai kamu menekan ikon mata.
-
-### Observability
-Grafik pengunjung 7 hari terakhir untuk project di Vercel. Aktifkan **Web Analytics** di project Vercel-mu dulu
-(petunjuknya ada di Docs).
 
 ### Docs
 Panduan di dalam aplikasi: cara mendapatkan token tiap platform, menghubungkan GitHub ke Cloudflare, jenis repo yang

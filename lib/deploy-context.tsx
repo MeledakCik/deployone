@@ -304,8 +304,6 @@ interface DeployContextValue {
   ) => Promise<"synced" | "skipped" | "error">;
   syncAllEnvVars: () => Promise<void>;
 
-  focusedTrafficProject: string | null;
-  setFocusedTrafficProject: (name: string | null) => void;
 }
 
 const DeployContext = React.createContext<DeployContextValue | null>(null);
@@ -322,7 +320,6 @@ const DASHBOARD_VIEWS: readonly DashboardView[] = [
   "projects",
   "domains",
   "env",
-  "observability",
   "docs",
   "settings",
   "donate",
@@ -364,9 +361,6 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     }
     window.scrollTo({ top: 0 });
   }, []);
-  const [focusedTrafficProject, setFocusedTrafficProject] = React.useState<
-    string | null
-  >(null);
 
   const [history, setHistory] = useCloudStorage<HistoryItem[]>(
     "history",
@@ -2910,8 +2904,6 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     syncEnvVarsForProject,
     syncAllEnvVars,
 
-    focusedTrafficProject,
-    setFocusedTrafficProject,
   };
 
   return (
