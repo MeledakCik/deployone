@@ -135,11 +135,10 @@ export const metadata: Metadata = {
   },
 
   verification: {
-    // google: "xxxxxx",
+    google: "bF_v2fLxUc8QiMHG5G_XeS0dyamaz5QReZDpXahcYhU",
     // yandex: "xxxxxx",
     // other: { "msvalidate.01": "xxxxxx" },
   },
-
 
   appleWebApp: {
     capable: true,
