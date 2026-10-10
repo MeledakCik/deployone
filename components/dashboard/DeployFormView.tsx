@@ -98,7 +98,7 @@ function getStepsForPlatform(p: Platform): StepDef[] {
     {
       id: "projectName",
       title: "Nama Project",
-      desc: "Nama unik untuk project kamu. Ini akan jadi subdomain kamu nantinya.",
+      desc: "Nama unik dan wajib lowercase (huruf kecil) untuk project kamu. Ini akan jadi subdomain kamu nantinya.",
       required: true,
       icon: Rocket,
     },
