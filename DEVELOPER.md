@@ -107,8 +107,10 @@ Menu **Donasi** di dashboard membuat kode QRIS dan memantau pembayarannya.
 - Endpoint: `GET /api/donate` (konfigurasi), `POST /api/donate/create`, `GET /api/donate/status?id=`.
   Semuanya wajib login, dengan rate limit di `middleware.ts`.
 - **Saweria tidak punya API publik resmi.** `app/api/_lib/saweria.ts` memakai endpoint backend yang sama dengan
-  halaman donasi publik saweria.co, tanpa login akun. Endpoint ini bisa berubah tanpa pemberitahuan. Kalau
-  gagal, UI menampilkan tautan cadangan ke halaman Saweria resmi.
+  halaman donasi publik saweria.co, tanpa login akun. Endpoint ini bisa berubah tanpa pemberitahuan. Modul mencoba beberapa endpoint
+  (baru -> lama) dan membaca respons secara toleran. Route donasi dipin ke region Singapura/Tokyo (`preferredRegion`).
+  **Isi `SAWERIA_USER_ID`** supaya tidak bergantung pada scraping halaman publik. Kalau tetap gagal, UI
+  menampilkan tautan cadangan ke halaman Saweria resmi; cek log Vercel dengan awalan `[saweria]`.
 - Status "terbayar" berasal dari perilaku endpoint tidak resmi (qr_string dikosongkan setelah bayar). Untuk
   pencatatan yang pasti, pakai dashboard atau webhook Saweria.
 

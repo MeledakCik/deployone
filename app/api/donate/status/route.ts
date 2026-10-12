@@ -3,6 +3,8 @@ import { ok, fail, withErrorHandling } from "@/app/api/_lib/response";
 import { getDonationState, SaweriaError, UUID_RE } from "@/app/api/_lib/saweria";
 
 export const runtime = "nodejs";
+// Jalankan dekat Indonesia: Saweria cenderung memblokir IP datacenter Amerika/Eropa.
+export const preferredRegion = ["sin1", "hnd1"];
 
 export const GET = withErrorHandling(async (req: NextRequest) => {
   const id = req.nextUrl.searchParams.get("id") ?? "";

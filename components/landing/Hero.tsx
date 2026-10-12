@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { DashboardLink } from "./DashboardLink";
 import { ArrowUpRight, ChevronRight, PlayCircle } from "lucide-react";
 import { HeroMockup } from "./HeroMockup";
 
@@ -37,13 +37,13 @@ export function Hero() {
         </p>
 
         <div className="flex w-full flex-col items-center justify-center gap-3 sm:w-auto sm:flex-row sm:gap-4">
-          <Link
+          <DashboardLink
             href="/dashboard"
             className="obs-btn-primary inline-flex w-full items-center justify-center gap-2.5 rounded-xl px-7 py-3 text-[16px] font-semibold text-white sm:w-auto"
           >
             Deploy repo pertamamu
             <ArrowUpRight size={18} />
-          </Link>
+          </DashboardLink>
           <a
             href="#cara-kerja"
             className="obs-btn-glass inline-flex w-full items-center justify-center gap-2 rounded-xl px-6 py-3 text-[15px] text-white sm:w-auto"

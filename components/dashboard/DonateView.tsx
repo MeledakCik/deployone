@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, ExternalLink, Heart, Loader2, QrCode, RefreshCw } from "lucide-react";
+import { Check, Download, ExternalLink, Heart, Loader2, QrCode, RefreshCw } from "lucide-react";
 import { ViewFade } from "@/components/ui/ViewFade";
 import { useAuth } from "@/lib/auth-context";
 import { notifySessionExpired } from "@/lib/session-expired";
@@ -44,6 +44,8 @@ export function DonateView() {
   const [busy, setBusy] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const [checking, setChecking] = React.useState(false);
+  const [checkNote, setCheckNote] = React.useState<string | null>(null);
+  const inFlight = React.useRef(false);
 
   React.useEffect(() => {
     let alive = true;
@@ -64,17 +66,30 @@ export function DonateView() {
   const amountValid =
     !!config && Number.isInteger(amount) && amount >= config.minAmount && amount <= config.maxAmount;
 
-  const checkStatus = React.useCallback(async (id: string) => {
+  /** Mengembalikan pesan untuk pengecekan manual (null = sudah berubah status). */
+  const checkStatus = React.useCallback(async (id: string): Promise<string | null> => {
+    if (inFlight.current) return null; // hindari request menumpuk saat jaringan lambat
+    inFlight.current = true;
     try {
       const res = await fetch(`/api/donate/status?id=${encodeURIComponent(id)}`, { cache: "no-store" });
       const body = await res.json().catch(() => null);
       notifySessionExpired(body);
       if (body?.ok) {
-        if (body.data.state === "paid") setPhase("paid");
-        else if (body.data.state === "expired") setPhase("expired");
+        if (body.data.state === "paid") {
+          setPhase("paid");
+          return null;
+        }
+        if (body.data.state === "expired") {
+          setPhase("expired");
+          return null;
+        }
+        return "Pembayaran belum terdeteksi. Coba lagi beberapa detik setelah kamu membayar.";
       }
+      return body?.error ?? "Status belum bisa dicek. Coba lagi sebentar lagi.";
     } catch {
-      /* jaringan putus sesaat: coba lagi di putaran berikutnya */
+      return "Koneksi bermasalah. Coba lagi sebentar lagi.";
+    } finally {
+      inFlight.current = false;
     }
   }, []);
 
@@ -114,7 +129,9 @@ export function DonateView() {
   async function manualCheck() {
     if (!donation || checking) return;
     setChecking(true);
-    await checkStatus(donation.id);
+    setCheckNote(null);
+    inFlight.current = false;
+    setCheckNote(await checkStatus(donation.id));
     setChecking(false);
   }
 
@@ -122,6 +139,7 @@ export function DonateView() {
     setPhase("form");
     setDonation(null);
     setError(null);
+    setCheckNote(null);
   }
 
   const fallbackUrl = donation?.pageUrl ?? config?.pageUrl ?? null;
@@ -268,10 +286,22 @@ export function DonateView() {
             <p className="flex items-center justify-center gap-2 text-[13px] text-text-muted" aria-live="polite">
               <Loader2 size={14} className="animate-spin" /> Menunggu pembayaran…
             </p>
+            {checkNote && (
+              <p className="text-[12.5px] text-amber-500" role="status">
+                {checkNote}
+              </p>
+            )}
             <div className="flex flex-wrap items-center justify-center gap-2">
               <button type="button" onClick={manualCheck} disabled={checking} className="pill inline-flex items-center gap-1.5 px-3.5 py-2 text-[12.5px] font-medium disabled:opacity-50">
                 <RefreshCw size={13} className={checking ? "animate-spin" : ""} /> Sudah bayar? Cek
               </button>
+              <a
+                href={donation.qrImage}
+                download={`qris-donasi-${donation.amount}.png`}
+                className="pill inline-flex items-center gap-1.5 px-3.5 py-2 text-[12.5px] font-medium"
+              >
+                <Download size={13} /> Simpan QR
+              </a>
               <a href={donation.invoiceUrl} target="_blank" rel="noopener noreferrer" className="pill inline-flex items-center gap-1.5 px-3.5 py-2 text-[12.5px] font-medium">
                 Buka di Saweria <ExternalLink size={12} />
               </a>

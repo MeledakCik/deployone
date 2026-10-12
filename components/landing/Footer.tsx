@@ -1,5 +1,5 @@
 import Image from "next/image";
-import Link from "next/link";
+import { DashboardLink } from "./DashboardLink";
 
 export function Footer() {
   // Link ke halaman Saweria milik admin kalau SAWERIA_USERNAME diisi; kalau tidak, ke beranda Saweria.
@@ -19,7 +19,7 @@ export function Footer() {
         </div>
 
         <nav aria-label="Footer" className="flex flex-wrap items-center gap-x-7 gap-y-2 text-[13px] text-obs-sec">
-          <Link href="/dashboard" className="transition-colors hover:text-white">Panduan</Link>
+          <DashboardLink href="/dashboard" className="transition-colors hover:text-white">Panduan</DashboardLink>
           <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-white">GitHub</a>
           <a href={saweriaUrl} target="_blank" rel="noopener noreferrer" className="transition-colors hover:text-white">Dukung lewat Saweria</a>
         </nav>

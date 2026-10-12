@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { DashboardLink } from "./DashboardLink";
 import { ArrowRight } from "lucide-react";
 
 export function FinalCTA() {
@@ -16,13 +16,13 @@ export function FinalCTA() {
             <p className="mb-8 mt-4 text-[17px] leading-relaxed text-obs-sec">
               Masuk dengan Google, tempel link GitHub, dan lihat hasil pengecekannya dalam hitungan detik.
             </p>
-            <Link
+            <DashboardLink
               href="/dashboard"
               className="obs-btn-primary inline-flex items-center gap-2 rounded-xl px-8 py-3.5 text-[16px] font-semibold text-white"
             >
               Buka dashboard
               <ArrowRight size={18} />
-            </Link>
+            </DashboardLink>
           </div>
 
           <ul className="flex w-full min-w-[260px] flex-col gap-3 lg:w-auto">

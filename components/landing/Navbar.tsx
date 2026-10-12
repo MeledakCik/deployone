@@ -8,6 +8,7 @@ import { ArrowUpRight, Menu, X } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/components/ui/Toast";
 import { GoogleLoginModal, GoogleMark } from "./GoogleLoginModal";
+import { DashboardLink } from "./DashboardLink";
 
 const NAV_LINKS = [
   { href: "#fitur", label: "Fitur" },
@@ -54,12 +55,12 @@ export function Navbar() {
 
           <div className="hidden items-center gap-2.5 md:flex">
             {loggedIn ? (
-              <Link
+              <DashboardLink
                 href="/dashboard"
                 className="obs-btn-primary inline-flex h-9 items-center gap-1.5 rounded-lg px-4 text-[13px] font-semibold text-white"
               >
                 Buka dashboard <ArrowUpRight size={14} />
-              </Link>
+              </DashboardLink>
             ) : (
               <>
                 <button
@@ -70,12 +71,12 @@ export function Navbar() {
                   <GoogleMark size={14} />
                   Masuk
                 </button>
-                <Link
+                <DashboardLink
                   href="/dashboard"
                   className="obs-btn-primary inline-flex h-9 items-center gap-1.5 rounded-lg px-4 text-[13px] font-semibold text-white"
                 >
                   Deploy sekarang <ArrowUpRight size={14} />
-                </Link>
+                </DashboardLink>
               </>
             )}
           </div>
@@ -105,13 +106,13 @@ export function Navbar() {
             ))}
             <div className="mt-3 flex flex-col gap-2">
               {loggedIn ? (
-                <Link
+                <DashboardLink
                   href="/dashboard"
                   onClick={() => setMenuOpen(false)}
                   className="obs-btn-primary flex h-11 items-center justify-center gap-1.5 rounded-lg text-[14px] font-semibold text-white"
                 >
                   Buka dashboard <ArrowUpRight size={15} />
-                </Link>
+                </DashboardLink>
               ) : (
                 <>
                   <button
@@ -125,13 +126,13 @@ export function Navbar() {
                     <GoogleMark size={16} />
                     Masuk dengan Google
                   </button>
-                  <Link
+                  <DashboardLink
                     href="/dashboard"
                     onClick={() => setMenuOpen(false)}
                     className="obs-btn-primary flex h-11 items-center justify-center gap-1.5 rounded-lg text-[14px] font-semibold text-white"
                   >
                     Deploy sekarang <ArrowUpRight size={15} />
-                  </Link>
+                  </DashboardLink>
                 </>
               )}
             </div>

@@ -5,6 +5,8 @@ import { getSessionEmail } from "@/app/api/_lib/session";
 import { createDonation, getDonateConfig, SaweriaError, MIN_AMOUNT, MAX_AMOUNT } from "@/app/api/_lib/saweria";
 
 export const runtime = "nodejs";
+// Jalankan dekat Indonesia: Saweria cenderung memblokir IP datacenter Amerika/Eropa.
+export const preferredRegion = ["sin1", "hnd1"];
 export const maxDuration = 30;
 
 const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/;
@@ -45,7 +47,7 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
 
   try {
     const d = await createDonation({ amount, name, email, message });
-    const qrImage = await QRCode.toDataURL(d.qrString, { errorCorrectionLevel: "M", margin: 2, width: 360 });
+    const qrImage = await QRCode.toDataURL(d.qrString, { errorCorrectionLevel: "M", margin: 2, width: 480 });
     return ok({
       id: d.id,
       amount: d.amount,
