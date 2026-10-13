@@ -1,0 +1,232 @@
+"use client";
+
+import * as React from "react";
+import { ChevronDown, ExternalLink, KeyRound, Github, ShieldCheck, Cloud, Link2, AlertTriangle, TramFront } from "lucide-react";
+import { ViewFade } from "@/components/ui/ViewFade";
+import { Surface } from "@/components/ui/Surface";
+
+interface Guide {
+  icon: React.ElementType;
+  title: string;
+  desc: string;
+  link: { label: string; href: string };
+  steps: (string | React.ReactNode)[];
+}
+
+const GUIDES: Guide[] = [
+  {
+    icon: Github,
+    title: "Jenis repo apa yang bisa di-deploy?",
+    desc: "Depup mengecek isi repo kamu dulu (HTML, TypeScript, Vue, Docker, dll) sebelum deploy — supaya tidak gagal di tengah jalan.",
+    link: { label: "Buka Railway (untuk Docker/Python/Go/dll)", href: "https://railway.com/new" },
+    steps: [
+      "HTML / CSS / JS biasa (tanpa package.json): bisa ke Vercel, Cloudflare Pages, dan Railway. Pastikan ada file index.html di root repo (atau di folder public/ atau docs/).",
+      "Node.js dengan package.json — termasuk TypeScript, React, Vue, Svelte, Angular, Astro, Next.js, dan lainnya: bisa ke ketiga platform. Pastikan ada script \"build\" di package.json.",
+      "Server Node.js (Express, NestJS, Fastify): paling cocok ke Railway. Di Cloudflare Pages tidak bisa jalan; di Vercel butuh penyesuaian khusus.",
+      "Docker, Python, Go, PHP, Ruby, Java, Rust, .NET: pilih Railway — platform lain hanya untuk situs web.",
+      "Project ada di dalam subfolder (mis. frontend/)? Deploy otomatis hanya membaca root repo. Pindahkan ke root, atau deploy manual lalu isi \"Root Directory\" di dashboard platform.",
+      "Repo private: isi GitHub Token (izin \"repo\") di form deploy.",
+    ],
+  },
+  {
+    icon: AlertTriangle,
+    title: "Deploy gagal atau tidak bisa lanjut — harus bagaimana?",
+    desc: "Setiap pesan error di Depup menyertakan langkah perbaikan. Kalau masih buntu, deploy manual lewat dashboard platform hanya butuh 2–3 menit.",
+    link: { label: "Deploy manual di Vercel", href: "https://vercel.com/new" },
+    steps: [
+      "Baca kotak \"Yang bisa kamu lakukan\" di pesan error — isinya langkah spesifik untuk masalah kamu.",
+      "Klik \"Coba lagi\" kalau masalahnya sementara (internet putus, server platform sedang sibuk, batas GitHub tanpa token).",
+      "Repo tidak cocok dengan platform yang dipilih? Pakai tombol \"Pakai Railway\" (atau platform yang disarankan) di kartu hasil cek repo.",
+      "Deploy manual Vercel: vercel.com/new → pilih repo → Deploy. Untuk situs HTML, pilih Framework Preset \"Other\" dan kosongkan Build Command.",
+      "Deploy manual Cloudflare: Workers & Pages → Create → Pages → Connect to Git → pilih repo. Untuk situs HTML, Framework preset \"None\" dan kosongkan Build command.",
+      "Deploy manual Railway: railway.com/new → Deploy from GitHub repo → pilih repo, lalu Settings → Networking → Generate Domain.",
+      "Mau melaporkan masalah? Buka \"Detail teknis\" di pesan error, klik \"Salin detail\", lalu kirim ke developer.",
+    ],
+  },
+  {
+    icon: AlertTriangle,
+    title: "Next.js di Cloudflare Pages vs Vercel — apa bedanya?",
+    desc: "Penting dibaca kalau repo yang di-deploy ke Cloudflare pakai Next.js dengan API routes — perilakunya beda dari Vercel.",
+    link: {
+      label: "Baca dokumentasi next-on-pages",
+      href: "https://github.com/cloudflare/next-on-pages",
+    },
+    steps: [
+      "Vercel dibuat oleh tim yang sama dengan Next.js, jadi API routes & SSR jalan otomatis tanpa konfigurasi tambahan.",
+      'Cloudflare Pages bukan didesain khusus untuk Next.js. Depup otomatis pakai adapter "@cloudflare/next-on-pages" untuk project Next.js supaya API routes tetap bisa jalan — tapi adapter ini sudah deprecated dan sifatnya best-effort, jadi tidak semua fitur Next.js (terutama fitur SSR/API routes yang kompleks) dijamin jalan 100% sama seperti di Vercel.',
+      "Kalau build gagal atau ada fitur yang error, itu keterbatasan platform Cloudflare Pages untuk Next.js — bukan bug di Depup. Cek log build project tersebut di Cloudflare dashboard untuk detail errornya.",
+      'Rekomendasi resmi Cloudflare sekarang untuk Next.js dengan banyak API routes adalah deploy sebagai Cloudflare Worker pakai adapter "@opennextjs/cloudflare" — tapi setup Git-connected Worker ini masih harus manual lewat dashboard Cloudflare (belum ada API publik buat Depup otomasi ini).',
+      "Kalau project kamu simple (tanpa API routes sama sekali, murni halaman statis), pertimbangkan set output: 'export' di next.config.js — hasilnya full static dan jauh lebih stabil di Cloudflare Pages.",
+      "Untuk Next.js app yang butuh API routes solid & lengkap, Vercel tetap pilihan paling straightforward lewat Depup.",
+    ],
+  },
+  {
+    icon: KeyRound,
+    title: "Cara dapetin Vercel Token",
+    desc: "Token ini dipakai Depup untuk deploy langsung dari repo GitHub kamu ke Vercel.",
+    link: { label: "Buka Vercel Tokens", href: "https://vercel.com/account/tokens" },
+    steps: [
+      "Login ke akun Vercel kamu di vercel.com.",
+      'Buka menu Account Settings → tab "Tokens" (atau langsung ke vercel.com/account/tokens).',
+      'Klik "Create Token", kasih nama bebas (misal "depup"), pilih scope sesuai akun/tim yang mau dipakai.',
+      "Atur masa berlaku (No Expiration lebih praktis untuk dipakai berulang, tapi lebih aman kalau dikasih expiry).",
+      'Klik "Create", lalu salin token yang muncul — token ini cuma ditampilkan sekali, jadi langsung simpan.',
+      "Tempel token itu ke field Vercel Token di form Deploy atau di halaman Settings Depup.",
+    ],
+  },
+  {
+    icon: Cloud,
+    title: "Cara dapetin Cloudflare API Token",
+    desc: "Token ini dipakai Depup untuk membuat & mengelola project Cloudflare Pages kamu — deploy, custom domain, dan environment variables.",
+    link: { label: "Buka Cloudflare API Tokens", href: "https://dash.cloudflare.com/profile/api-tokens" },
+    steps: [
+      "Login ke dashboard Cloudflare kamu di dash.cloudflare.com.",
+      'Buka foto profil (kanan atas) → "My Profile" → tab "API Tokens" (atau langsung ke dash.cloudflare.com/profile/api-tokens).',
+      'Klik "Create Token" → pilih template "Edit Cloudflare Workers" atau bikin custom token dengan permission "Account" → "Cloudflare Pages" → "Edit".',
+      "Pilih akun (Account Resources) yang mau dipakai deploy, lalu klik Continue to summary.",
+      'Klik "Create Token", lalu salin token yang muncul — token ini cuma ditampilkan sekali, jadi langsung simpan.',
+      'Tempel token itu ke field Cloudflare Token di halaman Settings Depup, lalu klik "Test Koneksi" untuk pilih akun aktifnya.',
+    ],
+  },
+  {
+    icon: Link2,
+    title: "Cara hubungkan GitHub ke Cloudflare Pages",
+    desc: "Sekali di-connect, semua deploy Cloudflare berikutnya lewat Depup otomatis jalan tanpa perlu login ulang — sama seperti Vercel.",
+    link: { label: "Buka Cloudflare Pages", href: "https://dash.cloudflare.com/?to=/:account/pages/new/provider/github" },
+    steps: [
+      "Pertama kali deploy ke Cloudflare di form Deploy, Depup otomatis cek apakah GitHub sudah terhubung ke akun Cloudflare kamu.",
+      'Kalau belum, akan muncul tombol "Hubungkan GitHub ke Cloudflare" — klik itu, nanti diarahkan ke halaman resmi Cloudflare untuk connect.',
+      'Di halaman Cloudflare, klik "Connect GitHub" lalu login/authorize GitHub App Cloudflare Pages (pilih "All repositories" atau repo tertentu saja).',
+      "Setelah authorize berhasil, kembali ke tab Depup dan klik \"Sudah connect, cek lagi\".",
+      "Begitu status berubah jadi terhubung, klik Deploy Project lagi — deploy langsung jalan otomatis tanpa langkah manual lagi untuk deploy-deploy berikutnya.",
+    ],
+  },
+  {
+    icon: TramFront,
+    title: "Railway di Depup — buat apa & bedanya sama Vercel/Cloudflare?",
+    desc: "Baca ini dulu sebelum deploy ke Railway, biar tahu kapan platform ini cocok dipakai lewat Depup.",
+    link: { label: "Buka Railway Docs", href: "https://docs.railway.com/" },
+    steps: [
+      "Vercel & Cloudflare Pages didesain untuk frontend/edge — cocok buat Next.js, static site, dan API routes ringan. Railway sebaliknya: full backend platform, jalan sebagai container yang always-on, cocok buat aplikasi yang butuh proses jalan terus (server Express/Nest/Fastify, worker/queue, cron job, WebSocket, dsb).",
+      "Railway tidak butuh package.json/Node.js seperti syarat deploy Vercel di Depup — repo apapun yang bisa di-build Railway (lewat Railpack otomatis, atau Dockerfile kalau ada) bisa dipakai: Python, Go, Rust, PHP, Ruby, dan lainnya.",
+      'Waktu deploy pertama kali, Depup otomatis: buat project baru di akun Railway kamu (kalau nama project belum ada), buat service yang terhubung ke repo GitHub tersebut, generate domain publik "*.up.railway.app", lalu trigger deployment. Deploy berikutnya dengan nama project yang sama otomatis dianggap redeploy ke service yang sama.',
+      'Field "Start Command" di form Deploy Railway itu opsional — kosongkan saja kalau mau Railway auto-detect (misalnya baca script "start" di package.json, atau ikuti CMD di Dockerfile). Isi manual cuma kalau auto-detect-nya salah.',
+      'Field "Environment Variables" (format KEY=value per baris) dikirim ke service Railway sebelum deploy pertama jalan — praktis untuk isi credential database, API key, dsb dari awal.',
+      "Railway itu platform berbayar berdasarkan pemakaian resource (CPU/RAM/network), beda dari Vercel/Cloudflare yang punya free tier lebih murah hati untuk project kecil — pastikan akun Railway kamu punya kredit/metode pembayaran aktif sebelum deploy dari Depup, atau deployment bisa gagal/di-pause oleh Railway.",
+      "Custom domain & sinkronisasi env var dua-arah untuk Railway belum didukung penuh di Depup (baru deploy, cek status, redeploy, dan kelola env var dasar) — untuk custom domain, atur manual dulu lewat Railway Dashboard → project kamu → service → Settings → Networking.",
+    ],
+  },
+  {
+    icon: KeyRound,
+    title: "Cara dapetin Railway Token",
+    desc: "Token ini dipakai Depup untuk membuat project & service di akun Railway kamu, lalu deploy dari repo GitHub.",
+    link: { label: "Buka Railway Tokens", href: "https://railway.com/account/tokens" },
+    steps: [
+      "Login ke akun Railway kamu di railway.com.",
+      'Buka foto profil (kanan atas) → "Account Settings" → tab "Tokens" (atau langsung ke railway.com/account/tokens).',
+      'Di bagian "Personal Tokens", klik "Create Token" — token jenis ini (bukan Project Token / Team Token) yang dipakai Depup karena butuh izin bikin project baru.',
+      'Kasih nama bebas (misal "depup"), lalu klik "Create".',
+      "Salin token yang muncul — token ini cuma ditampilkan sekali, jadi langsung simpan di tempat aman.",
+      'Tempel token itu ke field Railway Token di form Deploy atau di halaman Settings Depup, lalu klik "Test Koneksi" untuk memastikan token-nya valid.',
+    ],
+  },
+  {
+    icon: Github,
+    title: "Cara bikin GitHub Token (PAT)",
+    desc: "Token ini opsional untuk repo public, tapi wajib kalau repo yang mau di-deploy itu private.",
+    link: { label: "Buka GitHub Tokens", href: "https://github.com/settings/tokens?type=beta" },
+    steps: [
+      "Login ke GitHub, buka Settings (klik foto profil kanan atas → Settings).",
+      'Scroll ke bawah ke "Developer settings" (paling bawah sidebar kiri).',
+      'Pilih "Personal access tokens" → "Fine-grained tokens" → "Generate new token".',
+      "Kasih nama token, atur masa berlaku, dan pilih repository access — bisa semua repo atau pilih repo tertentu saja.",
+      'Di bagian "Repository permissions", pastikan "Contents" di-set ke "Read-only" minimal (biar Depup bisa baca source code & package.json).',
+      'Klik "Generate token", salin, lalu tempel ke field GitHub Token di form Deploy atau Settings.',
+    ],
+  },
+  {
+    icon: ShieldCheck,
+    title: "Setup Login Google (untuk admin/deployer Depup)",
+    desc: "Depup pakai OAuth2 Google asli — bukan simulasi. Ini perlu di-setup sekali di Google Cloud Console oleh yang deploy Depup.",
+    link: { label: "Buka Google Cloud Console", href: "https://console.cloud.google.com/apis/credentials" },
+    steps: [
+      "Buka Google Cloud Console → pilih/buat sebuah project.",
+      'Buka "APIs & Services" → "OAuth consent screen", isi info dasar aplikasi (nama, email support), publish ke "External" kalau untuk banyak user.',
+      'Buka "Credentials" → "Create Credentials" → "OAuth client ID" → pilih tipe "Web application".',
+      "Di bagian Authorized redirect URIs, tambahkan persis: https://<domain-vercel-kamu>/api/auth/google/callback",
+      "Simpan, lalu salin Client ID dan Client Secret yang muncul.",
+      'Di project Vercel Depup, buka Settings → Environment Variables, tambahkan GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, dan AUTH_SECRET (string acak bebas, minimal 16 karakter) — lalu redeploy.',
+    ],
+  },
+];
+
+function GuideCard({ guide }: { guide: Guide }) {
+  const [open, setOpen] = React.useState(false);
+  const Icon = guide.icon;
+
+  return (
+    <Surface className="overflow-hidden">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className="flex w-full items-start gap-4 p-5 text-left"
+      >
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-violet-500/10 text-violet-400">
+          <Icon size={20} />
+        </span>
+        <div className="min-w-0 flex-1">
+          <h3 className="text-[14px] font-semibold">{guide.title}</h3>
+          <p className="mt-1 text-[13px] leading-relaxed text-text-muted">{guide.desc}</p>
+        </div>
+        <ChevronDown
+          size={18}
+          className={`mt-1 shrink-0 text-text-faint transition-transform ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open && (
+        <div className="border-t px-5 pb-5 pt-4" style={{ borderColor: "var(--surface-line)" }}>
+          <ol className="space-y-4">
+            {guide.steps.map((step, i) => (
+              <li key={i} className="flex gap-3 text-[13px] leading-relaxed">
+                <span className="mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[var(--pill-bg)] text-[11px] font-semibold text-text-muted">
+                  {i + 1}
+                </span>
+                <div className="min-w-0 flex-1 text-text-muted">{step}</div>
+              </li>
+            ))}
+          </ol>
+          <a
+            href={guide.link.href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="pill mt-5 inline-flex items-center gap-1.5 px-3.5 py-1.5 text-[12px] font-medium hover:brightness-110"
+          >
+            {guide.link.label} <ExternalLink size={12} />
+          </a>
+        </div>
+      )}
+    </Surface>
+  );
+}
+
+export function DocsView() {
+  return (
+    <ViewFade>
+      <div className="space-y-6">
+        <div>
+          <h2 className="text-[22px] font-semibold">Docs</h2>
+          <p className="text-[13px] text-text-muted">
+            Panduan lengkap setup token, OAuth, serta jenis repo yang didukung — semuanya real, tidak ada simulasi.
+          </p>
+        </div>
+
+        <div className="space-y-3">
+          {GUIDES.map((guide) => (
+            <GuideCard key={guide.title} guide={guide} />
+          ))}
+        </div>
+      </div>
+    </ViewFade>
+  );
+}

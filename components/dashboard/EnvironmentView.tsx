@@ -1,0 +1,416 @@
+"use client";
+
+import * as React from "react";
+import { KeyRound, Plus, Trash2, Eye, EyeOff, Info, X, RefreshCw } from "lucide-react";
+import { Surface } from "@/components/ui/Surface";
+import { ViewFade } from "@/components/ui/ViewFade";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useDeploy } from "@/lib/deploy-context";
+import { useToast } from "@/components/ui/Toast";
+
+/** All projects the user has ever deployed (any platform) — env vars can be scoped to any of these. */
+function useProjectNames() {
+  const { history } = useDeploy();
+  return React.useMemo(() => Array.from(new Set(history.map((h) => h.name))), [history]);
+}
+
+/** Maps project name -> platform, so the modal knows which remote (if any) a project can push secrets to. */
+function useProjectPlatforms() {
+  const { history } = useDeploy();
+  return React.useMemo(() => {
+    const map = new Map<string, string>();
+    for (const h of Array.isArray(history) ? history : []) if (!map.has(h.name)) map.set(h.name, h.platform);
+    return map;
+  }, [history]);
+}
+
+function AddSecretModal({
+  open,
+  onClose,
+  defaultProject,
+}: {
+  open: boolean;
+  onClose: () => void;
+  defaultProject?: string;
+}) {
+  const { addEnvVar, vercelToken, savedCloudflareToken, savedRailwayToken } = useDeploy();
+  const { showToast } = useToast();
+  const projectNames = useProjectNames();
+  const projectPlatforms = useProjectPlatforms();
+  const [key, setKey] = React.useState("");
+  const [value, setValue] = React.useState("");
+  const [environment, setEnvironment] = React.useState<"Production" | "Preview">("Production");
+  const [project, setProject] = React.useState(defaultProject ?? projectNames[0] ?? "");
+  const [pushToRemote, setPushToRemote] = React.useState(true);
+
+  React.useEffect(() => {
+    if (open) setProject(defaultProject ?? projectNames[0] ?? "");
+  }, [open, defaultProject, projectNames]);
+
+  if (!open) return null;
+
+  const projectPlatform = projectPlatforms.get(project);
+  const isVercelProject = projectPlatform === "vercel";
+  const isCloudflareProject = projectPlatform === "cloudflare";
+  const isRailwayProject = projectPlatform === "railway";
+  const canPush =
+    (isVercelProject && Boolean(vercelToken)) ||
+    (isCloudflareProject && Boolean(savedCloudflareToken)) ||
+    (isRailwayProject && Boolean(savedRailwayToken));
+  const remotePlatformLabel = isVercelProject ? "Vercel" : isCloudflareProject ? "Cloudflare" : "Railway";
+
+  function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!key.trim() || !value.trim()) {
+      showToast("Key dan value tidak boleh kosong");
+      return;
+    }
+    if (!project) {
+      showToast("Pilih project untuk secret ini — env var selalu per-project, bukan global.");
+      return;
+    }
+    addEnvVar(key.trim(), value.trim(), environment, project, {
+      pushToVercel: canPush && pushToRemote && isVercelProject,
+      pushToCloudflare: canPush && pushToRemote && isCloudflareProject,
+      pushToRailway: canPush && pushToRemote && isRailwayProject,
+    });
+    setKey("");
+    setValue("");
+    onClose();
+  }
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 px-4">
+      <Surface className="w-full max-w-sm p-6">
+        <div className="flex items-center justify-between mb-5">
+          <h3 className="text-[15px] font-semibold">Tambah Secret</h3>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Tutup"
+            className="grid h-8 w-8 place-items-center rounded-full hover:bg-[var(--row-hover)]"
+          >
+            <X size={16} />
+          </button>
+        </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-[12px] font-medium text-text-muted mb-1.5">Project</label>
+            {projectNames.length === 0 ? (
+              <p className="input-solid h-11 flex items-center px-3.5 text-[13px] text-text-faint">
+                Belum ada project — deploy dulu untuk bisa menyimpan secret.
+              </p>
+            ) : (
+              <Select value={project} onValueChange={setProject}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Pilih Project" />
+                </SelectTrigger>
+                <SelectContent>
+                  {projectNames.map((name) => (
+                    <SelectItem key={name} value={name}>
+                      {name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+            <p className="mt-1.5 text-[11px] text-text-faint">
+              Secret hanya berlaku untuk project ini, tidak akan bocor/bentrok ke project lain.
+            </p>
+          </div>
+          <div>
+            <label htmlFor="envKey" className="block text-[12px] font-medium text-text-muted mb-1.5">
+              Key
+            </label>
+            <input
+              id="envKey"
+              type="text"
+              autoFocus
+              placeholder="DATABASE_URL"
+              value={key}
+              onChange={(e) => setKey(e.target.value)}
+              className="input-solid mono h-11 w-full px-3.5 text-[13px]"
+            />
+          </div>
+          <div>
+            <label htmlFor="envValue" className="block text-[12px] font-medium text-text-muted mb-1.5">
+              Value
+            </label>
+            <input
+              id="envValue"
+              type="text"
+              placeholder="postgres://..."
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              className="input-solid mono h-11 w-full px-3.5 text-[13px]"
+            />
+          </div>
+          <div>
+            <label className="block text-[12px] font-medium text-text-muted mb-1.5">Environment</label>
+            <Select value={environment} onValueChange={(v) => setEnvironment(v as "Production" | "Preview")}>
+              <SelectTrigger>
+                <SelectValue placeholder="Pilih Environment" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Production">Production</SelectItem>
+                <SelectItem value="Preview">Preview</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          {isVercelProject || isCloudflareProject || isRailwayProject ? (
+            canPush ? (
+              <div className="space-y-2 rounded-2xl border border-[var(--surface-line)] p-3.5">
+                <label className="flex items-center gap-2.5 text-[12.5px] font-medium">
+                  <input
+                    type="checkbox"
+                    checked={pushToRemote}
+                    onChange={(e) => setPushToRemote(e.target.checked)}
+                    className="h-4 w-4 accent-violet-500"
+                  />
+                  Push otomatis ke project &quot;{project}&quot; di {remotePlatformLabel}
+                </label>
+              </div>
+            ) : (
+              <p className="text-[11.5px] text-text-faint">
+                Konek-kan {remotePlatformLabel} Token di Settings untuk push otomatis.
+              </p>
+            )
+          ) : (
+            <p className="text-[11.5px] text-text-faint">
+              Project ini bukan platform Vercel/Cloudflare/Railway — secret akan disimpan lokal saja untuk project ini.
+            </p>
+          )}
+
+          <button type="submit" className="btn-primary w-full py-2.5 text-[13px]">
+            Simpan Secret
+          </button>
+        </form>
+      </Surface>
+    </div>
+  );
+}
+
+export function EnvironmentView() {
+  const {
+    envVars,
+    removeEnvVar,
+    toggleEnvVisible,
+    vercelToken,
+    savedCloudflareToken,
+    savedRailwayToken,
+    syncingEnvVars,
+    syncAllEnvVars,
+  } = useDeploy();
+  const projectNames = useProjectNames();
+  const [modalOpen, setModalOpen] = React.useState(false);
+  const [activeProject, setActiveProject] = React.useState<string>("all");
+  const didAutoSync = React.useRef(false);
+
+  // Depup has no webhook for it, so we don't find out on our own when a
+  // secret gets deleted straight from the Vercel/Cloudflare/Railway dashboard —
+  // check once per visit so the list here doesn't quietly go stale.
+  React.useEffect(() => {
+    if (didAutoSync.current || (!vercelToken && !savedCloudflareToken && !savedRailwayToken)) return;
+    didAutoSync.current = true;
+    void syncAllEnvVars();
+  }, [vercelToken, savedCloudflareToken, savedRailwayToken, syncAllEnvVars]);
+
+  // Keep the filter valid if the underlying project list changes.
+  React.useEffect(() => {
+    if (activeProject !== "all" && !projectNames.includes(activeProject)) {
+      setActiveProject("all");
+    }
+  }, [activeProject, projectNames]);
+
+  const filteredEnvVars = React.useMemo(
+    () => {
+      const safeEnvVars = Array.isArray(envVars) ? envVars : [];
+      return activeProject === "all" ? safeEnvVars : safeEnvVars.filter((v) => v.project === activeProject);
+    },
+    [envVars, activeProject]
+  );
+
+  // Stable-sort by project so rows from the same project sit together, then
+  // bucket the (now-contiguous) runs into groups — each gets a small header
+  // row as a visual separator when browsing "Semua project".
+  const groupedEnvVars = React.useMemo(() => {
+    const sorted = [...filteredEnvVars].sort((a, b) => a.project.localeCompare(b.project));
+    const groups: { project: string; items: typeof sorted }[] = [];
+    for (const item of sorted) {
+      const last = groups[groups.length - 1];
+      if (last && last.project === item.project) {
+        last.items.push(item);
+      } else {
+        groups.push({ project: item.project, items: [item] });
+      }
+    }
+    return groups;
+  }, [filteredEnvVars]);
+
+  return (
+    <ViewFade>
+      <div className="space-y-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <h2 className="text-[22px] font-semibold">Environment Variables</h2>
+            <p className="text-[13px] text-text-muted">
+              Simpan secret per-project untuk di-inject ke build kamu — tidak ada secret global antar project.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setModalOpen(true)}
+            className="btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-[13px]"
+          >
+            <Plus size={15} /> Add Secret
+          </button>
+        </div>
+
+        {(vercelToken || savedCloudflareToken || savedRailwayToken) && (
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => void syncAllEnvVars()}
+              disabled={syncingEnvVars}
+              className="pill inline-flex items-center gap-2 px-4 py-2 text-[12.5px] font-medium hover:brightness-110 disabled:opacity-50"
+            >
+              <RefreshCw size={13} className={syncingEnvVars ? "animate-spin" : undefined} />
+              {syncingEnvVars ? "Sinkronisasi..." : "Sinkronkan"}
+            </button>
+          </div>
+        )}
+
+        <Surface className="flex items-start gap-3 px-5 py-4">
+          <Info size={16} className="mt-0.5 shrink-0 text-violet-400" />
+          <p className="text-[12.5px] leading-relaxed text-text-muted">
+            Fitur injeksi <span className="mono">.env</span> saat build — setiap secret terikat ke satu
+            project dan hanya tersedia sebagai environment variable pada build & runtime project itu saja.
+          </p>
+        </Surface>
+
+        {projectNames.length > 0 && (
+          <div className="w-full max-w-xs">
+            <label className="mb-1.5 block text-[12px] font-medium text-text-muted">Filter berdasarkan project</label>
+            <Select value={activeProject} onValueChange={setActiveProject}>
+              <SelectTrigger>
+                <SelectValue placeholder="Semua project" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">Semua project</SelectItem>
+                {projectNames.map((name) => (
+                  <SelectItem key={name} value={name}>
+                    {name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
+        {filteredEnvVars.length === 0 ? (
+          <Surface className="flex flex-col items-center justify-center gap-3 px-6 py-24 text-center">
+            <KeyRound size={52} className="text-text-faint" strokeWidth={1.5} />
+            <h3 className="text-[16px] font-semibold">Belum ada secret</h3>
+            <p className="max-w-xs text-[13px] text-text-muted">
+              {activeProject === "all"
+                ? "Tambahkan environment variable pertamamu untuk digunakan saat deploy."
+                : `Belum ada secret untuk project "${activeProject}".`}
+            </p>
+          </Surface>
+        ) : (
+          <Surface className="overflow-hidden">
+            <table className="w-full text-left">
+              <thead>
+                <tr className="text-[11px] uppercase tracking-wide text-text-faint">
+                  <th className="px-6 py-3 font-medium">Key</th>
+                  <th className="px-6 py-3 font-medium">Value</th>
+                  <th className="px-6 py-3 font-medium">Project</th>
+                  <th className="px-6 py-3 font-medium">Environment</th>
+                  <th className="px-6 py-3 font-medium text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {groupedEnvVars.map((group, groupIndex) => (
+                  <React.Fragment key={group.project}>
+                    {activeProject === "all" && (
+                      <tr>
+                        <td
+                          colSpan={5}
+                          className={`px-6 py-2 text-[11px] font-semibold uppercase tracking-wide text-text-faint bg-[var(--row-hover)] ${
+                            groupIndex > 0 ? "border-t" : ""
+                          }`}
+                          style={{ borderColor: "var(--surface-line)" }}
+                        >
+                          {group.project}
+                        </td>
+                      </tr>
+                    )}
+                    {group.items.map((item) => (
+                      <tr
+                        key={item.id}
+                        className="surface-solid-row border-b last:border-0 transition-colors"
+                        style={{ borderColor: "var(--surface-line)" }}
+                      >
+                        <td className="px-6 py-4 mono text-[13px] font-medium">{item.key}</td>
+                        <td className="px-6 py-4 mono text-[12px] text-text-muted">
+                          {item.visible ? item.value : "•".repeat(Math.min(item.value.length, 14) || 8)}
+                        </td>
+                        <td className="px-6 py-4 text-[12px] text-text-muted">{item.project}</td>
+                        <td className="px-6 py-4">
+                          <span className="pill px-2.5 py-0.5 text-[11px] font-medium">{item.environment}</span>
+                          {item.syncedToVercel && (
+                            <span className="ml-1.5 inline-flex items-center gap-1 rounded-pill border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10.5px] font-medium text-emerald-400">
+                              ✓ Vercel
+                            </span>
+                          )}
+                          {item.syncedToCloudflare && (
+                            <span className="ml-1.5 inline-flex items-center gap-1 rounded-pill border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10.5px] font-medium text-emerald-400">
+                              ✓ Cloudflare
+                            </span>
+                          )}
+                          {item.syncedToRailway && (
+                            <span className="ml-1.5 inline-flex items-center gap-1 rounded-pill border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10.5px] font-medium text-emerald-400">
+                              ✓ Railway
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="flex items-center justify-end gap-2">
+                            <button
+                              type="button"
+                              onClick={() => toggleEnvVisible(item.id)}
+                              aria-label={item.visible ? "Sembunyikan value" : "Tampilkan value"}
+                              className="pill inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-medium hover:brightness-110"
+                            >
+                              {item.visible ? <EyeOff size={12} /> : <Eye size={12} />}
+                              {item.visible ? "Hide" : "Show"}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => removeEnvVar(item.id)}
+                              aria-label={`Hapus ${item.key}`}
+                              className="pill inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-medium text-red-400 hover:brightness-110"
+                            >
+                              <Trash2 size={12} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </React.Fragment>
+                ))}
+              </tbody>
+            </table>
+          </Surface>
+        )}
+      </div>
+
+      <AddSecretModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        defaultProject={activeProject !== "all" ? activeProject : undefined}
+      />
+    </ViewFade>
+  );
+}

@@ -1,0 +1,2912 @@
+"use client";
+
+import { notifySessionExpired } from "@/lib/session-expired";
+import * as React from "react";
+import { useToast } from "@/components/ui/Toast";
+import { resolveDomain, formatDate, normalizeDeployDomain } from "@/lib/utils";
+import { parseEnvText } from "@/app/api/_lib/env-text";
+import { useCloudStorage } from "@/lib/useCloudStorage";
+import { ApiRequestError, toFriendlyError, type ErrorStage } from "@/lib/friendly-error";
+import type {
+  ApiResponse,
+  CloudflareAccountInfo,
+  CloudflareDeployStatusResult,
+  CloudflareDomainResult,
+  CloudflareEnvSummary,
+  CloudflareProjectStatusResult,
+  CloudflareProjectSummary,
+  CreateCloudflareDeployResult,
+  CreateDeployResult,
+  DashboardView,
+  DeployFormValues,
+  DeployStatusResult,
+  DomainItem,
+  EnvItem,
+  ErrorGuide,
+  GithubConnectionStatus,
+  GithubValidation,
+  HistoryItem,
+  Platform,
+  ProjectStatusResult,
+  RailwayDeployStatusResult,
+  RailwayDomainResult,
+  RailwayEnvSummary,
+  RailwayProjectStatusResult,
+  RailwayProjectSummary,
+  RailwayUserInfo,
+  CreateRailwayDeployResult,
+  RedeployResult,
+  SettingsTokens,
+  VercelDomainResult,
+  VercelEnvSummary,
+  VercelProjectSummary,
+} from "@/types";
+
+export const DEPLOY_STEPS = [
+  "Menghubungkan ke GitHub",
+  "Mengunduh source code",
+  "Install dependencies",
+  "Build project",
+  "Deploy ke edge network",
+] as const;
+
+const MAX_HISTORY = 10;
+const POLL_INTERVAL_MS = 2000;
+
+const GITHUB_REPO_RE = /^(?:https?:\/\/)?(?:www\.)?github\.com\/[^/\s]+\/[^/\s]+/i;
+const ENV_KEY_RE = /^[A-Z][A-Z0-9_]*$/;
+
+function wwwPairFor(domain: string): string {
+  return domain.toLowerCase().startsWith("www.")
+    ? domain.slice(4)
+    : `www.${domain}`;
+}
+
+const SETTINGS_TOKENS_KEY = "depup-settings-tokens";
+const DEFAULT_SETTINGS_TOKENS: SettingsTokens = {
+  vercelToken: "",
+  cloudflareToken: "",
+  cloudflareAccountId: "",
+  githubPat: "",
+  railwayToken: "",
+};
+
+async function callApi<T>(url: string, init?: RequestInit): Promise<T> {
+  let res: Response;
+  try {
+    res = await fetch(url, init);
+  } catch {
+    // fetch hanya melempar error kalau tidak ada respons sama sekali (offline / DNS / diblokir).
+    throw new ApiRequestError("Tidak bisa menghubungi server.", { code: "network" });
+  }
+  const body = (await res.json().catch(() => null)) as ApiResponse<T> | null;
+  notifySessionExpired(body);
+  if (!body || !body.ok) {
+    throw new ApiRequestError(body?.error ?? `Request gagal (${res.status})`, {
+      code: body && !body.ok ? body.code : undefined,
+      status: res.status,
+      guide: body && !body.ok ? body.guide : undefined,
+    });
+  }
+  return body.data;
+}
+
+const EMPTY_REPO_CHECK = {
+  status: "idle" as "idle" | "checking" | "ok" | "error",
+  detectedEnvVars: [] as string[],
+  framework: null as string | null,
+  warnings: [] as string[],
+  validation: null as GithubValidation | null,
+  errorGuide: null as ErrorGuide | null,
+};
+
+const DEFAULT_MODAL_TITLE = "Deploy Project";
+const DEFAULT_MODAL_SUBTITLE =
+  "Import repository dan deploy ke edge network dalam satu klik.";
+
+const emptyForm: DeployFormValues = {
+  projectName: "",
+  platform: "vercel",
+  domain: "",
+  platformToken: "",
+  githubUrl: "",
+  githubPat: "",
+  note: "",
+  accountId: "",
+  buildCommand: "",
+  outputDir: "",
+  startCommand: "",
+  envText: "",
+};
+
+/* ================================================================
+ *  State modern — sumber tunggal untuk progress deploy
+ * ================================================================ */
+
+export type DeployStatus = "idle" | "deploying" | "success" | "error";
+
+export interface DeployState {
+  status: DeployStatus;
+  stepIndex: number;
+  barWidth: number;
+  title: string;
+  subtitle: string;
+  error: string | null;
+  /** Penjelasan ramah + langkah perbaikan saat deploy gagal. */
+  errorGuide: ErrorGuide | null;
+  result: {
+    name: string;
+    domain: string;
+    inspectorUrl?: string;
+    analyticsEnabled?: boolean | null;
+    analyticsUrl?: string;
+  } | null;
+}
+
+const defaultDeployState: DeployState = {
+  status: "idle",
+  stepIndex: 0,
+  barWidth: 0,
+  title: DEFAULT_MODAL_TITLE,
+  subtitle: DEFAULT_MODAL_SUBTITLE,
+  error: null,
+  errorGuide: null,
+  result: null,
+};
+
+/* ================================================================
+ *  State legacy — bentuk ModalState yang dipakai DeployModal.tsx
+ * ================================================================ */
+
+interface ModalState {
+  open: boolean;
+  stepIndex: number;
+  barWidth: number;
+  title: string;
+  subtitle: string;
+  resultVisible: boolean;
+  closeVisible: boolean;
+  result: {
+    name: string;
+    domain: string;
+    inspectorUrl?: string;
+    analyticsEnabled?: boolean | null;
+    analyticsUrl?: string;
+  } | null;
+  error: string | null;
+}
+
+/* ================================================================
+ *  Context value
+ * ================================================================ */
+
+interface DeployContextValue {
+  view: DashboardView;
+  setView: (v: DashboardView) => void;
+  stats: { total: number; ready: number; failed: number };
+  history: HistoryItem[];
+  form: DeployFormValues;
+  setFormField: <K extends keyof DeployFormValues>(
+    key: K,
+    value: DeployFormValues[K],
+  ) => void;
+  platformTokenLabel: string;
+  repoEnvCheck: {
+    status: "idle" | "checking" | "ok" | "error";
+    detectedEnvVars: string[];
+    framework: string | null;
+    warnings: string[];
+    /** Hasil lengkap cek repo (tipe project + kecocokan per platform). */
+    validation: GithubValidation | null;
+    /** Penjelasan ramah kalau pengecekan repo gagal. */
+    errorGuide: ErrorGuide | null;
+  };
+  /** Ulangi pengecekan repo (mis. setelah rate limit / jaringan putus). */
+  recheckRepo: () => void;
+  /** Ulangi deploy terakhir dengan isi form yang sama. */
+  retryDeploy: () => void;
+  /** GitHub PAT dari Settings (dipakai fitur Upload). */
+  githubPat: string;
+  /** Jalankan deploy langsung dengan nilai yang sudah lengkap (tanpa lewat wizard form). */
+  deployFromValues: (data: DeployFormValues) => void;
+
+  /** Legacy derived view — dipakai DeployModal.tsx. */
+  modal: ModalState;
+  /** Modern state — dipakai DeployFormView wizard. */
+  deployState: DeployState;
+
+  closeModal: () => void;
+  handleCloseAfterDeploy: () => void;
+  resetDeployState: () => void;
+
+  savedVercelToken: { token: string; username: string } | null;
+  savedVercelTokenStatus: "idle" | "checking" | "ok" | "invalid";
+
+  savedCloudflareToken: {
+    token: string;
+    accountId: string;
+    accountName: string;
+  } | null;
+  savedCloudflareTokenStatus:
+    | "idle"
+    | "checking"
+    | "ok"
+    | "invalid"
+    | "needs_account";
+  cloudflareAccounts: CloudflareAccountInfo[];
+
+  savedRailwayToken: { token: string; name: string } | null;
+  savedRailwayTokenStatus: "idle" | "checking" | "ok" | "invalid";
+
+  githubConnectionStatus: {
+    status: "idle" | "checking" | "connected" | "unknown";
+    connectUrl: string | null;
+  };
+  checkGithubConnection: () => Promise<void>;
+
+  submitDeploy: (e: React.FormEvent<HTMLFormElement>) => void;
+
+  redeploy: (name: string) => void;
+
+  vercelToken: string;
+  cloudflareToken: string;
+  cloudflareAccountId: string;
+  railwayToken: string;
+
+  syncingProjects: boolean;
+  syncProjectStatus: (
+    name: string,
+    platform: Platform,
+  ) => Promise<"exists" | "deleted" | "skipped" | "error">;
+  syncAllProjects: () => Promise<void>;
+
+  deletingProject: string | null;
+  deleteProject: (
+    name: string,
+    platform: Platform,
+    options: {
+      alsoDeleteFromVercel?: boolean;
+      alsoDeleteFromCloudflare?: boolean;
+      alsoDeleteFromRailway?: boolean;
+    },
+  ) => Promise<void>;
+
+  fetchImportableVercelProjects: () => Promise<VercelProjectSummary[]>;
+  importVercelProject: (project: VercelProjectSummary) => void;
+  fetchImportableCloudflareProjects: () => Promise<CloudflareProjectSummary[]>;
+  importCloudflareProject: (project: CloudflareProjectSummary) => void;
+  fetchImportableRailwayProjects: () => Promise<RailwayProjectSummary[]>;
+  importRailwayProject: (project: RailwayProjectSummary) => void;
+
+  domains: DomainItem[];
+  addDomain: (domain: string, project: string) => Promise<void>;
+  removeDomain: (id: string) => Promise<void>;
+  refreshDomainStatus: (id: string) => Promise<void>;
+  syncingDomains: boolean;
+  syncDomainsForProject: (
+    project: string,
+  ) => Promise<"synced" | "skipped" | "error">;
+  syncAllDomains: () => Promise<void>;
+
+  envVars: EnvItem[];
+  addEnvVar: (
+    key: string,
+    value: string,
+    environment: "Production" | "Preview",
+    project: string,
+    options?: { pushToVercel?: boolean; pushToCloudflare?: boolean; pushToRailway?: boolean },
+  ) => Promise<void>;
+  removeEnvVar: (id: string) => Promise<void>;
+  toggleEnvVisible: (id: string) => void;
+  syncingEnvVars: boolean;
+  syncEnvVarsForProject: (
+    project: string,
+  ) => Promise<"synced" | "skipped" | "error">;
+  syncAllEnvVars: () => Promise<void>;
+
+}
+
+const DeployContext = React.createContext<DeployContextValue | null>(null);
+
+export function useDeploy() {
+  const ctx = React.useContext(DeployContext);
+  if (!ctx) throw new Error("useDeploy must be used within <DeployProvider>");
+  return ctx;
+}
+
+const DASHBOARD_VIEWS: readonly DashboardView[] = [
+  "dashboard",
+  "deploy",
+  "projects",
+  "domains",
+  "env",
+  "docs",
+  "settings",
+  "donate",
+  "upload",
+];
+
+function isDashboardView(v: string | null): v is DashboardView {
+  return !!v && (DASHBOARD_VIEWS as readonly string[]).includes(v);
+}
+
+/* ================================================================
+ *  Provider
+ * ================================================================ */
+
+export function DeployProvider({ children }: { children: React.ReactNode }) {
+  const { showToast } = useToast();
+
+  // View aktif disinkronkan ke URL (?view=deploy) supaya refresh, tombol Back,
+  // dan bookmark bekerja seperti yang user harapkan.
+  const [view, setViewState] = React.useState<DashboardView>("dashboard");
+
+  React.useEffect(() => {
+    const readFromUrl = () => {
+      const v = new URLSearchParams(window.location.search).get("view");
+      setViewState(isDashboardView(v) ? v : "dashboard");
+    };
+    readFromUrl();
+    window.addEventListener("popstate", readFromUrl);
+    return () => window.removeEventListener("popstate", readFromUrl);
+  }, []);
+
+  const setView = React.useCallback((v: DashboardView) => {
+    setViewState(v);
+    const url = new URL(window.location.href);
+    if (v === "dashboard") url.searchParams.delete("view");
+    else url.searchParams.set("view", v);
+    if (url.href !== window.location.href) {
+      window.history.pushState(null, "", url.pathname + url.search + url.hash);
+    }
+    window.scrollTo({ top: 0 });
+  }, []);
+
+  const [history, setHistory] = useCloudStorage<HistoryItem[]>(
+    "history",
+    [],
+    "depup-history",
+  );
+  const stats = React.useMemo(() => {
+    const safeHistory = Array.isArray(history) ? history : [];
+    return {
+      total: safeHistory.length,
+      ready: safeHistory.filter((h) => h.status === "ready").length,
+      failed: safeHistory.filter((h) => h.status === "failed").length,
+    };
+  }, [history]);
+
+  const [form, setForm] = React.useState<DeployFormValues>(emptyForm);
+  React.useEffect(() => {
+    platformForCheckRef.current = form.platform;
+  }, [form.platform]);
+
+  const [deployState, setDeployState] =
+    React.useState<DeployState>(defaultDeployState);
+
+  /* ---------- auto-detect env vars needed by the repo ---------- */
+  const [repoEnvCheck, setRepoEnvCheck] = React.useState<{
+    status: "idle" | "checking" | "ok" | "error";
+    detectedEnvVars: string[];
+    framework: string | null;
+    warnings: string[];
+    validation: GithubValidation | null;
+    errorGuide: ErrorGuide | null;
+  }>(EMPTY_REPO_CHECK);
+  const [repoCheckNonce, setRepoCheckNonce] = React.useState(0);
+  const lastCheckedRepoRef = React.useRef<string | null>(null);
+  const platformForCheckRef = React.useRef<Platform>("vercel");
+  const lastDeployDataRef = React.useRef<DeployFormValues | null>(null);
+
+  React.useEffect(() => {
+    const raw = form.githubUrl?.trim();
+    if (!raw || !GITHUB_REPO_RE.test(raw)) {
+      setRepoEnvCheck(EMPTY_REPO_CHECK);
+      lastCheckedRepoRef.current = null;
+      return;
+    }
+
+    const key = `${raw}::${form.githubPat}::${repoCheckNonce}`;
+    if (lastCheckedRepoRef.current === key) return;
+
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      lastCheckedRepoRef.current = key;
+      setRepoEnvCheck((prev) => ({ ...prev, status: "checking", errorGuide: null }));
+      try {
+        const result = await callApi<GithubValidation>("/api/github/validate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ githubUrl: raw, githubPat: form.githubPat }),
+        });
+        if (cancelled) return;
+        // The env-var line is already shown separately (with the auto-fill
+        // callout below), so drop it here to avoid saying the same thing twice.
+        const otherWarnings = result.warnings.filter(
+          (w) => !w.startsWith("Repo ini kemungkinan butuh env var"),
+        );
+        setRepoEnvCheck({
+          status: "ok",
+          detectedEnvVars: result.detectedEnvVars,
+          framework: result.framework,
+          warnings: otherWarnings,
+          validation: result,
+          errorGuide: null,
+        });
+        // Auto-fill the Environment Variables step with `KEY=` placeholders
+        // for anything detected — only when the user hasn't typed anything
+        // there yet, so this never clobbers a value they already entered.
+        if (result.detectedEnvVars.length > 0) {
+          setForm((prev) => {
+            if (prev.envText.trim()) return prev;
+            const template = result.detectedEnvVars.map((k) => `${k}=`).join("\n");
+            return { ...prev, envText: template };
+          });
+        }
+      } catch (err) {
+        if (!cancelled)
+          setRepoEnvCheck({
+            ...EMPTY_REPO_CHECK,
+            status: "error",
+            errorGuide: toFriendlyError(err, { platform: platformForCheckRef.current, stage: "check" }),
+          });
+      }
+    }, 700);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [form.githubUrl, form.githubPat, repoCheckNonce]);
+
+  const recheckRepo = React.useCallback(() => {
+    lastCheckedRepoRef.current = null;
+    setRepoCheckNonce((n) => n + 1);
+  }, []);
+
+  const [domains, setDomains] = useCloudStorage<DomainItem[]>(
+    "domains",
+    [],
+    "depup-domains",
+  );
+  const [envVars, setEnvVars] = useCloudStorage<EnvItem[]>(
+    "envVars",
+    [],
+    "depup-env",
+  );
+  const [settingsTokens] = useCloudStorage<SettingsTokens>(
+    "settingsTokens",
+    DEFAULT_SETTINGS_TOKENS,
+    SETTINGS_TOKENS_KEY,
+  );
+  const vercelToken = settingsTokens.vercelToken;
+  const cloudflareToken = settingsTokens.cloudflareToken;
+  const cloudflareAccountId = settingsTokens.cloudflareAccountId ?? "";
+  const railwayToken = settingsTokens.railwayToken;
+
+  const [syncingProjects, setSyncingProjects] = React.useState(false);
+  const [deletingProject, setDeletingProject] = React.useState<string | null>(
+    null,
+  );
+  const [syncingEnvVars, setSyncingEnvVars] = React.useState(false);
+  const [syncingDomains, setSyncingDomains] = React.useState(false);
+
+  /* ---------- saved Vercel token ---------- */
+  const [savedVercelToken, setSavedVercelToken] = React.useState<{
+    token: string;
+    username: string;
+  } | null>(null);
+  const [savedVercelTokenStatus, setSavedVercelTokenStatus] = React.useState<
+    "idle" | "checking" | "ok" | "invalid"
+  >("idle");
+
+  React.useEffect(() => {
+    let cancelled = false;
+    if (!vercelToken) {
+      setSavedVercelToken(null);
+      setSavedVercelTokenStatus("idle");
+      return;
+    }
+    setSavedVercelTokenStatus("checking");
+    (async () => {
+      try {
+        const user = await callApi<{ username: string; email: string | null }>(
+          "/api/vercel/whoami",
+          { headers: { "x-vercel-token": vercelToken } },
+        );
+        if (cancelled) return;
+        setSavedVercelToken({ token: vercelToken, username: user.username });
+        setSavedVercelTokenStatus("ok");
+      } catch {
+        if (cancelled) return;
+        setSavedVercelToken(null);
+        setSavedVercelTokenStatus("invalid");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [vercelToken]);
+
+  /* ---------- saved Cloudflare token ---------- */
+  const [savedCloudflareToken, setSavedCloudflareToken] = React.useState<{
+    token: string;
+    accountId: string;
+    accountName: string;
+  } | null>(null);
+  const [savedCloudflareTokenStatus, setSavedCloudflareTokenStatus] =
+    React.useState<
+      "idle" | "checking" | "ok" | "invalid" | "needs_account"
+    >("idle");
+  const [cloudflareAccounts, setCloudflareAccounts] = React.useState<
+    CloudflareAccountInfo[]
+  >([]);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    if (!cloudflareToken) {
+      setSavedCloudflareToken(null);
+      setSavedCloudflareTokenStatus("idle");
+      setCloudflareAccounts([]);
+      return;
+    }
+    setSavedCloudflareTokenStatus("checking");
+    (async () => {
+      try {
+        const { accounts } = await callApi<{
+          accounts: CloudflareAccountInfo[];
+        }>("/api/cloudflare/whoami", {
+          headers: { "x-cloudflare-token": cloudflareToken },
+        });
+        if (cancelled) return;
+        setCloudflareAccounts(accounts);
+        const chosen =
+          accounts.find((a) => a.id === cloudflareAccountId) ??
+          (accounts.length === 1 ? accounts[0] : undefined);
+        if (chosen) {
+          setSavedCloudflareToken({
+            token: cloudflareToken,
+            accountId: chosen.id,
+            accountName: chosen.name,
+          });
+          setSavedCloudflareTokenStatus("ok");
+        } else {
+          setSavedCloudflareToken(null);
+          setSavedCloudflareTokenStatus("needs_account");
+        }
+      } catch {
+        if (cancelled) return;
+        setSavedCloudflareToken(null);
+        setCloudflareAccounts([]);
+        setSavedCloudflareTokenStatus("invalid");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [cloudflareToken, cloudflareAccountId]);
+
+  /* ---------- saved Railway token ---------- */
+  const [savedRailwayToken, setSavedRailwayToken] = React.useState<{
+    token: string;
+    name: string;
+  } | null>(null);
+  const [savedRailwayTokenStatus, setSavedRailwayTokenStatus] = React.useState<
+    "idle" | "checking" | "ok" | "invalid"
+  >("idle");
+
+  React.useEffect(() => {
+    let cancelled = false;
+    if (!railwayToken) {
+      setSavedRailwayToken(null);
+      setSavedRailwayTokenStatus("idle");
+      return;
+    }
+    setSavedRailwayTokenStatus("checking");
+    (async () => {
+      try {
+        const user = await callApi<RailwayUserInfo>("/api/railway/whoami", {
+          headers: { "x-railway-token": railwayToken },
+        });
+        if (cancelled) return;
+        setSavedRailwayToken({ token: railwayToken, name: user.name ?? user.email ?? user.id });
+        setSavedRailwayTokenStatus("ok");
+      } catch {
+        if (cancelled) return;
+        setSavedRailwayToken(null);
+        setSavedRailwayTokenStatus("invalid");
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [railwayToken]);
+
+  /* ---------- GitHub connection (Cloudflare Pages App) ---------- */
+  const [githubConnectionStatus, setGithubConnectionStatus] = React.useState<{
+    status: "idle" | "checking" | "connected" | "unknown";
+    connectUrl: string | null;
+  }>({ status: "idle", connectUrl: null });
+
+  const checkGithubConnection = React.useCallback(async () => {
+    if (!savedCloudflareToken) {
+      setGithubConnectionStatus({ status: "idle", connectUrl: null });
+      return;
+    }
+    setGithubConnectionStatus((prev) => ({ ...prev, status: "checking" }));
+    try {
+      const result = await callApi<GithubConnectionStatus>(
+        `/api/cloudflare/github-status?accountId=${encodeURIComponent(
+          savedCloudflareToken.accountId,
+        )}`,
+        { headers: { "x-cloudflare-token": savedCloudflareToken.token } },
+      );
+      setGithubConnectionStatus({
+        status: result.status,
+        connectUrl: result.connectUrl,
+      });
+    } catch {
+      setGithubConnectionStatus({ status: "unknown", connectUrl: null });
+    }
+  }, [savedCloudflareToken]);
+
+  React.useEffect(() => {
+    void checkGithubConnection();
+  }, [checkGithubConnection]);
+
+  const intervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+
+  React.useEffect(() => {
+    return () => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+    };
+  }, []);
+
+  const setFormField = React.useCallback(
+    <K extends keyof DeployFormValues>(
+      key: K,
+      value: DeployFormValues[K],
+    ) => {
+      setForm((prev) => ({ ...prev, [key]: value }));
+    },
+    [],
+  );
+
+  const platformTokenLabel = `${form.platform
+    .charAt(0)
+    .toUpperCase()}${form.platform.slice(1)} Token`;
+
+  const addHistory = React.useCallback(
+    (
+      name: string,
+      platform: Platform,
+      domain: string,
+      status: HistoryItem["status"] = "ready",
+    ) => {
+      const item: HistoryItem = {
+        id: `${Date.now()}`,
+        name,
+        platform,
+        domain: normalizeDeployDomain(domain, platform),
+        date: formatDate(new Date()),
+        status,
+      };
+      setHistory((prev) => {
+        const safePrev = Array.isArray(prev) ? prev : [];
+        const next = [item, ...safePrev];
+        return next.length > MAX_HISTORY ? next.slice(0, MAX_HISTORY) : next;
+      });
+    },
+    [setHistory],
+  );
+
+  /* ---------- deploy helpers ---------- */
+
+  const beginDeploy = React.useCallback(() => {
+    setDeployState({ ...defaultDeployState, status: "deploying" });
+  }, []);
+
+  /**
+   * Menandai deploy gagal dan menyiapkan penjelasan yang mudah dipahami.
+   * `source` boleh Error apa pun (ApiRequestError, TypeError jaringan, dst.).
+   */
+  const failDeploy = React.useCallback(
+    (
+      data: DeployFormValues,
+      source: unknown,
+      stage: ErrorStage = "create",
+      validation?: GithubValidation,
+    ) => {
+      const projectName =
+        (data.projectName || "my-project").trim() || "my-project";
+      const guide = toFriendlyError(source, {
+        platform: data.platform,
+        stage,
+        project: validation?.project,
+        repoFullName: validation?.fullName,
+      });
+      setDeployState((prev) => ({
+        ...prev,
+        status: "error",
+        title: guide.title,
+        subtitle: guide.message,
+        error: guide.message,
+        errorGuide: guide,
+      }));
+      // Repo yang ditolak SEBELUM deploy dimulai tidak perlu masuk riwayat "gagal".
+      if (stage !== "check") addHistory(projectName, data.platform, "-", "failed");
+    },
+    [addHistory],
+  );
+
+  /**
+   * Gerbang kecocokan: dipanggil tepat setelah repo dicek. Kalau jenis project
+   * tidak cocok dengan platform tujuan, deploy DIHENTIKAN di sini (belum ada
+   * yang dibuat di platform) dan user diberi penjelasan + panduan manual.
+   * Mengembalikan true kalau deploy harus berhenti.
+   */
+  const stopIfIncompatible = React.useCallback(
+    (data: DeployFormValues, validation: GithubValidation): boolean => {
+      const compat = validation.compat[data.platform];
+      if (compat.level === "blocked") {
+        failDeploy(
+          data,
+          new ApiRequestError(compat.guide?.message ?? compat.summary, {
+            code: validation.project.type === "empty" ? "empty_repo" : "unsupported_project",
+            guide: compat.guide,
+          }),
+          "check",
+          validation,
+        );
+        return true;
+      }
+      compat.notes.forEach((n) => showToast(n));
+      return false;
+    },
+    [failDeploy, showToast],
+  );
+
+  const resetDeployState = React.useCallback(() => {
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    setDeployState(defaultDeployState);
+  }, []);
+
+  /**
+   * Env var yang dikirim saat deploy sudah terpasang di platform — catat juga
+   * di halaman Environment (per-project, tertandai "synced") supaya langsung
+   * terlihat dan bisa dikelola di sana. Tidak menimpa entri yang sudah ada.
+   */
+  const recordDeployEnv = React.useCallback(
+    (project: string, platform: Platform, envText: string | undefined) => {
+      const parsed = parseEnvText(envText);
+      const keys = Object.keys(parsed);
+      if (keys.length === 0) return;
+      const environments: ("Production" | "Preview")[] =
+        platform === "railway" ? ["Production"] : ["Production", "Preview"];
+      setEnvVars((prev) => {
+        const safePrev = Array.isArray(prev) ? prev : [];
+        const added: EnvItem[] = [];
+        let n = 0;
+        for (const key of keys) {
+          for (const environment of environments) {
+            if (safePrev.some((v) => v.key === key && v.environment === environment && v.project === project)) continue;
+            added.push({
+              id: `${Date.now()}-${n++}`,
+              key,
+              value: parsed[key],
+              environment,
+              visible: false,
+              project,
+              syncedToVercel: platform === "vercel",
+              syncedToCloudflare: platform === "cloudflare",
+              syncedToRailway: platform === "railway",
+            });
+          }
+        }
+        return added.length > 0 ? [...added, ...safePrev] : safePrev;
+      });
+      showToast(`${keys.length} env var ikut terpasang & tercatat di halaman Environment.`);
+    },
+    [setEnvVars, showToast],
+  );
+
+  /* ---------- Vercel ---------- */
+  const startVercelDeploy = React.useCallback(
+    async (data: DeployFormValues) => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      beginDeploy();
+      const projectName =
+        (data.projectName || "my-project").trim() || "my-project";
+
+      let validation: GithubValidation;
+      try {
+        validation = await callApi<GithubValidation>("/api/github/validate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            githubUrl: data.githubUrl,
+            githubPat: data.githubPat,
+          }),
+        });
+      } catch (err) {
+        failDeploy(data, err, "check");
+        return;
+      }
+      // Cek jenis project dulu — jangan lanjut kalau tidak cocok dengan platform ini.
+      if (stopIfIncompatible(data, validation)) return;
+      setDeployState((prev) => ({
+        ...prev,
+        stepIndex: 1,
+        barWidth: 20,
+        subtitle: `Repo ${validation.fullName} (${validation.visibility}) terverifikasi — terdeteksi: ${validation.project.label}.`,
+      }));
+      validation.warnings.forEach((w) => showToast(w));
+
+      let created: CreateDeployResult;
+      try {
+        created = await callApi<CreateDeployResult>("/api/deploy", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            projectName,
+            githubUrl: data.githubUrl,
+            vercelToken: data.platformToken,
+            githubPat: data.githubPat,
+            envText: data.envText,
+          }),
+        });
+      } catch (err) {
+        failDeploy(data, err, "create", validation);
+        return;
+      }
+      recordDeployEnv(projectName, "vercel", data.envText);
+      setDeployState((prev) => ({ ...prev, stepIndex: 2, barWidth: 40 }));
+
+      intervalRef.current = setInterval(async () => {
+        let status: DeployStatusResult;
+        try {
+          status = await callApi<DeployStatusResult>(
+            `/api/deploy/${created.deploymentId}`,
+            { headers: { "x-vercel-token": data.platformToken } },
+          );
+        } catch (err) {
+          if (intervalRef.current) clearInterval(intervalRef.current);
+          failDeploy(data, err, "status", validation);
+          return;
+        }
+        if (
+          status.readyState === "BUILDING" ||
+          status.readyState === "INITIALIZING"
+        ) {
+          setDeployState((prev) =>
+            prev.stepIndex < 3
+              ? { ...prev, stepIndex: 3, barWidth: 70 }
+              : prev,
+          );
+          return;
+        }
+        if (status.readyState === "READY") {
+          if (intervalRef.current) clearInterval(intervalRef.current);
+
+          const scopeMatch = status.inspectorUrl.match(
+            /^https:\/\/vercel\.com\/([^/]+)\/([^/]+)/,
+          );
+          const analyticsUrl = scopeMatch
+            ? `https://vercel.com/${scopeMatch[1]}/${scopeMatch[2]}/analytics`
+            : undefined;
+
+          setDeployState((prev) => ({
+            ...prev,
+            status: "success",
+            stepIndex: 5,
+            barWidth: 100,
+            title: "Deploy Berhasil!",
+            subtitle: `Project ${projectName} siap di ${status.url}`,
+            result: {
+              name: projectName,
+              domain: status.url,
+              inspectorUrl: status.inspectorUrl,
+              analyticsEnabled: null,
+              analyticsUrl,
+            },
+          }));
+          addHistory(projectName, "vercel", status.url, "ready");
+
+          void (async () => {
+            try {
+              const projectStatus = await callApi<ProjectStatusResult>(
+                `/api/vercel/status?project=${encodeURIComponent(projectName)}`,
+                { headers: { "x-vercel-token": data.platformToken } },
+              );
+              setDeployState((prev) =>
+                prev.result
+                  ? {
+                      ...prev,
+                      result: {
+                        ...prev.result,
+                        analyticsEnabled: projectStatus.webAnalyticsEnabled,
+                      },
+                    }
+                  : prev,
+              );
+            } catch {
+              setDeployState((prev) =>
+                prev.result
+                  ? {
+                      ...prev,
+                      result: { ...prev.result, analyticsEnabled: null },
+                    }
+                  : prev,
+              );
+            }
+          })();
+          return;
+        }
+        if (
+          status.readyState === "ERROR" ||
+          status.readyState === "CANCELED"
+        ) {
+          if (intervalRef.current) clearInterval(intervalRef.current);
+          failDeploy(
+            data,
+            new Error(status.errorMessage ?? "Build gagal di Vercel. Cek inspector url untuk detail log."),
+            "build",
+            validation,
+          );
+        }
+      }, POLL_INTERVAL_MS);
+    },
+    [addHistory, beginDeploy, failDeploy, recordDeployEnv, showToast, stopIfIncompatible],
+  );
+
+  /* ---------- Cloudflare ---------- */
+  const startCloudflareDeploy = React.useCallback(
+    async (data: DeployFormValues) => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      const cfToken = (data.platformToken ?? "").trim();
+      const accountId = (data.accountId ?? "").trim();
+      if (!cfToken || !accountId) {
+        showToast("Cloudflare Token & Account ID wajib diisi.");
+        return;
+      }
+      beginDeploy();
+      const projectName =
+        (data.projectName || "my-project").trim() || "my-project";
+
+      let validation: GithubValidation;
+      try {
+        validation = await callApi<GithubValidation>("/api/github/validate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            githubUrl: data.githubUrl,
+            githubPat: data.githubPat,
+          }),
+        });
+      } catch (err) {
+        failDeploy(data, err, "check");
+        return;
+      }
+      // Cek jenis project dulu — jangan lanjut kalau tidak cocok dengan platform ini.
+      if (stopIfIncompatible(data, validation)) return;
+      setDeployState((prev) => ({
+        ...prev,
+        stepIndex: 1,
+        barWidth: 20,
+        subtitle: `Repo ${validation.fullName} (${validation.visibility}) terverifikasi — terdeteksi: ${validation.project.label}.`,
+      }));
+      validation.warnings.forEach((w) => showToast(w));
+
+      let created: CreateCloudflareDeployResult;
+      try {
+        created = await callApi<CreateCloudflareDeployResult>(
+          "/api/cloudflare/deploy",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              projectName,
+              githubUrl: data.githubUrl,
+              cloudflareToken: cfToken,
+              accountId,
+              githubPat: data.githubPat,
+              buildCommand: data.buildCommand,
+              outputDir: data.outputDir,
+              envText: data.envText,
+            }),
+          },
+        );
+        recordDeployEnv(projectName, "cloudflare", data.envText);
+      } catch (err) {
+        if (
+          (err instanceof ApiRequestError && err.code === "github_not_connected") ||
+          (err instanceof Error &&
+            err.message.toLowerCase().includes("github belum terhubung"))
+        ) {
+          void checkGithubConnection();
+        }
+        failDeploy(data, err, "create", validation);
+        return;
+      }
+      if (created.frameworkWarning) showToast(created.frameworkWarning);
+      setDeployState((prev) => ({ ...prev, stepIndex: 2, barWidth: 40 }));
+
+      intervalRef.current = setInterval(async () => {
+        let status: CloudflareDeployStatusResult;
+        try {
+          status = await callApi<CloudflareDeployStatusResult>(
+            `/api/cloudflare/deploy/${created.deploymentId}?project=${encodeURIComponent(
+              projectName,
+            )}&accountId=${encodeURIComponent(accountId)}`,
+            { headers: { "x-cloudflare-token": cfToken } },
+          );
+        } catch (err) {
+          if (intervalRef.current) clearInterval(intervalRef.current);
+          failDeploy(data, err, "status", validation);
+          return;
+        }
+        if (
+          status.readyState === "BUILDING" ||
+          status.readyState === "INITIALIZING" ||
+          status.readyState === "QUEUED"
+        ) {
+          setDeployState((prev) =>
+            prev.stepIndex < 3
+              ? { ...prev, stepIndex: 3, barWidth: 70 }
+              : prev,
+          );
+          return;
+        }
+        if (status.readyState === "READY") {
+          if (intervalRef.current) clearInterval(intervalRef.current);
+          setDeployState((prev) => ({
+            ...prev,
+            status: "success",
+            stepIndex: 5,
+            barWidth: 100,
+            title: "Deploy Berhasil!",
+            subtitle: `Project ${projectName} siap di ${status.url}`,
+            result: {
+              name: projectName,
+              domain: status.url,
+              inspectorUrl: status.inspectorUrl,
+            },
+          }));
+          addHistory(projectName, "cloudflare", status.url, "ready");
+          return;
+        }
+        if (
+          status.readyState === "ERROR" ||
+          status.readyState === "CANCELED"
+        ) {
+          if (intervalRef.current) clearInterval(intervalRef.current);
+          failDeploy(
+            data,
+            new Error(status.errorMessage ?? "Build gagal di Cloudflare Pages. Cek dashboard untuk detail log."),
+            "build",
+            validation,
+          );
+        }
+      }, POLL_INTERVAL_MS);
+    },
+    [addHistory, beginDeploy, checkGithubConnection, failDeploy, recordDeployEnv, showToast, stopIfIncompatible],
+  );
+
+  /* ---------- Railway ---------- */
+  const startRailwayDeploy = React.useCallback(
+    async (data: DeployFormValues) => {
+      if (intervalRef.current) clearInterval(intervalRef.current);
+      const railwayTokenValue = (data.platformToken ?? "").trim();
+      if (!railwayTokenValue) {
+        showToast("Railway Token wajib diisi.");
+        return;
+      }
+      beginDeploy();
+      const projectName =
+        (data.projectName || "my-project").trim() || "my-project";
+
+      let validation: GithubValidation;
+      try {
+        validation = await callApi<GithubValidation>("/api/github/validate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            githubUrl: data.githubUrl,
+            githubPat: data.githubPat,
+          }),
+        });
+      } catch (err) {
+        failDeploy(data, err, "check");
+        return;
+      }
+      // Cek jenis project dulu — jangan lanjut kalau tidak cocok dengan platform ini.
+      if (stopIfIncompatible(data, validation)) return;
+      setDeployState((prev) => ({
+        ...prev,
+        stepIndex: 1,
+        barWidth: 20,
+        subtitle: `Repo ${validation.fullName} (${validation.visibility}) terverifikasi — terdeteksi: ${validation.project.label}.`,
+      }));
+      validation.warnings.forEach((w) => showToast(w));
+
+      let created: CreateRailwayDeployResult;
+      try {
+        created = await callApi<CreateRailwayDeployResult>(
+          "/api/railway/deploy",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              projectName,
+              githubUrl: data.githubUrl,
+              railwayToken: railwayTokenValue,
+              githubPat: data.githubPat,
+              startCommand: data.startCommand,
+              envText: data.envText,
+            }),
+          },
+        );
+      } catch (err) {
+        failDeploy(data, err, "create", validation);
+        return;
+      }
+      recordDeployEnv(created.name || projectName, "railway", data.envText);
+      setDeployState((prev) => ({ ...prev, stepIndex: 2, barWidth: 40 }));
+
+      intervalRef.current = setInterval(async () => {
+        let status: RailwayDeployStatusResult;
+        try {
+          status = await callApi<RailwayDeployStatusResult>(
+            `/api/railway/deploy/${created.deploymentId}`,
+            { headers: { "x-railway-token": railwayTokenValue } },
+          );
+        } catch (err) {
+          if (intervalRef.current) clearInterval(intervalRef.current);
+          failDeploy(data, err, "status", validation);
+          return;
+        }
+        if (status.readyState === "BUILDING" || status.readyState === "QUEUED") {
+          setDeployState((prev) =>
+            prev.stepIndex < 3
+              ? { ...prev, stepIndex: 3, barWidth: 70 }
+              : prev,
+          );
+          return;
+        }
+        if (status.readyState === "READY") {
+          if (intervalRef.current) clearInterval(intervalRef.current);
+          // Use the project's *actual* Railway name, not the raw form input —
+          // createRailwayDeployment can silently reuse an existing project
+          // (matched by repo) that's named differently than what was typed
+          // this time. Saving the typed name instead of the real one meant
+          // every later status/sync check did an exact-name lookup that
+          // could never match, got read as "deleted", and the project
+          // vanished from Depup's history on its own right after a
+          // successful deploy.
+          const actualName = created.name || projectName;
+          const domain = status.url || created.url || resolveDomain(actualName, "railway");
+          setDeployState((prev) => ({
+            ...prev,
+            status: "success",
+            stepIndex: 5,
+            barWidth: 100,
+            title: "Deploy Berhasil!",
+            subtitle: `Project ${actualName} siap di ${domain}`,
+            result: {
+              name: actualName,
+              domain,
+              inspectorUrl: status.inspectorUrl,
+            },
+          }));
+          addHistory(actualName, "railway", domain, "ready");
+          return;
+        }
+        if (
+          status.readyState === "ERROR" ||
+          status.readyState === "CANCELED"
+        ) {
+          if (intervalRef.current) clearInterval(intervalRef.current);
+          failDeploy(
+            data,
+            new Error(status.errorMessage ?? "Build gagal di Railway. Cek log di dashboard Railway untuk detail."),
+            "build",
+            validation,
+          );
+        }
+      }, POLL_INTERVAL_MS);
+    },
+    [addHistory, beginDeploy, failDeploy, recordDeployEnv, showToast, stopIfIncompatible],
+  );
+
+  /* ---------- submit ---------- */
+  const submitDeploy = React.useCallback(
+    (e: React.FormEvent<HTMLFormElement>) => {
+      e.preventDefault();
+      const repoCandidate = (form.githubUrl || form.projectName || "").trim();
+      if (!GITHUB_REPO_RE.test(repoCandidate)) {
+        showToast("Format URL GitHub belum benar");
+        return;
+      }
+      lastDeployDataRef.current = form;
+      if (form.platform === "vercel") {
+        void startVercelDeploy(form);
+      } else if (form.platform === "cloudflare") {
+        void startCloudflareDeploy(form);
+      } else if (form.platform === "railway") {
+        void startRailwayDeploy(form);
+      } else {
+        showToast("Pilih platform tujuan deploy dulu.");
+      }
+    },
+    [
+      form,
+      showToast,
+      startCloudflareDeploy,
+      startRailwayDeploy,
+      startVercelDeploy,
+    ],
+  );
+
+  /** Ulangi deploy terakhir dengan isi form yang sama (tombol "Coba lagi" di modal error). */
+  const retryDeploy = React.useCallback(() => {
+    const data = lastDeployDataRef.current ?? form;
+    if (data.platform === "vercel") void startVercelDeploy(data);
+    else if (data.platform === "cloudflare") void startCloudflareDeploy(data);
+    else if (data.platform === "railway") void startRailwayDeploy(data);
+  }, [form, startCloudflareDeploy, startRailwayDeploy, startVercelDeploy]);
+
+  /** Dipakai fitur Upload: deploy repo yang baru di-push, memakai token tersimpan. */
+  const deployFromValues = React.useCallback(
+    (data: DeployFormValues) => {
+      setForm(data);
+      lastDeployDataRef.current = data;
+      if (data.platform === "vercel") void startVercelDeploy(data);
+      else if (data.platform === "cloudflare") void startCloudflareDeploy(data);
+      else if (data.platform === "railway") void startRailwayDeploy(data);
+    },
+    [startCloudflareDeploy, startRailwayDeploy, startVercelDeploy],
+  );
+
+  /* legacy no-ops */
+
+  const redeploy = React.useCallback(
+    (name: string) => {
+      setForm((prev) => ({ ...prev, projectName: name }));
+      setView("deploy");
+      showToast("Project dimuat ke form deploy");
+    },
+    [showToast, setView],
+  );
+
+  /* ================================================================
+   *  Legacy modal view + handlers (dipakai DeployModal.tsx)
+   * ================================================================ */
+
+  const modal: ModalState = React.useMemo(
+    () => ({
+      open: deployState.status !== "idle",
+      stepIndex: deployState.stepIndex,
+      barWidth: deployState.barWidth,
+      title: deployState.title,
+      subtitle: deployState.subtitle,
+      resultVisible:
+        deployState.status === "success" || deployState.status === "error",
+      closeVisible:
+        deployState.status === "success" || deployState.status === "error",
+      result: deployState.result,
+      error: deployState.error,
+    }),
+    [deployState],
+  );
+
+  const closeModal = React.useCallback(() => {
+    resetDeployState();
+  }, [resetDeployState]);
+
+  const handleCloseAfterDeploy = React.useCallback(() => {
+    const failed = deployState.status === "error";
+    resetDeployState();
+    if (failed) {
+      showToast("Deploy gagal — cek pesan error dan coba lagi.");
+      return;
+    }
+    setView("dashboard");
+    setForm(emptyForm);
+    showToast("Deploy berhasil — cek dashboard!");
+  }, [deployState.status, resetDeployState, showToast, setView]);
+
+  /* ================================================================
+   *  Domain / Env / Sync / Delete — tidak berubah dari aslinya
+   * ================================================================ */
+
+  /**
+   * How long after a deploy we hold off on letting sync treat a "not found"
+   * result as real. `HistoryItem.id` is `Date.now()` at deploy time (see
+   * `addHistory`), so this is exact to the millisecond.
+   *
+   * This exists because the two previous Railway "project vanishes after a
+   * successful deploy" fixes (pagination in `listProjects`, saving the
+   * platform's *actual* resolved name instead of the typed one) turned out
+   * not to be the whole story: even with the right name and full pagination,
+   * a project that was *just* created can still come back as "not found" if
+   * the remote platform's list/read endpoint hasn't caught up yet with the
+   * mutation that created it (ordinary read-after-write lag). The user's
+   * report — the project shows up in history right after a successful
+   * deploy, then vanishes the moment the Projects page's auto-sync runs —
+   * matches this exactly. A newly-created entry simply shouldn't be treated
+   * as delete-eligible yet.
+   */
+  const RECENTLY_DEPLOYED_GRACE_MS = 3 * 60 * 1000;
+
+  function isRecentlyDeployed(item: HistoryItem): boolean {
+    const createdAt = Number(item.id);
+    return Number.isFinite(createdAt) && Date.now() - createdAt < RECENTLY_DEPLOYED_GRACE_MS;
+  }
+
+  const syncProjectStatus = React.useCallback(
+    async (
+      name: string,
+      platform: Platform,
+    ): Promise<"exists" | "deleted" | "skipped" | "error"> => {
+      // Project identity is (name + platform), never name alone — the same
+      // project name can legitimately exist on more than one platform (e.g.
+      // deployed to Vercel once, then again to Railway under the same
+      // name). Matching on name only here previously meant checking one
+      // platform's status could wipe *every* history entry sharing that
+      // name, including ones on a completely different, still-very-much-
+      // alive platform.
+      const safeHistory = Array.isArray(history) ? history : [];
+      const targetItem = safeHistory.find(
+        (h) => h.name === name && h.platform === platform,
+      );
+      if (!targetItem) return "skipped";
+      // Already marked deleted — nothing left to confirm.
+      if (targetItem.status === "deleted") return "skipped";
+
+      // Give a freshly-deployed project a grace period before it's even
+      // eligible to be checked — see RECENTLY_DEPLOYED_GRACE_MS above.
+      if (isRecentlyDeployed(targetItem)) return "skipped";
+
+      const removeThisEntry = () => {
+        // Keep the row — mark it "deleted" instead of filtering it out —
+        // so the Dashboard's "Riwayat Deploy" table stays a permanent
+        // record of everything ever deployed through Depup, proof included,
+        // even after the real project is gone. The Projects page hides
+        // "deleted" entries from its active-project cards (see
+        // groupByProject in ProjectsView.tsx), so this doesn't bring a dead
+        // project back as if it were still live.
+        setHistory((prev) =>
+          (Array.isArray(prev) ? prev : []).map((h) =>
+            h.name === name && h.platform === platform
+              ? { ...h, status: "deleted" as const }
+              : h,
+          ),
+        );
+      };
+
+      // A single "not found" can also just mean the remote platform hasn't
+      // finished propagating a very recent write yet (read-after-write lag),
+      // not that the project is actually gone. Require two "not found"
+      // results a few seconds apart, and only remove the local entry once
+      // both agree, so a momentary lag never gets misread as a deletion.
+      const confirmMissingThenDelete = async (
+        checkOnce: () => Promise<boolean>,
+      ): Promise<"exists" | "deleted" | "error"> => {
+        try {
+          if (await checkOnce()) return "exists";
+        } catch {
+          return "error";
+        }
+        await new Promise((resolve) => setTimeout(resolve, 4000));
+        try {
+          if (await checkOnce()) return "exists";
+        } catch {
+          return "error";
+        }
+        removeThisEntry();
+        return "deleted";
+      };
+
+      if (platform === "cloudflare") {
+        if (!savedCloudflareToken) return "skipped";
+        return confirmMissingThenDelete(async () => {
+          const status = await callApi<CloudflareProjectStatusResult>(
+            `/api/cloudflare/status?project=${encodeURIComponent(
+              name,
+            )}&accountId=${encodeURIComponent(
+              savedCloudflareToken.accountId,
+            )}`,
+            { headers: { "x-cloudflare-token": savedCloudflareToken.token } },
+          );
+          // Perbaiki URL lama yang tersimpan sebagai URL per-deployment
+          // (mis. 8e71bbe8.nama.pages.dev) menjadi domain utama project.
+          if (status.exists && status.subdomain) {
+            const stable = normalizeDeployDomain(status.subdomain, "cloudflare");
+            setHistory((prev) =>
+              Array.isArray(prev)
+                ? prev.map((h) =>
+                    h.platform === "cloudflare" &&
+                    h.name === name &&
+                    h.status !== "deleted" &&
+                    h.domain !== "-" &&
+                    h.domain !== stable
+                      ? { ...h, domain: stable }
+                      : h,
+                  )
+                : prev,
+            );
+          }
+          return status.exists;
+        });
+      }
+      if (platform === "railway") {
+        if (!savedRailwayToken) return "skipped";
+        return confirmMissingThenDelete(async () => {
+          const status = await callApi<RailwayProjectStatusResult>(
+            `/api/railway/status?project=${encodeURIComponent(name)}`,
+            { headers: { "x-railway-token": savedRailwayToken.token } },
+          );
+          return status.exists;
+        });
+      }
+      if (platform === "vercel") {
+        if (!vercelToken) return "skipped";
+        return confirmMissingThenDelete(async () => {
+          const status = await callApi<ProjectStatusResult>(
+            `/api/vercel/status?project=${encodeURIComponent(name)}`,
+            { headers: { "x-vercel-token": vercelToken } },
+          );
+          return status.exists;
+        });
+      }
+      // Any future platform with no real API behind it yet —
+      // nothing to check against, so leave it alone rather than guessing.
+      return "skipped";
+    },
+    [history, savedCloudflareToken, savedRailwayToken, vercelToken, setHistory],
+  );
+
+  const syncAllProjects = React.useCallback(async () => {
+    const safeHistory = Array.isArray(history) ? history : [];
+    // Key by name+platform, not name alone — two different platforms can
+    // share a project name and each needs to be checked against its own
+    // remote independently (see syncProjectStatus).
+    const pairs = new Map<string, { name: string; platform: Platform }>();
+    for (const h of safeHistory) {
+      // Skip entries already marked deleted — nothing left to check, and
+      // re-checking them on every sync would just waste requests (and
+      // trigger the double-check-before-delete delay in syncProjectStatus
+      // for no reason).
+      if (h.status === "deleted") continue;
+      const canCheck =
+        (h.platform === "vercel" && vercelToken) ||
+        (h.platform === "cloudflare" && savedCloudflareToken) ||
+        (h.platform === "railway" && savedRailwayToken);
+      if (!canCheck) continue;
+      pairs.set(`${h.name}::${h.platform}`, { name: h.name, platform: h.platform });
+    }
+    if (pairs.size === 0) return;
+    setSyncingProjects(true);
+    let deletedCount = 0;
+    for (const { name, platform } of pairs.values()) {
+      const result = await syncProjectStatus(name, platform);
+      if (result === "deleted") deletedCount += 1;
+    }
+    setSyncingProjects(false);
+    if (deletedCount > 0) {
+      showToast(
+        `${deletedCount} project sudah dihapus di platform aslinya — ditandai "Deleted" di riwayat (riwayatnya tetap kesimpen).`,
+      );
+    }
+  }, [
+    history,
+    syncProjectStatus,
+    vercelToken,
+    savedCloudflareToken,
+    savedRailwayToken,
+    showToast,
+  ]);
+
+  const deleteProject = React.useCallback(
+    async (
+      name: string,
+      platform: Platform,
+      options: {
+        alsoDeleteFromVercel?: boolean;
+        alsoDeleteFromCloudflare?: boolean;
+        alsoDeleteFromRailway?: boolean;
+      },
+    ) => {
+      // Look up (and later remove) strictly by name+platform — the same
+      // project name can exist on more than one platform, and deleting one
+      // must never touch the other's still-live history entry.
+      const safeHistory = Array.isArray(history) ? history : [];
+      const targetItem = safeHistory.find(
+        (h) => h.name === name && h.platform === platform,
+      );
+      const isVercelProject = targetItem?.platform === "vercel";
+      const isCloudflareProject = targetItem?.platform === "cloudflare";
+      const isRailwayProject = targetItem?.platform === "railway";
+      const alsoDelete = Boolean(
+        options.alsoDeleteFromVercel || options.alsoDeleteFromCloudflare || options.alsoDeleteFromRailway,
+      );
+
+      if (options.alsoDeleteFromVercel && isVercelProject) {
+        if (!vercelToken) {
+          showToast(
+            "Isi Vercel Token di Settings dulu untuk hapus project di Vercel.",
+          );
+          return;
+        }
+        setDeletingProject(name);
+        try {
+          await callApi(
+            `/api/vercel/project?project=${encodeURIComponent(name)}`,
+            {
+              method: "DELETE",
+              headers: { "x-vercel-token": vercelToken },
+            },
+          );
+        } catch (err) {
+          setDeletingProject(null);
+          showToast(
+            err instanceof Error
+              ? `Gagal menghapus "${name}" di Vercel: ${err.message}`
+              : `Gagal menghapus "${name}" di Vercel.`,
+          );
+          return;
+        }
+        setDeletingProject(null);
+      }
+
+      if (options.alsoDeleteFromCloudflare && isCloudflareProject) {
+        if (!savedCloudflareToken) {
+          showToast(
+            "Konek-kan Cloudflare Token di Settings dulu untuk hapus project di Cloudflare.",
+          );
+          return;
+        }
+        setDeletingProject(name);
+        try {
+          await callApi(
+            `/api/cloudflare/project?project=${encodeURIComponent(
+              name,
+            )}&accountId=${encodeURIComponent(
+              savedCloudflareToken.accountId,
+            )}`,
+            {
+              method: "DELETE",
+              headers: { "x-cloudflare-token": savedCloudflareToken.token },
+            },
+          );
+        } catch (err) {
+          setDeletingProject(null);
+          showToast(
+            err instanceof Error
+              ? `Gagal menghapus "${name}" di Cloudflare: ${err.message}`
+              : `Gagal menghapus "${name}" di Cloudflare.`,
+          );
+          return;
+        }
+        setDeletingProject(null);
+      }
+
+      if (options.alsoDeleteFromRailway && isRailwayProject) {
+        if (!savedRailwayToken) {
+          showToast(
+            "Konek-kan Railway Token di Settings dulu untuk hapus project di Railway.",
+          );
+          return;
+        }
+        setDeletingProject(name);
+        try {
+          await callApi(
+            `/api/railway/project?project=${encodeURIComponent(name)}`,
+            {
+              method: "DELETE",
+              headers: { "x-railway-token": savedRailwayToken.token },
+            },
+          );
+        } catch (err) {
+          setDeletingProject(null);
+          showToast(
+            err instanceof Error
+              ? `Gagal menghapus "${name}" di Railway: ${err.message}`
+              : `Gagal menghapus "${name}" di Railway.`,
+          );
+          return;
+        }
+        setDeletingProject(null);
+      }
+
+      if (alsoDelete) {
+        // The real project is actually gone now — keep the row as a
+        // permanent record instead of dropping it, so the Dashboard's
+        // "Riwayat Deploy" table still shows proof of what was deployed.
+        setHistory((prev) =>
+          (Array.isArray(prev) ? prev : []).map((h) =>
+            h.name === name && h.platform === platform
+              ? { ...h, status: "deleted" as const }
+              : h,
+          ),
+        );
+      } else {
+        // "Hapus di Depup saja" — the real project is still alive on its
+        // platform, so nothing was actually deleted; this just stops
+        // Depup from tracking it. There's no deletion to keep a record of,
+        // so the entry is simply removed.
+        setHistory((prev) =>
+          (Array.isArray(prev) ? prev : []).filter(
+            (h) => !(h.name === name && h.platform === platform),
+          ),
+        );
+      }
+      showToast(
+        alsoDelete
+          ? `Project "${name}" dihapus dari Depup & ${
+              isVercelProject ? "Vercel" : isCloudflareProject ? "Cloudflare" : "Railway"
+            }.`
+          : `Project "${name}" dihapus dari Depup (tetap ada di platform aslinya).`,
+      );
+    },
+    [history, setHistory, showToast, vercelToken, savedCloudflareToken, savedRailwayToken],
+  );
+
+  const fetchImportableVercelProjects = React.useCallback(async () => {
+    if (!vercelToken) {
+      throw new Error(
+        "Isi Vercel Token di Settings dulu untuk konek ke Vercel.",
+      );
+    }
+    const remote = await callApi<VercelProjectSummary[]>("/api/vercel/project", {
+      headers: { "x-vercel-token": vercelToken },
+    });
+    const safeHistory = Array.isArray(history) ? history : [];
+    // A name only marked "deleted" doesn't count as still tracked —
+    // the whole point of keeping a deleted entry around is a history
+    // record, not a reservation that blocks re-importing that same
+    // project once it's live again.
+    const existingNames = new Set(
+      safeHistory.filter((h) => h.status !== "deleted").map((h) => h.name),
+    );
+    return remote.filter((p) => !existingNames.has(p.name));
+  }, [vercelToken, history]);
+
+  const importVercelProject = React.useCallback(
+    (project: VercelProjectSummary) => {
+      const safeHistory = Array.isArray(history) ? history : [];
+      if (safeHistory.some((h) => h.name === project.name)) {
+        showToast(`Project "${project.name}" sudah ada di Depup.`);
+        return;
+      }
+      const readyState = project.latestDeploymentReadyState;
+      const status: HistoryItem["status"] =
+        readyState === "ERROR" || readyState === "CANCELED"
+          ? "failed"
+          : "ready";
+      addHistory(
+        project.name,
+        "vercel",
+        project.domain ?? `${project.name}.vercel.app`,
+        status,
+      );
+      showToast(`Project "${project.name}" berhasil diimport dari Vercel.`);
+    },
+    [history, addHistory, showToast],
+  );
+
+  const fetchImportableCloudflareProjects = React.useCallback(async () => {
+    if (!savedCloudflareToken) {
+      throw new Error(
+        "Konek-kan Cloudflare Token di Settings dulu untuk konek ke Cloudflare.",
+      );
+    }
+    const remote = await callApi<CloudflareProjectSummary[]>(
+      `/api/cloudflare/project?accountId=${encodeURIComponent(
+        savedCloudflareToken.accountId,
+      )}`,
+      { headers: { "x-cloudflare-token": savedCloudflareToken.token } },
+    );
+    const safeHistory = Array.isArray(history) ? history : [];
+    // A name only marked "deleted" doesn't count as still tracked —
+    // the whole point of keeping a deleted entry around is a history
+    // record, not a reservation that blocks re-importing that same
+    // project once it's live again.
+    const existingNames = new Set(
+      safeHistory.filter((h) => h.status !== "deleted").map((h) => h.name),
+    );
+    return remote.filter((p) => !existingNames.has(p.name));
+  }, [savedCloudflareToken, history]);
+
+  const importCloudflareProject = React.useCallback(
+    (project: CloudflareProjectSummary) => {
+      const safeHistory = Array.isArray(history) ? history : [];
+      if (safeHistory.some((h) => h.name === project.name)) {
+        showToast(`Project "${project.name}" sudah ada di Depup.`);
+        return;
+      }
+      const readyState = project.latestDeploymentReadyState;
+      const status: HistoryItem["status"] =
+        readyState === "ERROR" || readyState === "CANCELED"
+          ? "failed"
+          : "ready";
+      addHistory(
+        project.name,
+        "cloudflare",
+        project.domain ?? `${project.name}.pages.dev`,
+        status,
+      );
+      showToast(
+        `Project "${project.name}" berhasil diimport dari Cloudflare Pages.`,
+      );
+    },
+    [history, addHistory, showToast],
+  );
+
+  const fetchImportableRailwayProjects = React.useCallback(async () => {
+    if (!savedRailwayToken) {
+      throw new Error(
+        "Konek-kan Railway Token di Settings dulu untuk konek ke Railway.",
+      );
+    }
+    const remote = await callApi<RailwayProjectSummary[]>("/api/railway/project", {
+      headers: { "x-railway-token": savedRailwayToken.token },
+    });
+    const safeHistory = Array.isArray(history) ? history : [];
+    // A name only marked "deleted" doesn't count as still tracked —
+    // the whole point of keeping a deleted entry around is a history
+    // record, not a reservation that blocks re-importing that same
+    // project once it's live again.
+    const existingNames = new Set(
+      safeHistory.filter((h) => h.status !== "deleted").map((h) => h.name),
+    );
+    return remote.filter((p) => !existingNames.has(p.name));
+  }, [savedRailwayToken, history]);
+
+  const importRailwayProject = React.useCallback(
+    (project: RailwayProjectSummary) => {
+      const safeHistory = Array.isArray(history) ? history : [];
+      if (safeHistory.some((h) => h.name === project.name)) {
+        showToast(`Project "${project.name}" sudah ada di Depup.`);
+        return;
+      }
+      const readyState = project.latestDeploymentReadyState;
+      const status: HistoryItem["status"] =
+        readyState === "ERROR" || readyState === "CANCELED"
+          ? "failed"
+          : "ready";
+      addHistory(
+        project.name,
+        "railway",
+        project.domain ?? `${project.name}.up.railway.app`,
+        status,
+      );
+      showToast(`Project "${project.name}" berhasil diimport dari Railway.`);
+    },
+    [history, addHistory, showToast],
+  );
+
+  const syncEnvVarsForProject = React.useCallback(
+    async (project: string): Promise<"synced" | "skipped" | "error"> => {
+      const safeHistory = Array.isArray(history) ? history : [];
+      const targetItem = safeHistory.find((h) => h.name === project);
+      if (targetItem?.platform === "cloudflare") {
+        if (!savedCloudflareToken) return "skipped";
+        try {
+          const remote = await callApi<CloudflareEnvSummary[]>(
+            `/api/cloudflare/env?project=${encodeURIComponent(
+              project,
+            )}&accountId=${encodeURIComponent(
+              savedCloudflareToken.accountId,
+            )}`,
+            { headers: { "x-cloudflare-token": savedCloudflareToken.token } },
+          );
+          let removedCount = 0;
+          setEnvVars((prev) => {
+            const safePrev = Array.isArray(prev) ? prev : [];
+            return safePrev.filter((v) => {
+              if (v.project !== project || !v.syncedToCloudflare) return true;
+              const targetKey =
+                v.environment === "Production" ? "production" : "preview";
+              const stillExists = remote.some(
+                (r) => r.key === v.key && r.target.includes(targetKey),
+              );
+              if (!stillExists) removedCount += 1;
+              return stillExists;
+            });
+          });
+          if (removedCount > 0) {
+            showToast(
+              `${removedCount} secret untuk "${project}" sudah dihapus di Cloudflare — dihapus juga di sini.`,
+            );
+          }
+          return "synced";
+        } catch {
+          return "error";
+        }
+      }
+      if (targetItem?.platform === "railway") {
+        if (!savedRailwayToken) return "skipped";
+        try {
+          const remote = await callApi<RailwayEnvSummary[]>(
+            `/api/railway/env?project=${encodeURIComponent(project)}`,
+            { headers: { "x-railway-token": savedRailwayToken.token } },
+          );
+          let removedCount = 0;
+          setEnvVars((prev) => {
+            const safePrev = Array.isArray(prev) ? prev : [];
+            return safePrev.filter((v) => {
+              if (v.project !== project || !v.syncedToRailway) return true;
+              const stillExists = remote.some((r) => r.key === v.key);
+              if (!stillExists) removedCount += 1;
+              return stillExists;
+            });
+          });
+          if (removedCount > 0) {
+            showToast(
+              `${removedCount} secret untuk "${project}" sudah dihapus di Railway — dihapus juga di sini.`,
+            );
+          }
+          return "synced";
+        } catch {
+          return "error";
+        }
+      }
+      if (!vercelToken) return "skipped";
+      try {
+        const remote = await callApi<VercelEnvSummary[]>(
+          `/api/vercel/env?project=${encodeURIComponent(project)}`,
+          { headers: { "x-vercel-token": vercelToken } },
+        );
+        let removedCount = 0;
+        setEnvVars((prev) => {
+          const safePrev = Array.isArray(prev) ? prev : [];
+          return safePrev.filter((v) => {
+            if (v.project !== project || !v.syncedToVercel) return true;
+            const targetKey =
+              v.environment === "Production" ? "production" : "preview";
+            const stillExists = remote.some(
+              (r) => r.key === v.key && r.target.includes(targetKey),
+            );
+            if (!stillExists) removedCount += 1;
+            return stillExists;
+          });
+        });
+        if (removedCount > 0) {
+          showToast(
+            `${removedCount} secret untuk "${project}" sudah dihapus di Vercel — dihapus juga di sini.`,
+          );
+        }
+        return "synced";
+      } catch {
+        return "error";
+      }
+    },
+    [history, savedCloudflareToken, savedRailwayToken, vercelToken, setEnvVars, showToast],
+  );
+
+  const syncAllEnvVars = React.useCallback(async () => {
+    const safeEnvVars = Array.isArray(envVars) ? envVars : [];
+    const projects = Array.from(
+      new Set(
+        safeEnvVars
+          .filter(
+            (v) =>
+              (v.syncedToVercel && vercelToken) ||
+              (v.syncedToCloudflare && savedCloudflareToken) ||
+              (v.syncedToRailway && savedRailwayToken),
+          )
+          .map((v) => v.project),
+      ),
+    );
+    if (projects.length === 0) return;
+    setSyncingEnvVars(true);
+    for (const project of projects) {
+      await syncEnvVarsForProject(project);
+    }
+    setSyncingEnvVars(false);
+  }, [envVars, syncEnvVarsForProject, vercelToken, savedCloudflareToken, savedRailwayToken]);
+
+  const triggerAutoRedeploy = React.useCallback(
+    async (projectName: string, platform: Platform) => {
+      if (platform === "cloudflare") {
+        if (!savedCloudflareToken) return;
+        showToast(
+          `Redeploy otomatis "${projectName}" dimulai karena secret berubah...`,
+        );
+        try {
+          await callApi<RedeployResult>("/api/cloudflare/redeploy", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              project: projectName,
+              cloudflareToken: savedCloudflareToken.token,
+              accountId: savedCloudflareToken.accountId,
+            }),
+          });
+          showToast(
+            `Redeploy "${projectName}" berhasil — perubahan secret sudah live.`,
+          );
+        } catch (err) {
+          showToast(
+            err instanceof Error
+              ? `Redeploy otomatis "${projectName}" gagal: ${err.message}`
+              : `Redeploy otomatis "${projectName}" gagal.`,
+          );
+        }
+        return;
+      }
+      if (platform === "railway") {
+        if (!savedRailwayToken) return;
+        showToast(
+          `Redeploy otomatis "${projectName}" dimulai karena secret berubah...`,
+        );
+        try {
+          await callApi<RedeployResult>("/api/railway/redeploy", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              project: projectName,
+              railwayToken: savedRailwayToken.token,
+            }),
+          });
+          showToast(
+            `Redeploy "${projectName}" berhasil — perubahan secret sudah live.`,
+          );
+        } catch (err) {
+          showToast(
+            err instanceof Error
+              ? `Redeploy otomatis "${projectName}" gagal: ${err.message}`
+              : `Redeploy otomatis "${projectName}" gagal.`,
+          );
+        }
+        return;
+      }
+      if (!vercelToken) return;
+      showToast(
+        `Redeploy otomatis "${projectName}" dimulai karena secret berubah...`,
+      );
+      try {
+        await callApi<RedeployResult>("/api/vercel/redeploy", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ project: projectName, vercelToken }),
+        });
+        showToast(
+          `Redeploy "${projectName}" berhasil — perubahan secret sudah live.`,
+        );
+      } catch (err) {
+        showToast(
+          err instanceof Error
+            ? `Redeploy otomatis "${projectName}" gagal: ${err.message}`
+            : `Redeploy otomatis "${projectName}" gagal.`,
+        );
+      }
+    },
+    [vercelToken, savedCloudflareToken, savedRailwayToken, showToast],
+  );
+
+  const addDomain = React.useCallback(
+    async (domain: string, project: string, options?: { pairId?: string }) => {
+      const trimmedDomain = domain.trim();
+      if (!trimmedDomain) return;
+      const isPairCall = Boolean(options?.pairId);
+      const pairId =
+        options?.pairId ??
+        `pair-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+
+      const safeDomainsNow = Array.isArray(domains) ? domains : [];
+      const alreadyExists = safeDomainsNow.some(
+        (d) =>
+          d.project === project &&
+          d.domain.toLowerCase() === trimmedDomain.toLowerCase(),
+      );
+      if (alreadyExists) {
+        if (!isPairCall)
+          showToast(`Domain "${trimmedDomain}" sudah ada untuk project ini.`);
+        return;
+      }
+
+      const safeHistory = Array.isArray(history) ? history : [];
+      const targetItem = safeHistory.find((h) => h.name === project);
+      const canSyncVercel =
+        Boolean(vercelToken) && targetItem?.platform === "vercel";
+      const canSyncCloudflare =
+        Boolean(savedCloudflareToken) && targetItem?.platform === "cloudflare";
+      const canSyncRailway =
+        Boolean(savedRailwayToken) && targetItem?.platform === "railway";
+
+      if (!canSyncVercel && !canSyncCloudflare && !canSyncRailway) {
+        setDomains((prev) => {
+          const safePrev = Array.isArray(prev) ? prev : [];
+          return [
+            {
+              id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+              domain: trimmedDomain,
+              project,
+              status: "Pending" as const,
+              syncedToVercel: false,
+              syncedToCloudflare: false,
+              syncedToRailway: false,
+              pairId,
+            },
+            ...safePrev,
+          ];
+        });
+        if (!isPairCall) {
+          showToast(
+            targetItem?.platform === "vercel" ||
+              targetItem?.platform === "cloudflare" ||
+              targetItem?.platform === "railway"
+              ? `Domain disimpan lokal — konek-kan ${
+                  targetItem.platform === "vercel"
+                    ? "Vercel"
+                    : targetItem.platform === "cloudflare"
+                      ? "Cloudflare"
+                      : "Railway"
+                } Token di Settings untuk push otomatis.`
+              : "Domain disimpan lokal (project ini bukan platform Vercel/Cloudflare/Railway).",
+          );
+        }
+      } else if (canSyncCloudflare && savedCloudflareToken) {
+        try {
+          const result = await callApi<CloudflareDomainResult>(
+            "/api/cloudflare/domains",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                project,
+                domain: trimmedDomain,
+                cloudflareToken: savedCloudflareToken.token,
+                accountId: savedCloudflareToken.accountId,
+              }),
+            },
+          );
+          setDomains((prev) => {
+            const safePrev = Array.isArray(prev) ? prev : [];
+            return [
+              {
+                id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                domain: result.name,
+                project,
+                status: result.verified ? "Active" : "Pending",
+                syncedToCloudflare: true,
+                dns: result.dns,
+                pairId,
+              },
+              ...safePrev,
+            ];
+          });
+          if (!isPairCall) {
+            showToast(
+              result.verified
+                ? "Domain berhasil ditambahkan & terverifikasi di Cloudflare."
+                : "Domain ditambahkan di Cloudflare — arahkan DNS sesuai instruksi untuk verifikasi.",
+            );
+          }
+        } catch (err) {
+          if (isPairCall) {
+            showToast(
+              `Domain utama tersimpan, tapi gagal menambahkan pasangan "${trimmedDomain}" otomatis: ${
+                err instanceof Error ? err.message : "unknown error"
+              }`,
+            );
+            return;
+          }
+          showToast(
+            err instanceof Error
+              ? err.message
+              : "Gagal menambahkan domain ke Cloudflare.",
+          );
+          return;
+        }
+      } else if (canSyncRailway && savedRailwayToken) {
+        try {
+          const result = await callApi<RailwayDomainResult>(
+            "/api/railway/domains",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                project,
+                domain: trimmedDomain,
+                railwayToken: savedRailwayToken.token,
+              }),
+            },
+          );
+          setDomains((prev) => {
+            const safePrev = Array.isArray(prev) ? prev : [];
+            return [
+              {
+                id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                domain: result.domain,
+                project,
+                status: result.verified ? "Active" : "Pending",
+                syncedToRailway: true,
+                dns: result.dns,
+                verificationDns: result.verificationDns,
+                pairId,
+              },
+              ...safePrev,
+            ];
+          });
+          if (!isPairCall) {
+            showToast(
+              result.verified
+                ? "Domain berhasil ditambahkan & terverifikasi di Railway."
+                : "Domain ditambahkan di Railway — arahkan DNS (CNAME + TXT) sesuai instruksi untuk verifikasi.",
+            );
+          }
+        } catch (err) {
+          if (isPairCall) {
+            showToast(
+              `Domain utama tersimpan, tapi gagal menambahkan pasangan "${trimmedDomain}" otomatis: ${
+                err instanceof Error ? err.message : "unknown error"
+              }`,
+            );
+            return;
+          }
+          showToast(
+            err instanceof Error
+              ? err.message
+              : "Gagal menambahkan domain ke Railway.",
+          );
+          return;
+        }
+      } else {
+        try {
+          const result = await callApi<VercelDomainResult>(
+            "/api/vercel/domains",
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                project,
+                domain: trimmedDomain,
+                vercelToken,
+              }),
+            },
+          );
+          setDomains((prev) => {
+            const safePrev = Array.isArray(prev) ? prev : [];
+            return [
+              {
+                id: `${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+                domain: result.name,
+                project,
+                status: result.verified ? "Active" : "Pending",
+                syncedToVercel: true,
+                dns: result.dns,
+                pairId,
+              },
+              ...safePrev,
+            ];
+          });
+          if (!isPairCall) {
+            showToast(
+              result.verified
+                ? "Domain berhasil ditambahkan & terverifikasi di Vercel."
+                : "Domain ditambahkan di Vercel — arahkan DNS sesuai instruksi untuk verifikasi.",
+            );
+          }
+        } catch (err) {
+          if (isPairCall) {
+            showToast(
+              `Domain utama tersimpan, tapi gagal menambahkan pasangan "${trimmedDomain}" otomatis: ${
+                err instanceof Error ? err.message : "unknown error"
+              }`,
+            );
+            return;
+          }
+          showToast(
+            err instanceof Error
+              ? err.message
+              : "Gagal menambahkan domain ke Vercel.",
+          );
+          return;
+        }
+      }
+
+      if (!isPairCall) {
+        const pairDomain = wwwPairFor(trimmedDomain);
+        void addDomain(pairDomain, project, { pairId });
+      }
+    },
+    [
+      domains,
+      history,
+      setDomains,
+      showToast,
+      vercelToken,
+      savedCloudflareToken,
+      savedRailwayToken,
+    ],
+  );
+
+  const removeDomain = React.useCallback(
+    async (id: string) => {
+      const safeDomains = Array.isArray(domains) ? domains : [];
+      const item = safeDomains.find((d) => d.id === id);
+      if (!item) return;
+
+      const group = item.pairId
+        ? safeDomains.filter((d) => d.pairId === item.pairId)
+        : [item];
+
+      const removedIds: string[] = [];
+      for (const target of group) {
+        if (target.syncedToVercel && vercelToken) {
+          try {
+            await callApi(
+              `/api/vercel/domains/${encodeURIComponent(
+                target.domain,
+              )}?project=${encodeURIComponent(target.project)}`,
+              { method: "DELETE", headers: { "x-vercel-token": vercelToken } },
+            );
+          } catch (err) {
+            showToast(
+              err instanceof Error
+                ? `Gagal menghapus "${target.domain}" di Vercel: ${err.message}`
+                : `Gagal menghapus "${target.domain}" di Vercel.`,
+            );
+            continue;
+          }
+        } else if (target.syncedToCloudflare && savedCloudflareToken) {
+          try {
+            await callApi(
+              `/api/cloudflare/domains/${encodeURIComponent(
+                target.domain,
+              )}?project=${encodeURIComponent(
+                target.project,
+              )}&accountId=${encodeURIComponent(
+                savedCloudflareToken.accountId,
+              )}`,
+              {
+                method: "DELETE",
+                headers: {
+                  "x-cloudflare-token": savedCloudflareToken.token,
+                },
+              },
+            );
+          } catch (err) {
+            showToast(
+              err instanceof Error
+                ? `Gagal menghapus "${target.domain}" di Cloudflare: ${err.message}`
+                : `Gagal menghapus "${target.domain}" di Cloudflare.`,
+            );
+            continue;
+          }
+        } else if (target.syncedToRailway && savedRailwayToken) {
+          try {
+            await callApi(
+              `/api/railway/domains/${encodeURIComponent(
+                target.domain,
+              )}?project=${encodeURIComponent(target.project)}`,
+              {
+                method: "DELETE",
+                headers: { "x-railway-token": savedRailwayToken.token },
+              },
+            );
+          } catch (err) {
+            showToast(
+              err instanceof Error
+                ? `Gagal menghapus "${target.domain}" di Railway: ${err.message}`
+                : `Gagal menghapus "${target.domain}" di Railway.`,
+            );
+            continue;
+          }
+        }
+        removedIds.push(target.id);
+      }
+
+      if (removedIds.length === 0) return;
+
+      setDomains((prev) =>
+        (Array.isArray(prev) ? prev : []).filter(
+          (d) => !removedIds.includes(d.id),
+        ),
+      );
+
+      if (removedIds.length > 1) {
+        showToast(
+          `${removedIds.length} domain (termasuk pasangan www) berhasil dihapus.`,
+        );
+      }
+    },
+    [domains, setDomains, showToast, vercelToken, savedCloudflareToken, savedRailwayToken],
+  );
+
+  const syncDomainsForProject = React.useCallback(
+    async (project: string): Promise<"synced" | "skipped" | "error"> => {
+      const safeHistory = Array.isArray(history) ? history : [];
+      const targetItem = safeHistory.find((h) => h.name === project);
+      if (targetItem?.platform === "cloudflare") {
+        if (!savedCloudflareToken) return "skipped";
+        try {
+          const remote = await callApi<{ name: string; verified: boolean }[]>(
+            `/api/cloudflare/domains?project=${encodeURIComponent(
+              project,
+            )}&accountId=${encodeURIComponent(
+              savedCloudflareToken.accountId,
+            )}`,
+            { headers: { "x-cloudflare-token": savedCloudflareToken.token } },
+          );
+          let removedCount = 0;
+          setDomains((prev) => {
+            const safePrev = Array.isArray(prev) ? prev : [];
+            return safePrev.filter((d) => {
+              if (d.project !== project || !d.syncedToCloudflare) return true;
+              const stillExists = remote.some((r) => r.name === d.domain);
+              if (!stillExists) removedCount += 1;
+              return stillExists;
+            });
+          });
+          if (removedCount > 0) {
+            showToast(
+              `${removedCount} domain untuk "${project}" sudah dihapus di Cloudflare — dihapus juga di sini.`,
+            );
+          }
+          return "synced";
+        } catch {
+          return "error";
+        }
+      }
+      if (targetItem?.platform === "railway") {
+        if (!savedRailwayToken) return "skipped";
+        try {
+          const remote = await callApi<RailwayDomainResult[]>(
+            `/api/railway/domains?project=${encodeURIComponent(project)}`,
+            { headers: { "x-railway-token": savedRailwayToken.token } },
+          );
+          let removedCount = 0;
+          setDomains((prev) => {
+            const safePrev = Array.isArray(prev) ? prev : [];
+            return safePrev.filter((d) => {
+              if (d.project !== project || !d.syncedToRailway) return true;
+              const stillExists = remote.some((r) => r.domain === d.domain);
+              if (!stillExists) removedCount += 1;
+              return stillExists;
+            });
+          });
+          if (removedCount > 0) {
+            showToast(
+              `${removedCount} domain untuk "${project}" sudah dihapus di Railway — dihapus juga di sini.`,
+            );
+          }
+          return "synced";
+        } catch {
+          return "error";
+        }
+      }
+      if (!vercelToken) return "skipped";
+      try {
+        const remote = await callApi<{ name: string; verified: boolean }[]>(
+          `/api/vercel/domains?project=${encodeURIComponent(project)}`,
+          { headers: { "x-vercel-token": vercelToken } },
+        );
+        let removedCount = 0;
+        setDomains((prev) => {
+          const safePrev = Array.isArray(prev) ? prev : [];
+          return safePrev.filter((d) => {
+            if (d.project !== project || !d.syncedToVercel) return true;
+            const stillExists = remote.some((r) => r.name === d.domain);
+            if (!stillExists) removedCount += 1;
+            return stillExists;
+          });
+        });
+        if (removedCount > 0) {
+          showToast(
+            `${removedCount} domain untuk "${project}" sudah dihapus di Vercel — dihapus juga di sini.`,
+          );
+        }
+        return "synced";
+      } catch {
+        return "error";
+      }
+    },
+    [history, savedCloudflareToken, savedRailwayToken, vercelToken, setDomains, showToast],
+  );
+
+  const syncAllDomains = React.useCallback(async () => {
+    const safeDomains = Array.isArray(domains) ? domains : [];
+    const projects = Array.from(
+      new Set(
+        safeDomains
+          .filter(
+            (d) =>
+              (d.syncedToVercel && vercelToken) ||
+              (d.syncedToCloudflare && savedCloudflareToken) ||
+              (d.syncedToRailway && savedRailwayToken),
+          )
+          .map((d) => d.project),
+      ),
+    );
+    if (projects.length === 0) return;
+    setSyncingDomains(true);
+    for (const project of projects) {
+      await syncDomainsForProject(project);
+    }
+    setSyncingDomains(false);
+  }, [domains, syncDomainsForProject, vercelToken, savedCloudflareToken, savedRailwayToken]);
+
+  const refreshDomainStatus = React.useCallback(
+    async (id: string) => {
+      const safeDomains = Array.isArray(domains) ? domains : [];
+      const item = safeDomains.find((d) => d.id === id);
+      if (!item) return;
+
+      if (item.syncedToCloudflare && savedCloudflareToken) {
+        try {
+          const list = await callApi<{ name: string; verified: boolean }[]>(
+            `/api/cloudflare/domains?project=${encodeURIComponent(
+              item.project,
+            )}&accountId=${encodeURIComponent(
+              savedCloudflareToken.accountId,
+            )}`,
+            { headers: { "x-cloudflare-token": savedCloudflareToken.token } },
+          );
+          const match = list.find((d) => d.name === item.domain);
+          if (!match) {
+            setDomains((prev) =>
+              (Array.isArray(prev) ? prev : []).filter((d) => d.id !== id),
+            );
+            showToast(
+              `${item.domain} sudah tidak ada di Cloudflare — dihapus juga di sini.`,
+            );
+            return;
+          }
+          setDomains((prev) =>
+            (Array.isArray(prev) ? prev : []).map((d) =>
+              d.id === id
+                ? {
+                    ...d,
+                    status: match.verified
+                      ? ("Active" as const)
+                      : ("Pending" as const),
+                  }
+                : d,
+            ),
+          );
+          showToast(
+            match.verified
+              ? `${item.domain} sudah aktif — DNS terverifikasi.`
+              : `${item.domain} masih menunggu DNS provider (belum terverifikasi).`,
+          );
+        } catch (err) {
+          showToast(
+            err instanceof Error ? err.message : "Gagal cek status domain.",
+          );
+        }
+        return;
+      }
+
+      if (item.syncedToRailway && savedRailwayToken) {
+        try {
+          const list = await callApi<RailwayDomainResult[]>(
+            `/api/railway/domains?project=${encodeURIComponent(item.project)}`,
+            { headers: { "x-railway-token": savedRailwayToken.token } },
+          );
+          const match = list.find((d) => d.domain === item.domain);
+          if (!match) {
+            setDomains((prev) =>
+              (Array.isArray(prev) ? prev : []).filter((d) => d.id !== id),
+            );
+            showToast(
+              `${item.domain} sudah tidak ada di Railway — dihapus juga di sini.`,
+            );
+            return;
+          }
+          setDomains((prev) =>
+            (Array.isArray(prev) ? prev : []).map((d) =>
+              d.id === id
+                ? {
+                    ...d,
+                    status: match.verified
+                      ? ("Active" as const)
+                      : ("Pending" as const),
+                    dns: match.dns ?? d.dns,
+                    verificationDns: match.verificationDns ?? d.verificationDns,
+                  }
+                : d,
+            ),
+          );
+          showToast(
+            match.verified
+              ? `${item.domain} sudah aktif — DNS terverifikasi.`
+              : `${item.domain} masih menunggu DNS provider (belum terverifikasi).`,
+          );
+        } catch (err) {
+          showToast(
+            err instanceof Error ? err.message : "Gagal cek status domain.",
+          );
+        }
+        return;
+      }
+
+      if (!item.syncedToVercel || !vercelToken) return;
+      try {
+        const list = await callApi<{ name: string; verified: boolean }[]>(
+          `/api/vercel/domains?project=${encodeURIComponent(item.project)}`,
+          { headers: { "x-vercel-token": vercelToken } },
+        );
+        const match = list.find((d) => d.name === item.domain);
+        if (!match) {
+          setDomains((prev) =>
+            (Array.isArray(prev) ? prev : []).filter((d) => d.id !== id),
+          );
+          showToast(
+            `${item.domain} sudah tidak ada di Vercel — dihapus juga di sini.`,
+          );
+          return;
+        }
+        setDomains((prev) =>
+          (Array.isArray(prev) ? prev : []).map((d) =>
+            d.id === id
+              ? {
+                  ...d,
+                  status: match.verified
+                    ? ("Active" as const)
+                    : ("Pending" as const),
+                }
+              : d,
+          ),
+        );
+        showToast(
+          match.verified
+            ? `${item.domain} sudah aktif — DNS terverifikasi.`
+            : `${item.domain} masih menunggu DNS provider (belum terverifikasi).`,
+        );
+      } catch (err) {
+        showToast(
+          err instanceof Error ? err.message : "Gagal cek status domain.",
+        );
+      }
+    },
+    [domains, setDomains, showToast, vercelToken, savedCloudflareToken, savedRailwayToken],
+  );
+
+  const addEnvVar = React.useCallback(
+    async (
+      key: string,
+      value: string,
+      environment: "Production" | "Preview",
+      project: string,
+      options?: { pushToVercel?: boolean; pushToCloudflare?: boolean; pushToRailway?: boolean },
+    ) => {
+      const trimmedKey = key.trim();
+      const trimmedProject = project.trim();
+      if (!ENV_KEY_RE.test(trimmedKey)) {
+        showToast(
+          "Key harus UPPER_SNAKE_CASE, contoh: DATABASE_URL (huruf besar & underscore).",
+        );
+        return;
+      }
+      if (!trimmedProject) {
+        showToast(
+          "Pilih project untuk secret ini — env var selalu disimpan per-project.",
+        );
+        return;
+      }
+      const safeEnvVars = Array.isArray(envVars) ? envVars : [];
+      if (
+        safeEnvVars.some(
+          (v) =>
+            v.key === trimmedKey &&
+            v.environment === environment &&
+            v.project === trimmedProject,
+        )
+      ) {
+        showToast(
+          `Key "${trimmedKey}" sudah ada untuk project "${trimmedProject}" (${environment}).`,
+        );
+        return;
+      }
+      let syncedToVercel = false;
+      let syncedToCloudflare = false;
+      let syncedToRailway = false;
+      if (options?.pushToVercel) {
+        if (!vercelToken) {
+          showToast(
+            "Isi Vercel Token di Settings dulu untuk push env ke Vercel.",
+          );
+          return;
+        }
+        try {
+          await callApi("/api/vercel/env", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              project: trimmedProject,
+              key: trimmedKey,
+              value,
+              target:
+                environment === "Production" ? ["production"] : ["preview"],
+              vercelToken,
+            }),
+          });
+          syncedToVercel = true;
+        } catch (err) {
+          showToast(
+            err instanceof Error
+              ? err.message
+              : "Gagal push env var ke Vercel.",
+          );
+          return;
+        }
+      } else if (options?.pushToCloudflare) {
+        if (!savedCloudflareToken) {
+          showToast(
+            "Konek-kan Cloudflare Token di Settings dulu untuk push env ke Cloudflare.",
+          );
+          return;
+        }
+        try {
+          await callApi("/api/cloudflare/env", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              project: trimmedProject,
+              key: trimmedKey,
+              value,
+              target:
+                environment === "Production" ? ["production"] : ["preview"],
+              cloudflareToken: savedCloudflareToken.token,
+              accountId: savedCloudflareToken.accountId,
+            }),
+          });
+          syncedToCloudflare = true;
+        } catch (err) {
+          showToast(
+            err instanceof Error
+              ? err.message
+              : "Gagal push env var ke Cloudflare.",
+          );
+          return;
+        }
+      } else if (options?.pushToRailway) {
+        if (!savedRailwayToken) {
+          showToast(
+            "Konek-kan Railway Token di Settings dulu untuk push env ke Railway.",
+          );
+          return;
+        }
+        try {
+          await callApi("/api/railway/env", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              project: trimmedProject,
+              key: trimmedKey,
+              value,
+              railwayToken: savedRailwayToken.token,
+            }),
+          });
+          syncedToRailway = true;
+        } catch (err) {
+          showToast(
+            err instanceof Error
+              ? err.message
+              : "Gagal push env var ke Railway.",
+          );
+          return;
+        }
+      }
+      setEnvVars((prev) => {
+        const safePrev = Array.isArray(prev) ? prev : [];
+        return [
+          {
+            id: `${Date.now()}`,
+            key: trimmedKey,
+            value,
+            environment,
+            visible: false,
+            project: trimmedProject,
+            syncedToVercel,
+            syncedToCloudflare,
+            syncedToRailway,
+          },
+          ...safePrev,
+        ];
+      });
+      showToast(
+        syncedToVercel
+          ? `Secret disimpan untuk "${trimmedProject}" & di-push ke Vercel.`
+          : syncedToCloudflare
+            ? `Secret disimpan untuk "${trimmedProject}" & di-push ke Cloudflare.`
+            : syncedToRailway
+              ? `Secret disimpan untuk "${trimmedProject}" & di-push ke Railway.`
+              : `Secret disimpan untuk project "${trimmedProject}".`,
+      );
+      if (syncedToVercel) {
+        void triggerAutoRedeploy(trimmedProject, "vercel");
+      } else if (syncedToCloudflare) {
+        void triggerAutoRedeploy(trimmedProject, "cloudflare");
+      } else if (syncedToRailway) {
+        void triggerAutoRedeploy(trimmedProject, "railway");
+      }
+    },
+    [
+      envVars,
+      setEnvVars,
+      showToast,
+      vercelToken,
+      savedCloudflareToken,
+      savedRailwayToken,
+      triggerAutoRedeploy,
+    ],
+  );
+
+  const removeEnvVar = React.useCallback(
+    async (id: string) => {
+      const safeEnvVars = Array.isArray(envVars) ? envVars : [];
+      const item = safeEnvVars.find((v) => v.id === id);
+      if (item?.syncedToVercel && vercelToken) {
+        try {
+          await callApi(
+            `/api/vercel/env?project=${encodeURIComponent(
+              item.project,
+            )}&key=${encodeURIComponent(item.key)}`,
+            { method: "DELETE", headers: { "x-vercel-token": vercelToken } },
+          );
+        } catch (err) {
+          showToast(
+            err instanceof Error
+              ? err.message
+              : "Gagal menghapus env var di Vercel.",
+          );
+          return;
+        }
+      } else if (item?.syncedToCloudflare && savedCloudflareToken) {
+        try {
+          await callApi(
+            `/api/cloudflare/env?project=${encodeURIComponent(
+              item.project,
+            )}&accountId=${encodeURIComponent(
+              savedCloudflareToken.accountId,
+            )}&key=${encodeURIComponent(item.key)}`,
+            {
+              method: "DELETE",
+              headers: { "x-cloudflare-token": savedCloudflareToken.token },
+            },
+          );
+        } catch (err) {
+          showToast(
+            err instanceof Error
+              ? err.message
+              : "Gagal menghapus env var di Cloudflare.",
+          );
+          return;
+        }
+      } else if (item?.syncedToRailway && savedRailwayToken) {
+        try {
+          await callApi(
+            `/api/railway/env?project=${encodeURIComponent(
+              item.project,
+            )}&key=${encodeURIComponent(item.key)}`,
+            {
+              method: "DELETE",
+              headers: { "x-railway-token": savedRailwayToken.token },
+            },
+          );
+        } catch (err) {
+          showToast(
+            err instanceof Error
+              ? err.message
+              : "Gagal menghapus env var di Railway.",
+          );
+          return;
+        }
+      }
+      setEnvVars((prev) =>
+        (Array.isArray(prev) ? prev : []).filter((v) => v.id !== id),
+      );
+      if (item?.syncedToVercel && vercelToken) {
+        void triggerAutoRedeploy(item.project, "vercel");
+      } else if (item?.syncedToCloudflare && savedCloudflareToken) {
+        void triggerAutoRedeploy(item.project, "cloudflare");
+      } else if (item?.syncedToRailway && savedRailwayToken) {
+        void triggerAutoRedeploy(item.project, "railway");
+      }
+    },
+    [
+      envVars,
+      setEnvVars,
+      showToast,
+      vercelToken,
+      savedCloudflareToken,
+      savedRailwayToken,
+      triggerAutoRedeploy,
+    ],
+  );
+
+  const toggleEnvVisible = React.useCallback(
+    (id: string) => {
+      setEnvVars((prev) =>
+        (Array.isArray(prev) ? prev : []).map((v) =>
+          v.id === id ? { ...v, visible: !v.visible } : v,
+        ),
+      );
+    },
+    [setEnvVars],
+  );
+
+  /* ================================================================
+   *  Context value
+   * ================================================================ */
+
+  const value: DeployContextValue = {
+    view,
+    setView,
+    stats,
+    history: Array.isArray(history) ? history : [],
+    form,
+    setFormField,
+    platformTokenLabel,
+    repoEnvCheck,
+    recheckRepo,
+    retryDeploy,
+    githubPat: settingsTokens.githubPat ?? "",
+    deployFromValues,
+
+    // legacy + modern deploy views
+    modal,
+    deployState,
+    closeModal,
+    handleCloseAfterDeploy,
+    resetDeployState,
+
+    savedVercelToken,
+    savedVercelTokenStatus,
+    savedCloudflareToken,
+    savedCloudflareTokenStatus,
+    cloudflareAccounts,
+    savedRailwayToken,
+    savedRailwayTokenStatus,
+    githubConnectionStatus,
+    checkGithubConnection,
+
+    submitDeploy,
+
+    redeploy,
+
+    vercelToken,
+    cloudflareToken,
+    cloudflareAccountId,
+    railwayToken,
+
+    syncingProjects,
+    syncProjectStatus,
+    syncAllProjects,
+    deletingProject,
+    deleteProject,
+
+    fetchImportableVercelProjects,
+    importVercelProject,
+    fetchImportableCloudflareProjects,
+    importCloudflareProject,
+    fetchImportableRailwayProjects,
+    importRailwayProject,
+
+    domains: Array.isArray(domains) ? domains : [],
+    addDomain,
+    removeDomain,
+    refreshDomainStatus,
+    syncingDomains,
+    syncDomainsForProject,
+    syncAllDomains,
+
+    envVars: Array.isArray(envVars) ? envVars : [],
+    addEnvVar,
+    removeEnvVar,
+    toggleEnvVisible,
+    syncingEnvVars,
+    syncEnvVarsForProject,
+    syncAllEnvVars,
+
+  };
+
+  return (
+    <DeployContext.Provider value={value}>{children}</DeployContext.Provider>
+  );
+}

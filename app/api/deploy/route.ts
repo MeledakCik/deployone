@@ -1,0 +1,115 @@
+import type { NextRequest } from "next/server";
+import { ok, fail, withErrorHandling } from "@/app/api/_lib/response";
+import { validateGithubRepo, GithubApiError } from "@/app/api/_lib/github";
+import { guardCompat } from "@/app/api/_lib/compat-guard";
+import { createVercelDeployment, ensureVercelProjectWithEnv, getVercelProject, VercelApiError } from "@/app/api/_lib/vercel";
+import {
+  requireString,
+  optionalString,
+  assertValidProjectName,
+  BadRequestError,
+} from "@/app/api/_lib/validators";
+import { parseEnvText } from "@/app/api/_lib/env-text";
+import type { CreateDeployRequest } from "@/types";
+
+export const runtime = "nodejs";
+
+/**
+ * Deploy orchestration, currently Vercel-only:
+ *   1. Re-validate the GitHub repo server-side (never trust the client) dan
+ *      cek jenis project-nya (HTML statis / Node.js / lainnya).
+ *   2. Kick off a real deployment via the Vercel REST API.
+ * Cloudflare and Railway have their own routes under /api/cloudflare and
+ * /api/railway.
+ */
+export const POST = withErrorHandling(async (req: NextRequest) => {
+  const body = (await req.json().catch(() => ({}))) as Partial<CreateDeployRequest>;
+
+  let projectName: string;
+  let githubUrl: string;
+  let vercelToken: string;
+  let githubPat: string | undefined;
+  try {
+    projectName = requireString(body.projectName, "projectName");
+    githubUrl = requireString(body.githubUrl, "githubUrl");
+    vercelToken = requireString(body.vercelToken, "vercelToken");
+    githubPat = optionalString(body.githubPat);
+    assertValidProjectName(projectName);
+  } catch (e) {
+    if (e instanceof BadRequestError) return fail(e.message, 400, "bad_request");
+    throw e;
+  }
+
+  let validation;
+  try {
+    validation = await validateGithubRepo(githubUrl, githubPat);
+  } catch (e) {
+    if (e instanceof GithubApiError) {
+      const status = e.code === "repo_not_found" ? 404 : e.code === "invalid_url" ? 400 : 401;
+      return fail(e.message, status, e.code);
+    }
+    throw e;
+  }
+
+  // Cek jenis repo dulu — HTML statis boleh tanpa package.json, repo yang
+  // memang tidak cocok dengan Vercel dihentikan di sini dengan panduan manual.
+  const blockedResponse = guardCompat(validation, "vercel");
+  if (blockedResponse) return blockedResponse;
+
+  // Guard against name collisions: if `projectName` already exists in this
+  // Vercel account but is linked to a *different* GitHub repo, creating a
+  // deployment would silently re-link it to this repo instead — a real
+  // conflict, not a normal redeploy. Block it and tell the user clearly.
+  try {
+    const existing = await getVercelProject(projectName, vercelToken);
+    if (existing.exists && existing.linkedRepoFullName && existing.linkedRepoFullName !== validation.fullName) {
+      return fail(
+        `Project "${projectName}" di Vercel sudah terhubung ke repo lain (${existing.linkedRepoFullName}). ` +
+          `Pakai nama project yang berbeda, atau deploy dari repo yang sama.`,
+        409,
+        "project_conflict"
+      );
+    }
+  } catch (e) {
+    if (e instanceof VercelApiError) {
+      const status = e.code === "invalid_token" ? 401 : e.code === "not_found" ? 404 : 502;
+      return fail(e.message, status, e.code);
+    }
+    throw e;
+  }
+
+  // Env var dipasang ke project SEBELUM deployment dibuat, supaya build pertama sudah memakainya.
+  const env = parseEnvText(typeof body.envText === "string" ? body.envText : undefined);
+  if (Object.keys(env).length > 0) {
+    try {
+      await ensureVercelProjectWithEnv(projectName, env, vercelToken);
+    } catch (e) {
+      if (e instanceof VercelApiError) {
+        const status = e.code === "invalid_token" ? 401 : e.code === "not_found" ? 404 : 502;
+        return fail(`Gagal memasang environment variables ke Vercel: ${e.message}`, status, e.code);
+      }
+      throw e;
+    }
+  }
+
+  try {
+    const deployment = await createVercelDeployment({
+      projectName,
+      owner: validation.owner,
+      repo: validation.repo,
+      ref: validation.defaultBranch,
+      vercelToken,
+      staticSite:
+        validation.project.type === "static"
+          ? { outputDirectory: validation.project.staticDir || null }
+          : undefined,
+    });
+    return ok(deployment, 201);
+  } catch (e) {
+    if (e instanceof VercelApiError) {
+      const status = e.code === "invalid_token" ? 401 : e.code === "not_found" ? 404 : 502;
+      return fail(e.message, status, e.code);
+    }
+    throw e;
+  }
+});
