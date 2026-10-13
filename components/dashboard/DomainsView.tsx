@@ -33,7 +33,7 @@ function DnsField({ label, value }: { label: string; value: string }) {
         aria-label={`Salin ${label.toLowerCase()}`}
         className="grid h-7 w-7 shrink-0 place-items-center rounded-full hover:bg-black/10"
       >
-        {copied ? <Check size={13} className="text-emerald-600 dark:text-emerald-400" /> : <Copy size={13} />}
+        {copied ? <Check size={13} className="text-emerald-400" /> : <Copy size={13} />}
       </button>
     </div>
   );
@@ -207,7 +207,7 @@ export function DomainsView() {
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h2 className="text-[28px] font-semibold tracking-[-0.035em] sm:text-[32px]">Domains</h2>
+            <h2 className="text-[22px] font-semibold">Domains</h2>
             <p className="text-[13px] text-text-muted">Kelola custom domain untuk project kamu.</p>
           </div>
           <button
@@ -284,8 +284,8 @@ export function DomainsView() {
                             <td className="px-6 py-4">
                               <span
                                 className={`inline-flex items-center gap-1.5 rounded-pill border px-2.5 py-0.5 text-[11px] font-medium ${d.status === "Active"
-                                    ? " bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                                    : " bg-amber-500/10 text-amber-700 dark:text-amber-400"
+                                    ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
+                                    : "border-amber-500/20 bg-amber-500/10 text-amber-400"
                                   }`}
                               >
                                 {d.status}
@@ -309,7 +309,7 @@ export function DomainsView() {
                                   type="button"
                                   onClick={() => removeDomain(d.id)}
                                   aria-label={`Hapus ${d.domain}`}
-                                  className="pill inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-medium text-red-600 dark:text-red-400 hover:brightness-110"
+                                  className="pill inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-medium text-red-400 hover:brightness-110"
                                 >
                                   <Trash2 size={12} /> Hapus
                                 </button>

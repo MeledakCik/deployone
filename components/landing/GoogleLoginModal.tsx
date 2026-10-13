@@ -24,7 +24,7 @@ export function GoogleLoginModal({ open, onClose }: { open: boolean; onClose: ()
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/35 px-4 backdrop-blur-xl [animation:fade-in_300ms_ease_both]"
+      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 px-4 backdrop-blur-md"
       onClick={onClose}
     >
       <div
@@ -33,33 +33,33 @@ export function GoogleLoginModal({ open, onClose }: { open: boolean; onClose: ()
         aria-modal="true"
         aria-label="Masuk ke Depup"
         tabIndex={-1}
-        className="w-full max-w-sm rounded-[32px] bg-card p-7 text-ink shadow-pop outline-none [animation:sheet-in_800ms_var(--ease-bounce)_both]"
+        className="obs-overlay w-full max-w-sm rounded-2xl p-6 text-white outline-none"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-1 flex items-center justify-between">
-          <h3 className="text-[20px] font-semibold tracking-[-0.03em]">Masuk ke Depup</h3>
+          <h3 className="f-display text-[18px] font-semibold tracking-tight">Masuk ke Depup</h3>
           <button
             type="button"
             onClick={onClose}
             aria-label="Tutup"
-            className="btn-soft grid h-9 w-9 place-items-center rounded-full text-ink-2"
+            className="grid h-8 w-8 place-items-center rounded-lg text-obs-mute transition-colors hover:bg-white/10 hover:text-white"
           >
             <X size={18} />
           </button>
         </div>
 
-        <p className="mb-6 text-[14px] text-ink-2">untuk melanjutkan ke dashboard Depup</p>
+        <p className="mb-6 text-[13px] text-obs-sec">untuk melanjutkan ke dashboard Depup</p>
 
         <button
           type="button"
           onClick={login}
-          className="btn-ink flex h-[52px] w-full items-center justify-center gap-3 rounded-full px-4 py-3.5 text-[15px] font-semibold"
+          className="flex w-full items-center justify-center gap-3 rounded-lg bg-white px-4 py-3 text-[14px] font-semibold text-black transition hover:bg-white/90 active:scale-[0.99]"
         >
           <GoogleMark size={18} />
           <span>Lanjutkan dengan Google</span>
         </button>
 
-        <p className="mt-5 text-center text-[12.5px] leading-relaxed text-ink-3">
+        <p className="mt-5 text-center text-[12px] leading-relaxed text-obs-mute">
           Kamu akan diarahkan ke halaman login Google asli, lalu kembali otomatis ke dashboard.
         </p>
       </div>

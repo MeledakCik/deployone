@@ -261,7 +261,7 @@ export function UploadView() {
   return (
     <ViewFade>
       <div className="mb-6">
-        <h2 className="text-[28px] font-semibold tracking-[-0.035em] sm:text-[32px]">Upload Project</h2>
+        <h2 className="text-[22px] font-semibold">Upload Project</h2>
         <p className="mt-1 text-[13px] text-text-muted">
           Upload zip atau folder project — otomatis diekstrak, dikirim ke repo GitHub baru, dan (kalau mau) langsung
           di-deploy.
@@ -269,7 +269,7 @@ export function UploadView() {
       </div>
 
       {!githubPat.trim() && (
-        <div className="mb-4 flex items-start gap-2.5 rounded-2xl bg-amber-500/10 px-4 py-3 text-[12.5px] text-amber-700 dark:text-amber-300">
+        <div className="mb-4 flex items-start gap-2.5 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-[12.5px] text-amber-300">
           <CircleAlert size={16} className="mt-0.5 shrink-0" />
           <span>
             Fitur ini butuh <b>GitHub Token</b> (izin <code>repo</code>) untuk membuat repo atas nama kamu.{" "}
@@ -284,7 +284,7 @@ export function UploadView() {
       {error && (
         <div
           role="alert"
-          className="mb-4 flex items-start gap-2.5 rounded-2xl bg-red-500/10 px-4 py-3 text-[12.5px] text-red-600 dark:text-red-300"
+          className="mb-4 flex items-start gap-2.5 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-[12.5px] text-red-300"
         >
           <CircleAlert size={16} className="mt-0.5 shrink-0" />
           <span className="min-w-0 flex-1 break-words">{error}</span>
@@ -419,7 +419,12 @@ export function UploadView() {
                     type="button"
                     aria-pressed={isPrivate === o.v}
                     onClick={() => setIsPrivate(o.v)}
-                    className="chip inline-flex flex-1 items-center justify-center gap-1.5 px-3 py-3 text-[13px]"
+                    className={cn(
+                      "inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl border px-3 py-2.5 text-[13px] transition",
+                      isPrivate === o.v
+                        ? "border-violet-400 bg-violet-500/15 text-text"
+                        : "border-[var(--line)] text-text-muted hover:bg-[var(--card-hover)]"
+                    )}
                   >
                     {o.icon} {o.label}
                   </button>
@@ -443,7 +448,7 @@ export function UploadView() {
           </label>
 
           {/* Pilihan deploy */}
-          <div className="mt-5 rounded-[24px] bg-[var(--surface-solid-2)] p-4">
+          <div className="mt-5 rounded-2xl border border-[var(--line)] p-4">
             <p className="text-[12px] font-medium">Setelah upload…</p>
             <div className="mt-2.5 grid gap-2 sm:grid-cols-2">
               {[
@@ -456,7 +461,10 @@ export function UploadView() {
                   disabled={busy}
                   aria-pressed={deployNow === o.v}
                   onClick={() => setDeployNow(o.v)}
-                  className="choice px-4 py-3.5 pr-11 text-left"
+                  className={cn(
+                    "rounded-xl border px-3.5 py-3 text-left transition",
+                    deployNow === o.v ? "border-violet-400 bg-violet-500/15" : "border-[var(--line)] hover:bg-[var(--card-hover)]"
+                  )}
                 >
                   <span className="block text-[13px] font-medium">{o.title}</span>
                   <span className="mt-0.5 block text-[11.5px] text-text-muted">{o.desc}</span>
@@ -467,7 +475,7 @@ export function UploadView() {
             {deployNow && (
               <div className="mt-3">
                 {platforms.length === 0 ? (
-                  <p className="text-[12px] text-amber-700 dark:text-amber-300">
+                  <p className="text-[12px] text-amber-300">
                     Belum ada token platform yang tersimpan.{" "}
                     <button type="button" onClick={() => setView("settings")} className="underline underline-offset-4">
                       Isi token Vercel/Cloudflare/Railway di Settings
@@ -578,7 +586,7 @@ export function UploadView() {
       {/* ---------- Langkah 3: selesai ---------- */}
       {stage === "done" && result && (
         <div className="surface-solid rounded-3xl p-6 text-center sm:p-8">
-          <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400">
+          <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-emerald-500/15 text-emerald-400">
             <Check size={24} />
           </span>
           <h3 className="mt-4 text-[18px] font-semibold">Upload berhasil</h3>

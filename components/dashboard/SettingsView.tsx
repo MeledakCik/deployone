@@ -2,14 +2,11 @@
 
 import { notifySessionExpired } from "@/lib/session-expired";
 import * as React from "react";
-import { useTheme } from "next-themes";
-import { Eye, EyeOff, Save, ShieldCheck, ShieldAlert, Loader2, Trash2, Moon, Sun, Bug, Rocket, Network as SpiderIcon } from "lucide-react";
+import { Eye, EyeOff, Save, ShieldCheck, ShieldAlert, Loader2, Trash2 } from "lucide-react";
 import { Surface } from "@/components/ui/Surface";
 import { ViewFade } from "@/components/ui/ViewFade";
 import { useCloudStorage } from "@/lib/useCloudStorage";
 import { useToast } from "@/components/ui/Toast";
-import { useDeployPreferences, type DeployAnimation } from "@/lib/preferences";
-import { cn } from "@/lib/utils";
 import type {
   ApiResponse,
   SettingsTokens,
@@ -79,7 +76,7 @@ function TokenField({
               type="button"
               onClick={() => setConfirming(true)}
               aria-label={`Hapus ${label}`}
-              className="inline-flex items-center gap-1 text-[11px] font-medium text-red-600 dark:text-red-400 hover:brightness-110"
+              className="inline-flex items-center gap-1 text-[11px] font-medium text-red-400 hover:brightness-110"
             >
               <Trash2 size={11} /> Hapus
             </button>
@@ -89,7 +86,7 @@ function TokenField({
               type="button"
               onClick={onTest}
               disabled={!value?.trim() || check.status === "checking"}
-              className="inline-flex items-center gap-1 text-[11px] font-medium text-violet-600 dark:text-violet-400 hover:brightness-110 disabled:opacity-40"
+              className="inline-flex items-center gap-1 text-[11px] font-medium text-violet-400 hover:brightness-110 disabled:opacity-40"
             >
               {check.status === "checking" && <Loader2 size={11} className="animate-spin" />}
               Test Koneksi
@@ -100,7 +97,7 @@ function TokenField({
       {confirming && onRemove && (
         <div
           role="alert"
-          className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-red-500/10 px-3 py-2 text-[12px] text-red-600 dark:text-red-300"
+          className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-[12px] text-red-300"
         >
           <span>Hapus {label} dari akunmu? Deploy ke platform ini tidak bisa jalan sampai diisi lagi.</span>
           <span className="flex gap-3">
@@ -110,7 +107,7 @@ function TokenField({
                 setConfirming(false);
                 onRemove();
               }}
-              className="font-semibold text-red-600 dark:text-red-400 underline underline-offset-2"
+              className="font-semibold text-red-400 underline underline-offset-2"
             >
               Ya, hapus
             </button>
@@ -139,125 +136,16 @@ function TokenField({
         </button>
       </div>
       {check.status === "ok" && (
-        <p className="mt-1.5 inline-flex items-center gap-1.5 text-[11.5px] text-emerald-600 dark:text-emerald-400">
+        <p className="mt-1.5 inline-flex items-center gap-1.5 text-[11.5px] text-emerald-400">
           <ShieldCheck size={13} /> {check.label}
         </p>
       )}
       {check.status === "error" && (
-        <p className="mt-1.5 inline-flex items-center gap-1.5 text-[11.5px] text-red-600 dark:text-red-400">
+        <p className="mt-1.5 inline-flex items-center gap-1.5 text-[11.5px] text-red-400">
           <ShieldAlert size={13} /> {check.message}
         </p>
       )}
     </div>
-  );
-}
-
-/** Saklar on/off yang aksesibel (role="switch"). */
-function SwitchRow({
-  id,
-  icon,
-  title,
-  description,
-  checked,
-  onChange,
-}: {
-  id: string;
-  icon: React.ReactNode;
-  title: string;
-  description: string;
-  checked: boolean;
-  onChange: (v: boolean) => void;
-}) {
-  return (
-    <div className="flex items-center justify-between gap-4">
-      <div className="flex min-w-0 items-start gap-3">
-        <div className="mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[var(--pill-bg)] text-text-muted">
-          {icon}
-        </div>
-        <div className="min-w-0">
-          <label htmlFor={id} className="block cursor-pointer text-[13.5px] font-medium">
-            {title}
-          </label>
-          <p className="text-[12px] leading-relaxed text-text-muted">{description}</p>
-        </div>
-      </div>
-      <button
-        id={id}
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        onClick={() => onChange(!checked)}
-        className="switch"
-      />
-    </div>
-  );
-}
-
-const ANIMATION_OPTIONS: { value: DeployAnimation; label: string; hint: string; icon: React.ReactNode }[] = [
-  { value: "default", label: "Default", hint: "Spinner roket seperti sekarang", icon: <Rocket size={16} /> },
-  { value: "spider", label: "Spider Crawler AI", hint: "Laba-laba merayap di jaring saraf, satu node per tahap", icon: <SpiderIcon size={16} /> },
-];
-
-function AppearanceSettings() {
-  const { resolvedTheme, setTheme } = useTheme();
-  const [mounted, setMounted] = React.useState(false);
-  const [prefs, updatePrefs] = useDeployPreferences();
-
-  React.useEffect(() => setMounted(true), []);
-  const isLight = mounted && resolvedTheme === "light";
-
-  return (
-    <Surface className="mx-auto max-w-2xl space-y-6 p-6 sm:p-8">
-      <div>
-        <h3 className="text-[15px] font-semibold">Tampilan</h3>
-        <p className="text-[12px] text-text-muted">Pengaturan ini tersimpan di perangkat ini.</p>
-      </div>
-
-      <SwitchRow
-        id="settingsLightMode"
-        icon={isLight ? <Sun size={16} /> : <Moon size={16} />}
-        title="Mode terang"
-        description={isLight ? "Sedang memakai mode terang. Matikan untuk kembali ke mode gelap." : "Sedang memakai mode gelap. Nyalakan untuk mode terang."}
-        checked={isLight}
-        onChange={(v) => setTheme(v ? "light" : "dark")}
-      />
-
-      <div className="h-px bg-[var(--surface-line)]" />
-
-      <fieldset>
-        <legend className="mb-2 text-[13.5px] font-medium">Animasi loading deploy</legend>
-        <div className="grid gap-2.5 sm:grid-cols-2" role="radiogroup" aria-label="Animasi loading deploy">
-          {ANIMATION_OPTIONS.map((opt) => {
-            const selected = prefs.deployAnimation === opt.value;
-            return (
-              <button
-                key={opt.value}
-                type="button"
-                role="radio"
-                aria-checked={selected}
-                onClick={() => updatePrefs({ deployAnimation: opt.value })}
-                className="choice flex items-start gap-3 p-4 pr-11 text-left"
-              >
-                <span className={cn("mt-0.5 transition-colors", selected ? "text-accent" : "text-text-muted")}>{opt.icon}</span>
-                <span>
-                  <span className="block text-[13px] font-medium">{opt.label}</span>
-                  <span className="block text-[11.5px] leading-relaxed text-text-muted">{opt.hint}</span>
-                </span>
-              </button>
-            );
-          })}
-        </div>
-      </fieldset>
-
-      <SwitchRow
-        id="settingsDebugLog"
-        icon={<Bug size={16} />}
-        title="Tampilkan proses debug"
-        description="Munculkan log langkah demi langkah (tahap, status, dan pesan error) di jendela deploy. Berlaku untuk kedua animasi."
-        checked={prefs.showDebug}
-        onChange={(v) => updatePrefs({ showDebug: v })}
-      />
-    </Surface>
   );
 }
 
@@ -367,7 +255,7 @@ export function SettingsView() {
     <ViewFade>
       <div className="space-y-6">
         <div>
-          <h2 className="text-[28px] font-semibold tracking-[-0.035em] sm:text-[32px]">Settings</h2>
+          <h2 className="text-[22px] font-semibold">Settings</h2>
           <p className="text-[13px] text-text-muted">
             Token global ini dipakai sebagai default saat kamu deploy project baru. Klik{" "}
             <span className="font-medium text-text">Test Koneksi</span> untuk memastikan token-nya benar-benar
@@ -459,8 +347,6 @@ export function SettingsView() {
             </button>
           </form>
         </Surface>
-
-        <AppearanceSettings />
       </div>
     </ViewFade>
   );

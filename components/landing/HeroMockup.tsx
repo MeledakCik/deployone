@@ -1,19 +1,7 @@
 "use client";
 
 import * as React from "react";
-import {
-  ArrowRight,
-  Check,
-  Cloud,
-  GitBranch,
-  GitCommitHorizontal,
-  Minus,
-  RefreshCw,
-  Train,
-  Triangle,
-  TriangleAlert,
-} from "lucide-react";
-import { Reveal } from "@/components/ui/Reveal";
+import { Check, GitBranch, GitCommitHorizontal, Minus, RefreshCw, Search, TriangleAlert } from "lucide-react";
 
 type Level = "ok" | "warn" | "blocked";
 type Platform = "Vercel" | "Cloudflare Pages" | "Railway";
@@ -68,11 +56,7 @@ const SAMPLES: {
 ];
 
 const ICON = { ok: Check, warn: TriangleAlert, blocked: Minus } as const;
-const TONE: Record<Level, string> = {
-  ok: "bg-ok/15 text-ok",
-  warn: "bg-warn/15 text-warn",
-  blocked: "bg-fill/15 text-ink-3",
-};
+const TONE: Record<Level, string> = { ok: "text-obs-ok", warn: "text-obs-warn", blocked: "text-obs-mute" };
 const LABEL: Record<Level, string> = { ok: "Cocok", warn: "Dengan catatan", blocked: "Tidak cocok" };
 
 const DEPLOYS = [
@@ -82,16 +66,10 @@ const DEPLOYS = [
   { name: "bot-flask", platform: "RAILWAY", ref: "fix/webhook", when: "1 jam lalu", status: "failed", link: "Lihat log" },
 ] as const;
 
-const PLATFORM_TILE = {
-  VERCEL: { Icon: Triangle, tint: "tint-lav" },
-  RAILWAY: { Icon: Train, tint: "tint-mint" },
-  CLOUDFLARE: { Icon: Cloud, tint: "tint-rose" },
-} as const;
-
 const STATUS = {
-  ready: { label: "Ready", cls: "bg-ok/15 text-ok" },
-  building: { label: "Building", cls: "bg-warn/15 text-warn" },
-  failed: { label: "Failed", cls: "bg-bad/15 text-bad" },
+  ready: { label: "Ready", cls: "bg-obs-ok/15 text-obs-ok" },
+  building: { label: "Building", cls: "bg-obs-warn/15 text-obs-warn" },
+  failed: { label: "Failed", cls: "bg-obs-bad/15 text-obs-bad" },
 } as const;
 
 export function HeroMockup() {
@@ -100,139 +78,110 @@ export function HeroMockup() {
   const platforms = Object.keys(s.verdict) as Platform[];
 
   return (
-    <section className="relative mx-auto mb-10 w-full max-w-6xl px-4 sm:px-8" id="dashboard" aria-label="Contoh tampilan dashboard">
-      <Reveal>
-        <div className="overflow-hidden rounded-[36px] bg-card shadow-pop">
+    <section className="relative mx-auto mb-8 w-full max-w-7xl px-4 sm:px-8" id="dashboard" aria-label="Contoh tampilan dashboard">
+      <div className="rounded-2xl bg-gradient-to-b from-white/15 via-white/5 to-transparent p-1 shadow-[0_20px_60px_rgba(0,0,0,0.7)]">
+        <div className="isolate overflow-hidden rounded-[14px] bg-obs-subtle">
           {/* Bar jendela */}
-          <div className="flex items-center gap-2 px-6 pb-1 pt-5">
-            <span className="h-3 w-3 rounded-full bg-[#ff5f57]" aria-hidden="true" />
-            <span className="h-3 w-3 rounded-full bg-[#febc2e]" aria-hidden="true" />
-            <span className="h-3 w-3 rounded-full bg-[#28c840]" aria-hidden="true" />
-            <span className="ml-3 select-none text-[12.5px] font-medium text-ink-3">depup / cek-repo</span>
+          <div className="flex flex-col items-stretch justify-between gap-3 bg-obs-lowest/60 px-4 py-3 sm:flex-row sm:items-center sm:px-6">
+            <div className="flex items-center gap-2">
+              <span className="h-3 w-3 rounded-full bg-obs-bad" aria-hidden="true" />
+              <span className="h-3 w-3 rounded-full bg-obs-warn" aria-hidden="true" />
+              <span className="h-3 w-3 rounded-full bg-obs-ok" aria-hidden="true" />
+              <span className="f-mono ml-3 select-none text-[12px] text-obs-mute">depup / cek-repo</span>
+            </div>
+            <div className="flex w-full items-center gap-2 truncate rounded-lg bg-obs-base px-3 py-1.5 shadow-inner sm:w-96">
+              <Search size={15} className="shrink-0 text-obs-violet" aria-hidden="true" />
+              <span key={s.repo} className="f-mono truncate text-[12.5px] text-white">
+                github.com/{s.repo}
+              </span>
+            </div>
           </div>
 
-          <div className="grid grid-cols-[minmax(0,1fr)] gap-4 p-3 sm:p-5 lg:grid-cols-[minmax(0,1.05fr)_minmax(0,1fr)]">
-            {/* Kolom kiri: cek repo */}
-            <div className="flex min-w-0 flex-col gap-4">
-              {/* Kartu pastel: input repo + pilihan contoh */}
-              <div className="tint-lav relative overflow-hidden rounded-[28px] p-5 sm:p-6">
-                <p className="text-[17px] font-semibold tracking-[-0.025em] text-ink">Cek repo</p>
-                <p className="mt-0.5 text-[13px] text-ink-2">Pilih contoh repo untuk melihat hasil pengecekannya.</p>
-
-                <div className="mt-4 flex items-center gap-2 rounded-full bg-card p-1.5 pl-5 shadow-card" aria-hidden="true">
-                  <span key={s.repo} className="pop-in mono flex-1 truncate text-[13px] text-ink">
-                    github.com/{s.repo}
-                  </span>
-                  <span className="btn-orb h-10 w-10 shrink-0">
-                    <ArrowRight size={17} />
-                  </span>
-                </div>
-
-                <div
-                  role="tablist"
-                  aria-label="Contoh repo"
-                  className="relative mt-4 grid grid-cols-4 rounded-full bg-card/60 p-1 backdrop-blur"
+          <div className="flex flex-col gap-6 p-4 sm:p-6">
+            {/* Pilih contoh repo */}
+            <div role="tablist" aria-label="Contoh repo" className="flex flex-wrap gap-2">
+              {SAMPLES.map((x, idx) => (
+                <button
+                  key={x.tab}
+                  role="tab"
+                  aria-selected={idx === i}
+                  onClick={() => setI(idx)}
+                  className={`f-mono rounded-lg px-3 py-1.5 text-[11.5px] font-semibold transition-colors ${
+                    idx === i
+                      ? "bg-obs-violet/25 text-obs-lilac ring-1 ring-obs-violet/60"
+                      : "bg-obs-container text-obs-sec hover:text-white"
+                  }`}
                 >
-                  <span
-                    className="seg-thumb pointer-events-none absolute inset-y-1 left-1 w-[calc(25%-2px)] rounded-full bg-card shadow-card"
-                    style={{ transform: `translateX(${i * 100}%)` }}
-                    aria-hidden="true"
-                  />
-                  {SAMPLES.map((x, idx) => (
-                    <button
-                      key={x.tab}
-                      role="tab"
-                      type="button"
-                      aria-selected={idx === i}
-                      onClick={() => setI(idx)}
-                      className={`relative z-10 flex min-h-[44px] items-center justify-center rounded-full px-1 text-center text-[11px] font-semibold leading-tight transition-colors duration-300 sm:text-[12.5px] ${
-                        idx === i ? "text-ink" : "text-ink-2 hover:text-ink"
-                      }`}
-                    >
-                      {x.tab}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Hasil pengecekan */}
-              <div className="tint-mint rounded-[28px] p-5 sm:p-6" aria-live="polite">
-                <p className="text-[13px] text-ink-2">Terdeteksi</p>
-                <p key={s.type} className="pop-in mt-0.5 text-[26px] font-semibold leading-tight tracking-[-0.035em] text-ink">
-                  {s.type}
-                </p>
-                <p className="text-[13px] text-ink-3">dibaca dari isi repo</p>
-
-                <ul key={s.repo} className="mt-4 flex flex-col gap-2">
-                  {platforms.map((name, k) => {
-                    const [level, note] = s.verdict[name];
-                    const Icon = ICON[level];
-                    return (
-                      <li
-                        key={name}
-                        style={{ "--i": k } as React.CSSProperties}
-                        className="rise flex items-center gap-3 rounded-[20px] bg-card/80 p-3 pr-4 backdrop-blur"
-                      >
-                        <span className={`grid h-10 w-10 shrink-0 place-items-center rounded-full ${TONE[level]}`}>
-                          <Icon size={17} strokeWidth={level === "ok" ? 3 : 2} aria-hidden="true" />
-                        </span>
-                        <span className="min-w-0 flex-1">
-                          <span className="block text-[14px] font-semibold text-ink">{name}</span>
-                          <span className="block truncate text-[12.5px] text-ink-2">{note}</span>
-                        </span>
-                        <span className={`hidden shrink-0 rounded-full px-2.5 py-1 text-[11.5px] font-semibold sm:inline ${TONE[level]}`}>
-                          {LABEL[level]}
-                        </span>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
+                  {x.tab}
+                </button>
+              ))}
             </div>
 
-            {/* Kolom kanan: daftar deploy (contoh) */}
-            <div className="flex min-w-0 flex-col rounded-[28px] bg-paper p-4 sm:p-5">
-              <div className="mb-3 flex items-center justify-between gap-2 px-1">
+            {/* Hasil pengecekan */}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-live="polite">
+              <div className="flex flex-col gap-1 rounded-xl bg-obs-low/70 p-4">
+                <span className="f-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-obs-sec">Terdeteksi</span>
+                <span key={s.type} className="f-display mt-1 text-[22px] font-bold leading-tight tracking-tight text-white">
+                  {s.type}
+                </span>
+                <span className="text-[13px] text-obs-mute">dibaca dari isi repo</span>
+              </div>
+              {platforms.map((name) => {
+                const [level, note] = s.verdict[name];
+                const Icon = ICON[level];
+                return (
+                  <div key={name} className="flex flex-col gap-1 rounded-xl bg-obs-low/70 p-4">
+                    <span className="f-mono text-[11px] font-semibold uppercase tracking-[0.08em] text-obs-sec">{name}</span>
+                    <span className={`mt-1 flex items-center gap-1.5 text-[18px] font-semibold ${TONE[level]}`}>
+                      <Icon size={17} strokeWidth={level === "ok" ? 3 : 2} aria-hidden="true" />
+                      {LABEL[level]}
+                    </span>
+                    <span className="text-[13px] text-obs-mute">{note}</span>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Daftar deploy (contoh) */}
+            <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between px-1">
                 <div className="flex items-center gap-2">
-                  <span className="text-[17px] font-semibold tracking-[-0.025em] text-ink">Deploy terakhir</span>
-                  <span className="rounded-full bg-fill/15 px-2.5 py-0.5 text-[11px] font-medium text-ink-2">contoh data</span>
+                  <span className="f-display text-[18px] font-semibold text-white">Deploy terakhir</span>
+                  <span className="rounded-full bg-obs-highest px-2 py-0.5 text-[11px] text-obs-sec">contoh data</span>
                 </div>
-                <span className="hidden items-center gap-1.5 text-[13px] text-ink-2 sm:flex">
+                <span className="hidden items-center gap-1 text-[13px] text-obs-sec sm:flex">
                   <RefreshCw size={14} aria-hidden="true" /> Redeploy
                 </span>
               </div>
-
-              <ul className="flex flex-1 flex-col gap-2">
-                {DEPLOYS.map((d, k) => {
+              <ul className="flex flex-col gap-2">
+                {DEPLOYS.map((d) => {
                   const st = STATUS[d.status];
-                  const { Icon, tint } = PLATFORM_TILE[d.platform];
                   return (
                     <li
                       key={d.name}
-                      style={{ "--i": k + 2 } as React.CSSProperties}
-                      className="rise lift flex items-center gap-3 rounded-[22px] bg-card p-3 pr-4 shadow-card"
+                      className="grid grid-cols-12 items-center gap-2 rounded-lg bg-obs-low p-3 transition-colors hover:bg-obs-container"
                     >
-                      <span className={`${tint} grid h-12 w-12 shrink-0 place-items-center rounded-2xl text-ink`}>
-                        <Icon size={19} aria-hidden="true" />
-                      </span>
-                      <span className="min-w-0 flex-1">
-                        <span className="block truncate text-[14px] font-semibold tracking-[-0.015em] text-ink">{d.name}</span>
-                        <span className="mt-0.5 flex items-center gap-1.5 text-[12px] text-ink-3">
-                          {d.ref === "main" ? <GitCommitHorizontal size={13} aria-hidden="true" /> : <GitBranch size={13} aria-hidden="true" />}
-                          <span className="mono">{d.ref}</span>
-                          <span>{d.when}</span>
+                      <div className="col-span-12 flex items-center gap-3 md:col-span-4">
+                        <span className="f-mono truncate text-[13px] font-semibold text-white">{d.name}</span>
+                        <span className="f-mono rounded bg-obs-elevated px-2 py-0.5 text-[10px] font-semibold text-obs-sec">
+                          {d.platform}
                         </span>
-                        <span className="mt-0.5 block truncate text-[12px] text-ink-2">
-                          <span className="text-ink-3">{d.platform.charAt(0) + d.platform.slice(1).toLowerCase()}</span> · {d.link}
+                      </div>
+                      <div className="col-span-7 flex items-center gap-1.5 text-obs-sec md:col-span-3">
+                        {d.ref === "main" ? <GitCommitHorizontal size={15} aria-hidden="true" /> : <GitBranch size={15} aria-hidden="true" />}
+                        <span className="f-mono text-[12.5px]">{d.ref}</span>
+                        <span className="text-[12.5px] text-obs-mute">· {d.when}</span>
+                      </div>
+                      <div className="col-span-5 md:col-span-3">
+                        <span className={`f-mono inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[12px] ${st.cls}`}>
+                          <span
+                            className={`h-1.5 w-1.5 rounded-full bg-current ${d.status === "building" ? "animate-pulse" : ""}`}
+                            aria-hidden="true"
+                          />
+                          {st.label}
                         </span>
-                      </span>
-                      <span className={`inline-flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-[12px] font-semibold ${st.cls}`}>
-                        <span
-                          className={`h-1.5 w-1.5 rounded-full bg-current ${d.status === "building" ? "animate-pulse" : ""}`}
-                          aria-hidden="true"
-                        />
-                        {st.label}
-                      </span>
+                      </div>
+                      <div className="f-mono col-span-12 truncate text-[12px] text-obs-sec md:col-span-2 md:text-right">{d.link}</div>
                     </li>
                   );
                 })}
@@ -240,7 +189,7 @@ export function HeroMockup() {
             </div>
           </div>
         </div>
-      </Reveal>
+      </div>
     </section>
   );
 }

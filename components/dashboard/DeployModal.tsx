@@ -16,9 +16,6 @@ import { cn, normalizeDeployDomain, deployDomainToUrl } from "@/lib/utils";
 import { useDeploy } from "@/lib/deploy-context";
 import { useDialogA11y } from "@/components/ui/useDialogA11y";
 import { PLATFORM_NAME } from "@/lib/deploy-guides";
-import { useDeployPreferences } from "@/lib/preferences";
-import { SpiderCrawler } from "@/components/dashboard/SpiderCrawler";
-import { DeployDebugLog, useDeployLog } from "@/components/dashboard/DeployDebugLog";
 import type { ErrorGuide } from "@/types";
 
 const DEPLOY_STEPS_LABELS = [
@@ -34,9 +31,6 @@ export function DeployModal() {
     useDeploy();
   const { status, stepIndex, barWidth, title, subtitle, error, errorGuide, result } =
     deployState;
-
-  const [prefs] = useDeployPreferences();
-  const debugLines = useDeployLog(deployState, prefs.showDebug);
 
   const isDeploying = status === "deploying";
   // Saat deploy berjalan, Esc & klik backdrop sengaja tidak menutup modal.
@@ -63,7 +57,7 @@ export function DeployModal() {
     <>
       {/* keyframes lokal — biar tidak bentrok dengan style global */}
       <style>{`
-        @keyframes dcModalIn  { from { opacity:0; transform: translateY(36px) scale(.92) } to { opacity:1; transform: none } }
+        @keyframes dcModalIn  { from { opacity:0; transform: scale(.96) } to { opacity:1; transform: scale(1) } }
         @keyframes dcFadeIn   { from { opacity:0 } to { opacity:1 } }
         @keyframes dcShimmer  { 0% { transform: translateX(-100%) } 100% { transform: translateX(100%) } }
         @keyframes dcSpin     { to { transform: rotate(360deg) } }
@@ -72,7 +66,7 @@ export function DeployModal() {
       <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 md:p-6">
         {/* backdrop */}
         <div
-          className="absolute inset-0 bg-black/45 backdrop-blur-xl"
+          className="absolute inset-0 bg-[#06060a]/80 backdrop-blur-[14px]"
           onClick={onBackdropClick}
         />
 
@@ -83,21 +77,22 @@ export function DeployModal() {
           aria-modal="true"
           aria-label={title || "Proses deploy"}
           tabIndex={-1}
-          className="relative w-full max-w-[520px] rounded-[36px] bg-[#161618] text-white shadow-[0_40px_120px_-30px_rgba(0,0,0,0.9)] overflow-hidden flex flex-col max-h-[90vh] outline-none"
-          style={{ animation: "dcModalIn 800ms var(--ease-bounce) both" }}
+          className="relative w-full max-w-[520px] rounded-[28px] bg-[#15151f] border border-white/[0.08] shadow-[0_20px_80px_-20px_rgba(0,0,0,0.8),0_0_0_1px_rgba(255,255,255,0.05)_inset] overflow-hidden flex flex-col max-h-[90vh] outline-none"
+          style={{ animation: "dcModalIn .3s ease" }}
         >
-          
+          <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-white/15 to-transparent shrink-0" />
+
           {/* ================= HEADER ================= */}
           <div className="px-7 md:px-8 pt-6 pb-5 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
               <div
                 className={cn(
-                  "w-10 h-10 rounded-2xl flex items-center justify-center",
+                  "w-9 h-9 rounded-xl border flex items-center justify-center",
                   isError
-                    ? "bg-red-500/15 text-red-300"
+                    ? "bg-red-500/10 border-red-500/20 text-red-300"
                     : isDone
-                      ? "bg-emerald-400/15 text-emerald-300"
-                      : "bg-white/10 text-white/70",
+                      ? "bg-emerald-400/10 border-emerald-400/20 text-emerald-300"
+                      : "bg-[#1e1e2f] border-white/10 text-white/70",
                 )}
               >
                 {isError ? (
@@ -130,7 +125,7 @@ export function DeployModal() {
               <button
                 type="button"
                 onClick={closeModal}
-                className="w-9 h-9 rounded-full bg-white/[0.08] flex items-center justify-center hover:bg-white/15 hover:scale-110 active:scale-90 transition-all duration-500 ease-bounce"
+                className="w-8 h-8 rounded-full bg-white/[0.06] border border-white/[0.08] flex items-center justify-center hover:bg-white/10 transition-colors"
                 aria-label="Tutup"
               >
                 <X className="w-4 h-4 text-white/60" />
@@ -185,7 +180,7 @@ export function DeployModal() {
                 })}
               </div>
 
-              <div className="mt-2 flex justify-between text-[11px] text-white/35">
+              <div className="mt-2 flex justify-between text-[10px] tracking-wide text-white/25 uppercase">
                 <span>1. Mulai deploy</span>
                 <span>2. Input + Penjelasan</span>
                 <span>3. Token & Deploy</span>
@@ -193,7 +188,8 @@ export function DeployModal() {
             </div>
           )}
 
-          
+          <div className="h-[1px] bg-white/[0.06] mx-7 md:mx-8 shrink-0" />
+
           {/* ================= BODY ================= */}
           <div className="px-7 md:px-8 py-6 min-h-[300px] overflow-y-auto flex-1">
             {/* ---------- LOADING ---------- */}
@@ -202,21 +198,17 @@ export function DeployModal() {
                 className="py-6 text-center"
                 style={{ animation: "dcFadeIn .3s ease" }}
               >
-                {prefs.deployAnimation === "spider" ? (
-                  <SpiderCrawler stepIndex={stepIndex} className="w-full" />
-                ) : (
-                  /* spinner (default) */
-                  <div className="relative w-16 h-16 mx-auto">
-                    <div className="absolute inset-0 rounded-full border-2 border-white/[0.06]" />
-                    <div
-                      className="absolute inset-0 rounded-full border-2 border-transparent border-t-white/80"
-                      style={{ animation: "dcSpin 1s linear infinite" }}
-                    />
-                    <div className="absolute inset-2 rounded-full bg-[#1e1e2f] flex items-center justify-center">
-                      <Rocket className="w-5 h-5 text-white/70" />
-                    </div>
+                {/* spinner */}
+                <div className="relative w-16 h-16 mx-auto">
+                  <div className="absolute inset-0 rounded-full border-2 border-white/[0.06]" />
+                  <div
+                    className="absolute inset-0 rounded-full border-2 border-transparent border-t-white/80"
+                    style={{ animation: "dcSpin 1s linear infinite" }}
+                  />
+                  <div className="absolute inset-2 rounded-full bg-[#1e1e2f] flex items-center justify-center">
+                    <Rocket className="w-5 h-5 text-white/70" />
                   </div>
-                )}
+                </div>
 
                 <div className="mt-5 text-[15px] font-medium">
                   {title || "Sedang menyiapkan deploy..."}
@@ -269,8 +261,6 @@ export function DeployModal() {
                     );
                   })}
                 </div>
-
-                {prefs.showDebug && <DeployDebugLog lines={debugLines} className="mt-6" />}
               </div>
             )}
 
@@ -280,7 +270,7 @@ export function DeployModal() {
                 className="py-4 text-center"
                 style={{ animation: "dcFadeIn .4s ease" }}
               >
-                <div className="w-14 h-14 mx-auto rounded-full bg-emerald-400/15 flex items-center justify-center">
+                <div className="w-14 h-14 mx-auto rounded-full bg-emerald-400/15 border border-emerald-400/20 flex items-center justify-center">
                   <Check className="w-7 h-7 text-emerald-300" strokeWidth={3} />
                 </div>
 
@@ -296,7 +286,7 @@ export function DeployModal() {
                 </div>
 
                 {/* logs panel */}
-                <div className="mt-6 p-3 rounded-xl bg-[#1e1e2f] text-left">
+                <div className="mt-6 p-3 rounded-xl bg-[#1e1e2f] border border-white/[0.06] text-left">
                   <div className="text-[11px] uppercase tracking-wide text-white/30">
                     Logs
                   </div>
@@ -318,15 +308,6 @@ export function DeployModal() {
                     <div className="text-white/40">→ Building...</div>
                   </div>
                 </div>
-
-                {prefs.showDebug && debugLines.length > 0 && (
-                  <details className="mt-4 text-left">
-                    <summary className="cursor-pointer select-none text-center text-[11.5px] text-white/35 hover:text-white/55">
-                      Lihat log proses debug
-                    </summary>
-                    <DeployDebugLog lines={debugLines} className="mt-2" />
-                  </details>
-                )}
 
                 {/* external link */}
                 {result?.domain && (
@@ -360,7 +341,7 @@ export function DeployModal() {
                       href={result.inspectorUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="h-10 px-5 rounded-full bg-white/[0.08] text-white/70 text-[13px] font-medium flex items-center gap-2 hover:bg-white/[0.12] transition-colors"
+                      className="h-10 px-5 rounded-full bg-white/[0.08] border border-white/10 text-white/70 text-[13px] font-medium flex items-center gap-2 hover:bg-white/[0.12] transition-colors"
                     >
                       <ExternalLink className="w-3.5 h-3.5" /> Lihat Logs
                     </a>
@@ -378,7 +359,6 @@ export function DeployModal() {
                 onRetry={retryDeploy}
                 retryable={errorGuide?.retryable !== false}
                 logsUrl={result?.inspectorUrl}
-                debugLines={prefs.showDebug ? debugLines : null}
               />
             )}
           </div>
@@ -399,7 +379,6 @@ function ErrorPanel({
   onRetry,
   retryable,
   logsUrl,
-  debugLines,
 }: {
   guide: ErrorGuide | null;
   fallbackMessage: string | null;
@@ -407,7 +386,6 @@ function ErrorPanel({
   onRetry: () => void;
   retryable: boolean;
   logsUrl?: string;
-  debugLines?: React.ComponentProps<typeof DeployDebugLog>["lines"] | null;
 }) {
   const [copied, setCopied] = React.useState(false);
 
@@ -428,7 +406,7 @@ function ErrorPanel({
   return (
     <div className="py-2" style={{ animation: "dcFadeIn .4s ease" }}>
       <div className="text-center">
-        <div className="w-12 h-12 mx-auto rounded-full bg-red-400/15 flex items-center justify-center">
+        <div className="w-12 h-12 mx-auto rounded-full bg-red-400/15 border border-red-400/20 flex items-center justify-center">
           <CircleAlert className="w-6 h-6 text-red-300" />
         </div>
         <div className="mt-4 text-[17px] font-semibold">{title}</div>
@@ -438,7 +416,7 @@ function ErrorPanel({
       </div>
 
       {guide && guide.steps.length > 0 && (
-        <div className="mt-5 rounded-2xl bg-white/[0.04] p-4 text-left">
+        <div className="mt-5 rounded-2xl bg-white/[0.04] border border-white/[0.08] p-4 text-left">
           <div className="text-[11px] uppercase tracking-wider text-white/40 font-medium mb-2.5">
             Yang bisa kamu lakukan
           </div>
@@ -470,7 +448,7 @@ function ErrorPanel({
               href={l.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="h-9 px-4 rounded-full bg-white/[0.08] text-white/80 text-[12px] font-medium flex items-center gap-1.5 hover:bg-white/[0.12] transition-colors"
+              className="h-9 px-4 rounded-full bg-white/[0.08] border border-white/10 text-white/80 text-[12px] font-medium flex items-center gap-1.5 hover:bg-white/[0.12] transition-colors"
             >
               <ExternalLink className="w-3.5 h-3.5" /> {l.label}
             </a>
@@ -483,7 +461,7 @@ function ErrorPanel({
           <summary className="cursor-pointer text-[11.5px] text-white/35 hover:text-white/55 text-center select-none">
             Detail teknis (untuk dilaporkan)
           </summary>
-          <pre className="mt-2 max-h-28 overflow-auto rounded-xl bg-black/30 p-3 text-[11px] text-white/50 whitespace-pre-wrap break-words font-mono">
+          <pre className="mt-2 max-h-28 overflow-auto rounded-xl bg-black/30 border border-white/[0.06] p-3 text-[11px] text-white/50 whitespace-pre-wrap break-words font-mono">
             {guide.technical}
           </pre>
           <div className="mt-2 text-center">
@@ -496,15 +474,6 @@ function ErrorPanel({
               {copied ? "Tersalin" : "Salin detail"}
             </button>
           </div>
-        </details>
-      )}
-
-      {debugLines && debugLines.length > 0 && (
-        <details className="mt-4 text-left" open>
-          <summary className="cursor-pointer select-none text-center text-[11.5px] text-white/35 hover:text-white/55">
-            Log proses debug
-          </summary>
-          <DeployDebugLog lines={debugLines} className="mt-2" />
         </details>
       )}
 
@@ -523,7 +492,7 @@ function ErrorPanel({
             href={logsUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="h-10 px-5 rounded-full bg-white/[0.08] text-white/70 text-[13px] font-medium flex items-center gap-2 hover:bg-white/[0.12] transition-colors"
+            className="h-10 px-5 rounded-full bg-white/[0.08] border border-white/10 text-white/70 text-[13px] font-medium flex items-center gap-2 hover:bg-white/[0.12] transition-colors"
           >
             <ExternalLink className="w-3.5 h-3.5" /> Lihat log
           </a>
@@ -534,7 +503,7 @@ function ErrorPanel({
           className={cn(
             "h-10 px-5 rounded-full text-[13px] font-medium transition-colors",
             retryable
-              ? "bg-white/[0.08] text-white/70 hover:bg-white/[0.12]"
+              ? "bg-white/[0.08] border border-white/10 text-white/70 hover:bg-white/[0.12]"
               : "bg-white text-black hover:bg-white/90",
           )}
         >

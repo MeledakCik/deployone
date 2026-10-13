@@ -1,10 +1,5 @@
 import type { Config } from "tailwindcss";
 
-// Warna landing & dashboard membaca token di app/globals.css,
-// jadi otomatis ikut tema light / dark. Format rgb(var(--x) / alpha)
-// membuat modifier opacity seperti bg-ink/10 tetap bekerja.
-const token = (name: string) => `rgb(var(--c-${name}) / <alpha-value>)`;
-
 const config: Config = {
   darkMode: ["class", '[data-theme="dark"]'],
   content: [
@@ -14,16 +9,13 @@ const config: Config = {
   theme: {
     extend: {
       fontFamily: {
-        // Di perangkat Apple memakai SF Pro; di tempat lain jatuh ke Inter.
-        display: ["-apple-system", "BlinkMacSystemFont", "SF Pro Display", "Inter Variable", "Inter", "system-ui", "sans-serif"],
-        sans: ["-apple-system", "BlinkMacSystemFont", "SF Pro Text", "Inter Variable", "Inter", "system-ui", "sans-serif"],
-        mono: ["SF Mono", "ui-monospace", "JetBrains Mono Variable", "Menlo", "monospace"],
+        display: ["Bricolage Grotesque Variable", "Inter Tight Variable", "system-ui", "sans-serif"],
+        sans: ["Inter Tight Variable", "Inter Tight", "Inter", "system-ui", "sans-serif"],
+        mono: ["Geist Mono", "ui-monospace", "monospace"],
       },
       borderRadius: {
-        card: "28px",
+        card: "32px",
         pill: "999px",
-        "4xl": "32px",
-        "5xl": "40px",
       },
       colors: {
         base: "var(--bg-base)",
@@ -32,26 +24,31 @@ const config: Config = {
         "text-faint": "var(--text-faint)",
         line: "var(--line)",
         "line-strong": "var(--line-strong)",
-        // Token landing
-        paper: token("bg"),
-        card: token("surface"),
-        ink: token("ink"),
-        "ink-2": token("ink2"),
-        "ink-3": token("ink3"),
-        fill: token("fill"),
-        accent: token("accent"),
-        ok: token("ok"),
-        warn: token("warn"),
-        bad: token("bad"),
-      },
-      boxShadow: {
-        card: "var(--shadow-card)",
-        lift: "var(--shadow-lift)",
-        pop: "var(--shadow-pop)",
-      },
-      transitionTimingFunction: {
-        bounce: "var(--ease-bounce)",
-        soft: "var(--ease-soft)",
+        // Token landing "Obsidian Edge" (dari Stitch). Diberi prefix obs- agar
+        // tidak bentrok dengan token dashboard.
+        obs: {
+          base: "#0A0A0E",
+          subtle: "#111118",
+          elevated: "#181822",
+          lowest: "#0e0e12",
+          low: "#1b1b1f",
+          container: "#1f1f24",
+          high: "#2a292e",
+          highest: "#353439",
+          bright: "#39393d",
+          ink: "#FFFFFF",
+          sec: "#94A3B8",
+          mute: "#64748B",
+          violet: "#8B5CF6",
+          purple: "#A855F7",
+          pink: "#EC4899",
+          lilac: "#e9ddff",
+          mint: "#4edea3",
+          rose: "#ffb0cd",
+          ok: "#10B981",
+          warn: "#F59E0B",
+          bad: "#EF4444",
+        },
       },
       keyframes: {
         "fade-up": {

@@ -253,7 +253,7 @@ export function EnvironmentView() {
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h2 className="text-[28px] font-semibold tracking-[-0.035em] sm:text-[32px]">Environment Variables</h2>
+            <h2 className="text-[22px] font-semibold">Environment Variables</h2>
             <p className="text-[13px] text-text-muted">
               Simpan secret per-project untuk di-inject ke build kamu — tidak ada secret global antar project.
             </p>
@@ -282,7 +282,7 @@ export function EnvironmentView() {
         )}
 
         <Surface className="flex items-start gap-3 px-5 py-4">
-          <Info size={16} className="mt-0.5 shrink-0 text-violet-600 dark:text-violet-400" />
+          <Info size={16} className="mt-0.5 shrink-0 text-violet-400" />
           <p className="text-[12.5px] leading-relaxed text-text-muted">
             Fitur injeksi <span className="mono">.env</span> saat build — setiap secret terikat ke satu
             project dan hanya tersedia sebagai environment variable pada build & runtime project itu saja.
@@ -360,17 +360,17 @@ export function EnvironmentView() {
                         <td className="px-6 py-4">
                           <span className="pill px-2.5 py-0.5 text-[11px] font-medium">{item.environment}</span>
                           {item.syncedToVercel && (
-                            <span className="ml-1.5 inline-flex items-center gap-1 rounded-pill bg-emerald-500/10 px-2 py-0.5 text-[10.5px] font-medium text-emerald-600 dark:text-emerald-400">
+                            <span className="ml-1.5 inline-flex items-center gap-1 rounded-pill border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10.5px] font-medium text-emerald-400">
                               ✓ Vercel
                             </span>
                           )}
                           {item.syncedToCloudflare && (
-                            <span className="ml-1.5 inline-flex items-center gap-1 rounded-pill bg-emerald-500/10 px-2 py-0.5 text-[10.5px] font-medium text-emerald-600 dark:text-emerald-400">
+                            <span className="ml-1.5 inline-flex items-center gap-1 rounded-pill border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10.5px] font-medium text-emerald-400">
                               ✓ Cloudflare
                             </span>
                           )}
                           {item.syncedToRailway && (
-                            <span className="ml-1.5 inline-flex items-center gap-1 rounded-pill bg-emerald-500/10 px-2 py-0.5 text-[10.5px] font-medium text-emerald-600 dark:text-emerald-400">
+                            <span className="ml-1.5 inline-flex items-center gap-1 rounded-pill border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-[10.5px] font-medium text-emerald-400">
                               ✓ Railway
                             </span>
                           )}
@@ -390,7 +390,7 @@ export function EnvironmentView() {
                               type="button"
                               onClick={() => removeEnvVar(item.id)}
                               aria-label={`Hapus ${item.key}`}
-                              className="pill inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-medium text-red-600 dark:text-red-400 hover:brightness-110"
+                              className="pill inline-flex items-center gap-1.5 px-3 py-1 text-[11px] font-medium text-red-400 hover:brightness-110"
                             >
                               <Trash2 size={12} />
                             </button>

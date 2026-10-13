@@ -65,7 +65,7 @@ export default function DashboardPage() {
   return (
     <div className="flex min-h-screen w-full flex-col md:flex-row">
       <Sidebar />
-      <div className="min-w-0 flex-1 px-4 py-5 sm:px-8 sm:py-8">
+      <div className="flex-1 min-w-0 px-5 py-6 sm:px-8 sm:py-8">
         <div className="mx-auto max-w-6xl view active" id={view}>
           {view === "dashboard" && <DashboardHomeView />}
           {view === "deploy" && <DeployFormView />}
