@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { lockBodyScroll } from "@/lib/scroll-lock";
 
 const FOCUSABLE =
   'a[href],button:not([disabled]),textarea:not([disabled]),input:not([disabled]),select:not([disabled]),[tabindex]:not([tabindex="-1"])';
@@ -36,8 +37,7 @@ export function useDialogA11y<T extends HTMLElement>(
       (node.querySelector<HTMLElement>(FOCUSABLE) ?? node).focus();
     }
 
-    const prevOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    const unlockScroll = lockBodyScroll();
 
     function onKeyDown(e: KeyboardEvent) {
       if (e.key === "Escape") {
@@ -72,7 +72,7 @@ export function useDialogA11y<T extends HTMLElement>(
     document.addEventListener("keydown", onKeyDown);
     return () => {
       document.removeEventListener("keydown", onKeyDown);
-      document.body.style.overflow = prevOverflow;
+      unlockScroll();
       previouslyFocused?.focus?.();
     };
   }, [open]);

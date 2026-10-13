@@ -548,15 +548,7 @@ export function DeployFormView() {
     if (!form.platform) setFormField("platform", "vercel");
   }, [form.platform, setFormField]);
 
-  /* lock body scroll saat wizard buka */
-  React.useEffect(() => {
-    if (!isModalOpen) return;
-    const original = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = original;
-    };
-  }, [isModalOpen]);
+  /* scroll body dikunci oleh useDialogA11y (ref-counted), tidak perlu kunci kedua di sini */
 
   /* Validation */
   const canNext = React.useMemo(() => {

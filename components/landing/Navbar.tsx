@@ -35,6 +35,20 @@ export function Navbar() {
 
   const loggedIn = ready && !!user;
 
+  // Menu mobile: tutup dengan Esc dan otomatis saat layar melebar ke desktop.
+  React.useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMenuOpen(false);
+    const mq = window.matchMedia("(min-width: 768px)");
+    const onMq = () => mq.matches && setMenuOpen(false);
+    document.addEventListener("keydown", onKey);
+    mq.addEventListener("change", onMq);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      mq.removeEventListener("change", onMq);
+    };
+  }, [menuOpen]);
+
   return (
     <>
       <header className="fixed inset-x-0 top-0 z-50 border-b border-white/[0.06] bg-obs-subtle/80 backdrop-blur-xl">
@@ -93,18 +107,18 @@ export function Navbar() {
         </div>
 
         {menuOpen && (
-          <div className="flex flex-col gap-1 border-t border-white/[0.06] bg-obs-subtle/95 px-4 py-4 backdrop-blur-xl md:hidden">
+          <div className="flex max-h-[calc(100dvh-4rem)] flex-col gap-1 overflow-y-auto overscroll-contain border-t border-white/[0.06] bg-obs-subtle/95 px-4 py-3 backdrop-blur-xl md:hidden">
             {NAV_LINKS.map((l) => (
               <a
                 key={l.href}
                 href={l.href}
                 onClick={() => setMenuOpen(false)}
-                className="rounded-lg px-3 py-3 text-[15px] text-obs-sec hover:bg-white/5 hover:text-white"
+                className="rounded-lg px-3 py-2.5 text-[15px] text-obs-sec hover:bg-white/5 hover:text-white"
               >
                 {l.label}
               </a>
             ))}
-            <div className="mt-3 flex flex-col gap-2">
+            <div className="mt-2 flex flex-col gap-2">
               {loggedIn ? (
                 <DashboardLink
                   href="/dashboard"

@@ -217,7 +217,7 @@ function AppearanceSettings() {
   const isLight = mounted && resolvedTheme === "light";
 
   return (
-    <Surface className="mx-auto max-w-2xl space-y-6 p-6 sm:p-8">
+    <Surface className="space-y-4 p-4 sm:p-6">
       <div>
         <h3 className="text-[15px] font-semibold">Tampilan</h3>
         <p className="text-[12px] text-text-muted">Pengaturan ini tersimpan di perangkat ini.</p>
@@ -236,7 +236,7 @@ function AppearanceSettings() {
 
       <fieldset>
         <legend className="mb-2 text-[13.5px] font-medium">Animasi loading deploy</legend>
-        <div className="grid gap-2.5 sm:grid-cols-2" role="radiogroup" aria-label="Animasi loading deploy">
+        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1" role="radiogroup" aria-label="Animasi loading deploy">
           {ANIMATION_OPTIONS.map((opt) => {
             const selected = prefs.deployAnimation === opt.value;
             return (
@@ -380,18 +380,19 @@ export function SettingsView() {
 
   return (
     <ViewFade>
-      <div className="space-y-6">
+      <div className="space-y-4 sm:space-y-5">
         <div>
-          <h2 className="text-[22px] font-semibold">Settings</h2>
-          <p className="text-[13px] text-text-muted">
+          <h2 className="text-[20px] font-semibold sm:text-[22px]">Settings</h2>
+          <p className="max-w-3xl text-[12.5px] leading-relaxed text-text-muted sm:text-[13px]">
             Token global ini dipakai sebagai default saat kamu deploy project baru. Klik{" "}
             <span className="font-medium text-text">Test Koneksi</span> untuk memastikan token-nya benar-benar
             valid ke akun kamu.
           </p>
         </div>
 
-        <Surface className="mx-auto max-w-2xl p-6 sm:p-8">
-          <form onSubmit={handleSubmit} className="space-y-5">
+        <div className="grid items-start gap-4 sm:gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+        <Surface className="p-4 sm:p-6">
+          <form onSubmit={handleSubmit} className="grid gap-x-5 gap-y-4 md:grid-cols-2">
             <TokenField
               id="settingsVercelToken"
               label="Vercel Token"
@@ -423,7 +424,7 @@ export function SettingsView() {
               }
             />
             {cloudflareAccounts.length > 1 && (
-              <div>
+              <div className="md:col-span-2">
                 <label htmlFor="cloudflareAccount" className="mb-1.5 block text-[12px] font-medium text-text-muted">
                   Akun Cloudflare aktif
                 </label>
@@ -469,13 +470,16 @@ export function SettingsView() {
               onRemove={() => removeToken("railwayToken", "Railway Token", () => setRailwayCheck({ status: "idle" }))}
             />
 
-            <button type="submit" className="btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-[13px]">
-              <Save size={15} /> Simpan
-            </button>
+            <div className="md:col-span-2">
+              <button type="submit" className="btn-primary inline-flex w-full items-center justify-center gap-2 px-5 py-2.5 text-[13px] sm:w-auto">
+                <Save size={15} /> Simpan
+              </button>
+            </div>
           </form>
         </Surface>
 
         <AppearanceSettings />
+        </div>
       </div>
     </ViewFade>
   );

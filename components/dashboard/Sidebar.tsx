@@ -20,6 +20,7 @@ import {
 import { useAuth } from "@/lib/auth-context";
 import { useDeploy } from "@/lib/deploy-context";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
+import { lockBodyScroll } from "@/lib/scroll-lock";
 import { getInitials, avatarColorFor } from "@/lib/utils";
 import type { DashboardView } from "@/types";
 
@@ -45,6 +46,12 @@ export function Sidebar() {
   React.useEffect(() => {
     setOpen(false);
   }, [view]);
+
+  // Drawer mobile terbuka → kunci scroll halaman di belakangnya.
+  React.useEffect(() => {
+    if (!open) return;
+    return lockBodyScroll();
+  }, [open]);
 
   function handleLogout() {
     setOpen(false);
@@ -89,10 +96,10 @@ export function Sidebar() {
       )}
 
       <aside
-        className={`sidebar fixed inset-y-0 left-0 z-50 flex h-screen w-72 max-w-[82%] shrink-0 flex-col p-4 transition-transform duration-300 ease-out md:sticky md:top-0 md:z-auto md:w-64 md:max-w-none md:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"
+        className={`sidebar fixed inset-y-0 left-0 z-50 flex h-[100dvh] w-72 max-w-[82%] shrink-0 flex-col overscroll-contain p-3 transition-transform duration-300 ease-out md:sticky md:top-0 md:z-auto md:w-60 md:max-w-none md:translate-x-0 md:self-start lg:w-64 lg:p-4 ${open ? "translate-x-0" : "-translate-x-full"
           }`}
       >
-        <div className="flex items-center justify-between px-2 py-3 mb-4">
+        <div className="mb-2 flex items-center justify-between px-2 py-2 md:mb-3">
           <div className="flex items-center gap-2">
             <span className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-violet-500 to-cyan-400 text-white">
               <Image
@@ -116,7 +123,7 @@ export function Sidebar() {
           </button>
         </div>
 
-        <nav className="flex-1 space-y-1 overflow-y-auto">
+        <nav className="min-h-0 flex-1 space-y-0.5 overflow-y-auto overscroll-contain py-1" aria-label="Menu dashboard">
           {NAV_ITEMS.map((item) => {
             const active = view === item.id;
             return (
@@ -125,7 +132,7 @@ export function Sidebar() {
                 type="button"
                 data-view={item.id}
                 aria-current={active ? "page" : undefined}
-                className={`nav flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-[13px] font-medium transition ${active ? "bg-[var(--card-hover)] text-text" : "text-text-muted hover:text-text hover:bg-[var(--card-hover)]"
+                className={`nav flex w-full items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium transition md:py-2 ${active ? "bg-[var(--card-hover)] text-text" : "text-text-muted hover:text-text hover:bg-[var(--card-hover)]"
                   }`}
                 onClick={() => setView(item.id)}
               >
@@ -136,12 +143,9 @@ export function Sidebar() {
           })}
         </nav>
 
-        <div className="pt-3 border-t border-[var(--line)]">
-          <div className="mb-2 hidden justify-end md:flex">
-            <ThemeToggle />
-          </div>
+        <div className="shrink-0 border-t border-[var(--line)] pt-2">
           {user && (
-            <div className="pill flex items-center gap-3 px-3 py-2.5 mb-2">
+            <div className="pill mb-1.5 flex items-center gap-2.5 px-2.5 py-2">
               {user.picture ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
@@ -165,13 +169,18 @@ export function Sidebar() {
               </span>
             </div>
           )}
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-[13px] font-medium text-text-muted transition hover:text-text hover:bg-[var(--card-hover)]"
-          >
-            <LogOut size={17} /> Logout
-          </button>
+          <div className="flex items-center justify-between gap-2">
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="flex flex-1 items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-text-muted transition hover:bg-[var(--card-hover)] hover:text-text"
+            >
+              <LogOut size={17} /> Logout
+            </button>
+            <div className="hidden md:block">
+              <ThemeToggle />
+            </div>
+          </div>
         </div>
       </aside>
     </>
