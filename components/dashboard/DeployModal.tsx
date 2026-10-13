@@ -16,6 +16,9 @@ import { cn, normalizeDeployDomain, deployDomainToUrl } from "@/lib/utils";
 import { useDeploy } from "@/lib/deploy-context";
 import { useDialogA11y } from "@/components/ui/useDialogA11y";
 import { PLATFORM_NAME } from "@/lib/deploy-guides";
+import { useDeployPreferences } from "@/lib/preferences";
+import { SpiderCrawler } from "@/components/dashboard/SpiderCrawler";
+import { DeployDebugLog, useDeployLog } from "@/components/dashboard/DeployDebugLog";
 import type { ErrorGuide } from "@/types";
 
 const DEPLOY_STEPS_LABELS = [
@@ -31,6 +34,9 @@ export function DeployModal() {
     useDeploy();
   const { status, stepIndex, barWidth, title, subtitle, error, errorGuide, result } =
     deployState;
+
+  const [prefs] = useDeployPreferences();
+  const debugLines = useDeployLog(deployState, prefs.showDebug);
 
   const isDeploying = status === "deploying";
   // Saat deploy berjalan, Esc & klik backdrop sengaja tidak menutup modal.
@@ -198,17 +204,21 @@ export function DeployModal() {
                 className="py-6 text-center"
                 style={{ animation: "dcFadeIn .3s ease" }}
               >
-                {/* spinner */}
-                <div className="relative w-16 h-16 mx-auto">
-                  <div className="absolute inset-0 rounded-full border-2 border-white/[0.06]" />
-                  <div
-                    className="absolute inset-0 rounded-full border-2 border-transparent border-t-white/80"
-                    style={{ animation: "dcSpin 1s linear infinite" }}
-                  />
-                  <div className="absolute inset-2 rounded-full bg-[#1e1e2f] flex items-center justify-center">
-                    <Rocket className="w-5 h-5 text-white/70" />
+                {prefs.deployAnimation === "spider" ? (
+                  <SpiderCrawler stepIndex={stepIndex} className="w-full" />
+                ) : (
+                  /* spinner (default) */
+                  <div className="relative w-16 h-16 mx-auto">
+                    <div className="absolute inset-0 rounded-full border-2 border-white/[0.06]" />
+                    <div
+                      className="absolute inset-0 rounded-full border-2 border-transparent border-t-white/80"
+                      style={{ animation: "dcSpin 1s linear infinite" }}
+                    />
+                    <div className="absolute inset-2 rounded-full bg-[#1e1e2f] flex items-center justify-center">
+                      <Rocket className="w-5 h-5 text-white/70" />
+                    </div>
                   </div>
-                </div>
+                )}
 
                 <div className="mt-5 text-[15px] font-medium">
                   {title || "Sedang menyiapkan deploy..."}
@@ -261,6 +271,8 @@ export function DeployModal() {
                     );
                   })}
                 </div>
+
+                {prefs.showDebug && <DeployDebugLog lines={debugLines} className="mt-6" />}
               </div>
             )}
 
@@ -308,6 +320,15 @@ export function DeployModal() {
                     <div className="text-white/40">→ Building...</div>
                   </div>
                 </div>
+
+                {prefs.showDebug && debugLines.length > 0 && (
+                  <details className="mt-4 text-left">
+                    <summary className="cursor-pointer select-none text-center text-[11.5px] text-white/35 hover:text-white/55">
+                      Lihat log proses debug
+                    </summary>
+                    <DeployDebugLog lines={debugLines} className="mt-2" />
+                  </details>
+                )}
 
                 {/* external link */}
                 {result?.domain && (
@@ -359,6 +380,7 @@ export function DeployModal() {
                 onRetry={retryDeploy}
                 retryable={errorGuide?.retryable !== false}
                 logsUrl={result?.inspectorUrl}
+                debugLines={prefs.showDebug ? debugLines : null}
               />
             )}
           </div>
@@ -379,6 +401,7 @@ function ErrorPanel({
   onRetry,
   retryable,
   logsUrl,
+  debugLines,
 }: {
   guide: ErrorGuide | null;
   fallbackMessage: string | null;
@@ -386,6 +409,7 @@ function ErrorPanel({
   onRetry: () => void;
   retryable: boolean;
   logsUrl?: string;
+  debugLines?: React.ComponentProps<typeof DeployDebugLog>["lines"] | null;
 }) {
   const [copied, setCopied] = React.useState(false);
 
@@ -474,6 +498,15 @@ function ErrorPanel({
               {copied ? "Tersalin" : "Salin detail"}
             </button>
           </div>
+        </details>
+      )}
+
+      {debugLines && debugLines.length > 0 && (
+        <details className="mt-4 text-left" open>
+          <summary className="cursor-pointer select-none text-center text-[11.5px] text-white/35 hover:text-white/55">
+            Log proses debug
+          </summary>
+          <DeployDebugLog lines={debugLines} className="mt-2" />
         </details>
       )}
 
