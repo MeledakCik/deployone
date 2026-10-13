@@ -292,11 +292,11 @@ export function SupportChat() {
         <section
           role="dialog"
           aria-label="Chat bantuan Depup"
-          className="surface-solid fixed inset-0 z-[60] flex flex-col overflow-hidden !rounded-none shadow-2xl sm:inset-auto sm:bottom-5 sm:right-5 sm:h-[600px] sm:max-h-[calc(100vh-40px)] sm:w-[400px] sm:!rounded-[24px]"
+          className="surface-solid fixed inset-0 z-[60] flex flex-col overflow-hidden !rounded-none !shadow-pop [animation:sheet-in_800ms_var(--ease-bounce)_both] [transform-origin:100%_100%] sm:inset-auto sm:bottom-5 sm:right-5 sm:h-[600px] sm:max-h-[calc(100vh-40px)] sm:w-[400px] sm:!rounded-[32px]"
         >
           {/* Header */}
-          <header className="flex items-center gap-3 border-b border-[var(--line)] px-4 py-3">
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white">
+          <header className="flex items-center gap-3 px-5 pb-3 pt-4">
+            <span className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-[var(--accent-soft)] text-[var(--accent-soft-ink)]">
               <Bot size={18} />
             </span>
             <div className="min-w-0 flex-1">
@@ -336,10 +336,10 @@ export function SupportChat() {
           </header>
 
           {/* Pesan */}
-          <div ref={listRef} role="log" aria-live="polite" className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
+          <div ref={listRef} role="log" aria-live="polite" className="flex-1 space-y-3 overflow-y-auto bg-[var(--bg-base)]/70 px-4 py-4">
             {messages.length === 0 && (
               <div className="space-y-4">
-                <div className="rounded-2xl rounded-tl-md bg-[var(--pill-bg)] px-3.5 py-3 text-[13.5px] leading-relaxed">
+                <div className="bubble bubble-left rounded-[20px] rounded-bl-md bg-[var(--surface-solid)] px-4 py-3 text-[13.5px] leading-relaxed shadow-card">
                   Halo{user?.name ? `, ${user.name.split(" ")[0]}` : ""}! Aku asisten Depup. Tanya soal deploy, token, domain, atau
                   error yang kamu temui.
                 </div>
@@ -349,7 +349,7 @@ export function SupportChat() {
                       key={s}
                       type="button"
                       onClick={() => send(s)}
-                      className="pill px-3.5 py-2 text-left text-[12.5px] text-text-muted transition hover:text-text"
+                      className="chip px-4 py-2 text-left text-[12.5px]"
                     >
                       {s}
                     </button>
@@ -361,14 +361,14 @@ export function SupportChat() {
             {messages.map((m, i) =>
               m.role === "user" ? (
                 <div key={i} className="flex justify-end">
-                  <div className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-tr-md bg-violet-600 px-3.5 py-2.5 text-[13.5px] leading-relaxed text-white">
+                  <div className="bubble bubble-right max-w-[85%] whitespace-pre-wrap break-words rounded-[20px] rounded-br-md bg-[var(--accent-soft)] px-4 py-2.5 text-[13.5px] leading-relaxed text-[var(--accent-soft-ink)]">
                     {m.content}
                   </div>
                 </div>
               ) : (
                 <div key={i} className="flex flex-col items-start gap-2">
                   {m.diagnostics && m.diagnostics.length > 0 && <DiagnosticsCard checks={m.diagnostics} />}
-                  <div className="max-w-[92%] break-words rounded-2xl rounded-tl-md bg-[var(--pill-bg)] px-3.5 py-2.5 text-[13.5px] leading-relaxed">
+                  <div className="bubble bubble-left max-w-[92%] break-words rounded-[20px] rounded-bl-md bg-[var(--surface-solid)] px-4 py-2.5 text-[13.5px] leading-relaxed shadow-card">
                     <RichText text={m.content} />
                   </div>
                   {m.reportId && (
@@ -382,7 +382,7 @@ export function SupportChat() {
 
             {sending && (
               <div className="flex" aria-label="Asisten sedang mengetik">
-                <div className="flex items-center gap-1 rounded-2xl rounded-tl-md bg-[var(--pill-bg)] px-4 py-3.5">
+                <div className="bubble bubble-left flex items-center gap-1 rounded-[20px] rounded-bl-md bg-[var(--surface-solid)] px-4 py-3.5 shadow-card">
                   {[0, 1, 2].map((d) => (
                     <span
                       key={d}
@@ -395,7 +395,7 @@ export function SupportChat() {
             )}
 
             {error && !sending && (
-              <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-3.5 py-3 text-[13px] text-red-500">
+              <div className="rounded-2xl bg-red-500/10 px-3.5 py-3 text-[13px] text-red-500">
                 <p>{error}</p>
                 {messages.length > 0 && messages[messages.length - 1].role === "user" && (
                   <button type="button" onClick={retry} className="mt-2 font-semibold underline underline-offset-2">
@@ -426,7 +426,7 @@ export function SupportChat() {
 
           {/* Input */}
           <form
-            className="border-t border-[var(--line)] p-3"
+            className="p-3"
             onSubmit={(e) => {
               e.preventDefault();
               send(input);

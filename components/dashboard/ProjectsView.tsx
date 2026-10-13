@@ -13,6 +13,7 @@ import {
   Download,
   AlertTriangle,
 } from "lucide-react";
+import { Segmented } from "@/components/ui/Segmented";
 import { Surface } from "@/components/ui/Surface";
 import { ViewFade } from "@/components/ui/ViewFade";
 import { useDeploy } from "@/lib/deploy-context";
@@ -77,7 +78,7 @@ function DeleteProjectModal({
     <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 px-4">
       <Surface className="w-full max-w-sm p-6">
         <div className="flex items-center justify-between mb-4">
-          <span className="stat-icon text-red-400">
+          <span className="stat-icon text-red-600 dark:text-red-400">
             <AlertTriangle size={18} />
           </span>
           <button
@@ -232,7 +233,7 @@ function ImportProjectModal({ open, onClose }: { open: boolean; onClose: () => v
 
         {!connected ? (
           <div className="flex flex-col items-center gap-3 py-10 text-center">
-            <ShieldAlert size={36} className="text-amber-400" />
+            <ShieldAlert size={36} className="text-amber-700 dark:text-amber-400" />
             <p className="text-[13px] text-text-muted max-w-xs">{error}</p>
           </div>
         ) : loading ? (
@@ -242,7 +243,7 @@ function ImportProjectModal({ open, onClose }: { open: boolean; onClose: () => v
           </div>
         ) : error ? (
           <div className="flex flex-col items-center gap-3 py-10 text-center">
-            <ShieldAlert size={36} className="text-red-400" />
+            <ShieldAlert size={36} className="text-red-600 dark:text-red-400" />
             <p className="text-[13px] text-text-muted max-w-xs">{error}</p>
           </div>
         ) : candidates.length === 0 ? (
@@ -319,8 +320,8 @@ export function ProjectsView() {
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-xl font-semibold">Projects</h2>
-            <p className="text-sm text-text-muted">
+            <h2 className="text-[28px] font-semibold tracking-[-0.035em] sm:text-[32px]">Projects</h2>
+            <p className="mt-1 text-[14px] text-text-muted">
               {projects.length} project {platformTab !== "all" ? `(${platformTab}) ` : ""}unik dari riwayat deployment kamu.
             </p>
           </div>
@@ -350,22 +351,18 @@ export function ProjectsView() {
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-2">
-          {(["all", "vercel", "cloudflare", "railway"] as const).map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => setPlatformTab(t)}
-              className={`rounded-xl border px-3.5 py-1.5 text-[12.5px] font-medium capitalize transition-colors ${
-                platformTab === t
-                  ? "border-violet-500/50 bg-violet-500/15 text-text"
-                  : "border-[var(--surface-line)] bg-[var(--surface-solid-2)] text-text-muted hover:text-text"
-              }`}
-            >
-              {t === "all" ? "Semua" : t}
-            </button>
-          ))}
-        </div>
+        <Segmented
+          label="Filter platform"
+          className="w-full sm:max-w-md"
+          value={platformTab}
+          onChange={setPlatformTab}
+          options={[
+            { value: "all", label: "Semua" },
+            { value: "vercel", label: "Vercel" },
+            { value: "cloudflare", label: "Cloudflare" },
+            { value: "railway", label: "Railway" },
+          ]}
+        />
 
         {projects.length === 0 ? (
           <Surface className="flex flex-col items-center justify-center gap-3 px-6 py-24 text-center">
@@ -381,7 +378,7 @@ export function ProjectsView() {
               const isReady = project.status === "ready";
               const isChecking = checkingKey === `${project.name}::${project.platform}`;
               return (
-                <Surface key={`${project.name}::${project.platform}`} className="p-5">
+                <Surface key={`${project.name}::${project.platform}`} className="card-lift rise p-5">
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
                       <h3 className="truncate text-base light:text-black dark:text-white font-semibold">{project.name}</h3>
@@ -390,9 +387,9 @@ export function ProjectsView() {
                       </p>
                     </div>
                     <span
-                      className={`shrink-0 inline-flex items-center gap-1.5 rounded-pill border px-2.5 py-0.5 text-xs font-medium ${isReady
-                          ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
-                          : "border-red-500/20 bg-red-500/10 text-red-400"
+                      className={`shrink-0 inline-flex items-center gap-1.5 rounded-pill px-3 py-1 text-xs font-medium ${isReady
+                          ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                          : "bg-red-500/15 text-red-500 dark:text-red-400"
                         }`}
                     >
                       <span className={`h-1.5 w-1.5 rounded-full ${isReady ? "bg-emerald-400" : "bg-red-400"}`} />
@@ -469,7 +466,7 @@ export function ProjectsView() {
                     <button
                       type="button"
                       onClick={() => setDeleteTarget(project)}
-                      className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-400 hover:brightness-110"
+                      className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:brightness-110"
                     >
                       <Trash2 size={12} /> Hapus Project
                     </button>

@@ -658,34 +658,33 @@ export function DeployFormView() {
           --dc-text-faint: rgba(10, 10, 15, 0.35);
 
           --dc-surface: #ffffff;
-          --dc-surface-2: #f5f5f8;
-          --dc-surface-solid: #f0f0f4;
+          --dc-surface-2: #f5f5f9;
+          --dc-surface-solid: #f2f2f7;
 
-          --dc-input: #ffffff;
-          --dc-input-focus: #fafafc;
+          --dc-input: #f2f2f7;
+          --dc-input-focus: #ffffff;
 
-          --dc-line: rgba(10, 10, 15, 0.08);
-          --dc-line-strong: rgba(10, 10, 15, 0.16);
+          --dc-line: rgba(60, 60, 67, 0.06);
+          --dc-line-strong: rgba(60, 60, 67, 0.14);
 
           --dc-pill: rgba(10, 10, 15, 0.05);
           --dc-hover: rgba(10, 10, 15, 0.07);
 
-          --dc-btn-bg: #0a0a0f;
+          --dc-btn-bg: #1d1d1f;
           --dc-btn-fg: #ffffff;
 
           --dc-backdrop: rgba(10, 10, 15, 0.45);
 
           --dc-green-bg: #ecfdf5;
-          --dc-green-line: rgba(16, 185, 129, 0.25);
+          --dc-green-line: rgba(16, 185, 129, 0.12);
           --dc-green-fg: #065f46;
           --dc-green-fg-muted: rgba(6, 95, 70, 0.55);
 
           --dc-shadow-card:
-            0 0 0 1px rgba(0, 0, 0, 0.04) inset,
-            0 10px 40px -10px rgba(10, 10, 15, 0.12);
+            0 1px 2px rgba(0, 0, 0, 0.03),
+            0 12px 32px -12px rgba(20, 20, 40, 0.12);
           --dc-shadow-modal:
-            0 20px 80px -20px rgba(10, 10, 15, 0.25),
-            0 0 0 1px rgba(0, 0, 0, 0.04) inset;
+            0 30px 90px -24px rgba(20, 20, 40, 0.32);
           --dc-shadow-btn: 0 4px 20px -6px rgba(10, 10, 15, 0.35);
         }
 
@@ -698,15 +697,15 @@ export function DeployFormView() {
           --dc-text-muted: rgba(255, 255, 255, 0.55);
           --dc-text-faint: rgba(255, 255, 255, 0.35);
 
-          --dc-surface: #15151f;
-          --dc-surface-2: #1a1a28;
-          --dc-surface-solid: #1e1e2f;
+          --dc-surface: #1c1c1e;
+          --dc-surface-2: #232326;
+          --dc-surface-solid: #2c2c2e;
 
-          --dc-input: #1e1e2f;
-          --dc-input-focus: #23233a;
+          --dc-input: #2c2c2e;
+          --dc-input-focus: #38383a;
 
-          --dc-line: rgba(255, 255, 255, 0.08);
-          --dc-line-strong: rgba(255, 255, 255, 0.16);
+          --dc-line: rgba(255, 255, 255, 0.06);
+          --dc-line-strong: rgba(255, 255, 255, 0.14);
 
           --dc-pill: rgba(255, 255, 255, 0.06);
           --dc-hover: rgba(255, 255, 255, 0.1);
@@ -716,17 +715,16 @@ export function DeployFormView() {
 
           --dc-backdrop: rgba(6, 6, 10, 0.8);
 
-          --dc-green-bg: #0f2a22;
-          --dc-green-line: rgba(52, 211, 153, 0.2);
+          --dc-green-bg: #10281f;
+          --dc-green-line: rgba(52, 211, 153, 0.1);
           --dc-green-fg: #d1fae5;
           --dc-green-fg-muted: rgba(209, 250, 229, 0.5);
 
           --dc-shadow-card:
-            0 0 0 1px rgba(255, 255, 255, 0.08) inset,
-            0 10px 40px -10px rgba(0, 0, 0, 0.6);
+            0 1px 2px rgba(0, 0, 0, 0.4),
+            0 14px 36px -12px rgba(0, 0, 0, 0.7);
           --dc-shadow-modal:
-            0 20px 80px -20px rgba(0, 0, 0, 0.8),
-            0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+            0 30px 90px -24px rgba(0, 0, 0, 0.85);
           --dc-shadow-btn: 0 4px 20px -6px rgba(255, 255, 255, 0.4);
         }
 

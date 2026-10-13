@@ -148,7 +148,7 @@ export function DonateView() {
     <ViewFade>
       <div className="mx-auto max-w-xl space-y-6">
         <div>
-          <h2 className="text-[22px] font-semibold">Donasi</h2>
+          <h2 className="text-[28px] font-semibold tracking-[-0.035em] sm:text-[32px]">Donasi</h2>
           <p className="text-[13px] text-text-muted">
             Depup gratis dipakai. Kalau terbantu, kamu bisa mendukung pengembangannya lewat QRIS (Saweria).
           </p>
@@ -184,9 +184,7 @@ export function DonateView() {
                     type="button"
                     onClick={() => setAmountStr(String(p))}
                     aria-pressed={amount === p}
-                    className={`pill px-3.5 py-2 text-[13px] font-medium transition ${
-                      amount === p ? "!bg-violet-600 !text-white !border-transparent" : "text-text-muted hover:text-text"
-                    }`}
+                    className="chip px-4 py-2 text-[13px] font-medium"
                   >
                     {rupiah(p)}
                   </button>
@@ -243,7 +241,7 @@ export function DonateView() {
             </label>
 
             {error && (
-              <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-3 text-[13px] text-red-500">{error}</div>
+              <div className="rounded-xl bg-red-500/10 px-3.5 py-3 text-[13px] text-red-500">{error}</div>
             )}
 
             <button

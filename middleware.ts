@@ -22,7 +22,7 @@ function isPublicPath(pathname: string): boolean {
  * Stricter buckets for endpoints that are reachable without a session
  * (so they're the ones most exposed to brute-force / scraping) or that
  * proxy out to a third party we don't want to get rate-limited by
- * (GitHub, Google). Anything not listed falls back to DEFAULT_LIMIT.tes
+ * (GitHub, Google). Anything not listed falls back to DEFAULT_LIMIT.
  */
 const CUSTOM_LIMITS: Record<string, { limit: number; windowSeconds: number }> = {
   "auth/google": { limit: 20, windowSeconds: 60 },

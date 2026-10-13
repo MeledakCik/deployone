@@ -43,7 +43,7 @@ export function RepoCheckCard({ platform }: { platform: Platform }) {
 
   if (status === "error") {
     return (
-      <div className="mt-3 rounded-xl border border-red-500/25 bg-red-500/[0.06] p-3 text-[11.5px] sm:text-[12px]">
+      <div className="mt-3 rounded-xl bg-red-500/[0.06] p-3 text-[11.5px] sm:text-[12px]">
         <div className="flex items-start gap-2 text-red-600 dark:text-red-300">
           <CircleAlert className="w-3.5 h-3.5 shrink-0 mt-0.5" />
           <div>
@@ -91,10 +91,10 @@ export function RepoCheckCard({ platform }: { platform: Platform }) {
 
   const tone =
     level === "blocked"
-      ? "border-red-500/25 bg-red-500/[0.06] text-red-600 dark:text-red-300"
+      ? " bg-red-500/[0.06] text-red-600 dark:text-red-300"
       : level === "warn"
-        ? "border-amber-500/25 bg-amber-500/[0.06] text-amber-700 dark:text-amber-300"
-        : "border-emerald-500/25 bg-emerald-500/[0.06] text-emerald-700 dark:text-emerald-300";
+        ? " bg-amber-500/[0.06] text-amber-700 dark:text-amber-300"
+        : " bg-emerald-500/[0.06] text-emerald-700 dark:text-emerald-300";
 
   return (
     <div className={cn("mt-3 rounded-xl border p-3 text-[11.5px] sm:text-[12px]", tone)}>

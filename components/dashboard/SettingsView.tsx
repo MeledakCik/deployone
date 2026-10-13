@@ -79,7 +79,7 @@ function TokenField({
               type="button"
               onClick={() => setConfirming(true)}
               aria-label={`Hapus ${label}`}
-              className="inline-flex items-center gap-1 text-[11px] font-medium text-red-400 hover:brightness-110"
+              className="inline-flex items-center gap-1 text-[11px] font-medium text-red-600 dark:text-red-400 hover:brightness-110"
             >
               <Trash2 size={11} /> Hapus
             </button>
@@ -89,7 +89,7 @@ function TokenField({
               type="button"
               onClick={onTest}
               disabled={!value?.trim() || check.status === "checking"}
-              className="inline-flex items-center gap-1 text-[11px] font-medium text-violet-400 hover:brightness-110 disabled:opacity-40"
+              className="inline-flex items-center gap-1 text-[11px] font-medium text-violet-600 dark:text-violet-400 hover:brightness-110 disabled:opacity-40"
             >
               {check.status === "checking" && <Loader2 size={11} className="animate-spin" />}
               Test Koneksi
@@ -100,7 +100,7 @@ function TokenField({
       {confirming && onRemove && (
         <div
           role="alert"
-          className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-[12px] text-red-300"
+          className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-red-500/10 px-3 py-2 text-[12px] text-red-600 dark:text-red-300"
         >
           <span>Hapus {label} dari akunmu? Deploy ke platform ini tidak bisa jalan sampai diisi lagi.</span>
           <span className="flex gap-3">
@@ -110,7 +110,7 @@ function TokenField({
                 setConfirming(false);
                 onRemove();
               }}
-              className="font-semibold text-red-400 underline underline-offset-2"
+              className="font-semibold text-red-600 dark:text-red-400 underline underline-offset-2"
             >
               Ya, hapus
             </button>
@@ -139,12 +139,12 @@ function TokenField({
         </button>
       </div>
       {check.status === "ok" && (
-        <p className="mt-1.5 inline-flex items-center gap-1.5 text-[11.5px] text-emerald-400">
+        <p className="mt-1.5 inline-flex items-center gap-1.5 text-[11.5px] text-emerald-600 dark:text-emerald-400">
           <ShieldCheck size={13} /> {check.label}
         </p>
       )}
       {check.status === "error" && (
-        <p className="mt-1.5 inline-flex items-center gap-1.5 text-[11.5px] text-red-400">
+        <p className="mt-1.5 inline-flex items-center gap-1.5 text-[11.5px] text-red-600 dark:text-red-400">
           <ShieldAlert size={13} /> {check.message}
         </p>
       )}
@@ -171,7 +171,7 @@ function SwitchRow({
   return (
     <div className="flex items-center justify-between gap-4">
       <div className="flex min-w-0 items-start gap-3">
-        <div className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl border border-[var(--surface-line)] text-text-muted">
+        <div className="mt-0.5 grid h-10 w-10 shrink-0 place-items-center rounded-2xl bg-[var(--pill-bg)] text-text-muted">
           {icon}
         </div>
         <div className="min-w-0">
@@ -187,18 +187,8 @@ function SwitchRow({
         role="switch"
         aria-checked={checked}
         onClick={() => onChange(!checked)}
-        className={cn(
-          "relative h-7 w-12 shrink-0 rounded-full border transition-colors",
-          checked ? "border-violet-400/60 bg-violet-500" : "border-[var(--surface-line)] bg-[var(--row-hover)]"
-        )}
-      >
-        <span
-          className={cn(
-            "absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform",
-            checked ? "translate-x-5" : "translate-x-0"
-          )}
-        />
-      </button>
+        className="switch"
+      />
     </div>
   );
 }
@@ -246,14 +236,9 @@ function AppearanceSettings() {
                 role="radio"
                 aria-checked={selected}
                 onClick={() => updatePrefs({ deployAnimation: opt.value })}
-                className={cn(
-                  "flex items-start gap-3 rounded-2xl border p-3.5 text-left transition-colors",
-                  selected
-                    ? "border-violet-400/60 bg-violet-500/10"
-                    : "border-[var(--surface-line)] hover:bg-[var(--row-hover)]"
-                )}
+                className="choice flex items-start gap-3 p-4 pr-11 text-left"
               >
-                <span className={cn("mt-0.5", selected ? "text-violet-400" : "text-text-muted")}>{opt.icon}</span>
+                <span className={cn("mt-0.5 transition-colors", selected ? "text-accent" : "text-text-muted")}>{opt.icon}</span>
                 <span>
                   <span className="block text-[13px] font-medium">{opt.label}</span>
                   <span className="block text-[11.5px] leading-relaxed text-text-muted">{opt.hint}</span>
@@ -382,7 +367,7 @@ export function SettingsView() {
     <ViewFade>
       <div className="space-y-6">
         <div>
-          <h2 className="text-[22px] font-semibold">Settings</h2>
+          <h2 className="text-[28px] font-semibold tracking-[-0.035em] sm:text-[32px]">Settings</h2>
           <p className="text-[13px] text-text-muted">
             Token global ini dipakai sebagai default saat kamu deploy project baru. Klik{" "}
             <span className="font-medium text-text">Test Koneksi</span> untuk memastikan token-nya benar-benar

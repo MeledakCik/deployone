@@ -87,10 +87,8 @@ export function SpiderCrawler({
     const wrap = wrapRef.current;
     const canvas = canvasRef.current;
     if (!wrap || !canvas) return;
-    const context = canvas.getContext("2d");
-    if (!context) return;
-    // Anotasi tipe eksplisit agar narrowing tetap berlaku di dalam function declaration (draw, settleLegs)
-    const ctx: CanvasRenderingContext2D = context;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
 
     const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
 
@@ -438,7 +436,7 @@ export function SpiderCrawler({
     };
 
     function draw() {
-      ctx.clearRect(0, 0, w, H);
+      ctx!.clearRect(0, 0, w, H);
       drawWeb();
       drawNodes();
       drawSpider();

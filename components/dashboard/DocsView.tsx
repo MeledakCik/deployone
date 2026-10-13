@@ -171,7 +171,7 @@ function GuideCard({ guide }: { guide: Guide }) {
         onClick={() => setOpen((v) => !v)}
         className="flex w-full items-start gap-4 p-5 text-left"
       >
-        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-violet-500/10 text-violet-400">
+        <span className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-violet-500/10 text-violet-600 dark:text-violet-400">
           <Icon size={20} />
         </span>
         <div className="min-w-0 flex-1">
@@ -215,7 +215,7 @@ export function DocsView() {
     <ViewFade>
       <div className="space-y-6">
         <div>
-          <h2 className="text-[22px] font-semibold">Docs</h2>
+          <h2 className="text-[28px] font-semibold tracking-[-0.035em] sm:text-[32px]">Docs</h2>
           <p className="text-[13px] text-text-muted">
             Panduan lengkap setup token, OAuth, serta jenis repo yang didukung — semuanya real, tidak ada simulasi.
           </p>

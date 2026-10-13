@@ -16,24 +16,24 @@ export function DashboardHomeView() {
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h2 className="text-[22px] font-semibold">
+            <h2 className="text-[28px] font-semibold tracking-[-0.035em] sm:text-[32px]">
               Halo, {user?.name ?? "Developer"} 👋
             </h2>
-            <p className="text-[13px] text-text-muted">Berikut ringkasan deployment kamu hari ini.</p>
+            <p className="mt-1 text-[14px] text-text-muted">Berikut ringkasan deployment kamu hari ini.</p>
           </div>
           <button
             type="button"
             onClick={() => setView("deploy")}
-            className="btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-[13px]"
+            className="btn-primary inline-flex h-12 items-center gap-2 px-6 text-[14px]"
           >
             <Plus size={15} /> Deploy Baru
           </button>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-3">
-          <StatCard id="total" label="Total Deployment" value={stats.total} icon={Boxes} tone="violet" />
-          <StatCard id="ready" label="Ready" value={stats.ready} icon={CheckCircle2} tone="emerald" />
-          <StatCard id="failed" label="Failed" value={stats.failed} icon={XCircle} tone="red" />
+          <StatCard id="total" label="Total Deployment" value={stats.total} icon={Boxes} tone="violet" index={0} />
+          <StatCard id="ready" label="Ready" value={stats.ready} icon={CheckCircle2} tone="emerald" index={1} />
+          <StatCard id="failed" label="Failed" value={stats.failed} icon={XCircle} tone="red" index={2} />
         </div>
 
         <HistoryTable />

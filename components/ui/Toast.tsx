@@ -41,8 +41,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
       {children}
       <div
         id="toast"
-        className={`glass-flat ${visible ? "show" : ""}`}
-        style={{ color: "var(--text)", maxWidth: "min(420px, calc(100vw - 32px))", cursor: "pointer" }}
+        className={visible ? "show" : ""}
+        style={{ maxWidth: "min(420px, calc(100vw - 32px))", cursor: "pointer" }}
         onMouseEnter={pause}
         onMouseLeave={resume}
         onClick={() => setVisible(false)}

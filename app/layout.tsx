@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import "@fontsource-variable/inter-tight";
-import "@fontsource-variable/bricolage-grotesque";
+import "@fontsource-variable/inter";
+import "@fontsource-variable/jetbrains-mono";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import { AuthProvider } from "@/lib/auth-context";
@@ -17,7 +17,7 @@ const SITE_NAME = "Depup";
 const SITE_TAGLINE = "Deploy without the hassle.";
 
 const SITE_DESCRIPTION =
-  "Depup adalah dashboard modern untuk mengelola deployment Vercel, Cloudflare Pages, dan Railway dalam satu tempat. Import repo, deploy, atur domain & environment variables, semua dari satu dashboard glass yang cantik — tanpa perlu buka banyak tab.";
+  "Depup adalah dashboard modern untuk mengelola deployment Vercel, Cloudflare Pages, dan Railway dalam satu tempat. Import repo, deploy, atur domain & environment variables, semua dari satu dashboard yang bersih dan nyaman dipakai — tanpa perlu buka banyak tab.";
 
 const SITE_KEYWORDS = [
   "depup",
@@ -147,8 +147,8 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
   },
   other: {
-    "msapplication-TileColor": "#0a0a0f",
-    "theme-color": "#0a0a0f",
+    "msapplication-TileColor": "#f2f2f7",
+    "theme-color": "#f2f2f7",
   },
 };
 
@@ -157,8 +157,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0a0f" },
+    { media: "(prefers-color-scheme: light)", color: "#f2f2f7" },
+    { media: "(prefers-color-scheme: dark)", color: "#080809" },
   ],
   colorScheme: "dark light",
 };
@@ -207,12 +207,15 @@ export default function RootLayout({
           href="https://fonts.gstatic.com"
           crossOrigin="anonymous"
         />
+        <noscript>
+          <style>{`.reveal{opacity:1!important;transform:none!important}`}</style>
+        </noscript>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className="antialiased selection:bg-violet-500/30 min-h-screen w-full">
+      <body className="antialiased min-h-screen w-full font-sans">
         <ThemeProvider>
           <AuthProvider>
             <ToastProvider>{children}</ToastProvider>

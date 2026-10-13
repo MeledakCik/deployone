@@ -51,6 +51,8 @@ export function Sidebar() {
     void logout().then(() => router.push("/"));
   }
 
+  const activeIndex = Math.max(0, NAV_ITEMS.findIndex((item) => item.id === view));
+
   return (
     <>
       {/* Mobile top bar — only visible below md, sits above the page content */}
@@ -59,100 +61,104 @@ export function Sidebar() {
           type="button"
           onClick={() => setOpen(true)}
           aria-label="Buka menu"
-          className="grid h-9 w-9 place-items-center rounded-xl text-text-muted hover:bg-[var(--card-hover)] hover:text-text"
+          className="pill grid h-10 w-10 place-items-center text-text"
         >
           <Menu size={19} />
         </button>
         <div className="flex items-center gap-2">
-          <span className="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-br from-violet-500 to-cyan-400 text-white overflow-hidden">
-            <Image
-              src="/logo.png"
-              alt="Depup logo"
-              width={28}
-              height={28}
-              className="h-full w-full object-cover"
-              priority
-            />
-          </span>
-          <span className="text-[14px] font-semibold tracking-tight">Depup</span>
+          <Image
+            src="/logo.png"
+            alt="Depup logo"
+            width={28}
+            height={28}
+            className="h-7 w-7 rounded-[9px] shadow-sm"
+            priority
+          />
+          <span className="text-[15px] font-semibold tracking-[-0.03em]">Depup</span>
         </div>
         <ThemeToggle />
       </div>
 
       {/* Backdrop for the mobile drawer */}
-      {open && (
-        <div
-          className="fixed inset-0 z-40 bg-black/60 md:hidden"
-          onClick={() => setOpen(false)}
-          aria-hidden
-        />
-      )}
+      <div
+        className={`fixed inset-0 z-40 bg-black/30 backdrop-blur-sm transition-opacity duration-500 md:hidden ${
+          open ? "opacity-100" : "pointer-events-none opacity-0"
+        }`}
+        onClick={() => setOpen(false)}
+        aria-hidden
+      />
 
       <aside
-        className={`sidebar fixed inset-y-0 left-0 z-50 flex h-screen w-72 max-w-[82%] shrink-0 flex-col p-4 transition-transform duration-300 ease-out md:sticky md:top-0 md:z-auto md:w-64 md:max-w-none md:translate-x-0 ${open ? "translate-x-0" : "-translate-x-full"
-          }`}
+        className={`sidebar fixed left-3 top-3 z-50 flex h-[calc(100dvh-1.5rem)] w-72 max-w-[82%] shrink-0 flex-col p-4 md:sticky md:left-auto md:top-4 md:m-4 md:mr-0 md:h-[calc(100dvh-2rem)] md:w-64 md:max-w-none md:translate-x-0 md:self-start ${
+          open ? "translate-x-0" : "-translate-x-[125%]"
+        }`}
       >
-        <div className="flex items-center justify-between px-2 py-3 mb-4">
-          <div className="flex items-center gap-2">
-            <span className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-violet-500 to-cyan-400 text-white">
-              <Image
+        <div className="mb-5 flex items-center justify-between px-2 pt-2">
+          <div className="flex items-center gap-2.5">
+            <Image
               src="/logo.png"
               alt="Depup logo"
-              width={28}
-              height={28}
-              className="h-full w-full object-cover"
+              width={32}
+              height={32}
+              className="h-8 w-8 rounded-[10px] shadow-sm"
               priority
             />
-            </span>
-            <span className="text-[15px] font-semibold tracking-tight">Depup</span>
+            <span className="text-[17px] font-semibold tracking-[-0.03em]">Depup</span>
           </div>
           <button
             type="button"
             onClick={() => setOpen(false)}
             aria-label="Tutup menu"
-            className="grid h-8 w-8 place-items-center rounded-full text-text-muted hover:bg-[var(--card-hover)] hover:text-text md:hidden"
+            className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-white/70 transition-transform duration-500 ease-bounce hover:scale-110 hover:text-white active:scale-90 md:hidden"
           >
             <X size={16} />
           </button>
         </div>
 
-        <nav className="flex-1 space-y-1 overflow-y-auto">
-          {NAV_ITEMS.map((item) => {
-            const active = view === item.id;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                data-view={item.id}
-                aria-current={active ? "page" : undefined}
-                className={`nav flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-[13px] font-medium transition ${active ? "bg-[var(--card-hover)] text-text" : "text-text-muted hover:text-text hover:bg-[var(--card-hover)]"
-                  }`}
-                onClick={() => setView(item.id)}
-              >
-                <item.icon size={17} />
-                {item.label}
-              </button>
-            );
-          })}
+        <nav className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden px-0.5 py-0.5">
+          <div className="nav-track flex flex-col gap-1">
+            {/* Penanda aktif: meluncur ke menu terpilih dengan gerakan spring */}
+            <span
+              className="nav-thumb"
+              style={{ transform: `translateY(${activeIndex * 48}px)` }}
+              aria-hidden="true"
+            />
+            {NAV_ITEMS.map((item) => {
+              const active = view === item.id;
+              return (
+                <button
+                  key={item.id}
+                  type="button"
+                  data-view={item.id}
+                  aria-current={active ? "page" : undefined}
+                  className="nav-item nav flex w-full items-center gap-3 px-4 text-[14px] font-medium"
+                  onClick={() => setView(item.id)}
+                >
+                  <item.icon size={18} />
+                  {item.label}
+                </button>
+              );
+            })}
+          </div>
         </nav>
 
-        <div className="pt-3 border-t border-[var(--line)]">
-          <div className="mb-2 hidden justify-end md:flex">
+        <div className="pt-3">
+          <div className="mb-3 hidden justify-end md:flex">
             <ThemeToggle />
           </div>
           {user && (
-            <div className="pill flex items-center gap-3 px-3 py-2.5 mb-2">
+            <div className="mb-2 flex items-center gap-3 rounded-[22px] bg-white/[0.07] px-3 py-2.5">
               {user.picture ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={user.picture}
                   alt={user.name}
                   referrerPolicy="no-referrer"
-                  className="h-8 w-8 shrink-0 rounded-full object-cover"
+                  className="h-9 w-9 shrink-0 rounded-full object-cover"
                 />
               ) : (
                 <span
-                  className={`grid h-8 w-8 shrink-0 place-items-center rounded-full text-[12px] font-semibold text-white ${avatarColorFor(
+                  className={`grid h-9 w-9 shrink-0 place-items-center rounded-full text-[12px] font-semibold text-white ${avatarColorFor(
                     user.email
                   )}`}
                 >
@@ -160,17 +166,17 @@ export function Sidebar() {
                 </span>
               )}
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-[13px] font-medium">{user.name}</span>
-                <span className="block truncate text-[11px] text-text-muted">{user.email}</span>
+                <span className="block truncate text-[13px] font-medium text-white">{user.name}</span>
+                <span className="block truncate text-[11px] text-white/50">{user.email}</span>
               </span>
             </div>
           )}
           <button
             type="button"
             onClick={handleLogout}
-            className="flex w-full items-center gap-3 rounded-2xl px-3 py-2.5 text-[13px] font-medium text-text-muted transition hover:text-text hover:bg-[var(--card-hover)]"
+            className="nav-item flex w-full items-center gap-3 px-4 text-[14px] font-medium"
           >
-            <LogOut size={17} /> Logout
+            <LogOut size={18} /> Logout
           </button>
         </div>
       </aside>

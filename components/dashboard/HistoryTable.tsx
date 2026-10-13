@@ -1,5 +1,6 @@
 "use client";
 
+import type * as React from "react";
 import { normalizeDeployDomain } from "@/lib/utils";
 import { CheckCircle2, XCircle, Trash2 } from "lucide-react";
 import { Surface } from "@/components/ui/Surface";
@@ -9,15 +10,15 @@ export function HistoryTable() {
   const { history, redeploy } = useDeploy();
 
   return (
-    <Surface className="overflow-hidden">
-      <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--surface-line)]">
-        <h3 className="text-[14px] font-semibold">Riwayat Deploy</h3>
-        <span className="mono text-[11px] text-text-faint">{history.length}/10</span>
+    <Surface className="rise overflow-hidden" style={{ "--i": 4 } as React.CSSProperties}>
+      <div className="flex items-center justify-between px-6 pb-3 pt-6">
+        <h3 className="text-[18px] font-semibold tracking-[-0.025em]">Riwayat Deploy</h3>
+        <span className="badge px-3 py-1 text-[12px]">{history.length}/10</span>
       </div>
       <div className="overflow-x-auto">
         <table className="w-full text-left">
           <thead>
-            <tr className="text-[11px] uppercase tracking-wide text-text-faint">
+            <tr className="text-[12px] text-text-faint">
               <th className="px-6 py-3 font-medium">Project</th>
               <th className="px-6 py-3 font-medium">Platform</th>
               <th className="px-6 py-3 font-medium">Domain</th>
@@ -39,18 +40,17 @@ export function HistoryTable() {
               return (
                 <tr
                   key={item.id}
-                  className={`surface-solid-row border-b last:border-0 transition-colors ${isDeleted ? "opacity-60" : ""}`}
-                  style={{ borderColor: "var(--surface-line)" }}
+                  className={`surface-solid-row transition-colors ${isDeleted ? "opacity-60" : ""}`}
                 >
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-3.5">
                     <div className="flex items-center gap-3">
                       <span
-                        className={`grid h-8 w-8 place-items-center rounded-full border ${
+                        className={`grid h-9 w-9 place-items-center rounded-full ${
                           isDeleted
-                            ? "bg-zinc-500/10 text-zinc-400 border-zinc-500/20"
+                            ? "bg-zinc-500/10 text-zinc-400"
                             : isReady
-                              ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
-                              : "bg-red-500/10 text-red-400 border-red-500/20"
+                              ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                              : "bg-red-500/15 text-red-500 dark:text-red-400"
                         }`}
                       >
                         {isDeleted ? (
@@ -69,16 +69,16 @@ export function HistoryTable() {
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 text-[12px] capitalize">{item.platform}</td>
-                  <td className="px-6 py-4 mono text-[12px] opacity-70">{normalizeDeployDomain(item.domain, item.platform)}</td>
-                  <td className="px-6 py-4">
+                  <td className="px-6 py-3.5 text-[12px] capitalize">{item.platform}</td>
+                  <td className="px-6 py-3.5 mono text-[12px] opacity-70">{normalizeDeployDomain(item.domain, item.platform)}</td>
+                  <td className="px-6 py-3.5">
                     <span
-                      className={`inline-flex items-center gap-1.5 rounded-pill border px-2.5 py-0.5 text-[11px] font-medium ${
+                      className={`inline-flex items-center gap-1.5 rounded-pill px-3 py-1 text-[12px] font-medium ${
                         isDeleted
-                          ? "border-zinc-500/20 bg-zinc-500/10 text-zinc-400"
+                          ? "bg-zinc-500/10 text-zinc-400"
                           : isReady
-                            ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
-                            : "border-red-500/20 bg-red-500/10 text-red-400"
+                            ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                            : "bg-red-500/15 text-red-500 dark:text-red-400"
                       }`}
                     >
                       <span
@@ -89,11 +89,11 @@ export function HistoryTable() {
                       {isDeleted ? "Deleted" : isReady ? "Ready" : "Failed"}
                     </span>
                   </td>
-                  <td className="px-6 py-4 text-right">
+                  <td className="px-6 py-3.5 text-right">
                     <button
                       type="button"
                       onClick={() => redeploy(item.name)}
-                      className="pill px-3 py-1 text-[11px] font-medium hover:brightness-110"
+                      className="pill px-4 py-1.5 text-[12px] font-medium"
                     >
                       {isDeleted ? "Deploy Ulang" : "Redeploy"}
                     </button>
