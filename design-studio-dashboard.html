@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Design Studio Pro - Dashboard</title>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --bg-body: #f8fafc;
+            --bg-card: #ffffff;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --success: #22c55e;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            line-height: 1.5;
+        }
+
+        /* Layout Structure */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100dvh;
+        }
+
+        .sidebar {
+            background-color: #0f172a;
+            color: white;
+            padding: 1.5rem;
+            width: 100%;
+        }
+
+        .main-content {
+            flex: 1;
+            padding: 1.5rem;
+            width: 100%;
+        }
+
+        @media (min-width: 768px) {
+            .app-container {
+                flex-direction: row;
+            }
+            .sidebar {
+                width: 260px;
+                position: sticky;
+                top: 0;
+                height: 100dvh;
+            }
+            .main-content {
+                max-width: calc(100% - 260px);
+            }
+        }
+
+        /* Typography & Components */
+        h1, h2, h3 {
+            margin-top: 0;
+            font-weight: 700;
+        }
+
+        .sidebar h1 {
+            font-size: 1.25rem;
+            margin-bottom: 2rem;
+            color: var(--primary);
+        }
+
+        .nav-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .nav-item {
+            padding: 0.75rem 1rem;
+            margin-bottom: 0.5rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: background 0.2s;
+            color: #94a3b8;
+        }
+
+        .nav-item.active {
+            background-color: var(--primary);
+            color: white;
+        }
+
+        .nav-item:hover:not(.active) {
+            background-color: #1e293b;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            gap: 1.5rem;
+            grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+            margin-bottom: 2rem;
+        }
+
+        .card {
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: 0.75rem;
+            border: 1px solid var(--border);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .stat-value {
+            font-size: 1.875rem;
+            font-weight: 800;
+            margin: 0.5rem 0;
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            letter-spacing: 0.025em;
+        }
+
+        /* Real-time List */
+        .project-list {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .table-wrapper {
+            overflow-x: auto;
+            background: var(--bg-card);
+            border-radius: 0.75rem;
+            border: 1px solid var(--border);
+        }
+
+        th, td {
+            text-align: left;
+            padding: 1rem;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            background-color: #f1f5f9;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+
+        .badge {
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+
+        .badge-active { background: #dcfce7; color: #166534; }
+        .badge-pending { background: #fef9c3; color: #854d0e; }
+
+        /* Real-time Indicator */
+        .live-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.75rem;
+            color: var(--success);
+            margin-bottom: 1rem;
+        }
+
+        .dot {
+            height: 8px;
+            width: 8px;
+            background-color: var(--success);
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.4; }
+            100% { opacity: 1; }
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.625rem 1.25rem;
+            border-radius: 0.5rem;
+            font-weight: 600;
+            cursor: pointer;
+            min-height: 44px;
+        }
+
+        button:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .overflow-wrap {
+            overflow-wrap: anywhere;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <aside class="sidebar">
+            <h1>DesignStudio.</h1>
+            <ul class="nav-list">
+                <li class="nav-item active">Dashboard</li>
+                <li class="nav-item">Proyek</li>
+                <li class="nav-item">Klien</li>
+                <li class="nav-item">Laporan</li>
+                <li class="nav-item">Pengaturan</li>
+            </ul>
+        </aside>
+
+        <main class="main-content">
+            <header class="section-header">
+                <div>
+                    <h2>Ringkasan Studio</h2>
+                    <div class="live-indicator">
+                        <span class="dot"></span> LIVE UPDATING
+                    </div>
+                </div>
+                <button onclick="addProject()">+ Proyek Baru</button>
+            </header>
+
+            <div class="stats-grid">
+                <div class="card">
+                    <div class="stat-label">Total Proyek</div>
+                    <div class="stat-value" id="total-projects">24</div>
+                </div>
+                <div class="card">
+                    <div class="stat-label">Pendapatan (Bulan Ini)</div>
+                    <div class="stat-value">Rp 45.2M</div>
+                </div>
+                <div class="card">
+                    <div class="stat-label">Klien Aktif</div>
+                    <div class="stat-value">12</div>
+                </div>
+            </div>
+
+            <h3>Proyek Terbaru</h3>
+            <div class="table-wrapper">
+                <table class="project-list" id="project-table">
+                    <thead>
+                        <tr>
+                            <th>Nama Proyek</th>
+                            <th>Klien</th>
+                            <th>Status</th>
+                            <th>Batas Waktu</th>
+                        </tr>
+                    </thead>
+                    <tbody id="project-body">
+                        <tr>
+                            <td>Redesign Website E-Commerce</td>
+                            <td>TechFlow Corp</td>
+                            <td><span class="badge badge-active">Berjalan</span></td>
+                            <td>20 Okt 2026</td>
+                        </tr>
+                        <tr>
+                            <td>Branding Identity</td>
+                            <td>Kopi Senja</td>
+                            <td><span class="badge badge-pending">Menunggu</span></td>
+                            <td>25 Okt 2026</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Simulasi update real-time
+        let projectCount = 24;
+        const projectBody = document.getElementById('project-body');
+        const totalProjectsEl = document.getElementById('total-projects');
+
+        function addProject() {
+            projectCount++;
+            totalProjectsEl.innerText = projectCount;
+
+            const newRow = document.createElement('tr');
+            const projects = [
+                { name: 'Mobile App UI/UX', client: 'Startup X', deadline: '30 Okt 2026' },
+                { name: 'Social Media Assets', client: 'Brand Y', deadline: '05 Nov 2026' },
+                { name: 'Packaging Design', client: 'Glow Up', deadline: '12 Nov 2026' }
+            ];
+            
+            const randomProject = projects[Math.floor(Math.random() * projects.length)];
+
+            newRow.innerHTML = `
+                <td>${randomProject.name} #${projectCount}</td>
+                <td>${randomProject.client}</td>
+                <td><span class="badge badge-active">Berjalan</span></td>
+                <td>${randomProject.deadline}</td>
+            `;
+            
+            projectBody.prepend(newRow);
+        }
+
+        // Simulasi data masuk otomatis setiap 10 detik
+        setInterval(() => {
+            console.log('Sinkronisasi data real-time...');
+            // Di dunia nyata, ini akan mengambil data dari API/WebSocket
+        }, 10000);
+    </script>
+</body>
+</html>
