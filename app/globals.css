@@ -839,6 +839,3 @@ input[type="checkbox"]:checked {
   background: rgb(var(--c-fill) / 0.5);
   background-clip: content-box;
 }
-
-
-.glass-panel{background:rgba(255,255,255,.7);backdrop-filter:blur(22px) saturate(1.5);-webkit-backdrop-filter:blur(22px) saturate(1.5);border:1px solid rgba(255,255,255,.65);box-shadow:0 20px 60px rgba(15,23,42,.08)}
