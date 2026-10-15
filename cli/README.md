@@ -16,7 +16,7 @@ npx depup-cli share 8000     # atau sebutkan port-nya
 |---|---|
 | `--name <awalan>` | awalan nama link (bagian acak tetap ditambahkan supaya tidak bisa ditebak) |
 | `--ttl <menit>` | masa aktif link, default 120, maksimal 480 |
-| `--host <url>` | server Depup; default `https://depup.app` atau env `DEPUP_HOST` |
+| `--host <url>` | server Depup; default `https://depup.web.id` atau env `DEPUP_HOST` |
 
 Catatan: hanya `localhost` yang bisa dibagikan, tidak ada WebSocket, body upload maksimal ±600 KB.
 Siapa pun yang punya link bisa membuka websitemu selama perintah ini jalan.

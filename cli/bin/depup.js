@@ -10,7 +10,7 @@ const http = require("node:http");
 const net = require("node:net");
 
 const VERSION = require("../package.json").version;
-const DEFAULT_HOST = process.env.DEPUP_HOST || "https://depup.app";
+const DEFAULT_HOST = process.env.DEPUP_HOST || "https://depup.web.id";
 const COMMON_PORTS = [3000, 5173, 8000, 8080, 4200, 5000, 4321, 3001, 5174, 4000, 8081, 8888, 9000];
 const LOOPBACK = new Set(["localhost", "127.0.0.1", "::1", "[::1]", "0.0.0.0"]);
 
