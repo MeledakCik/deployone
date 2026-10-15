@@ -15,7 +15,7 @@ export const POST = withErrorHandling(async (req: NextRequest, { params }: { par
 
   const meta = await loadSite(params.id, { includePending: true });
   if (!meta || meta.owner !== email) return fail("Upload tidak ditemukan.", 404, "not_found");
-  if (meta.status === "active") return ok({ id: meta.id, url: siteUrl(meta.id), expiresAt: meta.expiresAt });
+  if (meta.status === "active") return ok({ id: meta.id, url: siteUrl(meta.id, req.headers.get("host")), expiresAt: meta.expiresAt });
 
   const keys = Array.from({ length: meta.chunkCount }, (_, i) => kSiteChunk(meta.id, i));
   const present = await kv.exists(...keys);
@@ -35,5 +35,5 @@ export const POST = withErrorHandling(async (req: NextRequest, { params }: { par
   await pipe.exec();
   await addUserSite(email, meta.id);
 
-  return ok({ id: meta.id, url: siteUrl(meta.id), expiresAt: active.expiresAt });
+  return ok({ id: meta.id, url: siteUrl(meta.id, req.headers.get("host")), expiresAt: active.expiresAt });
 });

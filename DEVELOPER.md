@@ -199,6 +199,9 @@ dan middleware yang sama dengan Link Gaib, jadi **tidak ada setup domain tambaha
 - **Deteksi framework** (`analyzeProject` di `lib/site-upload.ts`, jalan di browser sebelum publish): membaca `package.json`, struktur folder, dan
   `.env`, lalu menampilkan kartu "Terdeteksi: …" — memblokir project yang belum di-build / punya backend (Express, Python, dst.) dan
   memperingatkan route `/api` serta env yang tidak akan jalan, dengan tombol ke menu Upload untuk project yang butuh server.
+- **Tes lokal**: buat `.env.local` berisi `TUNNEL_BASE_DOMAIN=localhost`, jalankan `npm run dev`, login (daftarkan
+  `http://localhost:3000/api/auth/google/callback` di Google Cloud Console), upload di menu Link Instan, lalu buka
+  `http://<slug>.localhost:3000/`. Chrome/Firefox me-resolve `*.localhost` otomatis (Safari tidak).
 - **Batas**: 20 MB & 500 file per situs, 5 link aktif per akun, 20 upload/jam per akun (ubah di `_lib/sites.ts`).
 - **Keamanan**: fitur otomatis mati kalau `TUNNEL_BASE_DOMAIN` kosong (JS milik user tidak boleh jalan di origin dashboard).
   Upload wajib login. Karena subdomain situs "same-site" dengan dashboard bila memakai domain induk yang sama,

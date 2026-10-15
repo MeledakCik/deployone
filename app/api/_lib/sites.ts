@@ -63,8 +63,15 @@ export function sitesEnabled(): boolean {
   return tunnelEnabled() && tunnelBaseDomain() !== null;
 }
 
-export function siteUrl(slug: string): string {
-  return `https://${slug}.${tunnelBaseDomain()}/`;
+export function siteUrl(slug: string, hostHeader?: string | null): string {
+  const base = tunnelBaseDomain();
+  // Tes lokal: TUNNEL_BASE_DOMAIN=localhost -> http://<slug>.localhost:<port>/ (browser modern
+  // me-resolve *.localhost ke 127.0.0.1). Port diambil dari alamat yang dipakai user saat ini.
+  if (base === "localhost" || base?.endsWith(".localhost")) {
+    const port = /:(\d+)$/.exec(hostHeader ?? "")?.[1] ?? process.env.PORT ?? "3000";
+    return `http://${slug}.${base}:${port}/`;
+  }
+  return `https://${slug}.${base}/`;
 }
 
 /* ---------- content type ---------- */

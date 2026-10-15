@@ -44,7 +44,7 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
     sites: sites.map((s) => ({
       id: s.id,
       name: s.name,
-      url: siteUrl(s.id),
+      url: siteUrl(s.id, req.headers.get("host")),
       createdAt: s.createdAt,
       expiresAt: s.expiresAt,
       totalBytes: s.totalBytes,
@@ -138,5 +138,5 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
   const id = await reserveSlug(meta, body.name);
   if (!id) return fail("Gagal membuat nama link unik. Coba lagi.", 500);
 
-  return ok({ id, url: siteUrl(id), chunkBytes: CHUNK_BYTES, chunkCount: meta.chunkCount, expiresAt: meta.expiresAt });
+  return ok({ id, url: siteUrl(id, req.headers.get("host")), chunkBytes: CHUNK_BYTES, chunkCount: meta.chunkCount, expiresAt: meta.expiresAt });
 });

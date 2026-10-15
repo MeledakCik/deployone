@@ -178,7 +178,7 @@ export function HostingView() {
         spa,
         onProgress: (done, total, label) => setProgress({ done, total, label }),
       });
-      showToast("Link aktif: " + res.url.replace(/^https:\/\//, "").replace(/\/$/, ""));
+      showToast("Link aktif: " + res.url.replace(/^https?:\/\//, "").replace(/\/$/, ""));
       setPrepared(null);
       setReport(null);
       setStage("idle");
@@ -481,7 +481,7 @@ export function HostingView() {
                   rel="noopener noreferrer"
                   className="block break-all text-[13.5px] font-medium underline-offset-4 hover:underline"
                 >
-                  {s.url.replace(/^https:\/\//, "").replace(/\/$/, "")}
+                  {s.url.replace(/^https?:\/\//, "").replace(/\/$/, "")}
                 </a>
                 <p className="mt-0.5 flex flex-wrap items-center gap-x-3 text-[11.5px] text-text-muted">
                   <span className="inline-flex items-center gap-1">
