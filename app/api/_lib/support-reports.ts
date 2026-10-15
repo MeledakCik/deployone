@@ -109,6 +109,15 @@ async function sendWebhook(text: string): Promise<void> {
   }
 }
 
+/** Kirim teks bebas ke Telegram/webhook developer (best-effort, tidak pernah melempar error). */
+export async function notifyText(text: string): Promise<void> {
+  try {
+    await Promise.all([sendTelegram(text.slice(0, 3800)), sendWebhook(text.slice(0, 3800))]);
+  } catch (e) {
+    console.error("[notify] gagal", (e as Error)?.name);
+  }
+}
+
 async function notifyDeveloper(r: SupportReport): Promise<void> {
   const text = reportText(r);
   await Promise.all([sendTelegram(text), sendWebhook(text)]);

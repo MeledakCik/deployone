@@ -272,6 +272,25 @@ disinkronkan ke server lewat `lib/useCloudStorage.ts`.
   mengizinkan `'unsafe-inline'`/`'unsafe-eval'` untuk script karena kebutuhan Next.js 14 tanpa nonce.
 - Logout menghapus cache lokal (`depup-fallback:*`) dari browser.
 
+## Operasional: biaya, abuse, dan saklar darurat
+
+- **Fluid Compute** diaktifkan lewat `vercel.json` (`"fluid": true`). Long-poll tunnel menunggu ±25 dtk per poll;
+  dengan Fluid, tagihan mengikuti CPU aktif, bukan lama menunggu. Bisa juga dinyalakan di Project Settings → Functions.
+- **Kuota data tunnel**: `TUNNEL_MAX_MB` (default 150) per link. Lewat batas, pengunjung *berikutnya* melihat
+  "Kuota link habis"; response yang sedang berjalan tetap selesai. `0` = tanpa batas.
+- **Saklar darurat**: `TUNNEL_ENABLED=false` mematikan pembuatan link baru, melayani link/situs yang ada (503),
+  dan menghentikan CLI yang masih jalan (poll membalas 410). Perlu redeploy setelah mengubah env.
+- **Laporan abuse**: siapa pun bisa melapor di `/laporkan` (atau `<link>/__depup/report`, dan tautan "Laporkan link ini" di
+  halaman peringatan tunnel). Laporan masuk ke Telegram/webhook yang sama dengan laporan bantuan
+  (`TELEGRAM_*` / `SUPPORT_WEBHOOK_URL`) dan disimpan 90 hari di Redis (`abuse:report:*`). Dibatasi 5/10 menit per IP.
+  Butuh `NEXT_PUBLIC_APP_URL` (domain utama Depup) supaya tautan laporan di subdomain bisa mengarah ke sana.
+- **Takedown** (hanya `ADMIN_EMAILS`): login sebagai admin, buka console browser di domain Depup, lalu:
+  `fetch("/api/admin/takedown",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({slug:"nama-link-abc12",ban:true})}).then(r=>r.json()).then(console.log)`
+  `ban:true` melarang pemilik situs membuat Link Instan 30 hari. Cache CDN bisa masih menyajikannya ≤ 2 menit.
+- **Matcher middleware** (`middleware.ts`) tidak lagi berjalan untuk aset statis di host utama. Host tunnel dikenali dari
+  pola slug `<awalan>-<5 huruf/angka acak>`; **kalau format slug di `tunnel.ts` diubah, ubah regex matcher-nya juga**,
+  kalau tidak aset `/_next/*` milik app yang di-tunnel tidak akan sampai ke tunnel.
+
 ## Catatan perilaku
 
 - **Riwayat deploy dibatasi 10 entri.** Saat penuh, entri terlama dihapus otomatis tanpa konfirmasi.

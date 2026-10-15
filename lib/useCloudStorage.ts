@@ -58,6 +58,47 @@ function writeFallbackCache<T>(email: string, key: string, value: T): void {
   }
 }
 
+/**
+ * Dashboard memakai useCloudStorage untuk 4+ key (history, domains, envVars, settingsTokens) dan
+ * beberapa komponen punya instance sendiri — dulu masing-masing GET /api/user-data (blob lengkap,
+ * sampai ~1 MB, plus dekripsi) saat mount. Sekarang request yang berdekatan berbagi satu promise.
+ * Cache dibuang tiap ada PUT supaya instance baru tidak membaca data basi.
+ */
+type SharedLoad = {
+  ok: boolean;
+  status: number;
+  body: ApiResponse<Record<string, unknown>> | null;
+};
+const SHARE_WINDOW_MS = 3000;
+let sharedLoad: { email: string; at: number; promise: Promise<SharedLoad> } | null = null;
+
+function loadUserDataShared(email: string): Promise<SharedLoad> {
+  const now = Date.now();
+  if (sharedLoad && sharedLoad.email === email && now - sharedLoad.at < SHARE_WINDOW_MS) {
+    return sharedLoad.promise;
+  }
+  const promise: Promise<SharedLoad> = fetch("/api/user-data", { credentials: "include" }).then(
+    async (res) => ({
+      ok: res.ok,
+      status: res.status,
+      body: (await res.json().catch(() => null)) as SharedLoad["body"],
+    })
+  );
+  sharedLoad = { email, at: now, promise };
+  promise
+    .then((r) => {
+      if (!r.ok && sharedLoad?.promise === promise) sharedLoad = null;
+    })
+    .catch(() => {
+      if (sharedLoad?.promise === promise) sharedLoad = null;
+    });
+  return promise;
+}
+
+function invalidateSharedLoad(): void {
+  sharedLoad = null;
+}
+
 export function useCloudStorage<T>(
   key: string,
   initial: T,
@@ -105,10 +146,8 @@ export function useCloudStorage<T>(
 
     (async () => {
       try {
-        const res = await fetch("/api/user-data", { credentials: "include" });
-        const body = (await res.json().catch(() => null)) as ApiResponse<
-          Record<string, unknown>
-        > | null;
+        const res = await loadUserDataShared(email);
+        const body = res.body;
 
         if (!res.ok || !body || body.ok !== true) {
           const message =
@@ -150,12 +189,14 @@ export function useCloudStorage<T>(
                   ? { ...(initial as object), ...(parsed as object) }
                   : parsed;
               setState(mergedParsed as T);
+              invalidateSharedLoad();
               await fetch("/api/user-data", {
                 method: "PUT",
                 credentials: "include",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ [key]: mergedParsed }),
               });
+              invalidateSharedLoad();
               window.localStorage.removeItem(legacyKey);
               return;
             }
@@ -216,6 +257,7 @@ export function useCloudStorage<T>(
 
     const controller = new AbortController();
 
+    invalidateSharedLoad();
     fetch("/api/user-data", {
       method: "PUT",
       credentials: "include",

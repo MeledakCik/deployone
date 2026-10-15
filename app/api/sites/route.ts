@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { kv } from "@vercel/kv";
 import { fail, ok, withErrorHandling } from "@/app/api/_lib/response";
 import { getSessionEmail } from "@/app/api/_lib/session";
 import { rateLimit } from "@/app/api/_lib/rate-limit";
@@ -10,6 +11,7 @@ import {
   MAX_SITE_BYTES,
   MAX_SITE_FILES,
   TTL_OPTIONS_HOURS,
+  addUserSite,
   cleanSitePath,
   contentTypeFor,
   expectedChunkCount,
@@ -75,6 +77,24 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
     return fail(`Terlalu banyak upload. Coba lagi ${Math.ceil(rl.retryAfterSeconds / 60)} menit lagi.`, 429, "rate_limited");
   }
 
+  // Serialkan pembuatan situs per user: cek-kuota lalu reserve tidak atomik, jadi tanpa kunci ini
+  // request paralel bisa melewati batas dan memenuhi memori Redis.
+  const lockKey = `site:lock:${email}`;
+  const gotLock = await kv.set(lockKey, 1, { nx: true, ex: 15 });
+  if (!gotLock) {
+    return fail("Upload sebelumnya masih diproses. Tunggu sebentar lalu coba lagi.", 429, "rate_limited");
+  }
+  try {
+    return await createSite(req, email);
+  } finally {
+    await kv.del(lockKey).catch(() => undefined);
+  }
+});
+
+async function createSite(req: NextRequest, email: string) {
+  if (await kv.exists(`site:ban:${email}`)) {
+    return fail("Akun ini dibatasi dari membuat Link Instan karena laporan penyalahgunaan.", 403, "unauthorized");
+  }
   let body: { name?: unknown; ttlHours?: unknown; spa?: unknown; files?: unknown };
   try {
     body = await req.json();
@@ -82,10 +102,11 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
     return fail("Body harus berupa JSON.", 400, "bad_request");
   }
 
-  const existing = await listUserSites(email);
+  // includePending: upload yang belum di-finish SUDAH memakan memori Redis, jadi harus dihitung.
+  const existing = await listUserSites(email, { includePending: true });
   if (existing.length >= MAX_ACTIVE_SITES_PER_USER) {
     return fail(
-      `Maksimal ${MAX_ACTIVE_SITES_PER_USER} link aktif per akun. Hapus salah satu dulu atau tunggu sampai kedaluwarsa.`,
+      `Maksimal ${MAX_ACTIVE_SITES_PER_USER} link per akun (termasuk upload yang belum selesai). Hapus salah satu dulu atau tunggu sampai kedaluwarsa.`,
       409,
       "bad_request"
     );
@@ -137,6 +158,8 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
 
   const id = await reserveSlug(meta, body.name);
   if (!id) return fail("Gagal membuat nama link unik. Coba lagi.", 500);
+  // Catat langsung di daftar user (status pending) supaya terhitung di kuota.
+  await addUserSite(email, id);
 
   return ok({ id, url: siteUrl(id, req.headers.get("host")), chunkBytes: CHUNK_BYTES, chunkCount: meta.chunkCount, expiresAt: meta.expiresAt });
-});
+}

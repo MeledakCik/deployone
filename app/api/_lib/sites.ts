@@ -21,10 +21,19 @@ import {
  * ada di meta. Dengan begitu file besar tidak terbentur limit 1 MB per value KV.
  */
 
+function envInt(name: string, def: number, min: number, max: number): number {
+  const n = Number(process.env[name]);
+  return Number.isFinite(n) && n >= min ? Math.min(Math.floor(n), max) : def;
+}
+
 export const CHUNK_BYTES = 512 * 1024;
-export const MAX_SITE_BYTES = 20 * 1024 * 1024;
+/**
+ * Semua isi situs disimpan di Redis (base64, +33%). Batas per-user ini = batas memori Redis
+ * kamu / jumlah user. Bisa diubah lewat env: SITES_MAX_MB (default 10), SITES_MAX_PER_USER (default 3).
+ */
+export const MAX_SITE_BYTES = envInt("SITES_MAX_MB", 10, 1, 50) * 1024 * 1024;
 export const MAX_SITE_FILES = 500;
-export const MAX_ACTIVE_SITES_PER_USER = 5;
+export const MAX_ACTIVE_SITES_PER_USER = envInt("SITES_MAX_PER_USER", 3, 1, 10);
 export const TTL_OPTIONS_HOURS = [1, 6, 24, 72, 168] as const;
 export const DEFAULT_TTL_HOURS = 24;
 /** Upload yang tidak di-finish dibuang setelah ini. */
@@ -144,12 +153,36 @@ export function expectedChunkSize(totalBytes: number, index: number): number {
 
 /* ---------- akses meta ---------- */
 
-export async function loadSite(id: string, opts?: { includePending?: boolean }): Promise<SiteMeta | null> {
-  if (!id || !SLUG_RE.test(id)) return null;
-  const meta = parseKv<SiteMeta>(await kv.get(kSiteMeta(id)));
+function validMeta(meta: SiteMeta | null, includePending?: boolean): SiteMeta | null {
   if (!meta || typeof meta.expiresAt !== "number" || !Array.isArray(meta.files)) return null;
   if (meta.expiresAt <= Date.now()) return null;
-  if (meta.status !== "active" && !opts?.includePending) return null;
+  if (meta.status !== "active" && !includePending) return null;
+  return meta;
+}
+
+export async function loadSite(id: string, opts?: { includePending?: boolean }): Promise<SiteMeta | null> {
+  if (!id || !SLUG_RE.test(id)) return null;
+  return validMeta(parseKv<SiteMeta>(await kv.get(kSiteMeta(id))), opts?.includePending);
+}
+
+/**
+ * Versi untuk jalur PUBLIK (pengunjung situs / tunnel). Manifest bisa berukuran puluhan KB dan
+ * dibaca untuk SETIAP file yang diminta halaman; hasilnya (termasuk "tidak ada") di-cache
+ * singkat di memori instance. Situs yang dihapus bisa masih tersaji ≤ SITE_CACHE_MS.
+ * JANGAN dipakai untuk route dashboard (upload/finish/delete) — butuh data segar.
+ */
+const SITE_CACHE_MS = 30_000;
+const SITE_CACHE_MAX = 200;
+const siteCache = new Map<string, { meta: SiteMeta | null; until: number }>();
+
+export async function loadSiteCached(id: string): Promise<SiteMeta | null> {
+  if (!id || !SLUG_RE.test(id)) return null;
+  const now = Date.now();
+  const hit = siteCache.get(id);
+  if (hit && hit.until > now) return validMeta(hit.meta);
+  const meta = await loadSite(id);
+  if (siteCache.size >= SITE_CACHE_MAX) siteCache.clear();
+  siteCache.set(id, { meta, until: now + SITE_CACHE_MS });
   return meta;
 }
 
@@ -174,16 +207,23 @@ async function readUserIds(email: string): Promise<string[]> {
   return Array.isArray(raw) ? raw.filter((x) => typeof x === "string") : [];
 }
 
-/** Situs aktif milik user (yang sudah kedaluwarsa dibersihkan dari daftar). */
-export async function listUserSites(email: string): Promise<SiteMeta[]> {
+/**
+ * Situs milik user (yang sudah kedaluwarsa dibersihkan dari daftar). Default hanya yang aktif;
+ * `includePending` ikut menghitung upload yang belum di-finish — WAJIB dipakai saat mengecek kuota,
+ * kalau tidak, upload "pending" (yang sudah memakan memori Redis) tidak terhitung.
+ * Semua manifest dibaca dengan SATU mget, bukan satu get per situs.
+ */
+export async function listUserSites(email: string, opts?: { includePending?: boolean }): Promise<SiteMeta[]> {
   const ids = await readUserIds(email);
   if (ids.length === 0) return [];
-  const metas = await Promise.all(ids.map((id) => loadSite(id)));
+  const raws = await kv.mget<unknown[]>(...ids.map(kSiteMeta));
+  const metas = raws.map((r) => validMeta(parseKv<SiteMeta>(r), true));
   const alive = metas.filter((m): m is SiteMeta => !!m && m.owner === email);
   if (alive.length !== ids.length) {
     await kv.set(kUserSites(email), JSON.stringify(alive.map((m) => m.id)));
   }
-  return alive.sort((a, b) => b.createdAt - a.createdAt);
+  const out = opts?.includePending ? alive : alive.filter((m) => m.status === "active");
+  return out.sort((a, b) => b.createdAt - a.createdAt);
 }
 
 export async function addUserSite(email: string, id: string): Promise<void> {
@@ -203,15 +243,66 @@ export async function removeUserSite(email: string, id: string): Promise<void> {
 export const encodeChunk = (buf: Buffer) => "x" + buf.toString("base64");
 export const decodeChunk = (v: unknown) => Buffer.from(String(v).slice(1), "base64");
 
+/**
+ * LRU kecil untuk potongan yang sudah di-decode. File kecil berbagi potongan 512 KB (~700 KB base64)
+ * dengan file lain, jadi tanpa cache, tiap CSS/JS/gambar kecil menarik ulang ratusan KB dari Redis.
+ * Dibatasi ukuran total supaya tidak menghabiskan memori function.
+ */
+const CHUNK_CACHE_MAX_BYTES = 24 * 1024 * 1024;
+const CHUNK_CACHE_TTL_MS = 60_000;
+const chunkCache = new Map<string, { buf: Buffer; until: number }>();
+let chunkCacheBytes = 0;
+
+function chunkCacheGet(key: string): Buffer | null {
+  const hit = chunkCache.get(key);
+  if (!hit) return null;
+  if (hit.until <= Date.now()) {
+    chunkCache.delete(key);
+    chunkCacheBytes -= hit.buf.length;
+    return null;
+  }
+  // segarkan urutan LRU (Map menjaga urutan sisip)
+  chunkCache.delete(key);
+  chunkCache.set(key, hit);
+  return hit.buf;
+}
+
+function chunkCachePut(key: string, buf: Buffer): void {
+  if (buf.length > CHUNK_CACHE_MAX_BYTES / 2) return;
+  const old = chunkCache.get(key);
+  if (old) chunkCacheBytes -= old.buf.length;
+  chunkCache.set(key, { buf, until: Date.now() + CHUNK_CACHE_TTL_MS });
+  chunkCacheBytes += buf.length;
+  for (const k of chunkCache.keys()) {
+    if (chunkCacheBytes <= CHUNK_CACHE_MAX_BYTES) break;
+    const ev = chunkCache.get(k);
+    chunkCache.delete(k);
+    if (ev) chunkCacheBytes -= ev.buf.length;
+  }
+}
+
 export async function readSiteFile(meta: SiteMeta, file: SiteFile): Promise<Buffer | null> {
   if (file.s === 0) return Buffer.alloc(0);
   const first = Math.floor(file.o / CHUNK_BYTES);
   const last = Math.floor((file.o + file.s - 1) / CHUNK_BYTES);
-  const keys: string[] = [];
-  for (let i = first; i <= last; i++) keys.push(kSiteChunk(meta.id, i));
-  const parts = await kv.mget<unknown[]>(...keys);
-  if (parts.some((p) => p == null)) return null;
-  const joined = Buffer.concat(parts.map(decodeChunk));
+
+  const bufs: (Buffer | null)[] = [];
+  const missing: number[] = [];
+  for (let i = first; i <= last; i++) {
+    const cached = chunkCacheGet(kSiteChunk(meta.id, i));
+    bufs.push(cached);
+    if (!cached) missing.push(i);
+  }
+  if (missing.length > 0) {
+    const parts = await kv.mget<unknown[]>(...missing.map((i) => kSiteChunk(meta.id, i)));
+    if (parts.some((p) => p == null)) return null;
+    missing.forEach((chunkIndex, n) => {
+      const buf = decodeChunk(parts[n]);
+      chunkCachePut(kSiteChunk(meta.id, chunkIndex), buf);
+      bufs[chunkIndex - first] = buf;
+    });
+  }
+  const joined = Buffer.concat(bufs as Buffer[]);
   const start = file.o - first * CHUNK_BYTES;
   return joined.subarray(start, start + file.s);
 }

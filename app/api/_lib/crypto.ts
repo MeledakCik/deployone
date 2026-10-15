@@ -9,6 +9,11 @@ const PREFIX = "enc:v1:";
 // pas deploy. Keamanan tetap bergantung ke AUTH_SECRET yang sudah wajib ada.
 const KDF_SALT = "depup-settings-tokens-v1";
 
+// scryptSync sengaja lambat (puluhan ms CPU). Sebelumnya dipanggil di SETIAP
+// encrypt/decrypt, jadi satu PUT /api/user-data bisa memicu 4x scrypt. Hasil
+// turunan key cukup dihitung sekali per secret per instance serverless.
+let cachedKey: { secret: string; key: Buffer } | null = null;
+
 function getKey(): Buffer {
   const secret = process.env.AUTH_SECRET;
   if (!secret || secret.length < 16) {
@@ -16,7 +21,10 @@ function getKey(): Buffer {
       "AUTH_SECRET belum di-set — dibutuhkan juga untuk enkripsi token yang disimpan."
     );
   }
-  return crypto.scryptSync(secret, KDF_SALT, 32);
+  if (cachedKey && cachedKey.secret === secret) return cachedKey.key;
+  const key = crypto.scryptSync(secret, KDF_SALT, 32);
+  cachedKey = { secret, key };
+  return key;
 }
 
 /** Enkripsi sebuah value (akan di-JSON.stringify) jadi satu string aman-disimpan. */

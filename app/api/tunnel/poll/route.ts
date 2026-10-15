@@ -8,6 +8,7 @@ import {
   loadMeta,
   parseKv,
   sleep,
+  tunnelEnabled,
   type QueuedRequest,
 } from "@/app/api/_lib/tunnel";
 
@@ -27,6 +28,9 @@ const MAX_BATCH = 8;
  * jadi cek KV lebih sering (hemat perintah KV saat idle).
  */
 export const GET = withErrorHandling(async (req: Request) => {
+  // Kill-switch: TUNNEL_ENABLED=false menghentikan CLI yang masih berjalan (CLI berhenti rapi di 410).
+  if (!tunnelEnabled()) return fail("Fitur Link Gaib dimatikan oleh admin Depup.", 410, "tunnel_expired");
+
   const url = new URL(req.url);
   const id = url.searchParams.get("id") ?? "";
   const hot = url.searchParams.get("hot") === "1";
@@ -45,14 +49,19 @@ export const GET = withErrorHandling(async (req: Request) => {
   const deadline = Date.now() + POLL_WINDOW_MS;
   const requests: QueuedRequest[] = [];
 
+  const startedAt = Date.now();
   while (Date.now() < deadline) {
-    while (requests.length < MAX_BATCH) {
-      const item = parseKv<QueuedRequest>(await kv.lpop(kQueue(id)));
-      if (!item) break;
-      requests.push(item);
+    // Satu LPOP dengan count = satu command Redis, berapa pun jumlah request yang antre.
+    const popped = await kv.lpop<unknown>(kQueue(id), MAX_BATCH);
+    const items = Array.isArray(popped) ? popped : popped != null ? [popped] : [];
+    for (const raw of items) {
+      const item = parseKv<QueuedRequest>(raw);
+      if (item) requests.push(item);
     }
     if (requests.length > 0) break;
-    await sleep(hot ? 200 : 1000);
+    // Idle: 1 dtk di 4 dtk pertama, lalu 2 dtk. ~15 command per poll (dulu ~25).
+    // `hot` = CLI baru saja sibuk, tetap cepat (200 ms).
+    await sleep(hot ? 200 : Date.now() - startedAt < 4000 ? 1000 : 2000);
   }
 
   return ok({ requests, expiresAt: meta.expiresAt });

@@ -25,7 +25,7 @@ interface Donation {
 type Phase = "form" | "qr" | "paid" | "expired";
 
 const PRESETS = [5000, 10000, 25000, 50000, 100000];
-const POLL_MS = 4000;
+const POLL_MS = 5000;
 
 const rupiah = (n: number) => `Rp${n.toLocaleString("id-ID")}`;
 
@@ -96,7 +96,15 @@ export function DonateView() {
   // Cek otomatis selama QR ditampilkan
   React.useEffect(() => {
     if (phase !== "qr" || !donation) return;
-    const t = setInterval(() => void checkStatus(donation.id), POLL_MS);
+    const startedAt = Date.now();
+    const t = setInterval(() => {
+      if (document.hidden) return; // tab di latar belakang -> tidak perlu hit server
+      if (Date.now() - startedAt > 15 * 60_000) {
+        clearInterval(t);
+        return;
+      }
+      void checkStatus(donation.id);
+    }, POLL_MS);
     return () => clearInterval(t);
   }, [phase, donation, checkStatus]);
 

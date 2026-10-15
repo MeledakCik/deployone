@@ -1,6 +1,6 @@
 import { kv } from "@vercel/kv";
 import { fail, ok, withErrorHandling } from "@/app/api/_lib/response";
-import { authTunnel, kRes, type ResponseChunk } from "@/app/api/_lib/tunnel";
+import { authTunnel, kBytes, kOver, kRes, tunnelMaxBytes, type ResponseChunk } from "@/app/api/_lib/tunnel";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -49,5 +49,22 @@ export const POST = withErrorHandling(async (req: Request) => {
   }
 
   await kv.set(kRes(id, rid, seq), JSON.stringify(chunk), { ex: 90 });
+
+  // Kuota data per link. Best-effort: kalau penghitung gagal, response tetap jalan (tidak fatal).
+  // Yang diblokir adalah request pengunjung BERIKUTNYA (lihat app/t/[slug]), bukan yang sedang berjalan.
+  const cap = tunnelMaxBytes();
+  if (cap > 0) {
+    try {
+      const add = Math.ceil((data.length * 3) / 4);
+      if (add > 0) {
+        const total = await kv.incrby(kBytes(id), add);
+        const ttl = Math.max(60, Math.ceil((meta.expiresAt - Date.now()) / 1000) + 60);
+        if (total === add) await kv.expire(kBytes(id), ttl);
+        if (total > cap && total - add <= cap) await kv.set(kOver(id), 1, { ex: ttl });
+      }
+    } catch (e) {
+      console.error("[tunnel/respond] hitung kuota gagal:", (e as Error)?.message);
+    }
+  }
   return ok({ stored: true });
 });

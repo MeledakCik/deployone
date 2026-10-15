@@ -7,9 +7,18 @@ const BASE_HEADERS: Record<string, string> = {
   "x-content-type-options": "nosniff",
   "x-robots-tag": "noindex, nofollow",
   "referrer-policy": "strict-origin-when-cross-origin",
-  // Cache CDN singkat supaya KV tidak dihajar tiap request; link yang dihapus hilang <1 menit.
-  "cache-control": "public, max-age=0, s-maxage=60",
 };
+
+/**
+ * Isi sebuah slug tidak pernah berubah (upload ulang = slug baru), jadi aman di-cache lama di CDN
+ * dan browser — ini yang paling menghemat Redis & function. Dibatasi sisa masa aktif supaya situs
+ * kedaluwarsa tidak tersaji. Konsekuensi: link yang DIHAPUS / di-takedown masih bisa tersaji ≤ 2 menit.
+ */
+function cacheControlFor(meta: SiteMeta): string {
+  const left = Math.floor((meta.expiresAt - Date.now()) / 1000);
+  if (left <= 0) return "no-store";
+  return `public, max-age=${Math.min(60, left)}, s-maxage=${Math.min(120, left)}`;
+}
 
 function textPage(status: number, title: string, msg: string): Response {
   const esc = (s: string) => s.replace(/&/g, "&amp;").replace(/</g, "&lt;");
@@ -27,7 +36,12 @@ function textPage(status: number, title: string, msg: string): Response {
 async function send(meta: SiteMeta, file: SiteFile, status: number, method: string): Promise<Response> {
   const buf = await readSiteFile(meta, file);
   if (!buf) return textPage(500, "Isi situs tidak lengkap", "Pemilik perlu meng-upload ulang situs ini.");
-  const headers = { ...BASE_HEADERS, "content-type": file.t, "content-length": String(buf.length) };
+  const headers = {
+    ...BASE_HEADERS,
+    "cache-control": cacheControlFor(meta),
+    "content-type": file.t,
+    "content-length": String(buf.length),
+  };
   return new Response(method === "HEAD" ? null : new Uint8Array(buf), { status, headers });
 }
 

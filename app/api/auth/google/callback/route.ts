@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
+import { timingSafeEqual } from "crypto";
 import { signSession, SESSION_COOKIE, OAUTH_STATE_COOKIE } from "@/app/api/_lib/session";
 
 export const runtime = "nodejs";
@@ -30,7 +31,12 @@ export async function GET(req: NextRequest) {
     return res;
   }
 
-  if (!code || !state || !savedState || state !== savedState) {
+  const stateOk =
+    !!state &&
+    !!savedState &&
+    state.length === savedState.length &&
+    timingSafeEqual(Buffer.from(state), Buffer.from(savedState));
+  if (!code || !stateOk) {
     return fail("Login Google gagal — state tidak cocok, coba login lagi.");
   }
 

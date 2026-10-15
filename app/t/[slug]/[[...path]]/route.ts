@@ -7,9 +7,11 @@ import {
   MAX_REQ_BODY_BYTES,
   SLUG_RE,
   kLive,
+  kOver,
   kQueue,
   kRes,
   newRid,
+  tunnelEnabled,
   loadMeta,
   parseKv,
   slugFromHost,
@@ -17,7 +19,7 @@ import {
   type QueuedRequest,
   type ResponseChunk,
 } from "@/app/api/_lib/tunnel";
-import { loadSite } from "@/app/api/_lib/sites";
+import { loadSiteCached } from "@/app/api/_lib/sites";
 import { serveSite } from "@/app/api/_lib/site-serve";
 
 /**
@@ -111,13 +113,28 @@ async function handle(req: Request, ctx: Ctx): Promise<Response> {
   const slug = ctx.params.slug;
   if (!SLUG_RE.test(slug)) return notFoundPage();
 
+  // Kill-switch penuh: TUNNEL_ENABLED=false mematikan tunnel DAN hosting statis (cadangan darurat kalau ada abuse).
+  if (!tunnelEnabled()) {
+    return page(503, "Fitur dimatikan", `<h1>Fitur dimatikan</h1><p>Link sementara Depup sedang dinonaktifkan oleh admin.</p>`);
+  }
+
   const hostMode = slugFromHost(req.headers.get("host")) === slug;
   const prefix = hostMode ? "" : `/t/${slug}`;
+
+  // Jalur laporan abuse: <link>/__depup/report -> form laporan di domain utama Depup.
+  const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "").trim().replace(/\/+$/, "");
+  const hasAppUrl = /^https?:\/\//i.test(appUrl);
+  if (hasAppUrl && (req.headers.get("x-depup-target") ?? "").split("?")[0] === "/__depup/report") {
+    return new Response(null, {
+      status: 302,
+      headers: { location: `${appUrl}/laporkan?slug=${encodeURIComponent(slug)}`, "cache-control": "no-store" },
+    });
+  }
 
   // Hosting statis ("Link Instan") dicek lebih dulu. Hanya di mode subdomain: JS milik user
   // tidak boleh dijalankan di origin dashboard (mode path /t/<slug>).
   if (hostMode) {
-    const site = await loadSite(slug);
+    const site = await loadSiteCached(slug);
     if (site) {
       const siteTarget = safeTarget(req.headers.get("x-depup-target") ?? "/" + (ctx.params.path ?? []).join("/") + new URL(req.url).search);
       if (!siteTarget) return page(400, "Request tidak valid", `<h1>Request tidak valid</h1><p>Path mengandung karakter yang tidak diperbolehkan.</p>`);
@@ -160,11 +177,23 @@ async function handle(req: Request, ctx: Ctx): Promise<Response> {
       `<h1>Halaman sementara</h1>
 <p>Kamu akan membuka website yang berjalan di <b>komputer seseorang</b> dan dibagikan lewat Depup. Depup tidak membuat atau memeriksa isinya.</p>
 <p>Jangan memasukkan password, data kartu, atau informasi sensitif kecuali kamu percaya pada orang yang mengirim link ini.</p>
-<a class="b" href="${esc(cont)}">Saya mengerti, lanjutkan</a>`
+<a class="b" href="${esc(cont)}">Saya mengerti, lanjutkan</a>${
+        hasAppUrl
+          ? `<p style="margin-top:14px"><small><a href="${esc(appUrl)}/laporkan?slug=${esc(slug)}" style="color:#8b93a7">Laporkan link ini</a></small></p>`
+          : ""
+      }`
     );
   }
 
-  const live = await kv.get(kLive(slug));
+  // Satu command Redis untuk dua penanda: CLI online? dan kuota data habis?
+  const [live, over] = await kv.mget<[unknown, unknown]>(kLive(slug), kOver(slug));
+  if (over) {
+    return page(
+      429,
+      "Kuota link habis",
+      `<h1>Kuota data link ini habis</h1><p>Link ini sudah mencapai batas data yang diizinkan. Minta pemiliknya membuat link baru dengan <code>depup share</code>.</p>`
+    );
+  }
   if (!live) return offlinePage(meta.port);
 
   const rl = await rateLimit("tunnel-hit", slug, 600, 60);
@@ -280,12 +309,12 @@ async function handle(req: Request, ctx: Ctx): Promise<Response> {
 /** Polling KV untuk potongan response; interval merenggang supaya hemat perintah KV. */
 async function waitChunk(id: string, rid: string, seq: number, timeoutMs: number): Promise<ResponseChunk | null> {
   const deadline = Date.now() + timeoutMs;
-  let delay = 60;
+  let delay = 120;
   while (Date.now() < deadline) {
     const chunk = parseKv<ResponseChunk>(await kv.get(kRes(id, rid, seq)));
     if (chunk) return chunk;
     await sleep(delay);
-    delay = Math.min(Math.round(delay * 1.5), 400);
+    delay = Math.min(Math.round(delay * 1.5), 500);
   }
   return null;
 }

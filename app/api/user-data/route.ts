@@ -89,6 +89,11 @@ export const PUT = withErrorHandling(async (req: NextRequest) => {
     })(),
   };
 
+  // Tidak ada perubahan -> lewati SET ke Redis (hemat command + bandwidth).
+  if (JSON.stringify(merged) === JSON.stringify(existing)) {
+    return ok<UserData>(existing);
+  }
+
   const saved = await putUserData(email, merged);
   return ok<UserData>(saved);
 });

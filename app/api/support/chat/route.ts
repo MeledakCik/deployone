@@ -51,6 +51,13 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
   const messages = parseMessages(body?.messages);
   if (!messages) return fail("Pesan tidak valid.", 400, "bad_request");
 
+  // Batas harian per akun: rate limit 12/menit saja masih mengizinkan ~17k panggilan Groq/hari/akun.
+  const dailyId = getSessionEmail(req) ?? "anon";
+  const daily = await rateLimit("support-chat-daily", `u:${dailyId}`, 120, 86400);
+  if (!daily.allowed) {
+    return fail("Batas pesan ke asisten hari ini sudah tercapai. Coba lagi besok.", 429, "rate_limited");
+  }
+
   const view =
     typeof body?.view === "string" && Object.prototype.hasOwnProperty.call(VIEW_LABEL, body.view)
       ? body.view

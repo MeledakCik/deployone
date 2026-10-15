@@ -19,6 +19,10 @@ const notTunnelHost = tunnelBase
     ]
   : [];
 
+// 'unsafe-eval' hanya dibutuhkan React/Next saat development (hot reload). Di production dibuang
+// supaya XSS tidak bisa mengeksekusi string lewat eval().
+const isProd = process.env.NODE_ENV === "production";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -48,6 +52,21 @@ const nextConfig = {
         ],
       },
       {
+        // Response API berisi data per-user: jangan pernah disimpan cache bersama (CDN/proxy).
+        source: "/api/:path*",
+        missing: notTunnelHost,
+        headers: [{ key: "Cache-Control", value: "private, no-store" }],
+      },
+      {
+        // Aset statis di /public (logo, ikon, gambar): cache 1 hari + stale-while-revalidate 7 hari.
+        // /_next/static sudah immutable dari Next sendiri, makanya dikecualikan di sini.
+        source: "/((?!_next/|api/|t/).*)\\.(png|ico|svg|webp|jpg|jpeg|woff2)",
+        missing: notTunnelHost,
+        headers: [
+          { key: "Cache-Control", value: "public, max-age=86400, stale-while-revalidate=604800" },
+        ],
+      },
+      {
         // CSP dipisah untuk halaman (bukan API) supaya tidak mengganggu
         // response JSON di /api/*. connect-src dibuka ke domain OAuth
         // Google karena redirect login lewat sana.
@@ -58,7 +77,8 @@ const nextConfig = {
             key: "Content-Security-Policy",
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              `script-src 'self' 'unsafe-inline'${isProd ? "" : " 'unsafe-eval'"}`,
+              "object-src 'none'",
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https:",
               "font-src 'self' data:",

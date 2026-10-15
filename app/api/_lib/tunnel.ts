@@ -34,6 +34,20 @@ export const kMeta = (id: string) => `tunnel:meta:${id}`;
 export const kLive = (id: string) => `tunnel:live:${id}`;
 export const kQueue = (id: string) => `tunnel:q:${id}`;
 export const kRes = (id: string, rid: string, seq: number) => `tunnel:res:${id}:${rid}:${seq}`;
+/** Total byte response yang sudah lewat Redis untuk link ini, dan penanda "kuota habis". */
+export const kBytes = (id: string) => `tunnel:bytes:${id}`;
+export const kOver = (id: string) => `tunnel:over:${id}`;
+
+/**
+ * Kuota data per link (byte response yang dititipkan lewat Redis; tiap byte ditulis lalu dibaca,
+ * jadi beban Redis ~2x angka ini). Env TUNNEL_MAX_MB, default 150. Isi 0 = tanpa batas.
+ */
+export function tunnelMaxBytes(): number {
+  const raw = process.env.TUNNEL_MAX_MB;
+  const n = raw === undefined || raw.trim() === "" ? 150 : Number(raw);
+  if (!Number.isFinite(n) || n < 0) return 150 * 1024 * 1024;
+  return Math.floor(n * 1024 * 1024);
+}
 
 export interface TunnelMeta {
   tokenHash: string;
@@ -118,11 +132,34 @@ export function parseKv<T>(raw: unknown): T | null {
   return raw as T;
 }
 
+/**
+ * Cache singkat di memori instance serverless. Meta tunnel (hash token, expiry, port) tidak
+ * berubah selama tunnel hidup, tapi dibaca di SETIAP poll CLI, respond, dan request pengunjung.
+ * Konsekuensi: tunnel yang ditutup bisa masih terlayani maksimal META_CACHE_MS di instance lain.
+ * Hasil "tidak ada" ikut di-cache supaya slug ngawur tidak membebani Redis.
+ */
+const META_CACHE_MS = 10_000;
+const META_CACHE_MAX = 500;
+const metaCache = new Map<string, { meta: TunnelMeta | null; until: number }>();
+
+export function forgetMeta(id: string): void {
+  metaCache.delete(id);
+}
+
 export async function loadMeta(id: string): Promise<TunnelMeta | null> {
   if (!id) return null;
-  const meta = parseKv<TunnelMeta>(await kv.get(kMeta(id)));
-  if (!meta || typeof meta.expiresAt !== "number") return null;
-  if (meta.expiresAt <= Date.now()) return null;
+  const now = Date.now();
+  const hit = metaCache.get(id);
+  let meta: TunnelMeta | null;
+  if (hit && hit.until > now) {
+    meta = hit.meta;
+  } else {
+    const raw = parseKv<TunnelMeta>(await kv.get(kMeta(id)));
+    meta = raw && typeof raw.expiresAt === "number" ? raw : null;
+    if (metaCache.size >= META_CACHE_MAX) metaCache.clear();
+    metaCache.set(id, { meta, until: now + META_CACHE_MS });
+  }
+  if (!meta || meta.expiresAt <= now) return null;
   return meta;
 }
 

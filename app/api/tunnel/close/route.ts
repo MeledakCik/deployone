@@ -1,6 +1,6 @@
 import { kv } from "@vercel/kv";
 import { fail, ok, withErrorHandling } from "@/app/api/_lib/response";
-import { authTunnel, kLive, kMeta, kQueue } from "@/app/api/_lib/tunnel";
+import { authTunnel, forgetMeta, kLive, kMeta, kQueue } from "@/app/api/_lib/tunnel";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -14,5 +14,6 @@ export const POST = withErrorHandling(async (req: Request) => {
   const meta = await authTunnel(req, id);
   if (!meta) return fail("Tunnel tidak valid atau sudah kedaluwarsa.", 401, "unauthorized");
   await kv.del(kMeta(id), kLive(id), kQueue(id));
+  forgetMeta(id);
   return ok({ closed: true });
 });
