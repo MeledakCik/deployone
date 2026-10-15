@@ -17,6 +17,8 @@ import {
   type QueuedRequest,
   type ResponseChunk,
 } from "@/app/api/_lib/tunnel";
+import { loadSite } from "@/app/api/_lib/sites";
+import { serveSite } from "@/app/api/_lib/site-serve";
 
 /**
  * Pintu publik "Link Gaib". Pengunjung (dosen/client) membuka
@@ -109,11 +111,22 @@ async function handle(req: Request, ctx: Ctx): Promise<Response> {
   const slug = ctx.params.slug;
   if (!SLUG_RE.test(slug)) return notFoundPage();
 
-  const meta = await loadMeta(slug);
-  if (!meta) return notFoundPage();
-
   const hostMode = slugFromHost(req.headers.get("host")) === slug;
   const prefix = hostMode ? "" : `/t/${slug}`;
+
+  // Hosting statis ("Link Instan") dicek lebih dulu. Hanya di mode subdomain: JS milik user
+  // tidak boleh dijalankan di origin dashboard (mode path /t/<slug>).
+  if (hostMode) {
+    const site = await loadSite(slug);
+    if (site) {
+      const siteTarget = safeTarget(req.headers.get("x-depup-target") ?? "/" + (ctx.params.path ?? []).join("/") + new URL(req.url).search);
+      if (!siteTarget) return page(400, "Request tidak valid", `<h1>Request tidak valid</h1><p>Path mengandung karakter yang tidak diperbolehkan.</p>`);
+      return serveSite(req, site, siteTarget);
+    }
+  }
+
+  const meta = await loadMeta(slug);
+  if (!meta) return notFoundPage();
 
   // Path + query asli dari pengunjung — diisi middleware (tidak bisa dipalsukan klien).
   const fallback = "/" + (ctx.params.path ?? []).join("/") + new URL(req.url).search;

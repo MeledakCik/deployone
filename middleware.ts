@@ -39,7 +39,11 @@ function isTunnelClientPath(pathname: string): boolean {
 
 /** Poll & respond dipanggil sangat sering & sudah dilindungi token + TTL; jangan hitung ke rate limit global. */
 function skipRateLimit(pathname: string): boolean {
-  return /^\/api\/tunnel\/(poll|respond|close)\/?$/.test(pathname);
+  return (
+    /^\/api\/tunnel\/(poll|respond|close)\/?$/.test(pathname) ||
+    // Upload Link Instan mengirim belasan potongan berurutan; dibatasi per-user di route init.
+    /^\/api\/sites\/[^/]+\/chunk\/?$/.test(pathname)
+  );
 }
 
 /**
@@ -161,6 +165,25 @@ export async function middleware(req: NextRequest) {
 
   // Selain /api/*, middleware ini tidak melakukan apa-apa.
   if (pathname !== "/api" && !pathname.startsWith("/api/")) return NextResponse.next();
+
+  // Anti-CSRF: situs yang di-host Link Instan hidup di subdomain yang "same-site" dengan dashboard,
+  // jadi cookie SameSite=Lax tetap terkirim dari sana. Tolak request yang mengubah data kalau
+  // header Origin-nya bukan host Depup sendiri. (CLI tidak mengirim Origin, jadi tidak terpengaruh.)
+  const origin = req.headers.get("origin");
+  if (origin && !["GET", "HEAD", "OPTIONS"].includes(req.method)) {
+    let originHost = "";
+    try {
+      originHost = new URL(origin).host;
+    } catch {
+      /* origin tidak valid -> ditolak di bawah */
+    }
+    if (!originHost || originHost !== req.headers.get("host")) {
+      return NextResponse.json(
+        { ok: false, error: "Request lintas-origin ditolak.", code: "unauthorized" },
+        { status: 403 }
+      );
+    }
+  }
 
   const email = await verifySessionEdge(req.cookies.get(SESSION_COOKIE)?.value);
 

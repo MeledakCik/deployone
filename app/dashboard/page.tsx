@@ -10,6 +10,7 @@ import { Sidebar } from "@/components/dashboard/Sidebar";
 import { DashboardHomeView } from "@/components/dashboard/DashboardHomeView";
 import { DeployFormView } from "@/components/dashboard/DeployFormView";
 import { UploadView } from "@/components/dashboard/UploadView";
+import { HostingView } from "@/components/dashboard/HostingView";
 import { ProjectsView } from "@/components/dashboard/ProjectsView";
 import { DomainsView } from "@/components/dashboard/DomainsView";
 import { EnvironmentView } from "@/components/dashboard/EnvironmentView";
@@ -70,6 +71,7 @@ export default function DashboardPage() {
           {view === "dashboard" && <DashboardHomeView />}
           {view === "deploy" && <DeployFormView />}
           {view === "upload" && <UploadView />}
+          {view === "hosting" && <HostingView />}
           {view === "projects" && <ProjectsView />}
           {view === "domains" && <DomainsView />}
           {view === "env" && <EnvironmentView />}

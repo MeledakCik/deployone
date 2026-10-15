@@ -182,6 +182,29 @@ CLI di laptop  ◄── GET  /api/tunnel/poll      (long-poll ±25 dtk, LPOP an
 - **Route tunnel wajib `fetchCache = "force-no-store"`.** Next 14 men-cache `fetch` POST di dalam route handler
   GET, dan klien KV memakai fetch — tanpa itu `LPOP`/`GET` yang sama terus menjawab `null` dari cache.
 
+### Link Instan (hosting statis, tanpa CLI)
+
+Menu **Link Instan** di dashboard: user drag-drop zip/folder website statis → langsung dapat
+`https://<nama>-<acak>.<TUNNEL_BASE_DOMAIN>/`, aktif 1 jam – 7 hari lalu terhapus otomatis. Memakai wildcard domain
+dan middleware yang sama dengan Link Gaib, jadi **tidak ada setup domain tambahan**.
+
+- **Alur upload** (browser, karena body fungsi Vercel dibatasi ±4,5 MB): `POST /api/sites` (daftar file + ukuran) →
+  `PUT /api/sites/:id/chunk?i=N` (potongan 512 KB, 3 paralel) → `POST /api/sites/:id/finish`. Klien: `lib/site-upload.ts`,
+  UI: `components/dashboard/HostingView.tsx`. `DELETE /api/sites/:id` menghapus seketika.
+- **Penyimpanan** (`app/api/_lib/sites.ts`): semua file digabung jadi satu blob, dipotong 512 KB, tiap potongan satu key
+  KV (`site:c:<slug>:<i>`); manifest path→offset/ukuran ada di `site:meta:<slug>`. Semua key punya TTL = masa aktif link.
+- **Penyajian** (`app/api/_lib/site-serve.ts`, dipanggil dari `app/t/[slug]/[[...path]]/route.ts` sebelum cek tunnel):
+  `/` → `index.html`, `/about` → `about.html` atau `about/index.html`, `404.html` dipakai kalau ada, mode SPA opsional.
+  Hanya GET/HEAD. Cache CDN 60 dtk.
+- **Deteksi framework** (`analyzeProject` di `lib/site-upload.ts`, jalan di browser sebelum publish): membaca `package.json`, struktur folder, dan
+  `.env`, lalu menampilkan kartu "Terdeteksi: …" — memblokir project yang belum di-build / punya backend (Express, Python, dst.) dan
+  memperingatkan route `/api` serta env yang tidak akan jalan, dengan tombol ke menu Upload untuk project yang butuh server.
+- **Batas**: 20 MB & 500 file per situs, 5 link aktif per akun, 20 upload/jam per akun (ubah di `_lib/sites.ts`).
+- **Keamanan**: fitur otomatis mati kalau `TUNNEL_BASE_DOMAIN` kosong (JS milik user tidak boleh jalan di origin dashboard).
+  Upload wajib login. Karena subdomain situs "same-site" dengan dashboard bila memakai domain induk yang sama,
+  `middleware.ts` menolak request `/api/*` non-GET yang header `Origin`-nya bukan host Depup (anti-CSRF). Tetap
+  disarankan memakai domain terpisah untuk `TUNNEL_BASE_DOMAIN`.
+
 ### Setup domain (sekali saja)
 
 1. Beli/siapkan domain **terpisah** dari situs utama Depup (mis. `depup.link`). Alasan: konten tunnel adalah milik orang
