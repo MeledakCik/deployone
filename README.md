@@ -90,6 +90,31 @@ Suka dengan Depup? Kamu bisa mendukung lewat QRIS. Sepenuhnya sukarela.
 
 ---
 
+## Link Gaib — bagikan localhost tanpa deploy
+
+Lagi ngoding di komputermu dan dosen atau client mau lihat hasilnya? Tidak perlu deploy dulu.
+
+1. Jalankan project-mu seperti biasa (misalnya di `localhost:8000`).
+2. Di terminal lain, ketik:
+
+   ```bash
+   npx depup-cli share
+   ```
+
+   (atau `npx depup-cli share 8000` kalau mau menyebut port-nya.)
+3. Muncul link HTTPS seperti `https://cantik-depup-x7k2m.<domain-depup>`. Kirim ke siapa saja.
+4. Tekan **Ctrl+C** kalau selesai — link langsung mati. Kalau lupa, link mati sendiri setelah 2 jam.
+
+Yang perlu kamu tahu:
+
+- Link hanya hidup selama komputermu menyala dan perintah `share` masih jalan.
+- Orang yang membuka link melihat halaman peringatan sekali, lalu bisa lanjut ke websitemu.
+- Belum mendukung WebSocket (mis. live reload / chat realtime), dan upload file dibatasi sekitar 600 KB.
+- Siapa pun yang punya link bisa membuka websitemu. Jangan bagikan project yang berisi data rahasia.
+- Opsi: `--name skripsi` (awalan nama link), `--ttl 240` (masa aktif dalam menit, maks 480).
+
+---
+
 ## Asisten Bantuan 💬
 
 Klik tombol **Bantuan** di pojok kanan bawah.

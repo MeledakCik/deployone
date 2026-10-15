@@ -132,7 +132,9 @@ export interface ApiError {
     | "unauthorized"
     | "unsupported_project"
     | "empty_repo"
-    | "network";
+    | "network"
+    | "tunnel_disabled"
+    | "tunnel_expired";
   /** Panduan ramah untuk user: apa yang terjadi, apa yang bisa dilakukan, dan langkah manual. */
   guide?: ErrorGuide;
 }

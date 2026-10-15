@@ -1,9 +1,16 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { rateLimit, clientIp } from "@/app/api/_lib/rate-limit";
+import { slugFromHost, SLUG_RE } from "@/app/api/_lib/tunnel-host";
 
+/**
+ * Matcher mencakup SEMUA path (bukan cuma /api) karena fitur Link Gaib:
+ * request ke https://<slug>.<TUNNEL_BASE_DOMAIN>/apa-saja — termasuk /api/*
+ * dan /_next/* milik app si developer — harus di-rewrite ke tunnel, bukan
+ * dilayani Depup. Untuk host biasa, non-/api langsung diteruskan (murah).
+ */
 export const config = {
-  matcher: "/api/:path*",
+  matcher: "/:path*",
 };
 
 const SESSION_COOKIE = "depup_session";
@@ -15,7 +22,24 @@ const SESSION_COOKIE = "depup_session";
  * supaya server ini tidak bisa dipakai orang luar sebagai proxy gratis.
  */
 function isPublicPath(pathname: string): boolean {
-  return pathname === "/api/auth" || pathname.startsWith("/api/auth/");
+  return (
+    pathname === "/api/auth" ||
+    pathname.startsWith("/api/auth/") ||
+    isTunnelClientPath(pathname)
+  );
+}
+
+/**
+ * Endpoint yang dipanggil CLI `depup share` (tanpa session browser). Mereka
+ * punya autentikasi sendiri: bearer token per-tunnel (lihat _lib/tunnel.ts).
+ */
+function isTunnelClientPath(pathname: string): boolean {
+  return /^\/api\/tunnel\/(create|poll|respond|close)\/?$/.test(pathname);
+}
+
+/** Poll & respond dipanggil sangat sering & sudah dilindungi token + TTL; jangan hitung ke rate limit global. */
+function skipRateLimit(pathname: string): boolean {
+  return /^\/api\/tunnel\/(poll|respond|close)\/?$/.test(pathname);
 }
 
 /**
@@ -35,6 +59,8 @@ const CUSTOM_LIMITS: Record<string, { limit: number; windowSeconds: number }> = 
   // Memanggil Saweria pihak ketiga; jaga supaya tidak dipakai spam.
   "donate/create": { limit: 6, windowSeconds: 60 },
   "donate/status": { limit: 30, windowSeconds: 60 },
+  // Pembuatan tunnel juga dibatasi per jam di route-nya sendiri.
+  "tunnel/create": { limit: 20, windowSeconds: 60 },
 };
 
 const DEFAULT_LIMIT = { limit: 60, windowSeconds: 60 };
@@ -114,7 +140,28 @@ async function verifySessionEdge(token: string | undefined): Promise<string | nu
  * mematikan API. Gerbang session TIDAK fail-open.
  */
 export async function middleware(req: NextRequest) {
-  const { pathname } = req.nextUrl;
+  const { pathname, search } = req.nextUrl;
+
+  // --- Link Gaib: https://<slug>.<TUNNEL_BASE_DOMAIN>/... -> /t/<slug>/... ---
+  const hostSlug = slugFromHost(req.headers.get("host"));
+  if (hostSlug) {
+    const headers = new Headers(req.headers);
+    headers.set("x-depup-target", pathname + search);
+    const rewritten = new URL(`/t/${hostSlug}${pathname === "/" ? "" : pathname}`, req.url);
+    return NextResponse.rewrite(rewritten, { request: { headers } });
+  }
+
+  // --- Link Gaib mode path: https://<host depup>/t/<slug>/... ---
+  const tm = /^\/t\/([^/]+)(\/.*)?$/.exec(pathname);
+  if (tm && SLUG_RE.test(tm[1])) {
+    const headers = new Headers(req.headers);
+    headers.set("x-depup-target", (tm[2] ?? "/") + search); // selalu ditimpa -> tidak bisa dipalsukan klien
+    return NextResponse.next({ request: { headers } });
+  }
+
+  // Selain /api/*, middleware ini tidak melakukan apa-apa.
+  if (pathname !== "/api" && !pathname.startsWith("/api/")) return NextResponse.next();
+
   const email = await verifySessionEdge(req.cookies.get(SESSION_COOKIE)?.value);
 
   if (!email && !isPublicPath(pathname)) {
@@ -123,6 +170,8 @@ export async function middleware(req: NextRequest) {
       { status: 401 }
     );
   }
+
+  if (skipRateLimit(pathname)) return NextResponse.next();
 
   const { bucket, limit, windowSeconds } = bucketFor(pathname);
   const identifier = email ? `u:${email}` : `ip:${clientIp(req)}`;

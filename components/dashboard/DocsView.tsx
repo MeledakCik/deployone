@@ -29,6 +29,21 @@ const GUIDES: Guide[] = [
     ],
   },
   {
+    icon: Link2,
+    title: "Link Gaib — bagikan localhost ke dosen/client tanpa deploy",
+    desc: "Satu perintah di terminal, langsung dapat link HTTPS sementara untuk website yang masih jalan di komputermu.",
+    link: { label: "Unduh Node.js (butuh versi 18+)", href: "https://nodejs.org/en/download" },
+    steps: [
+      "Jalankan project-mu seperti biasa, misalnya di localhost:8000 (npm run dev, php -S, python -m http.server, dst).",
+      "Buka terminal baru, lalu ketik: npx depup-cli share — atau npx depup-cli share 8000 kalau mau menyebut port-nya.",
+      "Link HTTPS muncul di terminal (contoh: https://cantik-depup-x7k2m.domain-depup). Kirim ke dosen atau client.",
+      "Selama perintah itu jalan, setiap kunjungan tampil di terminal. Tekan Ctrl+C untuk mematikan link seketika; kalau lupa, link mati sendiri setelah 2 jam.",
+      "Opsi: --name skripsi (awalan nama link) dan --ttl 240 (masa aktif dalam menit, maksimal 480).",
+      "Yang belum didukung: WebSocket (live reload, chat realtime) dan upload file lebih dari ±600 KB. Website tetap bisa dibuka dan dipakai seperti biasa.",
+      "Orang yang membuka link melihat halaman peringatan sekali sebelum masuk. Siapa pun yang punya link bisa membuka websitemu, jadi jangan bagikan project yang berisi data rahasia.",
+    ],
+  },
+  {
     icon: AlertTriangle,
     title: "Deploy gagal atau tidak bisa lanjut — harus bagaimana?",
     desc: "Setiap pesan error di Depup menyertakan langkah perbaikan. Kalau masih buntu, deploy manual lewat dashboard platform hanya butuh 2–3 menit.",

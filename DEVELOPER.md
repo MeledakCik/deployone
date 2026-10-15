@@ -23,6 +23,9 @@ simulasi.
   opsional langsung deploy. Env dari `.env` lokal diisi otomatis ke form (file `.env` tidak di-upload) dan dipasang ke
   platform sebelum build pertama (`app/api/_lib/env-text.ts`).
 
+- **Link Gaib (tunnel)** — `npx depup-cli share` membuat link HTTPS sementara ke `localhost` developer, tanpa deploy
+  (lihat bagian *Link Gaib* di bawah).
+
 Navigasi dashboard tersimpan di URL (`/dashboard?view=deploy`), jadi refresh, tombol Back, dan
 bookmark bekerja normal.
 
@@ -140,6 +143,9 @@ Lihat `.env.example`.
 | `SUPPORT_WEBHOOK_URL` | tidak | Webhook https (Discord/Slack) untuk notifikasi laporan |
 | `ADMIN_EMAILS` | tidak | Email yang boleh membaca daftar laporan lewat `GET /api/support/report` |
 | `SAWERIA_USERNAME`, `SAWERIA_USER_ID` | tidak | Menu Donasi |
+| `TUNNEL_BASE_DOMAIN` | tidak | Domain dasar link Gaib (mis. `depup.link`) → `https://<nama>.depup.link`. Kosong = mode path `/t/<nama>/` |
+| `TUNNEL_TTL_MINUTES` | tidak | Masa aktif link Gaib, default 120, maks 480 |
+| `TUNNEL_ENABLED` | tidak | `false` mematikan fitur Link Gaib |
 
 Redirect URI yang didaftarkan di Google Cloud Console:
 `https://<domain-kamu>/api/auth/google/callback`.
@@ -147,6 +153,65 @@ Redirect URI yang didaftarkan di Google Cloud Console:
 > **Tanpa KV, data dashboard tidak bisa disimpan** (`/api/user-data` mengembalikan error),
 > termasuk saat `next dev`. Rate limiting juga nonaktif tanpa KV (fail-open); gerbang session
 > tetap aktif.
+
+## Link Gaib (tunnel)
+
+`npx depup-cli share [port]` (kode CLI di `cli/`, paket npm `depup-cli`, tanpa dependensi, Node ≥ 18) membuat link
+publik sementara ke `localhost` developer. Vercel tidak bisa menahan koneksi WebSocket, jadi tunnel dibuat sebagai
+**relay HTTP lewat KV** (request/response, bukan stream dua arah):
+
+```
+pengunjung ──► https://<slug>.<TUNNEL_BASE_DOMAIN>/…        (middleware.ts me-rewrite ke /t/<slug>/…)
+                  │  app/t/[slug]/[[...path]]/route.ts
+                  │  1. RPUSH request ke  tunnel:q:<slug>   (KV)
+                  │  3. baca  tunnel:res:<slug>:<rid>:<seq>  lalu stream ke pengunjung
+                  ▼
+CLI di laptop  ◄── GET  /api/tunnel/poll      (long-poll ±25 dtk, LPOP antrean)
+               ──► localhost:<port>           (http.request, Host diganti ke localhost:<port>)
+               ──► POST /api/tunnel/respond   (potongan response ≤256 KB: seq 0 = status+header)
+```
+
+- **Slug**: `<awalan>-<5 karakter acak>`, dibuat `POST /api/tunnel/create` (tanpa login, dibatasi 10/jam/IP).
+  Token CLI hanya disimpan sebagai hash SHA-256; semua endpoint CLI memakai `Authorization: Bearer`.
+- **TTL**: default 2 jam (`TUNNEL_TTL_MINUTES`). `POST /api/tunnel/close` (Ctrl+C) menghapus link seketika.
+- **Halaman peringatan** untuk navigasi browser pertama (anti-phishing), lalu cookie `depup_tunnel_ok`
+  (cookie itu tidak diteruskan ke localhost). Klien non-browser bisa mengirim `x-depup-skip-warning: 1`.
+- **Header**: header keamanan Depup (CSP, X-Frame-Options) **tidak** dipasang di host tunnel (`next.config.js`),
+  `Domain=` pada `Set-Cookie` dibuang, `Location: http://localhost:…` ditulis ulang ke URL publik, CDN Vercel
+  dilarang menyimpan response (`CDN-Cache-Control: no-store`), dan `X-Robots-Tag: noindex` dipasang.
+- **Route tunnel wajib `fetchCache = "force-no-store"`.** Next 14 men-cache `fetch` POST di dalam route handler
+  GET, dan klien KV memakai fetch — tanpa itu `LPOP`/`GET` yang sama terus menjawab `null` dari cache.
+
+### Setup domain (sekali saja)
+
+1. Beli/siapkan domain **terpisah** dari situs utama Depup (mis. `depup.link`). Alasan: konten tunnel adalah milik orang
+   lain; kalau satu subdomain ditandai phishing oleh Google Safe Browsing, reputasi seluruh domain ikut turun —
+   jangan sampai itu domain dashboard-mu.
+2. Vercel → Project → Settings → Domains → tambahkan `depup.link` **dan** `*.depup.link`. Wildcard mensyaratkan
+   nameserver domain diarahkan ke Vercel (`ns1.vercel-dns.com`, `ns2.vercel-dns.com`) agar sertifikat wildcard bisa
+   diterbitkan.
+3. Set env `TUNNEL_BASE_DOMAIN=depup.link`, lalu redeploy. (Env ini juga dibaca saat *build* oleh `next.config.js`.)
+4. Di CLI, set `DEPUP_HOST` (atau ubah `DEFAULT_HOST` di `cli/bin/depup.js`) ke URL Vercel project ini.
+
+Tanpa `TUNNEL_BASE_DOMAIN`, link berbentuk `https://<host-depup>/t/<slug>/`. Itu jalan untuk demo cepat, tapi aplikasi yang
+memakai path absolut (`/assets/app.js`) tidak akan termuat benar.
+
+### Publikasi CLI
+
+Nama `depup` di npm **sudah dipakai paket lain**, jadi paket ini bernama `depup-cli` (perintahnya tetap `depup`).
+Untuk mempublikasikan: `cd cli && npm publish`. Mau nama pendek? Pakai scope: ganti `name` jadi `@namamu/depup`.
+
+### Batasan (konsekuensi relay HTTP di serverless)
+
+- Tidak ada WebSocket/HMR; response yang butuh lebih dari 60 detik terputus (batas `maxDuration` function).
+- Body request ≤ 600 KB (disimpan inline di KV, batas 1 MB/perintah). Response dikirim berpotongan, tanpa batas total.
+- Latensi: poll KV tiap 1 dtk saat idle (0,2 dtk saat sibuk), jadi request pertama setelah diam bisa terlambat ±0,5 dtk.
+- Biaya: ±1 perintah KV/detik per tunnel idle (≈3.600/jam) + ±10 per request, dan 1 invocation function tiap ±25 dtk.
+  Perhatikan kuota KV/Upstash dan function di plan-mu. Kalau mau skala besar, pindahkan relay ke server kecil
+  dengan WebSocket (mis. Railway) dan biarkan Vercel hanya sebagai pintu masuk.
+- Fitur ini tidak butuh login. Kalau mulai ada penyalahgunaan: turunkan limit di `app/api/tunnel/create/route.ts`,
+  wajibkan session Google (hapus `create` dari `isTunnelClientPath` di `middleware.ts`, CLI perlu alur login), atau
+  matikan lewat `TUNNEL_ENABLED=false`.
 
 ## Arsitektur singkat
 
@@ -160,6 +225,7 @@ app/api/
 ├── deploy/        # create + polling status deployment (Vercel)
 ├── vercel|cloudflare|railway/   # whoami, project, status, redeploy, domains, env, dst.
 ├── github/        # validate repo, whoami
+├── tunnel/        # Link Gaib: create, poll, respond, close (dipanggil CLI, auth = bearer token)
 └── user-data/     # baca/simpan data dashboard per akun
 ```
 

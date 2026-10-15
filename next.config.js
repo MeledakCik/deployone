@@ -1,3 +1,24 @@
+// Link Gaib (tunnel): response dari localhost orang TIDAK boleh ketimpa CSP/X-Frame-Options
+// milik Depup (default-src 'self' akan merusak app mereka). Jadi header keamanan ini
+// dilewati untuk /t/* (mode path) dan untuk semua subdomain TUNNEL_BASE_DOMAIN.
+const tunnelBase = (process.env.TUNNEL_BASE_DOMAIN || "")
+  .trim()
+  .toLowerCase()
+  .replace(/^https?:\/\//, "")
+  .replace(/^\*?\./, "")
+  .replace(/[/:].*$/, "");
+// Subdomain yang dicadangkan (www, app, dll) tetap milik Depup, jadi tetap dapat header keamanan.
+// Daftar ini HARUS sama dengan TUNNEL_RESERVED di app/api/_lib/tunnel-host.ts.
+const RESERVED = ["www", "app", "api", "dashboard", "admin", "mail", "t", "static", "assets", "cdn", "docs", "status", "login", "auth"];
+const notTunnelHost = tunnelBase
+  ? [
+      {
+        type: "host",
+        value: `(?!(?:${RESERVED.join("|")})\\.)[^.]+\\.${tunnelBase.replace(/\./g, "\\.")}`,
+      },
+    ]
+  : [];
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -8,7 +29,8 @@ const nextConfig = {
     return [
       {
         // Berlaku ke semua route (halaman & API).
-        source: "/:path*",
+        source: "/((?!t/).*)",
+        missing: notTunnelHost,
         headers: [
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "DENY" },
@@ -29,7 +51,8 @@ const nextConfig = {
         // CSP dipisah untuk halaman (bukan API) supaya tidak mengganggu
         // response JSON di /api/*. connect-src dibuka ke domain OAuth
         // Google karena redirect login lewat sana.
-        source: "/((?!api).*)",
+        source: "/((?!api|t/).*)",
+        missing: notTunnelHost,
         headers: [
           {
             key: "Content-Security-Policy",
