@@ -58,6 +58,8 @@ export function verifySession(token: string | undefined | null): SessionPayload 
 
 export const SESSION_COOKIE = "depup_session";
 export const OAUTH_STATE_COOKIE = "depup_oauth_state";
+/** Tujuan setelah login (hanya "/admin" yang diizinkan, lihat auth/google/route.ts). */
+export const OAUTH_NEXT_COOKIE = "depup_oauth_next";
 
 /**
  * Helper dipakai oleh route yang butuh email user saat ini dari cookie

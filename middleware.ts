@@ -2,6 +2,8 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { rateLimit, clientIp } from "@/app/api/_lib/rate-limit";
 import { slugFromHost, SLUG_RE } from "@/app/api/_lib/tunnel-host";
+import { isAdminEmail } from "@/app/api/_lib/admin-config";
+import { kv } from "@vercel/kv";
 
 /**
  * Matcher mencakup SEMUA path (bukan cuma /api) karena fitur Link Gaib:
@@ -148,6 +150,27 @@ async function verifySessionEdge(token: string | undefined): Promise<string | nu
 }
 
 /**
+ * Akun yang diblokir lewat panel admin (set Redis `admin:blocked`). Hasil di-cache 15 detik per
+ * instance supaya tidak menambah 1 command Redis di tiap request. FAIL-OPEN kalau KV bermasalah.
+ */
+const BLOCK_CACHE_MS = 15_000;
+const blockCache = new Map<string, { blocked: boolean; until: number }>();
+
+async function isBlockedEdge(email: string): Promise<boolean> {
+  const now = Date.now();
+  const hit = blockCache.get(email);
+  if (hit && hit.until > now) return hit.blocked;
+  try {
+    const blocked = (await kv.sismember("admin:blocked", email)) === 1;
+    if (blockCache.size > 500) blockCache.clear();
+    blockCache.set(email, { blocked, until: now + BLOCK_CACHE_MS });
+    return blocked;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Berlaku untuk setiap request /api/*:
  * 1. Selain endpoint auth, wajib session valid (401 kalau tidak).
  * 2. Rate limit — identitas dari email session yang SUDAH TERVERIFIKASI
@@ -175,6 +198,22 @@ export async function middleware(req: NextRequest) {
     const headers = new Headers(req.headers);
     headers.set("x-depup-target", (tm[2] ?? "/") + search); // selalu ditimpa -> tidak bisa dipalsukan klien
     return NextResponse.next({ request: { headers } });
+  }
+
+  // --- Panel admin: gerbang di edge supaya status HTTP-nya benar (307 ke login / 404), bukan 200 ber-stream. ---
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) {
+    const who = await verifySessionEdge(req.cookies.get(SESSION_COOKIE)?.value);
+    if (!who) {
+      const login = new URL("/api/auth/google", req.url);
+      login.searchParams.set("next", "/admin");
+      return NextResponse.redirect(login);
+    }
+    // Bukan admin: pura-pura halaman ini tidak ada.
+    if (!isAdminEmail(who)) return NextResponse.rewrite(new URL("/__tidak-ada", req.url), { status: 404 });
+    const res = NextResponse.next();
+    res.headers.set("Cache-Control", "no-store");
+    res.headers.set("X-Robots-Tag", "noindex, nofollow");
+    return res;
   }
 
   // Selain /api/*, middleware ini tidak melakukan apa-apa.
@@ -212,6 +251,14 @@ export async function middleware(req: NextRequest) {
   if (!email && !isPublicPath(pathname)) {
     return NextResponse.json(
       { ok: false, error: "Sesi login habis. Silakan login lagi.", code: "unauthorized" },
+      { status: 401 }
+    );
+  }
+
+  // 401 + code "unauthorized" -> klien memperlakukannya sebagai sesi habis dan kembali ke halaman login.
+  if (email && !isPublicPath(pathname) && !isAdminEmail(email) && (await isBlockedEdge(email))) {
+    return NextResponse.json(
+      { ok: false, error: "Akun ini dinonaktifkan oleh admin Depup.", code: "unauthorized" },
       { status: 401 }
     );
   }

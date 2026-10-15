@@ -16,6 +16,8 @@ export interface AuthUser {
   name: string;
   email: string;
   picture: string | null;
+  /** true untuk admin Depup — hanya dipakai untuk menampilkan tautan menu Admin. */
+  isAdmin?: boolean;
 }
 
 export interface DeployFormValues {

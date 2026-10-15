@@ -1,7 +1,7 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import crypto from "crypto";
-import { OAUTH_STATE_COOKIE } from "@/app/api/_lib/session";
+import { OAUTH_NEXT_COOKIE, OAUTH_STATE_COOKIE } from "@/app/api/_lib/session";
 
 export const runtime = "nodejs";
 
@@ -41,5 +41,11 @@ export async function GET(req: NextRequest) {
     path: "/",
     maxAge: 600,
   });
+  // Login dari halaman admin: ingat tujuannya. Whitelist ketat supaya tidak jadi open redirect.
+  if (req.nextUrl.searchParams.get("next") === "/admin") {
+    res.cookies.set(OAUTH_NEXT_COOKIE, "/admin", { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 600 });
+  } else {
+    res.cookies.delete(OAUTH_NEXT_COOKIE);
+  }
   return res;
 }

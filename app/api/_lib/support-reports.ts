@@ -30,14 +30,8 @@ function newId(): string {
   return `SR-${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 5).toUpperCase()}`;
 }
 
-export function isAdminEmail(email: string | null | undefined): boolean {
-  if (!email) return false;
-  const list = (process.env.ADMIN_EMAILS ?? "")
-    .split(",")
-    .map((s) => s.trim().toLowerCase())
-    .filter(Boolean);
-  return list.includes(email.trim().toLowerCase());
-}
+/** Admin = depupdev@gmail.com + email di env ADMIN_EMAILS (lihat admin-config.ts). */
+export { isAdminEmail } from "@/app/api/_lib/admin-config";
 
 function reportText(r: SupportReport): string {
   const problems = (r.diagnostics?.checks ?? []).filter((c) => c.status === "problem" || c.status === "warn");
@@ -116,6 +110,16 @@ export async function notifyText(text: string): Promise<void> {
   } catch (e) {
     console.error("[notify] gagal", (e as Error)?.name);
   }
+}
+
+/** Untuk tombol "Tes notifikasi" di panel admin: mengembalikan hasil per kanal. */
+export async function testNotify(): Promise<{ telegram: { ok: boolean; note: string }; webhook: boolean }> {
+  const text = "✅ Tes notifikasi dari panel admin Depup";
+  const telegram = await sendTelegram(text);
+  const url = process.env.SUPPORT_WEBHOOK_URL?.trim();
+  const webhook = !!url && /^https:\/\//i.test(url);
+  if (webhook) await sendWebhook(text);
+  return { telegram, webhook };
 }
 
 async function notifyDeveloper(r: SupportReport): Promise<void> {

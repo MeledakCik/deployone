@@ -1,6 +1,7 @@
 import { kv } from "@vercel/kv";
 import { fail, ok, withErrorHandling } from "@/app/api/_lib/response";
 import { clientIp, rateLimit } from "@/app/api/_lib/rate-limit";
+import { getSettings, recordStat } from "@/app/api/_lib/admin";
 import {
   SLUG_RE,
   TUNNEL_RESERVED,
@@ -28,7 +29,7 @@ export const fetchCache = "force-no-store";
  * Body: { port: number, name?: string, ttlMinutes?: number }
  */
 export const POST = withErrorHandling(async (req: Request) => {
-  if (!tunnelEnabled()) {
+  if (!tunnelEnabled() || !(await getSettings()).tunnelEnabled) {
     return fail("Fitur Link Gaib sedang dimatikan oleh admin Depup.", 503, "tunnel_disabled");
   }
 
@@ -74,6 +75,7 @@ export const POST = withErrorHandling(async (req: Request) => {
     if (res) slug = candidate;
   }
   if (!slug) return fail("Gagal membuat nama link unik. Coba lagi.", 500);
+  await recordStat("tunnels");
 
   const base = tunnelBaseDomain();
   let publicBase: string;

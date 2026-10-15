@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { kv } from "@vercel/kv";
 import { fail, ok, withErrorHandling } from "@/app/api/_lib/response";
 import { getSessionEmail } from "@/app/api/_lib/session";
+import { recordStat } from "@/app/api/_lib/admin";
 import { addUserSite, kSiteChunk, kSiteMeta, loadSite, siteUrl } from "@/app/api/_lib/sites";
 
 export const runtime = "nodejs";
@@ -34,6 +35,7 @@ export const POST = withErrorHandling(async (req: NextRequest, { params }: { par
   for (const k of keys) pipe.expire(k, ttlSec);
   await pipe.exec();
   await addUserSite(email, meta.id);
+  await recordStat("sites");
 
   return ok({ id: meta.id, url: siteUrl(meta.id, req.headers.get("host")), expiresAt: active.expiresAt });
 });

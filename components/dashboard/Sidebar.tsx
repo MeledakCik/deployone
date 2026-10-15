@@ -17,6 +17,7 @@ import {
   LogOut,
   Menu,
   X,
+  ShieldCheck,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useDeploy } from "@/lib/deploy-context";
@@ -170,6 +171,14 @@ export function Sidebar() {
                 <span className="block truncate text-[11px] text-text-muted">{user.email}</span>
               </span>
             </div>
+          )}
+          {user?.isAdmin && (
+            <a
+              href="/admin"
+              className="mb-1 flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-violet-400 transition hover:bg-[var(--card-hover)]"
+            >
+              <ShieldCheck size={17} /> Panel Admin
+            </a>
           )}
           <div className="flex items-center justify-between gap-2">
             <button

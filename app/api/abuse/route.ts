@@ -6,6 +6,7 @@ import { cleanText, parseAbuseTarget } from "@/app/api/_lib/abuse";
 import { loadSite } from "@/app/api/_lib/sites";
 import { loadMeta } from "@/app/api/_lib/tunnel";
 import { notifyText } from "@/app/api/_lib/support-reports";
+import { recordStat } from "@/app/api/_lib/admin";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -59,11 +60,13 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
       reason,
       contact: contact || null,
       createdAt: new Date().toISOString(),
+      status: "open" as const,
     };
     try {
       await kv.set(`abuse:report:${id}`, report, { ex: REPORT_TTL_SECONDS });
       await kv.lpush(LIST_KEY, id);
       await kv.ltrim(LIST_KEY, 0, 199);
+      await recordStat("abuse");
     } catch (e) {
       console.error("[abuse] gagal menyimpan", (e as Error)?.message);
     }
@@ -74,7 +77,7 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
         report.owner ? `Pemilik: ${report.owner}` : "Pemilik: anonim (tunnel CLI)",
         `Alasan: ${reason}`,
         contact ? `Kontak pelapor: ${contact}` : "Kontak pelapor: -",
-        `Hapus: POST /api/admin/takedown {"slug":"${slug}"${report.owner ? ',"ban":true' : ""}} (login sebagai admin)`,
+        `Tindak lanjut: buka panel admin → Abuse & Takedown (/admin)`,
       ].join("\n")
     );
   }

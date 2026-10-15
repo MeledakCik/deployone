@@ -1,0 +1,165 @@
+"use client";
+
+import * as React from "react";
+import { RefreshCw } from "lucide-react";
+import { adminFetch } from "./api";
+import { BarList, SERIES_COLORS, TimeChart, type Series } from "./charts";
+import { Btn, Card, ErrorBox, KpiCard, Loading, PageHead, fmtBytes, fmtDateTime } from "./ui";
+
+interface Stats {
+  generatedAt: number;
+  totals: {
+    users: number;
+    deploys: number;
+    activeSites: number;
+    activeTunnels: number;
+    linkBytes: number;
+    blocked: number;
+    abuseOpen: number;
+    abuseTotal: number;
+    redisKeys: number | null;
+  };
+  days: string[];
+  daily: Record<"signups" | "logins" | "abuse" | "sites" | "tunnels" | "takedowns", number[]>;
+  deploysPerDay: Record<string, number[]>;
+  deployPlatforms: Record<string, number>;
+  deployStatuses: Record<string, number>;
+  usersTruncated: boolean;
+}
+
+const PLATFORM_LABEL: Record<string, string> = { vercel: "Vercel", cloudflare: "Cloudflare", railway: "Railway", render: "Render" };
+const STATUS_LABEL: Record<string, string> = { ready: "Berhasil", failed: "Gagal", building: "Sedang build", deleted: "Project dihapus" };
+const OTHER_COLOR = "#64748b";
+
+export function OverviewTab({ goto }: { goto: (tab: string) => void }) {
+  const [stats, setStats] = React.useState<Stats | null>(null);
+  const [error, setError] = React.useState<string | null>(null);
+  const [busy, setBusy] = React.useState(true);
+
+  const load = React.useCallback(async (refresh: boolean) => {
+    setBusy(true);
+    try {
+      setStats(await adminFetch<Stats>(`/api/admin/stats${refresh ? "?refresh=1" : ""}`));
+      setError(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Gagal memuat statistik.");
+    } finally {
+      setBusy(false);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    void load(false);
+  }, [load]);
+
+  const platformSeries = React.useMemo<Series[]>(() => {
+    if (!stats) return [];
+    const names = Object.keys(stats.deploysPerDay).sort((a, b) => (stats.deployPlatforms[b] ?? 0) - (stats.deployPlatforms[a] ?? 0));
+    const top = names.slice(0, 3);
+    const rest = names.slice(3);
+    const out: Series[] = top.map((p, i) => ({ name: PLATFORM_LABEL[p] ?? p, values: stats.deploysPerDay[p], color: SERIES_COLORS[i] }));
+    if (rest.length) {
+      out.push({ name: "Lainnya", color: OTHER_COLOR, values: stats.days.map((_, i) => rest.reduce((s, p) => s + (stats.deploysPerDay[p][i] ?? 0), 0)) });
+    }
+    return out.length ? out : [{ name: "Deploy", values: stats.days.map(() => 0), color: SERIES_COLORS[0] }];
+  }, [stats]);
+
+  if (!stats) return error ? <ErrorBox message={error} onRetry={() => void load(true)} /> : <Loading label="Menghitung statistik…" />;
+  const t = stats.totals;
+
+  return (
+    <div>
+      <PageHead
+        title="Ringkasan"
+        desc={`Data per ${fmtDateTime(stats.generatedAt)} (diperbarui otomatis tiap 5 menit).`}
+        right={
+          <Btn onClick={() => void load(true)} busy={busy}>
+            <RefreshCw size={13} /> Segarkan
+          </Btn>
+        }
+      />
+      {error && <ErrorBox message={error} />}
+
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <KpiCard label="Pengguna" value={t.users} sub={stats.usersTruncated ? "dihitung maks. 1.500 akun" : "akun dengan data dashboard"} onClick={() => goto("users")} />
+        <KpiCard label="Total deploy tercatat" value={t.deploys} sub="dari riwayat dashboard pengguna" />
+        <KpiCard label="Link aktif" value={t.activeSites + t.activeTunnels} sub={`${t.activeSites} Link Instan · ${t.activeTunnels} Link Gaib`} onClick={() => goto("links")} />
+        <KpiCard
+          label="Laporan abuse terbuka"
+          value={t.abuseOpen}
+          sub={`${t.abuseTotal} laporan tersimpan`}
+          tone={t.abuseOpen > 0 ? "bad" : undefined}
+          onClick={() => goto("abuse")}
+        />
+        <KpiCard label="Data link di Redis" value={fmtBytes(t.linkBytes)} sub="situs statis + trafik tunnel" />
+        <KpiCard label="Akun diblokir" value={t.blocked} tone={t.blocked > 0 ? "warn" : undefined} />
+        <KpiCard label="Jumlah key Redis" value={t.redisKeys ?? "—"} sub="termasuk potongan file situs" />
+      </div>
+
+      <div className="mt-4 grid gap-4 lg:grid-cols-2">
+        <Card title="Login & pendaftar baru · 30 hari">
+          <div className="p-4">
+            <TimeChart
+              kind="line"
+              label="Grafik garis login dan pendaftar baru per hari selama 30 hari"
+              days={stats.days}
+              series={[
+                { name: "Login", values: stats.daily.logins, color: SERIES_COLORS[0] },
+                { name: "Pendaftar baru", values: stats.daily.signups, color: SERIES_COLORS[1] },
+              ]}
+            />
+          </div>
+        </Card>
+        <Card title="Deploy per hari · 30 hari">
+          <div className="p-4">
+            <TimeChart kind="bar" label="Grafik batang jumlah deploy per hari menurut platform" days={stats.days} series={platformSeries} />
+          </div>
+        </Card>
+        <Card title="Link dibuat per hari · 30 hari">
+          <div className="p-4">
+            <TimeChart
+              kind="bar"
+              label="Grafik batang Link Instan dan Link Gaib yang dibuat per hari"
+              days={stats.days}
+              series={[
+                { name: "Link Instan", values: stats.daily.sites, color: SERIES_COLORS[0] },
+                { name: "Link Gaib", values: stats.daily.tunnels, color: SERIES_COLORS[1] },
+              ]}
+            />
+          </div>
+        </Card>
+        <Card title="Laporan abuse & takedown · 30 hari">
+          <div className="p-4">
+            <TimeChart
+              kind="line"
+              label="Grafik garis laporan abuse dan takedown per hari"
+              days={stats.days}
+              series={[
+                { name: "Laporan abuse", values: stats.daily.abuse, color: SERIES_COLORS[2] },
+                { name: "Takedown", values: stats.daily.takedowns, color: SERIES_COLORS[0] },
+              ]}
+            />
+          </div>
+        </Card>
+        <Card title="Deploy menurut platform">
+          <div className="p-5">
+            <BarList items={Object.entries(stats.deployPlatforms).sort((a, b) => b[1] - a[1]).map(([k, v]) => ({ label: PLATFORM_LABEL[k] ?? k, value: v }))} />
+          </div>
+        </Card>
+        <Card title="Deploy menurut status">
+          <div className="p-5">
+            <BarList
+              items={Object.entries(stats.deployStatuses)
+                .sort((a, b) => b[1] - a[1])
+                .map(([k, v]) => ({ label: STATUS_LABEL[k] ?? k, value: v, color: k === "failed" ? "#ef4444" : k === "ready" ? "#10b981" : "#64748b" }))}
+            />
+          </div>
+        </Card>
+      </div>
+
+      <p className="mt-4 text-[12px] text-text-faint">
+        Catatan: grafik login, pendaftar, link, dan abuse dihitung sejak panel admin ini aktif. Grafik deploy dibaca dari riwayat yang disimpan dashboard tiap pengguna, jadi sudah memuat data lama.
+      </p>
+    </div>
+  );
+}

@@ -3,6 +3,7 @@ import { kv } from "@vercel/kv";
 import { fail, ok, withErrorHandling } from "@/app/api/_lib/response";
 import { getSessionEmail } from "@/app/api/_lib/session";
 import { rateLimit } from "@/app/api/_lib/rate-limit";
+import { getSettings } from "@/app/api/_lib/admin";
 import { tunnelBaseDomain } from "@/app/api/_lib/tunnel";
 import {
   CHUNK_BYTES,
@@ -32,7 +33,7 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
   const email = getSessionEmail(req);
   if (!email) return fail("Sesi login habis. Silakan login lagi.", 401, "unauthorized");
 
-  const enabled = sitesEnabled();
+  const enabled = sitesEnabled() && (await getSettings()).sitesEnabled;
   const sites = enabled ? await listUserSites(email) : [];
   return ok({
     enabled,
@@ -70,6 +71,10 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
       "Hosting Link Instan belum diaktifkan oleh admin (TUNNEL_BASE_DOMAIN belum di-set).",
       503
     );
+  }
+
+  if (!(await getSettings()).sitesEnabled) {
+    return fail("Link Instan sedang dimatikan sementara oleh admin Depup.", 503);
   }
 
   const rl = await rateLimit("sites-create-hourly", `u:${email}`, 20, 3600);

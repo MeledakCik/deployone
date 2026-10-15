@@ -1,0 +1,231 @@
+import { kv } from "@vercel/kv";
+import { parseKv, tunnelBaseDomain, kBytes, type TunnelMeta } from "@/app/api/_lib/tunnel";
+import { siteUrl, type SiteMeta } from "@/app/api/_lib/sites";
+import { readDaily, scanKeys, type StatField } from "@/app/api/_lib/admin";
+
+/* ---------- link aktif (situs statis + tunnel) ---------- */
+
+export interface LiveLink {
+  slug: string;
+  kind: "site" | "tunnel";
+  owner: string | null;
+  name: string;
+  status: "active" | "pending";
+  createdAt: number;
+  expiresAt: number;
+  bytes: number;
+  files: number;
+  url: string;
+}
+
+export function linkUrl(slug: string, kind: "site" | "tunnel", host?: string | null): string {
+  if (kind === "site") return siteUrl(slug, host);
+  const base = tunnelBaseDomain();
+  if (base) return base === "localhost" ? `http://${slug}.${base}/` : `https://${slug}.${base}/`;
+  return host ? `https://${host}/t/${slug}/` : `/t/${slug}/`;
+}
+
+async function mgetChunked<T>(keys: string[], size = 100): Promise<(T | null)[]> {
+  const out: (T | null)[] = [];
+  for (let i = 0; i < keys.length; i += size) {
+    const part = keys.slice(i, i + size);
+    const rows = await kv.mget<unknown[]>(...part);
+    out.push(...rows.map((r) => parseKv<T>(r)));
+  }
+  return out;
+}
+
+export async function listLiveLinks(host?: string | null): Promise<LiveLink[]> {
+  const now = Date.now();
+  const [siteKeys, tunnelKeys] = await Promise.all([scanKeys("site:meta:*"), scanKeys("tunnel:meta:*")]);
+  const [sites, tunnels] = await Promise.all([
+    mgetChunked<SiteMeta>(siteKeys),
+    mgetChunked<TunnelMeta>(tunnelKeys),
+  ]);
+  const tunnelSlugs = tunnelKeys.map((k) => k.slice("tunnel:meta:".length));
+  const tunnelBytes = tunnelSlugs.length
+    ? await mgetChunked<number>(tunnelSlugs.map((s) => kBytes(s)))
+    : [];
+
+  const out: LiveLink[] = [];
+  for (const s of sites) {
+    if (!s || typeof s.expiresAt !== "number" || s.expiresAt <= now || !s.id) continue;
+    out.push({
+      slug: s.id,
+      kind: "site",
+      owner: s.owner,
+      name: s.name || "",
+      status: s.status === "active" ? "active" : "pending",
+      createdAt: s.createdAt,
+      expiresAt: s.expiresAt,
+      bytes: s.totalBytes ?? 0,
+      files: Array.isArray(s.files) ? s.files.length : 0,
+      url: linkUrl(s.id, "site", host),
+    });
+  }
+  tunnels.forEach((t, i) => {
+    if (!t || typeof t.expiresAt !== "number" || t.expiresAt <= now) return;
+    const slug = tunnelSlugs[i];
+    out.push({
+      slug,
+      kind: "tunnel",
+      owner: null,
+      name: `localhost:${t.port}`,
+      status: "active",
+      createdAt: t.createdAt,
+      expiresAt: t.expiresAt,
+      bytes: Number(tunnelBytes[i]) || 0,
+      files: 0,
+      url: linkUrl(slug, "tunnel", host),
+    });
+  });
+  return out.sort((a, b) => b.createdAt - a.createdAt);
+}
+
+/* ---------- statistik (di-cache 5 menit) ---------- */
+
+export interface UserSummary {
+  email: string;
+  deploys: number;
+  lastDeploy: number;
+  sites: number;
+}
+
+export interface AdminStats {
+  generatedAt: number;
+  totals: {
+    users: number;
+    deploys: number;
+    activeSites: number;
+    activeTunnels: number;
+    linkBytes: number;
+    blocked: number;
+    abuseOpen: number;
+    abuseTotal: number;
+    redisKeys: number | null;
+  };
+  days: string[];
+  daily: Record<StatField, number[]>;
+  deploysPerDay: Record<string, number[]>;
+  deployPlatforms: Record<string, number>;
+  deployStatuses: Record<string, number>;
+  usersTruncated: boolean;
+  users: UserSummary[];
+}
+
+const CACHE_KEY = "admin:stats:cache";
+const CACHE_TTL = 300;
+const MAX_USERS = 1500;
+const DAYS = 30;
+
+interface HistoryLike {
+  id?: unknown;
+  date?: unknown;
+  platform?: unknown;
+  status?: unknown;
+}
+
+function historyTime(h: HistoryLike): number {
+  const n = Number(h.id);
+  if (Number.isFinite(n) && n > 1e12 && n < 4e12) return n;
+  const d = typeof h.date === "string" ? Date.parse(h.date) : NaN;
+  return Number.isFinite(d) ? d : 0;
+}
+
+export async function getStats(opts: { refresh?: boolean; host?: string | null } = {}): Promise<AdminStats> {
+  if (!opts.refresh) {
+    const cached = parseKv<AdminStats>(await kv.get(CACHE_KEY));
+    if (cached && Date.now() - cached.generatedAt < CACHE_TTL * 1000) return cached;
+  }
+
+  const allUserKeys = await scanKeys("user:*", MAX_USERS + 1);
+  const usersTruncated = allUserKeys.length > MAX_USERS;
+  const userKeys = allUserKeys.slice(0, MAX_USERS);
+
+  const daily = await readDaily(DAYS);
+  const days = daily.map((d) => d.day);
+  const dayIndex = new Map(days.map((d, i) => [d, i]));
+  const dailySeries = {} as Record<StatField, number[]>;
+  (["signups", "logins", "abuse", "sites", "tunnels", "takedowns"] as StatField[]).forEach((f) => {
+    dailySeries[f] = daily.map((d) => d.values[f]);
+  });
+
+  // Riwayat deploy per user (hanya field history yang dipakai).
+  const deploysPerDay: Record<string, number[]> = {};
+  const deployPlatforms: Record<string, number> = {};
+  const deployStatuses: Record<string, number> = {};
+  const users: UserSummary[] = [];
+  let totalDeploys = 0;
+  for (let i = 0; i < userKeys.length; i += 50) {
+    const part = userKeys.slice(i, i + 50);
+    const rows = await kv.mget<unknown[]>(...part);
+    rows.forEach((raw, j) => {
+      const data = parseKv<{ history?: HistoryLike[] }>(raw);
+      const email = part[j].slice("user:".length);
+      const hist = Array.isArray(data?.history) ? data!.history! : [];
+      let last = 0;
+      for (const h of hist) {
+        totalDeploys++;
+        const platform = typeof h.platform === "string" ? h.platform : "lainnya";
+        const status = typeof h.status === "string" ? h.status : "lainnya";
+        deployPlatforms[platform] = (deployPlatforms[platform] ?? 0) + 1;
+        deployStatuses[status] = (deployStatuses[status] ?? 0) + 1;
+        const t = historyTime(h);
+        if (t > last) last = t;
+        const idx = t ? dayIndex.get(new Date(t).toISOString().slice(0, 10)) : undefined;
+        if (idx !== undefined) {
+          (deploysPerDay[platform] ??= new Array(DAYS).fill(0))[idx]++;
+        }
+      }
+      users.push({ email, deploys: hist.length, lastDeploy: last, sites: 0 });
+    });
+  }
+
+  const links = await listLiveLinks(opts.host);
+  const ownerCount = new Map<string, number>();
+  for (const l of links) if (l.owner) ownerCount.set(l.owner, (ownerCount.get(l.owner) ?? 0) + 1);
+  for (const u of users) u.sites = ownerCount.get(u.email) ?? 0;
+
+  const [blockedCount, abuseIds, redisKeys] = await Promise.all([
+    kv.scard("admin:blocked"),
+    kv.lrange<string>("abuse:reports", 0, 199),
+    kv.dbsize().catch(() => null),
+  ]);
+  let abuseOpen = 0;
+  if (abuseIds?.length) {
+    const reps = await mgetChunked<{ status?: string }>(abuseIds.map((id) => `abuse:report:${id}`));
+    for (const r of reps) if (r && (!r.status || r.status === "open")) abuseOpen++;
+  }
+
+  const stats: AdminStats = {
+    generatedAt: Date.now(),
+    totals: {
+      users: Math.max(allUserKeys.length > MAX_USERS ? MAX_USERS : allUserKeys.length, 0),
+      deploys: totalDeploys,
+      activeSites: links.filter((l) => l.kind === "site" && l.status === "active").length,
+      activeTunnels: links.filter((l) => l.kind === "tunnel").length,
+      linkBytes: links.reduce((n, l) => n + l.bytes, 0),
+      blocked: Number(blockedCount) || 0,
+      abuseOpen,
+      abuseTotal: abuseIds?.length ?? 0,
+      redisKeys: typeof redisKeys === "number" ? redisKeys : null,
+    },
+    days,
+    daily: dailySeries,
+    deploysPerDay,
+    deployPlatforms,
+    deployStatuses,
+    usersTruncated,
+    users,
+  };
+  try {
+    await kv.set(CACHE_KEY, JSON.stringify(stats), { ex: CACHE_TTL + 60 });
+  } catch (e) {
+    console.error("[admin] gagal menyimpan cache statistik", (e as Error)?.message);
+  }
+  return stats;
+}
+
+export async function dropStatsCache(): Promise<void> {
+  await kv.del(CACHE_KEY).catch(() => undefined);
+}

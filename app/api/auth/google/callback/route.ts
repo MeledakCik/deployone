@@ -1,7 +1,9 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { timingSafeEqual } from "crypto";
-import { signSession, SESSION_COOKIE, OAUTH_STATE_COOKIE } from "@/app/api/_lib/session";
+import { signSession, SESSION_COOKIE, OAUTH_STATE_COOKIE, OAUTH_NEXT_COOKIE } from "@/app/api/_lib/session";
+import { getSettings, isBlocked, isKnownUser, recordLogin } from "@/app/api/_lib/admin";
+import { isAdminEmail } from "@/app/api/_lib/admin-config";
 
 export const runtime = "nodejs";
 
@@ -28,6 +30,7 @@ export async function GET(req: NextRequest) {
     url.searchParams.set("login_error", message);
     const res = NextResponse.redirect(url);
     res.cookies.delete(OAUTH_STATE_COOKIE);
+    res.cookies.delete(OAUTH_NEXT_COOKIE);
     return res;
   }
 
@@ -81,6 +84,27 @@ export async function GET(req: NextRequest) {
     return fail("Email akun Google ini belum terverifikasi.");
   }
 
+  // Kontrol admin: akun yang diblokir tidak bisa login; pendaftaran baru bisa ditutup.
+  // Semua pengecekan fail-open — kalau KV bermasalah, login tetap jalan.
+  const loginEmail = profile.email.trim().toLowerCase();
+  const adminLogin = isAdminEmail(loginEmail);
+  if (!adminLogin) {
+    try {
+      if (await isBlocked(loginEmail)) return fail("Akun ini dinonaktifkan oleh admin Depup.");
+      const settings = await getSettings();
+      if (!settings.signupOpen && !(await isKnownUser(loginEmail))) {
+        return fail("Pendaftaran akun baru sedang ditutup sementara. Coba lagi nanti.");
+      }
+    } catch (e) {
+      console.error("[auth] pengecekan admin gagal (diabaikan)", (e as Error)?.message);
+    }
+  }
+  try {
+    await recordLogin({ email: loginEmail, name: profile.name ?? profile.email, picture: profile.picture ?? null });
+  } catch (e) {
+    console.error("[auth] gagal mencatat login", (e as Error)?.message);
+  }
+
   let sessionToken: string;
   try {
     sessionToken = signSession({
@@ -93,7 +117,8 @@ export async function GET(req: NextRequest) {
     return fail(e instanceof Error ? e.message : "Gagal membuat session.");
   }
 
-  const res = NextResponse.redirect(new URL("/dashboard", req.url));
+  const wantsAdmin = req.cookies.get(OAUTH_NEXT_COOKIE)?.value === "/admin" && adminLogin;
+  const res = NextResponse.redirect(new URL(wantsAdmin ? "/admin" : "/dashboard", req.url));
   res.cookies.set(SESSION_COOKIE, sessionToken, {
     httpOnly: true,
     secure: true,
@@ -102,5 +127,6 @@ export async function GET(req: NextRequest) {
     maxAge: 60 * 60 * 24 * 30,
   });
   res.cookies.delete(OAUTH_STATE_COOKIE);
+  res.cookies.delete(OAUTH_NEXT_COOKIE);
   return res;
 }

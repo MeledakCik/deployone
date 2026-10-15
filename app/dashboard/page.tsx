@@ -19,6 +19,7 @@ import { SettingsView } from "@/components/dashboard/SettingsView";
 import { DonateView } from "@/components/dashboard/DonateView";
 import { DeployModal } from "@/components/dashboard/DeployModal";
 import { SupportChat } from "@/components/dashboard/SupportChat";
+import { AnnouncementBanner } from "@/components/dashboard/AnnouncementBanner";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -67,6 +68,9 @@ export default function DashboardPage() {
     <div className="flex min-h-[100dvh] w-full flex-col md:flex-row md:items-start">
       <Sidebar />
       <div className="min-w-0 flex-1 px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
+        <div className="mx-auto max-w-6xl">
+          <AnnouncementBanner />
+        </div>
         <div className="mx-auto max-w-6xl view active" id={view}>
           {view === "dashboard" && <DashboardHomeView />}
           {view === "deploy" && <DeployFormView />}

@@ -187,3 +187,16 @@ Dashboard menyimpan 10 deploy terakhir. Yang paling lama otomatis tergeser.
 ---
 
 *Kamu developer yang ingin menjalankan Depup sendiri? Lihat [DEVELOPER.md](DEVELOPER.md).*
+
+
+## Panel Admin (`/admin`)
+
+Hanya bisa dibuka oleh **depupdev@gmail.com** (login Google biasa; email tambahan lewat env `ADMIN_EMAILS`).
+Pengguna lain mendapat 404, dan setiap API `/api/admin/*` memeriksa ulang di server.
+
+Isi panel: **Ringkasan** (KPI + grafik login, pendaftar, deploy, link, abuse), **Abuse & Takedown** (antrean laporan,
+takedown manual, larang pemilik), **Link aktif** (semua Link Instan/Gaib), **Pengguna** (blokir akun / larang link),
+**Bantuan** (laporan chat bantuan), **Pengaturan** (tutup pendaftaran, matikan Link Instan/Gaib, banner pengumuman,
+status sistem, tes notifikasi), **Log admin** (audit semua tindakan).
+
+Catatan: grafik login/pendaftar/link/abuse mulai terisi sejak panel ini aktif. Pemblokiran akun berlaku ≤ 15 detik.
