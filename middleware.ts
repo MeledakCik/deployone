@@ -14,7 +14,7 @@ import { kv } from "@vercel/kv";
 export const config = {
   matcher: [
     // Host utama: semua path KECUALI aset statis (Vercel menyajikannya dari CDN tanpa menjalankan middleware).
-    "/((?!_next/static|_next/image|favicon\\.ico|robots\\.txt|sitemap\\.xml|manifest\\.webmanifest|apple-touch-icon\\.png|icon-192\\.png|icon-512\\.png|icon-maskable-512\\.png|logo\\.png|glassmorphic_dashboard_hero\\.svg).*)",
+    "/((?!_next/static|_next/image|favicon\\.ico|robots\\.txt|sitemap\\.xml|manifest\\.webmanifest|apple-touch-icon\\.png|icon-192\\.png|icon-512\\.png|icon-maskable-512\\.png|logo\\.png|email/|glassmorphic_dashboard_hero\\.svg).*)",
     // Host tunnel/situs (<awalan>-<5 huruf-angka acak>.<TUNNEL_BASE_DOMAIN>): SEMUA path, termasuk /_next/*
     // milik app si developer. Pola ini sama dengan format slug di tunnel.ts (randomSuffix) —
     // kalau format slug diubah, ubah juga regex ini.

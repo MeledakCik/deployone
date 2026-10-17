@@ -58,6 +58,12 @@ const nextConfig = {
         headers: [{ key: "Cache-Control", value: "private, no-store" }],
       },
       {
+        // Logo & font email (public/email): dimuat dari iframe pratinjau admin (sandbox = origin "null") dan klien email,
+        // jadi perlu CORS terbuka. Isinya aset publik, tidak ada data pengguna.
+        source: "/email/:path*",
+        headers: [{ key: "Access-Control-Allow-Origin", value: "*" }],
+      },
+      {
         // Aset statis di /public (logo, ikon, gambar): cache 1 hari + stale-while-revalidate 7 hari.
         // /_next/static sudah immutable dari Next sendiri, makanya dikecualikan di sini.
         source: "/((?!_next/|api/|t/).*)\\.(png|ico|svg|webp|jpg|jpeg|woff2)",
