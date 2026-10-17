@@ -235,7 +235,7 @@ export function HostingView() {
           <CircleAlert size={16} className="mt-0.5 shrink-0" />
           <span>
             Fitur ini belum aktif di server. Admin perlu mengisi env <code>TUNNEL_BASE_DOMAIN</code> (domain wildcard) lalu
-            redeploy — lihat DEVELOPER.md bagian &quot;Link Instan&quot;.
+            redeploy — lihat panduan &quot;Aktifkan Link Instan dan Link Gaib&quot; di menu Docs.
           </span>
         </div>
       )}
