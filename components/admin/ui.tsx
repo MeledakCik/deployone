@@ -142,6 +142,36 @@ export function KpiCard({ label, value, sub, tone, onClick }: { label: string; v
   );
 }
 
+/** Meter pemakaian terhadap batas paket. used = null → tampil "—" dengan keterangan. */
+export function UsageCard({ label, used, limitBytes, note }: { label: string; used: number | null; limitBytes: number; note: string }) {
+  const pct = used === null ? null : Math.min(100, (used / limitBytes) * 100);
+  const tone = pct === null ? "neutral" : pct >= 90 ? "bad" : pct >= 70 ? "warn" : "good";
+  const bar = { neutral: "bg-zinc-500/40", good: "bg-emerald-500", warn: "bg-amber-500", bad: "bg-red-500" }[tone];
+  return (
+    <div className="surface-solid p-4">
+      <div className="flex items-baseline justify-between gap-2">
+        <p className="text-[12px] text-text-muted">{label}</p>
+        {pct !== null && <Badge tone={tone === "neutral" ? "neutral" : tone}>{pct < 1 ? "<1" : Math.round(pct)}%</Badge>}
+      </div>
+      <p className="mt-1 text-[26px] font-semibold tracking-tight">
+        {used === null ? "—" : fmtBytes(used)}
+        <span className="ml-1.5 text-[13px] font-normal text-text-faint">/ {fmtBytes(limitBytes)}</span>
+      </p>
+      <div
+        role="progressbar"
+        aria-label={`Pemakaian ${label}`}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={pct === null ? undefined : Math.round(pct)}
+        className="mt-2 h-1.5 overflow-hidden rounded-full bg-zinc-500/15"
+      >
+        <div className={cn("h-full rounded-full transition-[width]", bar)} style={{ width: `${pct ?? 0}%` }} />
+      </div>
+      <p className="mt-1.5 text-[11.5px] text-text-faint">{note}</p>
+    </div>
+  );
+}
+
 export function Avatar({ src, name }: { src: string | null; name: string }) {
   const [bad, setBad] = React.useState(false);
   if (src && !bad) {

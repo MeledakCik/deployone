@@ -104,6 +104,12 @@ export interface AdminStats {
     abuseOpen: number;
     abuseTotal: number;
     redisKeys: number | null;
+    /** Pemakaian memori Redis (byte) — null kalau penyedia tidak mengizinkan INFO. */
+    redisBytes: number | null;
+    /** Ukuran database Supabase (byte) — null kalau fungsi db_size_bytes belum dibuat (jalankan ulang schema.sql). */
+    supabaseBytes: number | null;
+    /** Batas paket (MB), bisa diubah lewat env REDIS_LIMIT_MB / SUPABASE_LIMIT_MB. */
+    limits: { redisMb: number; supabaseMb: number };
   };
   days: string[];
   daily: Record<StatField, number[]>;
@@ -131,6 +137,44 @@ function historyTime(h: HistoryLike): number {
   if (Number.isFinite(n) && n > 1e12 && n < 4e12) return n;
   const d = typeof h.date === "string" ? Date.parse(h.date) : NaN;
   return Number.isFinite(d) ? d : 0;
+}
+
+function limitMb(name: string, fallback: number): number {
+  const n = Number(process.env[name]);
+  return Number.isFinite(n) && n > 0 ? n : fallback;
+}
+
+/** used_memory dari perintah INFO lewat REST (Upstash). Best-effort: gagal → null. */
+async function redisUsedBytes(): Promise<number | null> {
+  const url = process.env.KV_REST_API_URL?.trim();
+  const token = process.env.KV_REST_API_TOKEN?.trim();
+  if (!url || !token) return null;
+  try {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify(["INFO", "memory"]),
+      cache: "no-store",
+      signal: AbortSignal.timeout(4000),
+    });
+    if (!res.ok) return null;
+    const body = (await res.json()) as { result?: unknown };
+    const m = typeof body.result === "string" ? body.result.match(/used_memory:(\d+)/) : null;
+    return m ? Number(m[1]) : null;
+  } catch {
+    return null;
+  }
+}
+
+async function supabaseBytes(): Promise<number | null> {
+  try {
+    const res = await db().rpc("db_size_bytes");
+    if (res.error) return null;
+    const n = Number(res.data);
+    return Number.isFinite(n) ? n : null;
+  } catch {
+    return null;
+  }
 }
 
 export async function getStats(opts: { refresh?: boolean; host?: string | null } = {}): Promise<AdminStats> {
@@ -189,6 +233,7 @@ export async function getStats(opts: { refresh?: boolean; host?: string | null }
   for (const l of links) if (l.owner) ownerCount.set(l.owner, (ownerCount.get(l.owner) ?? 0) + 1);
   for (const u of users) u.sites = ownerCount.get(u.email) ?? 0;
 
+  const [redisBytes, supaBytes] = await Promise.all([redisUsedBytes(), supabaseBytes()]);
   const [blockedCount, abuseTotalRes, abuseOpenRes, redisKeys] = await Promise.all([
     kv.scard("admin:blocked"),
     db().from("abuse_reports").select("id", { count: "exact", head: true }),
@@ -212,6 +257,9 @@ export async function getStats(opts: { refresh?: boolean; host?: string | null }
       abuseOpen,
       abuseTotal,
       redisKeys: typeof redisKeys === "number" ? redisKeys : null,
+      redisBytes,
+      supabaseBytes: supaBytes,
+      limits: { redisMb: limitMb("REDIS_LIMIT_MB", 256), supabaseMb: limitMb("SUPABASE_LIMIT_MB", 500) },
     },
     days,
     daily: dailySeries,

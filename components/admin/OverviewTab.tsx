@@ -4,7 +4,7 @@ import * as React from "react";
 import { RefreshCw } from "lucide-react";
 import { adminFetch } from "./api";
 import { BarList, SERIES_COLORS, TimeChart, type Series } from "./charts";
-import { Btn, Card, ErrorBox, KpiCard, Loading, PageHead, fmtBytes, fmtDateTime } from "./ui";
+import { Btn, Card, ErrorBox, KpiCard, Loading, PageHead, UsageCard, fmtBytes, fmtDateTime } from "./ui";
 
 interface Stats {
   generatedAt: number;
@@ -18,6 +18,9 @@ interface Stats {
     abuseOpen: number;
     abuseTotal: number;
     redisKeys: number | null;
+    redisBytes?: number | null;
+    supabaseBytes?: number | null;
+    limits?: { redisMb: number; supabaseMb: number };
   };
   days: string[];
   daily: Record<"signups" | "logins" | "abuse" | "sites" | "tunnels" | "takedowns", number[]>;
@@ -94,6 +97,21 @@ export function OverviewTab({ goto }: { goto: (tab: string) => void }) {
         <KpiCard label="Data link di Redis" value={fmtBytes(t.linkBytes)} sub="situs statis + trafik tunnel" />
         <KpiCard label="Akun diblokir" value={t.blocked} tone={t.blocked > 0 ? "warn" : undefined} />
         <KpiCard label="Jumlah key Redis" value={t.redisKeys ?? "—"} sub="termasuk potongan file situs" />
+      </div>
+
+      <div className="mt-3 grid gap-3 sm:grid-cols-2">
+        <UsageCard
+          label="Database Supabase"
+          used={t.supabaseBytes ?? null}
+          limitBytes={(t.limits?.supabaseMb ?? 500) * 1024 * 1024}
+          note={t.supabaseBytes == null ? "Belum terbaca — jalankan ulang supabase/schema.sql di SQL Editor." : "Ukuran total database. Batas paket Free ±500 MB."}
+        />
+        <UsageCard
+          label="Memori Redis"
+          used={t.redisBytes ?? null}
+          limitBytes={(t.limits?.redisMb ?? 256) * 1024 * 1024}
+          note={t.redisBytes == null ? "Tidak terbaca dari penyedia Redis. Cek di console Upstash/Vercel Storage." : "Kuota jumlah perintah/bulan tidak bisa dibaca dari sini — lihat console Redis."}
+        />
       </div>
 
       <div className="mt-4 grid gap-4 lg:grid-cols-2">

@@ -110,4 +110,13 @@ alter table public.support_reports enable row level security;
 alter table public.campaigns       enable row level security;
 alter table public.email_unsubs    enable row level security;
 
+-- Ukuran database (untuk meter pemakaian di panel admin).
+create or replace function public.db_size_bytes()
+returns bigint language sql security invoker as $$
+  select pg_database_size(current_database());
+$$;
+
 revoke execute on function public.bump_stat(date, text) from public, anon, authenticated;
+revoke execute on function public.db_size_bytes() from public, anon, authenticated;
+grant execute on function public.bump_stat(date, text) to service_role;
+grant execute on function public.db_size_bytes() to service_role;
