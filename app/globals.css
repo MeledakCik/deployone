@@ -448,3 +448,201 @@ body {
     animation: none !important;
   }
 }
+
+/* ---- Kuli Proyek (demo animasi; semua nama berawalan "kuli-") ----
+   Gaya dasar tiap elemen = POSE STATIS tahap itu. Animasi hanya menambah gerak,
+   jadi saat prefers-reduced-motion elemen tetap tampil sebagai pose statis. */
+.kuli-root {
+  --kuli-sky-a: #0b0d1f;
+  --kuli-sky-b: #2b1f63;
+  --kuli-ground: #1b1730;
+  --kuli-far: #17153a;
+  --kuli-cloud: #ffffff;
+  --kuli-cloud-o: 0.09;
+}
+[data-theme="light"] .kuli-root {
+  --kuli-sky-a: #bfe3ff;
+  --kuli-sky-b: #ede9fe;
+  --kuli-ground: #cdc2ea;
+  --kuli-far: #c4b8e8;
+  --kuli-cloud: #ffffff;
+  --kuli-cloud-o: 0.85;
+}
+/* Landing selalu gelap, apa pun tema pengguna */
+.obsidian .kuli-root {
+  --kuli-sky-a: #0b0d1f;
+  --kuli-sky-b: #2b1f63;
+  --kuli-ground: #1b1730;
+  --kuli-far: #17153a;
+  --kuli-cloud: #ffffff;
+  --kuli-cloud-o: 0.09;
+}
+/* Token dashboard dikunci gelap di landing supaya panel demo (Card/Btn) terbaca */
+.obsidian {
+  --card-hover: rgba(255, 255, 255, 0.07);
+  --surface-solid: #12151e;
+  --surface-solid-2: #1a1d29;
+  --surface-line: rgba(255, 255, 255, 0.06);
+  --btn-from: #ffffff;
+  --btn-to: #e2e8f0;
+  --btn-text: #070a0f;
+}
+
+.kuli-paused,
+.kuli-paused * {
+  animation-play-state: paused !important;
+}
+
+/* lengan: berputar di bahu (titik 0 0 sistem koordinat lokal) */
+.kuli-arm {
+  transform-box: view-box;
+  transform-origin: 0 0;
+}
+.kuli-hold { transform: rotate(-85deg); }
+.kuli-dig { transform: rotate(-60deg); animation: kuli-dig-kf calc(1s * var(--kuli-d, 1)) ease-in-out infinite; }
+.kuli-pass { transform: rotate(-45deg); animation: kuli-pass-kf calc(1.2s * var(--kuli-d, 1)) ease-in-out infinite; }
+.kuli-stir { transform: rotate(-45deg); animation: kuli-stir-kf calc(0.8s * var(--kuli-d, 1)) ease-in-out infinite; }
+.kuli-pour { transform: rotate(-95deg); animation: kuli-pour-kf calc(1.6s * var(--kuli-d, 1)) ease-in-out infinite; }
+.kuli-sip { transform: rotate(-125deg); animation: kuli-sip-kf calc(3.2s * var(--kuli-d, 1)) ease-in-out infinite; }
+.kuli-cheer { transform: rotate(-160deg); animation: kuli-cheer-kf calc(0.6s * var(--kuli-d, 1)) ease-in-out infinite; }
+.kuli-shout { transform: rotate(-105deg); animation: kuli-shout-kf calc(0.9s * var(--kuli-d, 1)) ease-in-out infinite; }
+.kuli-scratch { transform: rotate(-155deg); animation: kuli-scratch-kf calc(0.45s * var(--kuli-d, 1)) ease-in-out infinite; }
+.kuli-blade-a { animation: kuli-blade-a-kf calc(0.7s * var(--kuli-d, 1)) ease-in-out infinite; }
+.kuli-blade-b { animation: kuli-blade-b-kf calc(0.7s * var(--kuli-d, 1)) ease-in-out infinite; }
+
+.kuli-bob { animation: kuli-bob-kf calc(0.9s * var(--kuli-d, 1)) ease-in-out infinite; }
+
+.kuli-row {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: kuli-row-kf calc(0.9s * var(--kuli-d, 1)) cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+.kuli-pit {
+  transform-box: fill-box;
+  transform-origin: 0 50%;
+  animation: kuli-pit-kf calc(3s * var(--kuli-d, 1)) ease-out both;
+}
+.kuli-dust {
+  transform-box: fill-box;
+  transform-origin: center;
+  opacity: 0.45;
+  animation: kuli-dust-kf calc(1.6s * var(--kuli-d, 1)) ease-out infinite;
+}
+.kuli-dust-late { animation-iteration-count: 1; animation-fill-mode: both; }
+.kuli-spin {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: kuli-spin-kf calc(2s * var(--kuli-d, 1)) linear infinite;
+}
+.kuli-hop {
+  animation: kuli-hop-kf calc(1.2s * var(--kuli-d, 1)) ease-in-out infinite;
+}
+.kuli-roof { animation: kuli-roof-kf calc(0.9s * var(--kuli-d, 1)) cubic-bezier(0.3, 1.4, 0.5, 1) both; }
+.kuli-flag {
+  transform-box: fill-box;
+  transform-origin: 0 50%;
+  animation: kuli-flag-kf calc(0.7s * var(--kuli-d, 1)) ease-in-out infinite;
+}
+.kuli-rib-l {
+  transform-box: fill-box;
+  transform-origin: 0 50%;
+  transform: rotate(62deg);
+  animation: kuli-rib-l-kf calc(3.6s * var(--kuli-d, 1)) ease-in infinite;
+}
+.kuli-rib-r {
+  transform-box: fill-box;
+  transform-origin: 100% 50%;
+  transform: rotate(-62deg);
+  animation: kuli-rib-r-kf calc(3.6s * var(--kuli-d, 1)) ease-in infinite;
+}
+.kuli-confetti {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: kuli-confetti-kf calc(2.4s * var(--kuli-d, 1)) linear infinite;
+}
+/* gagal: pose dasar = sudah roboh; animasi menampilkan miring lalu roboh */
+.kuli-collapse {
+  transform-box: fill-box;
+  transform-origin: 100% 100%;
+  transform: rotate(5deg) scale(1.08, 0.28);
+  animation: kuli-collapse-kf calc(2.6s * var(--kuli-d, 1)) ease-in both;
+}
+.kuli-rubble { animation: kuli-rubble-kf calc(2.6s * var(--kuli-d, 1)) ease-out both; }
+.kuli-cloud { animation: kuli-cloud-kf calc(16s * var(--kuli-d, 1)) ease-in-out infinite alternate; }
+.kuli-cloud-b { animation-duration: calc(22s * var(--kuli-d, 1)); animation-direction: alternate-reverse; }
+.kuli-steam { animation: kuli-steam-kf calc(2s * var(--kuli-d, 1)) ease-out infinite; }
+.kuli-pop { animation: kuli-pop-kf 280ms ease-out both; }
+
+@keyframes kuli-bob-kf { 0%, 100% { transform: translateY(0); } 50% { transform: translateY(-1.4px); } }
+@keyframes kuli-dig-kf {
+  0%, 35% { transform: rotate(-150deg); }
+  60% { transform: rotate(-15deg); }
+  100% { transform: rotate(-150deg); }
+}
+@keyframes kuli-pass-kf { 0%, 100% { transform: rotate(-20deg); } 50% { transform: rotate(-75deg); } }
+@keyframes kuli-stir-kf { 0%, 100% { transform: rotate(-30deg); } 50% { transform: rotate(-55deg); } }
+@keyframes kuli-pour-kf { 0%, 100% { transform: rotate(-80deg); } 50% { transform: rotate(-120deg); } }
+@keyframes kuli-sip-kf {
+  0%, 55%, 100% { transform: rotate(-35deg); }
+  70%, 88% { transform: rotate(-125deg); }
+}
+@keyframes kuli-cheer-kf { 0%, 100% { transform: rotate(-150deg); } 50% { transform: rotate(-175deg); } }
+@keyframes kuli-shout-kf { 0%, 100% { transform: rotate(-95deg); } 50% { transform: rotate(-125deg); } }
+@keyframes kuli-scratch-kf { 0%, 100% { transform: rotate(-162deg); } 50% { transform: rotate(-146deg); } }
+@keyframes kuli-blade-a-kf { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(16deg); } }
+@keyframes kuli-blade-b-kf { 0%, 100% { transform: rotate(0deg); } 50% { transform: rotate(-16deg); } }
+@keyframes kuli-row-kf { from { transform: scaleY(0); } to { transform: scaleY(1); } }
+@keyframes kuli-pit-kf { from { transform: scaleX(0.08); } to { transform: scaleX(1); } }
+@keyframes kuli-dust-kf {
+  0% { opacity: 0; transform: translateY(0) scale(0.4); }
+  30% { opacity: 0.75; }
+  100% { opacity: 0; transform: translateY(-16px) scale(1.8); }
+}
+@keyframes kuli-spin-kf { to { transform: rotate(360deg); } }
+@keyframes kuli-hop-kf {
+  0% { opacity: 0; transform: translate(0, 0); }
+  10% { opacity: 1; }
+  50% { transform: translate(calc(var(--kx, 0) * 0.5px), calc(var(--ky, 0) * 0.5px - 14px)); }
+  90% { opacity: 1; }
+  100% { opacity: 0; transform: translate(calc(var(--kx, 0) * 1px), calc(var(--ky, 0) * 1px)); }
+}
+@keyframes kuli-roof-kf {
+  from { opacity: 0; transform: translateY(-40px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes kuli-flag-kf { 0%, 100% { transform: skewY(-8deg); } 50% { transform: skewY(8deg) scaleX(0.92); } }
+@keyframes kuli-rib-l-kf { 0%, 40% { transform: rotate(0deg); } 58%, 92% { transform: rotate(62deg); } 100% { transform: rotate(0deg); } }
+@keyframes kuli-rib-r-kf { 0%, 40% { transform: rotate(0deg); } 58%, 92% { transform: rotate(-62deg); } 100% { transform: rotate(0deg); } }
+@keyframes kuli-confetti-kf {
+  0% { opacity: 1; transform: translate(0, -30px) rotate(0deg); }
+  100% { opacity: 0.9; transform: translate(calc(var(--kx, 0) * 1px), 190px) rotate(540deg); }
+}
+@keyframes kuli-collapse-kf {
+  0% { transform: none; }
+  15% { transform: rotate(-2deg); }
+  35% { transform: rotate(4deg); }
+  55% { transform: rotate(10deg); }
+  72% { transform: rotate(22deg) scale(1, 0.9); }
+  100% { transform: rotate(5deg) scale(1.08, 0.28); }
+}
+@keyframes kuli-rubble-kf {
+  0%, 55% { opacity: 0; transform: translateY(-24px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+@keyframes kuli-cloud-kf { from { transform: translateX(-14px); } to { transform: translateX(34px); } }
+@keyframes kuli-steam-kf {
+  0% { opacity: 0; transform: translateY(2px); }
+  40% { opacity: 0.85; }
+  100% { opacity: 0; transform: translateY(-8px); }
+}
+@keyframes kuli-pop-kf { from { opacity: 0; transform: translateY(4px) scale(0.98); } to { opacity: 1; transform: none; } }
+
+/* Reduced motion: matikan semua gerak, sisakan pose statis tiap tahap */
+@media (prefers-reduced-motion: reduce) {
+  .kuli-root *,
+  .kuli-root *::before,
+  .kuli-root *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

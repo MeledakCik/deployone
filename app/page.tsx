@@ -7,6 +7,7 @@ import { Hero } from "@/components/landing/Hero";
 import { SocialProof } from "@/components/landing/SocialProof";
 import { FeaturesGrid } from "@/components/landing/FeaturesGrid";
 import { HowItWorks } from "@/components/landing/HowItWorks";
+import { KuliSection } from "@/components/landing/KuliSection";
 import { SupportMatrix } from "@/components/landing/SupportMatrix";
 import { FinalCTA } from "@/components/landing/FinalCTA";
 import { Footer } from "@/components/landing/Footer";
@@ -29,6 +30,7 @@ export default function LandingPage() {
         <SocialProof />
         <FeaturesGrid />
         <HowItWorks />
+        <KuliSection />
         <SupportMatrix />
         <FinalCTA />
         <Footer />
