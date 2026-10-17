@@ -3,7 +3,7 @@
 import * as React from "react";
 import { Mail, Send, ShieldCheck, Sparkles } from "lucide-react";
 import { adminFetch, useAdminData } from "./api";
-import { renderRich, type MailFeature } from "@/lib/email-template";
+import { TEMPLATES, renderRich, type MailFeature, type TemplateId } from "@/lib/email-template";
 import { Badge, Btn, Card, Empty, ErrorBox, KpiCard, Loading, PageHead, fmtDateTime } from "./ui";
 
 interface Campaign {
@@ -37,6 +37,7 @@ export function PromoTab({ toast }: { toast: (m: string) => void }) {
   const [subject, setSubject] = React.useState("");
   const [preheader, setPreheader] = React.useState("");
   const [body, setBody] = React.useState("");
+  const [template, setTemplate] = React.useState<TemplateId>("gradient");
   const [badge, setBadge] = React.useState("");
   const [headline, setHeadline] = React.useState("");
   const [features, setFeatures] = React.useState<MailFeature[]>([
@@ -53,7 +54,7 @@ export function PromoTab({ toast }: { toast: (m: string) => void }) {
   const [tone, setTone] = React.useState<"santai" | "profesional" | "singkat">("santai");
   const [generating, setGenerating] = React.useState(false);
 
-  const draft = { subject, preheader, body, ctaLabel, ctaUrl, badge, headline, features: features.filter((f) => f.title.trim()) };
+  const draft = { template, subject, preheader, body, ctaLabel, ctaUrl, badge, headline, features: features.filter((f) => f.title.trim()) };
 
   function setFeature(i: number, patch: Partial<MailFeature>) {
     setFeatures((fs) => fs.map((f, idx) => (idx === i ? { ...f, ...patch } : f)));
@@ -67,6 +68,7 @@ export function PromoTab({ toast }: { toast: (m: string) => void }) {
     return renderRich(
       empty
         ? {
+            template,
             badge: "Contoh tampilan",
             headline: "Judul besar yang menarik perhatian",
             body: "Halo!\n\nIni contoh tampilan email Depup. Isi form di sebelah atas atau pakai \"Buat dengan AI\", maka pratinjau ini berubah otomatis.",
@@ -77,6 +79,7 @@ export function PromoTab({ toast }: { toast: (m: string) => void }) {
             cta: { label: "Buka dashboard", url: origin || "https://depup.web.id" },
           }
         : {
+            template,
             badge,
             headline,
             body: body || " ",
@@ -86,7 +89,7 @@ export function PromoTab({ toast }: { toast: (m: string) => void }) {
           },
       { footerNote: "Kamu menerima email ini karena punya akun di Depup.", unsubUrl: "#", siteUrl: origin }
     ).html;
-  }, [badge, headline, body, features, preheader, ctaLabel, ctaUrl]);
+  }, [template, badge, headline, body, features, preheader, ctaLabel, ctaUrl]);
 
   async function generate() {
     setGenerating(true);
@@ -196,6 +199,28 @@ export function PromoTab({ toast }: { toast: (m: string) => void }) {
           <p className="flex items-center gap-1.5 text-[12px] text-text-faint">
             <Mail size={13} /> Pengirim: <span className="mono text-text-muted">{data.from}</span>
           </p>
+          <div>
+            <p className="mb-2 text-[12px] text-text-muted">Gaya tampilan</p>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-5" role="radiogroup" aria-label="Gaya template">
+              {TEMPLATES.map((t) => (
+                <button
+                  key={t.id}
+                  type="button"
+                  role="radio"
+                  aria-checked={template === t.id}
+                  onClick={() => setTemplate(t.id)}
+                  title={t.desc}
+                  className={
+                    "rounded-xl border p-2.5 text-left transition " +
+                    (template === t.id ? "border-violet-500 bg-violet-500/10" : "border-[var(--line-strong)] hover:bg-[var(--card-hover)]")
+                  }
+                >
+                  <span className="block h-7 w-full rounded-md border border-black/10" style={{ background: `linear-gradient(135deg, ${t.swatch[0]} 0%, ${t.swatch[0]} 50%, ${t.swatch[1]} 50%, ${t.swatch[1]} 100%)` }} />
+                  <span className="mt-1.5 block text-[12px] font-medium">{t.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
           <input value={subject} onChange={(e) => setSubject(e.target.value.slice(0, 120))} placeholder="Subjek — singkat & jelas, tanpa HURUF BESAR / tanda seru berlebihan" aria-label="Subjek" className="input-solid w-full px-4 py-2.5 text-[13px]" />
           <input value={preheader} onChange={(e) => setPreheader(e.target.value.slice(0, 140))} placeholder="Pratinjau di inbox (opsional)" aria-label="Pratinjau" className="input-solid w-full px-4 py-2.5 text-[13px]" />
           <div className="grid gap-3 sm:grid-cols-[1fr_2fr]">

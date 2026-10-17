@@ -1,6 +1,7 @@
 import type { NextRequest } from "next/server";
 import { fail, ok, withErrorHandling } from "@/app/api/_lib/response";
 import { adminFromReq, audit } from "@/app/api/_lib/admin";
+import { isTemplateId } from "@/lib/email-template";
 import { buildPromoMail, emailConfigured, emailFrom, safeUrl, sendBatch, sendMail, type MailContent } from "@/app/api/_lib/email";
 import { createCampaign, listCampaigns, loadAudience, newCampaignId, saveCampaign, type Campaign } from "@/app/api/_lib/campaigns";
 import { rateLimit } from "@/app/api/_lib/rate-limit";
@@ -50,7 +51,7 @@ function parseDraft(b: Record<string, unknown>): { subject: string; content: Mai
     if (!ctaLabel || !url) return "Tombol butuh label dan URL http(s) yang valid (atau kosongkan keduanya).";
     cta = { label: ctaLabel, url };
   }
-  return { subject, content: { body, preheader, cta, badge, headline, features } };
+  return { subject, content: { body, preheader, cta, badge, headline, features, template: isTemplateId(b.template) ? b.template : "gradient" } };
 }
 
 /**
