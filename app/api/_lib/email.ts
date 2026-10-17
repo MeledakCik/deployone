@@ -17,6 +17,7 @@
  */
 import crypto from "crypto";
 import { kv } from "@vercel/kv";
+import { renderRich, renderSimple, type MailContent } from "@/lib/email-template";
 
 const RESEND_URL = "https://api.resend.com";
 const DEFAULT_FROM = "Depup <info@depup.web.id>";
@@ -39,73 +40,10 @@ export function appUrl(): string {
   return (process.env.NEXT_PUBLIC_APP_URL ?? "").trim().replace(/\/+$/, "") || "https://depup.web.id";
 }
 
-/* ---------- escape & template ---------- */
+/* ---------- template (murni, dipakai juga untuk pratinjau di browser) ---------- */
 
-export function escapeHtml(s: string): string {
-  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
-}
-
-/** Hanya http(s) yang boleh jadi link tombol. */
-export function safeUrl(u: unknown): string | null {
-  if (typeof u !== "string") return null;
-  try {
-    const p = new URL(u.trim());
-    return p.protocol === "https:" || p.protocol === "http:" ? p.toString() : null;
-  } catch {
-    return null;
-  }
-}
-
-export interface MailContent {
-  /** Isi pesan; baris kosong = paragraf baru. */
-  body: string;
-  /** Teks pratinjau yang tampil di daftar inbox (opsional). */
-  preheader?: string;
-  cta?: { label: string; url: string } | null;
-}
-
-function paragraphsHtml(body: string): string {
-  return body
-    .replace(/\r\n/g, "\n")
-    .split(/\n{2,}/)
-    .map((p) => p.trim())
-    .filter(Boolean)
-    .map((p) => `<p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#222;">${escapeHtml(p).replace(/\n/g, "<br>")}</p>`)
-    .join("\n");
-}
-
-/** Template sengaja sederhana (mirip email personal) — template berat/penuh gambar lebih sering dianggap spam. */
-export function renderEmail(c: MailContent, opts: { footerNote: string; unsubUrl?: string }): { html: string; text: string } {
-  const cta = c.cta && safeUrl(c.cta.url) && c.cta.label.trim() ? { label: c.cta.label.trim().slice(0, 60), url: safeUrl(c.cta.url)! } : null;
-  const pre = c.preheader ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;">${escapeHtml(c.preheader)}</div>` : "";
-  const btn = cta
-    ? `<p style="margin:24px 0;"><a href="${escapeHtml(cta.url)}" style="background:#7c3aed;color:#ffffff;text-decoration:none;padding:11px 22px;border-radius:8px;font-size:14px;font-weight:600;display:inline-block;">${escapeHtml(cta.label)}</a></p>`
-    : "";
-  const unsub = opts.unsubUrl
-    ? `<br><a href="${escapeHtml(opts.unsubUrl)}" style="color:#888;">Berhenti berlangganan email promosi</a>`
-    : "";
-  const html = `<!doctype html>
-<html lang="id"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="light"></head>
-<body style="margin:0;padding:24px 12px;background:#f5f5f7;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
-${pre}
-<div style="max-width:560px;margin:0 auto;background:#ffffff;border-radius:12px;padding:28px 28px 20px;">
-<p style="margin:0 0 20px;font-size:17px;font-weight:700;color:#111;">Depup</p>
-${paragraphsHtml(c.body)}
-${btn}
-<hr style="border:none;border-top:1px solid #eee;margin:24px 0 14px;">
-<p style="margin:0;font-size:12px;line-height:1.5;color:#888;">${escapeHtml(opts.footerNote)}${unsub}</p>
-</div></body></html>`;
-  const text = [
-    c.body.trim(),
-    cta ? `\n${cta.label}: ${cta.url}` : "",
-    "\n--",
-    opts.footerNote,
-    opts.unsubUrl ? `Berhenti berlangganan: ${opts.unsubUrl}` : "",
-  ]
-    .filter(Boolean)
-    .join("\n");
-  return { html, text };
-}
+export { escapeHtml, safeUrl } from "@/lib/email-template";
+export type { MailContent, MailFeature } from "@/lib/email-template";
 
 /* ---------- berhenti berlangganan (token bertanda tangan HMAC) ---------- */
 
@@ -255,9 +193,11 @@ export async function sendBatch(list: OutgoingMail[], idempotencyKey?: string): 
 /** Email promosi: header unsubscribe one-click + footer berhenti langganan. */
 export function buildPromoMail(to: string, subject: string, content: MailContent): OutgoingMail {
   const link = unsubUrl(to);
-  const { html, text } = renderEmail(content, {
-    footerNote: "Kamu menerima email ini karena punya akun di Depup (depup.web.id).",
+  const { html, text } = renderRich(content, {
+    footerNote: "Kamu menerima email ini karena punya akun di Depup.",
     unsubUrl: link,
+    logoUrl: `${appUrl()}/logo.png`,
+    siteUrl: appUrl(),
   });
   return {
     to,
@@ -273,6 +213,6 @@ export function buildPromoMail(to: string, subject: string, content: MailContent
 
 /** Email transaksional (balasan support, notifikasi admin): tanpa gaya promosi, tidak bisa di-unsubscribe. */
 export function buildTransactionalMail(to: string, subject: string, content: MailContent, replyToAddr?: string): OutgoingMail {
-  const { html, text } = renderEmail(content, { footerNote: "Email ini dikirim otomatis oleh Depup (depup.web.id) terkait akun/laporanmu." });
+  const { html, text } = renderSimple(content, { footerNote: "Email ini dikirim otomatis oleh Depup (depup.web.id) terkait akun/laporanmu." });
   return { to, subject, html, text, replyTo: replyToAddr };
 }

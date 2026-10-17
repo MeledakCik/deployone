@@ -25,11 +25,15 @@ Aturan penting agar email tidak dianggap spam dan tidak menyesatkan:
 - Jangan mengarang fakta: harga, angka, tanggal, diskon, atau fitur yang TIDAK disebut admin di topik. Kalau topik minim detail, tulis umum dan jujur.
 - Subjek maksimal 60 karakter, tanpa HURUF BESAR semua, tanpa tanda seru berlebihan (maksimal satu), tanpa kata seperti "GRATIS!!!", "PROMO GILA", "buruan", "klik sekarang juga".
 - Maksimal 1 emoji di seluruh email (boleh nol). Jangan pakai markdown, tanda bintang, atau HTML.
-- Isi: 2-4 paragraf pendek dipisah SATU baris kosong, mulai dengan sapaan "Halo!" atau "Halo,". Jangan menulis tanda tangan atau link berhenti berlangganan (ditambahkan otomatis).
+- badge: label pendek 1-3 kata di banner (mis. "Fitur baru", "Pengumuman", "Tips").
+- headline: judul besar yang menarik, maksimal 60 karakter, tanpa HURUF BESAR semua, maksimal satu tanda seru.
+- body: 1-2 paragraf pendek dipisah SATU baris kosong, mulai dengan sapaan "Halo!" atau "Halo,". Jangan menulis tanda tangan atau link berhenti berlangganan (ditambahkan otomatis). Jangan mengulang isi headline atau poin-poin.
+- features: 2-3 poin (objek {"title","desc"}); title maksimal 40 karakter, desc satu kalimat maksimal 110 karakter. Poin HANYA menjelaskan manfaat/cara memakai dari apa yang tertulis di topik. Kalau topik terlalu minim untuk poin yang jujur, isi dengan [].
+- Jangan menambah detail cara kerja, syarat, cakupan, atau ketersediaan yang tidak tertulis di topik.
 - preheader: satu kalimat 50-110 karakter yang melengkapi subjek, bukan mengulangnya.
 - ctaLabel: teks tombol 2-4 kata (mis. "Buka dashboard", "Coba sekarang").
 
-Jawab HANYA dengan satu objek JSON valid tanpa teks lain dan tanpa blok kode, dengan kunci persis: {"subject": "...", "preheader": "...", "body": "...", "ctaLabel": "..."}`;
+Jawab HANYA dengan satu objek JSON valid tanpa teks lain dan tanpa blok kode, dengan kunci persis: {"subject": "...", "preheader": "...", "badge": "...", "headline": "...", "body": "...", "features": [{"title": "...", "desc": "..."}], "ctaLabel": "..."}`;
 }
 
 function extractJson(raw: string): Record<string, unknown> | null {
@@ -69,7 +73,17 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
     const subject = typeof j?.subject === "string" ? j.subject.trim().slice(0, 120) : "";
     const body = typeof j?.body === "string" ? j.body.replace(/\*\*/g, "").trim().slice(0, 5000) : "";
     if (!subject || body.length < 10) return fail("AI belum menghasilkan template yang valid. Coba klik lagi.", 502, "ai_unavailable");
+    const features = (Array.isArray(j?.features) ? (j!.features as unknown[]) : [])
+      .slice(0, 3)
+      .map((f) => {
+        const r = (f ?? {}) as { title?: unknown; desc?: unknown };
+        return { title: typeof r.title === "string" ? r.title.replace(/\*\*/g, "").trim().slice(0, 60) : "", desc: typeof r.desc === "string" ? r.desc.replace(/\*\*/g, "").trim().slice(0, 200) : "" };
+      })
+      .filter((f) => f.title);
     return ok({
+      badge: typeof j?.badge === "string" ? j.badge.trim().slice(0, 30) : "",
+      headline: typeof j?.headline === "string" ? j.headline.replace(/\*\*/g, "").trim().slice(0, 90) : "",
+      features,
       subject,
       preheader: typeof j?.preheader === "string" ? j.preheader.trim().slice(0, 140) : "",
       body,

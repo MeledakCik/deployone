@@ -33,6 +33,15 @@ function parseDraft(b: Record<string, unknown>): { subject: string; content: Mai
   const preheader = typeof b.preheader === "string" ? b.preheader.trim().slice(0, 140) : "";
   const ctaLabel = typeof b.ctaLabel === "string" ? b.ctaLabel.trim().slice(0, 60) : "";
   const ctaUrlRaw = typeof b.ctaUrl === "string" ? b.ctaUrl.trim() : "";
+  const badge = typeof b.badge === "string" ? b.badge.trim().slice(0, 30) : "";
+  const headline = typeof b.headline === "string" ? b.headline.trim().slice(0, 90) : "";
+  const features = (Array.isArray(b.features) ? b.features : [])
+    .slice(0, 3)
+    .map((f) => {
+      const r = (f ?? {}) as { title?: unknown; desc?: unknown };
+      return { title: typeof r.title === "string" ? r.title.trim().slice(0, 60) : "", desc: typeof r.desc === "string" ? r.desc.trim().slice(0, 200) : "" };
+    })
+    .filter((f) => f.title);
   if (!subject) return "Subjek wajib diisi.";
   if (body.length < 10) return "Isi pesan terlalu pendek.";
   let cta: MailContent["cta"] = null;
@@ -41,7 +50,7 @@ function parseDraft(b: Record<string, unknown>): { subject: string; content: Mai
     if (!ctaLabel || !url) return "Tombol butuh label dan URL http(s) yang valid (atau kosongkan keduanya).";
     cta = { label: ctaLabel, url };
   }
-  return { subject, content: { body, preheader, cta } };
+  return { subject, content: { body, preheader, cta, badge, headline, features } };
 }
 
 /**

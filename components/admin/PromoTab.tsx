@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Mail, Send, ShieldCheck, Sparkles } from "lucide-react";
 import { adminFetch, useAdminData } from "./api";
+import { renderRich, type MailFeature } from "@/lib/email-template";
 import { Badge, Btn, Card, Empty, ErrorBox, KpiCard, Loading, PageHead, fmtDateTime } from "./ui";
 
 interface Campaign {
@@ -36,6 +37,13 @@ export function PromoTab({ toast }: { toast: (m: string) => void }) {
   const [subject, setSubject] = React.useState("");
   const [preheader, setPreheader] = React.useState("");
   const [body, setBody] = React.useState("");
+  const [badge, setBadge] = React.useState("");
+  const [headline, setHeadline] = React.useState("");
+  const [features, setFeatures] = React.useState<MailFeature[]>([
+    { title: "", desc: "" },
+    { title: "", desc: "" },
+    { title: "", desc: "" },
+  ]);
   const [ctaLabel, setCtaLabel] = React.useState("");
   const [ctaUrl, setCtaUrl] = React.useState("");
   const [testTo, setTestTo] = React.useState("");
@@ -45,15 +53,51 @@ export function PromoTab({ toast }: { toast: (m: string) => void }) {
   const [tone, setTone] = React.useState<"santai" | "profesional" | "singkat">("santai");
   const [generating, setGenerating] = React.useState(false);
 
-  const draft = { subject, preheader, body, ctaLabel, ctaUrl };
+  const draft = { subject, preheader, body, ctaLabel, ctaUrl, badge, headline, features: features.filter((f) => f.title.trim()) };
+
+  function setFeature(i: number, patch: Partial<MailFeature>) {
+    setFeatures((fs) => fs.map((f, idx) => (idx === i ? { ...f, ...patch } : f)));
+  }
+
+  // Pratinjau langsung memakai template yang SAMA dengan yang dikirim. Form kosong -> tampil contoh.
+  const previewHtml = React.useMemo(() => {
+    const origin = typeof window !== "undefined" ? window.location.origin : "";
+    const empty = !body.trim() && !headline.trim() && !features.some((f) => f.title.trim());
+    const feats = features.filter((f) => f.title.trim());
+    return renderRich(
+      empty
+        ? {
+            badge: "Contoh tampilan",
+            headline: "Judul besar yang menarik perhatian",
+            body: "Halo!\n\nIni contoh tampilan email Depup. Isi form di sebelah atas atau pakai \"Buat dengan AI\", maka pratinjau ini berubah otomatis.",
+            features: [
+              { title: "Poin pertama", desc: "Penjelasan singkat satu kalimat." },
+              { title: "Poin kedua", desc: "Maksimal tiga poin per email." },
+            ],
+            cta: { label: "Buka dashboard", url: origin || "https://depup.web.id" },
+          }
+        : {
+            badge,
+            headline,
+            body: body || " ",
+            preheader,
+            features: feats,
+            cta: ctaLabel.trim() && ctaUrl.trim() ? { label: ctaLabel, url: ctaUrl } : null,
+          },
+      { footerNote: "Kamu menerima email ini karena punya akun di Depup.", unsubUrl: "#", logoUrl: `${origin}/logo.png`, siteUrl: origin }
+    ).html;
+  }, [badge, headline, body, features, preheader, ctaLabel, ctaUrl]);
 
   async function generate() {
     setGenerating(true);
     try {
-      const r = await adminFetch<{ subject: string; preheader: string; body: string; ctaLabel: string }>("/api/admin/promo/generate", { method: "POST", body: { topic, tone } });
+      const r = await adminFetch<{ subject: string; preheader: string; body: string; ctaLabel: string; badge: string; headline: string; features: MailFeature[] }>("/api/admin/promo/generate", { method: "POST", body: { topic, tone } });
       setSubject(r.subject);
       setPreheader(r.preheader);
       setBody(r.body);
+      setBadge(r.badge ?? "");
+      setHeadline(r.headline ?? "");
+      setFeatures([0, 1, 2].map((i) => r.features?.[i] ?? { title: "", desc: "" }));
       if (r.ctaLabel) {
         setCtaLabel(r.ctaLabel);
         setCtaUrl((u) => u.trim() || `${window.location.origin}/dashboard`);
@@ -87,6 +131,9 @@ export function PromoTab({ toast }: { toast: (m: string) => void }) {
       setSubject("");
       setPreheader("");
       setBody("");
+      setBadge("");
+      setHeadline("");
+      setFeatures([{ title: "", desc: "" }, { title: "", desc: "" }, { title: "", desc: "" }]);
       setCtaLabel("");
       setCtaUrl("");
       void reload();
@@ -151,6 +198,10 @@ export function PromoTab({ toast }: { toast: (m: string) => void }) {
           </p>
           <input value={subject} onChange={(e) => setSubject(e.target.value.slice(0, 120))} placeholder="Subjek — singkat & jelas, tanpa HURUF BESAR / tanda seru berlebihan" aria-label="Subjek" className="input-solid w-full px-4 py-2.5 text-[13px]" />
           <input value={preheader} onChange={(e) => setPreheader(e.target.value.slice(0, 140))} placeholder="Pratinjau di inbox (opsional)" aria-label="Pratinjau" className="input-solid w-full px-4 py-2.5 text-[13px]" />
+          <div className="grid gap-3 sm:grid-cols-[1fr_2fr]">
+            <input value={badge} onChange={(e) => setBadge(e.target.value.slice(0, 30))} placeholder="Label banner (mis. Fitur baru)" aria-label="Label banner" className="input-solid px-4 py-2.5 text-[13px]" />
+            <input value={headline} onChange={(e) => setHeadline(e.target.value.slice(0, 90))} placeholder="Judul besar di banner" aria-label="Judul besar" className="input-solid px-4 py-2.5 text-[13px]" />
+          </div>
           <textarea
             value={body}
             onChange={(e) => setBody(e.target.value.slice(0, 5000))}
@@ -159,6 +210,15 @@ export function PromoTab({ toast }: { toast: (m: string) => void }) {
             placeholder={"Tulis seperti pesan biasa. Baris kosong = paragraf baru.\n\nHalo! Kami baru menambahkan ..."}
             className="input-solid w-full resize-y px-4 py-2.5 text-[13px]"
           />
+          <div className="space-y-2">
+            <p className="text-[12px] text-text-muted">Poin-poin (opsional, maks. 3) — tampil sebagai kartu bernomor.</p>
+            {features.map((f, i) => (
+              <div key={i} className="grid gap-2 sm:grid-cols-[1fr_2fr]">
+                <input value={f.title} onChange={(e) => setFeature(i, { title: e.target.value.slice(0, 60) })} placeholder={`Judul poin ${i + 1}`} aria-label={`Judul poin ${i + 1}`} className="input-solid px-4 py-2 text-[13px]" />
+                <input value={f.desc} onChange={(e) => setFeature(i, { desc: e.target.value.slice(0, 200) })} placeholder="Penjelasan singkat" aria-label={`Penjelasan poin ${i + 1}`} className="input-solid px-4 py-2 text-[13px]" />
+              </div>
+            ))}
+          </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <input value={ctaLabel} onChange={(e) => setCtaLabel(e.target.value.slice(0, 60))} placeholder="Teks tombol (opsional), mis. Coba sekarang" aria-label="Teks tombol" className="input-solid px-4 py-2.5 text-[13px]" />
             <input value={ctaUrl} onChange={(e) => setCtaUrl(e.target.value)} placeholder="https://depup.web.id/dashboard" aria-label="URL tombol" className="input-solid px-4 py-2.5 text-[13px]" />
@@ -190,6 +250,13 @@ export function PromoTab({ toast }: { toast: (m: string) => void }) {
             )}
           </div>
           <p className="text-[11.5px] text-text-faint">Kirim tes dulu ke emailmu sendiri dan cek tampilannya. Cek juga batas kirim plan Resend-mu (plan gratis ±100 email/hari).</p>
+        </div>
+      </Card>
+
+      <Card title="Pratinjau email">
+        <div className="p-4">
+          <iframe title="Pratinjau email" sandbox="" srcDoc={previewHtml} className="h-[640px] w-full rounded-xl border border-[var(--surface-line)] bg-white" />
+          <p className="mt-2 text-[11.5px] text-text-faint">Tampilan asli bisa sedikit beda di tiap aplikasi email (Gmail, Outlook, dll). Selalu kirim tes sebelum kirim massal.</p>
         </div>
       </Card>
 
