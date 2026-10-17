@@ -3,7 +3,7 @@
 import * as React from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Flag, Gauge, History, LifeBuoy, Link2, LogOut, Settings2, Users, ArrowLeft } from "lucide-react";
+import { Flag, Gauge, History, LifeBuoy, Link2, LogOut, Megaphone, Settings2, Users, ArrowLeft } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/components/ui/Toast";
 import { ThemeToggle } from "@/components/ui/ThemeToggle";
@@ -13,6 +13,7 @@ import { AbuseTab } from "./AbuseTab";
 import { LinksTab } from "./LinksTab";
 import { UsersTab } from "./UsersTab";
 import { SupportTab } from "./SupportTab";
+import { PromoTab } from "./PromoTab";
 import { SettingsTab } from "./SettingsTab";
 import { AuditTab } from "./AuditTab";
 
@@ -21,6 +22,7 @@ const TABS = [
   { id: "abuse", label: "Abuse & Takedown", icon: Flag },
   { id: "links", label: "Link aktif", icon: Link2 },
   { id: "users", label: "Pengguna", icon: Users },
+  { id: "promo", label: "Promosi", icon: Megaphone },
   { id: "support", label: "Bantuan", icon: LifeBuoy },
   { id: "settings", label: "Pengaturan", icon: Settings2 },
   { id: "audit", label: "Log admin", icon: History },
@@ -108,7 +110,8 @@ export function AdminApp({ name, email }: { name: string; email: string }) {
           {tab === "abuse" && <AbuseTab toast={showToast} />}
           {tab === "links" && <LinksTab toast={showToast} />}
           {tab === "users" && <UsersTab toast={showToast} />}
-          {tab === "support" && <SupportTab />}
+          {tab === "promo" && <PromoTab toast={showToast} />}
+          {tab === "support" && <SupportTab toast={showToast} />}
           {tab === "settings" && <SettingsTab toast={showToast} />}
           {tab === "audit" && <AuditTab />}
         </main>

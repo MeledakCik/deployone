@@ -1,8 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { RefreshCw } from "lucide-react";
-import { useAdminData } from "./api";
+import { CheckCircle2, RefreshCw, Send } from "lucide-react";
+import { adminFetch, useAdminData } from "./api";
 import { Badge, Btn, Card, Empty, ErrorBox, Loading, PageHead, fmtDateTime } from "./ui";
 
 interface Check {
@@ -19,11 +19,30 @@ interface SupportReport {
   summary: string;
   transcript: { role: "user" | "assistant"; content: string }[];
   diagnostics: { checks?: Check[] } | null;
+  status?: "open" | "resolved";
+  replies?: { at: number; by: string; text: string; emailed: boolean }[];
 }
 
-export function SupportTab() {
-  const { data, error, loading, reload } = useAdminData<{ reports: SupportReport[] }>("/api/admin/support");
+export function SupportTab({ toast }: { toast: (m: string) => void }) {
+  const { data, error, loading, reload } = useAdminData<{ reports: SupportReport[]; emailReady: boolean }>("/api/admin/support");
   const [open, setOpen] = React.useState<string | null>(null);
+  const [filter, setFilter] = React.useState<"open" | "all">("open");
+  const [draft, setDraft] = React.useState<Record<string, string>>({});
+  const [busy, setBusy] = React.useState<string | null>(null);
+
+  async function act(id: string, body: Record<string, unknown>, okMsg: string) {
+    setBusy(id);
+    try {
+      await adminFetch("/api/admin/support", { method: "POST", body: { id, ...body } });
+      toast(okMsg);
+      if (body.action === "reply") setDraft((d) => ({ ...d, [id]: "" }));
+      await reload();
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Gagal.");
+    } finally {
+      setBusy(null);
+    }
+  }
 
   return (
     <div>
@@ -31,9 +50,12 @@ export function SupportTab() {
         title="Laporan bantuan"
         desc="Masalah yang dikirim pengguna lewat chat bantuan (manual atau otomatis)."
         right={
-          <Btn onClick={() => void reload()} busy={loading}>
-            <RefreshCw size={13} /> Muat ulang
-          </Btn>
+          <div className="flex items-center gap-2">
+            <Btn onClick={() => setFilter(filter === "open" ? "all" : "open")}>{filter === "open" ? "Tampilkan semua" : "Hanya yang terbuka"}</Btn>
+            <Btn onClick={() => void reload()} busy={loading}>
+              <RefreshCw size={13} /> Muat ulang
+            </Btn>
+          </div>
         }
       />
       <Card>
@@ -41,11 +63,11 @@ export function SupportTab() {
           <ErrorBox message={error} onRetry={reload} />
         ) : !data ? (
           <Loading />
-        ) : data.reports.length === 0 ? (
-          <Empty>Belum ada laporan bantuan.</Empty>
+        ) : data.reports.filter((r) => filter === "all" || r.status !== "resolved").length === 0 ? (
+          <Empty>{filter === "open" ? "Tidak ada laporan yang terbuka." : "Belum ada laporan bantuan."}</Empty>
         ) : (
           <ul>
-            {data.reports.map((r) => {
+            {data.reports.filter((r) => filter === "all" || r.status !== "resolved").map((r) => {
               const problems = (r.diagnostics?.checks ?? []).filter((c) => c.status === "problem" || c.status === "warn");
               const isOpen = open === r.id;
               return (
@@ -55,6 +77,8 @@ export function SupportTab() {
                       <span className="mono text-[12px] text-text-faint">{r.id}</span>
                       <Badge tone={r.source === "auto" ? "warn" : "violet"}>{r.source === "auto" ? "Otomatis" : "Dari pengguna"}</Badge>
                       {problems.length > 0 && <Badge tone="bad">{problems.length} temuan</Badge>}
+                      {r.status === "resolved" ? <Badge tone="good">Selesai</Badge> : <Badge tone="warn">Terbuka</Badge>}
+                      {(r.replies?.length ?? 0) > 0 && <Badge tone="neutral">{r.replies!.length} balasan</Badge>}
                       <span className="ml-auto text-[12px] text-text-faint">{fmtDateTime(r.createdAt)}</span>
                     </div>
                     <p className="mt-1.5 text-[13.5px]">{r.summary}</p>
@@ -81,6 +105,40 @@ export function SupportTab() {
                             {m.content}
                           </p>
                         ))}
+                      </div>
+
+                      {(r.replies ?? []).map((rep, i) => (
+                        <p key={i} className="whitespace-pre-wrap break-words rounded-lg border border-[var(--surface-line)] px-3 py-2">
+                          <span className="font-medium text-emerald-500">Balasan admin ({fmtDateTime(rep.at)}): </span>
+                          {rep.text}
+                        </p>
+                      ))}
+
+                      <div className="space-y-2 border-t border-[var(--surface-line)] pt-3">
+                        <textarea
+                          value={draft[r.id] ?? ""}
+                          onChange={(e) => setDraft((d) => ({ ...d, [r.id]: e.target.value.slice(0, 3000) }))}
+                          rows={3}
+                          aria-label={`Balasan untuk ${r.id}`}
+                          placeholder={`Balasan akan dikirim lewat email ke ${r.email}`}
+                          className="input-solid w-full resize-y px-3 py-2 text-[13px]"
+                        />
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Btn variant="primary" busy={busy === r.id} disabled={!data.emailReady || (draft[r.id] ?? "").trim().length < 3} onClick={() => void act(r.id, { action: "reply", text: draft[r.id], resolve: true }, "Balasan terkirim & laporan ditandai selesai.")}>
+                            <Send size={13} /> Kirim & tandai selesai
+                          </Btn>
+                          <Btn busy={busy === r.id} disabled={!data.emailReady || (draft[r.id] ?? "").trim().length < 3} onClick={() => void act(r.id, { action: "reply", text: draft[r.id] }, "Balasan terkirim.")}>
+                            Kirim saja
+                          </Btn>
+                          {r.status === "resolved" ? (
+                            <Btn busy={busy === r.id} onClick={() => void act(r.id, { action: "reopen" }, "Laporan dibuka lagi.")}>Buka lagi</Btn>
+                          ) : (
+                            <Btn busy={busy === r.id} onClick={() => void act(r.id, { action: "resolve" }, "Laporan ditandai selesai.")}>
+                              <CheckCircle2 size={13} /> Tandai selesai
+                            </Btn>
+                          )}
+                          {!data.emailReady && <span className="text-[11.5px] text-amber-500">RESEND_API_KEY belum diisi — balas lewat email belum aktif.</span>}
+                        </div>
                       </div>
                     </div>
                   )}

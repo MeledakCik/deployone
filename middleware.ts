@@ -39,6 +39,8 @@ function isPublicPath(pathname: string): boolean {
     pathname.startsWith("/api/auth/") ||
     // Laporan abuse boleh dari siapa saja (korban phishing tidak punya akun); dibatasi ketat per IP.
     pathname === "/api/abuse" ||
+    // Berhenti berlangganan email: dibuka dari link email / klien email tanpa session; dilindungi token HMAC.
+    pathname === "/api/unsubscribe" ||
     isTunnelClientPath(pathname)
   );
 }
@@ -81,6 +83,8 @@ const CUSTOM_LIMITS: Record<string, { limit: number; windowSeconds: number }> = 
   "tunnel/create": { limit: 20, windowSeconds: 60 },
   // Laporan abuse (publik): maks 5 per 10 menit per IP.
   abuse: { limit: 5, windowSeconds: 600 },
+  // Publik (tanpa login): batasi per IP.
+  unsubscribe: { limit: 20, windowSeconds: 600 },
 };
 
 const DEFAULT_LIMIT = { limit: 60, windowSeconds: 60 };

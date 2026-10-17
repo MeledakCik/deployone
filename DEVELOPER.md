@@ -298,3 +298,12 @@ disinkronkan ke server lewat `lib/useCloudStorage.ts`.
   `*.up.railway.app` sesuai platform.
 - Project yang sudah dihapus langsung di dashboard platform ditandai `deleted` di riwayat dan
   tidak muncul lagi di halaman Projects.
+
+## Email (Resend)
+
+- Env: `RESEND_API_KEY` (wajib), `EMAIL_FROM` (default `Depup <info@depup.web.id>`), `EMAIL_REPLY_TO` (default `depupdev@gmail.com`). Set di Vercel → Settings → Environment Variables lalu redeploy.
+- `app/api/_lib/email.ts` — pengirim + template + token unsubscribe (HMAC dari `AUTH_SECRET`).
+- Panel admin → **Promosi**: kirim email promosi ke semua akun (kecuali yang diblokir / sudah berhenti berlangganan). Ada tombol "Kirim tes".
+- Panel admin → **Bantuan**: laporan punya status Terbuka/Selesai dan bisa dibalas; balasan dikirim ke email user. Laporan baru juga memicu email ke admin.
+- `GET/POST /api/unsubscribe` publik, dilindungi token; email promosi membawa header `List-Unsubscribe` + `List-Unsubscribe-Post` (one-click).
+- Email promosi dibatasi 2000 penerima per kampanye dan 1 kampanye per 2 menit. Cek kuota plan Resend (plan gratis ±100 email/hari).

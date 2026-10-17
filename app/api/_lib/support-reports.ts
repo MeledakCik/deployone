@@ -10,6 +10,8 @@
  */
 import { kv } from "@vercel/kv";
 import type { DiagnosticsResult } from "@/app/api/_lib/support-diagnostics";
+import { adminEmails } from "@/app/api/_lib/admin-config";
+import { appUrl, buildTransactionalMail, emailConfigured, sendMail } from "@/app/api/_lib/email";
 
 export interface SupportReport {
   id: string;
@@ -20,6 +22,10 @@ export interface SupportReport {
   summary: string;
   transcript: { role: "user" | "assistant"; content: string }[];
   diagnostics: DiagnosticsResult | null;
+  /** Kosong = dianggap "open" (laporan lama sebelum fitur status ada). */
+  status?: "open" | "resolved";
+  /** Balasan admin yang dikirim ke email user lewat Resend. */
+  replies?: { at: number; by: string; text: string; emailed: boolean }[];
 }
 
 const REPORT_TTL_SECONDS = 60 * 60 * 24 * 90;
@@ -122,9 +128,37 @@ export async function testNotify(): Promise<{ telegram: { ok: boolean; note: str
   return { telegram, webhook };
 }
 
+/** Email pemberitahuan ke admin (transaksional). Best-effort, tidak pernah melempar error. */
+async function sendAdminEmail(r: SupportReport): Promise<void> {
+  if (!emailConfigured()) return;
+  try {
+    const problems = (r.diagnostics?.checks ?? []).filter((c) => c.status === "problem" || c.status === "warn");
+    const body = [
+      `Laporan bantuan baru ${r.id} (${r.source === "auto" ? "otomatis" : "dari pengguna"}).`,
+      `Akun: ${r.email}\nHalaman: ${r.view ?? "-"}`,
+      `Ringkasan:\n${r.summary}`,
+      problems.length ? `Temuan:\n${problems.map((c) => `- ${c.label}: ${c.detail}`).join("\n")}` : "Tidak ada anomali terdeteksi.",
+    ].join("\n\n");
+    await Promise.all(
+      adminEmails().map((to) =>
+        sendMail(
+          buildTransactionalMail(
+            to,
+            `Laporan bantuan baru ${r.id}`,
+            { body, preheader: r.summary.slice(0, 120), cta: { label: "Buka panel admin", url: `${appUrl()}/admin#support` } },
+            r.email // Reply di email ini langsung ke user yang melapor
+          )
+        )
+      )
+    );
+  } catch (e) {
+    console.error("[support-report] email admin gagal", (e as Error)?.name);
+  }
+}
+
 async function notifyDeveloper(r: SupportReport): Promise<void> {
   const text = reportText(r);
-  await Promise.all([sendTelegram(text), sendWebhook(text)]);
+  await Promise.all([sendTelegram(text), sendWebhook(text), sendAdminEmail(r)]);
 }
 
 /**
@@ -139,7 +173,7 @@ export async function fileSupportReport(
       const fresh = await kv.set(`support:autodedupe:${input.email}`, 1, { nx: true, ex: 1800 });
       if (!fresh) return null;
     }
-    const report: SupportReport = { ...input, id: newId(), createdAt: new Date().toISOString() };
+    const report: SupportReport = { ...input, id: newId(), createdAt: new Date().toISOString(), status: "open", replies: [] };
     await kv.set(`support:report:${report.id}`, report, { ex: REPORT_TTL_SECONDS });
     await kv.lpush(LIST_KEY, report.id);
     await kv.ltrim(LIST_KEY, 0, LIST_MAX - 1);
@@ -157,4 +191,48 @@ export async function listSupportReports(limit: number): Promise<SupportReport[]
   const ids = (await kv.lrange<string>(LIST_KEY, 0, Math.max(0, Math.min(limit, 100) - 1))) ?? [];
   const items = await Promise.all(ids.map((id) => kv.get<SupportReport>(`support:report:${id}`)));
   return items.filter((x): x is SupportReport => !!x);
+}
+
+export async function getSupportReport(id: string): Promise<SupportReport | null> {
+  if (!/^SR-[A-Z0-9]{4,20}$/.test(id)) return null;
+  return (await kv.get<SupportReport>(`support:report:${id}`)) ?? null;
+}
+
+async function saveSupportReport(r: SupportReport): Promise<void> {
+  await kv.set(`support:report:${r.id}`, r, { ex: REPORT_TTL_SECONDS });
+}
+
+export async function setSupportStatus(id: string, status: "open" | "resolved"): Promise<SupportReport | null> {
+  const r = await getSupportReport(id);
+  if (!r) return null;
+  r.status = status;
+  await saveSupportReport(r);
+  return r;
+}
+
+/** Balas user lewat email. Balasan disimpan di laporan; `emailed=false` kalau pengiriman gagal. */
+export async function replyToSupportReport(
+  id: string,
+  admin: string,
+  text: string,
+  markResolved: boolean
+): Promise<{ report: SupportReport; emailed: boolean; error?: string } | null> {
+  const r = await getSupportReport(id);
+  if (!r) return null;
+  const quoted = r.summary.length > 160 ? `${r.summary.slice(0, 160)}…` : r.summary;
+  const mail = buildTransactionalMail(
+    r.email,
+    `Balasan untuk laporanmu di Depup (${r.id})`,
+    {
+      body: `Halo,\n\n${text}\n\nTentang laporanmu: "${quoted}"\n\nKamu bisa membalas email ini kalau masih ada kendala.`,
+      preheader: text.slice(0, 120),
+      cta: { label: "Buka dashboard Depup", url: `${appUrl()}/dashboard` },
+    },
+    admin
+  );
+  const res = await sendMail(mail);
+  r.replies = [...(r.replies ?? []), { at: Date.now(), by: admin, text, emailed: res.ok }].slice(-20);
+  if (markResolved && res.ok) r.status = "resolved";
+  await saveSupportReport(r);
+  return { report: r, emailed: res.ok, error: res.ok ? undefined : res.error };
 }

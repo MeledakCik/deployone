@@ -34,6 +34,7 @@ async function systemStatus() {
       { name: "KV_REST_API_URL / TOKEN", label: "Database Redis (KV)", ok: has("KV_REST_API_URL") && has("KV_REST_API_TOKEN") },
       { name: "TUNNEL_BASE_DOMAIN", label: "Subdomain Link Instan/Gaib", ok: has("TUNNEL_BASE_DOMAIN") },
       { name: "TELEGRAM_BOT_TOKEN / CHAT_ID", label: "Notifikasi Telegram", ok: has("TELEGRAM_BOT_TOKEN") && has("TELEGRAM_CHAT_ID") },
+      { name: "RESEND_API_KEY", label: "Email (Resend)", ok: has("RESEND_API_KEY") },
       { name: "SUPPORT_WEBHOOK_URL", label: "Webhook Discord/Slack", ok: has("SUPPORT_WEBHOOK_URL") },
       { name: "GROQ_API_KEY", label: "Chat bantuan AI", ok: has("GROQ_API_KEY") },
       { name: "SAWERIA_USERNAME", label: "Donasi Saweria", ok: has("SAWERIA_USERNAME") },
