@@ -199,7 +199,7 @@ async function share(opts) {
     }
     created = r.json.data;
   } catch (e) {
-    die(`Tidak bisa menghubungi ${base} (${e.message}). Cek koneksi internet kamu.`);
+    die(`Tidak bisa menghubungi ${base} (${e.message}). Periksa koneksi internet kamu.`);
   }
 
   const { id, token, publicBase } = created;

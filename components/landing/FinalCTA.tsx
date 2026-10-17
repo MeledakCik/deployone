@@ -1,39 +1,51 @@
 import { DashboardLink } from "./DashboardLink";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight } from "@/components/ui/icons";
 
+/**
+ * Kartu penutup berwarna Midnight: permukaan gelap yang sama dengan dashboard mode gelap,
+ * dengan lime sebagai satu-satunya aksen (tombol dan garis gelombang).
+ * Midnight dipilih, bukan ungu, karena di bagian bawah halaman kanvasnya sendiri sudah ungu.
+ */
 export function FinalCTA() {
   return (
-    <section className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-8">
-      <div className="relative isolate overflow-hidden rounded-3xl bg-obs-low p-8 shadow-[0_20px_60px_rgba(0,0,0,0.6)] sm:p-14">
-        <div className="pointer-events-none absolute -bottom-40 -right-40 h-[32rem] w-[32rem] bg-[radial-gradient(closest-side,rgba(139,92,246,0.32),transparent)]" aria-hidden="true" />
-        <div className="pointer-events-none absolute -left-32 -top-32 h-[26rem] w-[26rem] bg-[radial-gradient(closest-side,rgba(236,72,153,0.24),transparent)]" aria-hidden="true" />
+    <section className="mx-auto w-full max-w-6xl px-3 py-16 sm:px-8">
+      <div className="relative overflow-hidden rounded-[32px] bg-midnight p-8 text-white sm:rounded-[40px] sm:p-14">
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 200 90"
+          className="pointer-events-none absolute right-8 top-8 hidden h-24 w-52 lg:block"
+          fill="none"
+          stroke="#C6F432"
+          strokeWidth="3"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="M4 60 C 18 60, 20 30, 32 30 S 44 74, 56 74 S 66 18, 80 18 S 92 66, 104 66 S 116 38, 128 38 S 140 58, 152 54 S 168 20, 196 12" />
+        </svg>
 
-        <div className="relative z-10 flex flex-col items-start justify-between gap-12 lg:flex-row lg:items-center">
+        <div className="relative z-10 flex flex-col items-start justify-between gap-12 lg:flex-row lg:items-end">
           <div className="max-w-2xl">
-            <h2 className="f-display text-[30px] font-bold leading-tight tracking-[-0.03em] text-white sm:text-[40px] sm:leading-[48px]">
-              Coba dengan repo yang sudah <span className="obs-gradient-text">kamu punya.</span>
+            <h2 className="text-[32px] font-bold leading-[1.06] tracking-[-0.03em] sm:text-[48px]">
+              Coba dengan repo yang sudah kamu miliki.
             </h2>
-            <p className="mb-8 mt-4 text-[17px] leading-relaxed text-obs-sec">
-              Masuk dengan Google, tempel link GitHub, dan lihat hasil pengecekannya dalam hitungan detik.
+            <p className="mb-8 mt-4 text-[17px] leading-relaxed text-night-80">
+              Masuk dengan Google, tempel link GitHub, dan lihat hasil pemeriksaannya dalam hitungan detik.
             </p>
-            <DashboardLink
-              href="/dashboard"
-              className="obs-btn-primary inline-flex items-center gap-2 rounded-xl px-8 py-3.5 text-[16px] font-semibold text-white"
-            >
+            <DashboardLink href="/dashboard" className="btn-lime inline-flex items-center gap-2 px-8 py-4 text-[16px]">
               Buka dashboard
               <ArrowRight size={18} />
             </DashboardLink>
           </div>
 
-          <ul className="flex w-full min-w-[260px] flex-col gap-3 lg:w-auto">
+          <ul className="flex w-full min-w-[260px] flex-col gap-3 lg:mt-24 lg:w-auto">
             {[
               ["3", "platform dalam satu dashboard"],
-              ["Private", "repo bisa dengan GitHub Token"],
-              ["Google", "login tanpa buat akun baru"],
+              ["Private", "repo pun bisa, lewat GitHub Token"],
+              ["Google", "masuk tanpa membuat akun baru"],
             ].map(([big, small]) => (
-              <li key={big} className="flex items-center justify-between gap-6 rounded-xl bg-obs-base p-4 shadow-inner">
-                <span className="f-display text-[22px] font-bold text-white">{big}</span>
-                <span className="text-right text-[13px] text-obs-sec">{small}</span>
+              <li key={big} className="flex items-center justify-between gap-6 rounded-2xl bg-night-15 p-4">
+                <span className="text-[22px] font-bold tracking-[-0.02em]">{big}</span>
+                <span className="text-right text-[13px] text-night-80">{small}</span>
               </li>
             ))}
           </ul>

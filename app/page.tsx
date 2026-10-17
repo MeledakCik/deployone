@@ -1,7 +1,4 @@
 import * as React from "react";
-import "@fontsource-variable/geist";
-import "@fontsource-variable/inter";
-import "@fontsource-variable/jetbrains-mono";
 import { Navbar } from "@/components/landing/Navbar";
 import { Hero } from "@/components/landing/Hero";
 import { SocialProof } from "@/components/landing/SocialProof";
@@ -14,27 +11,24 @@ import { Footer } from "@/components/landing/Footer";
 
 export default function LandingPage() {
   return (
-    <main className="obsidian relative min-h-screen overflow-x-hidden antialiased selection:bg-obs-violet/30">
-      {/* Cahaya ambient di belakang konten */}
-      <div className="pointer-events-none absolute inset-0 -z-0 overflow-hidden" aria-hidden="true">
-        <div className="absolute -top-56 left-1/2 h-[700px] w-[1100px] -translate-x-1/2 bg-[radial-gradient(closest-side,rgba(139,92,246,0.22),rgba(236,72,153,0.08)_55%,transparent)]" />
-        <div className="absolute -left-64 top-[800px] h-[800px] w-[800px] bg-[radial-gradient(closest-side,rgba(139,92,246,0.12),transparent)]" />
-        <div className="absolute -right-64 top-[1800px] h-[900px] w-[900px] bg-[radial-gradient(closest-side,rgba(236,72,153,0.11),transparent)]" />
-      </div>
+    // data-theme="light": landing selalu terang, tidak mengikuti tema dashboard.
+    <main data-theme="light" className="lp relative min-h-screen overflow-x-hidden antialiased">
+      <React.Suspense fallback={null}>
+        <Navbar />
+      </React.Suspense>
+      <Hero />
 
-      <div className="relative z-10">
-        <React.Suspense fallback={null}>
-          <Navbar />
-        </React.Suspense>
-        <Hero />
+      {/* Bagian isi: lembar putih membulat di atas kanvas lavender */}
+      <div className="lp-sheet mx-2 mt-10 sm:mx-5 min-[1400px]:mx-auto min-[1400px]:max-w-[1360px]">
         <SocialProof />
         <FeaturesGrid />
         <HowItWorks />
         <KuliSection />
         <SupportMatrix />
-        <FinalCTA />
-        <Footer />
       </div>
+
+      <FinalCTA />
+      <Footer />
     </main>
   );
 }

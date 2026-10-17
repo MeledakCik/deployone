@@ -1,4 +1,5 @@
-import { Check, Minus, TriangleAlert } from "lucide-react";
+import { Check, Minus, TriangleAlert } from "@/components/ui/icons";
+import { Badge, type BadgeTone } from "@/components/ui/primitives";
 
 type Level = "ok" | "warn" | "no";
 
@@ -9,50 +10,48 @@ const ROWS: { type: string; examples: string; v: Level; c: Level; r: Level }[] =
   { type: "Docker dan bahasa lain", examples: "Dockerfile, Python, Go, PHP, Ruby, Java, Rust, .NET", v: "no", c: "no", r: "ok" },
 ];
 
-const META = {
-  ok: { text: "Otomatis", tone: "text-obs-ok font-medium", Icon: Check },
-  warn: { text: "Dengan catatan", tone: "text-obs-warn font-medium", Icon: TriangleAlert },
-  no: { text: "Tidak cocok", tone: "text-obs-mute", Icon: Minus },
-} as const;
+const META: Record<Level, { text: string; tone: BadgeTone; Icon: typeof Check }> = {
+  ok: { text: "Otomatis", tone: "good", Icon: Check },
+  warn: { text: "Dengan catatan", tone: "warn", Icon: TriangleAlert },
+  no: { text: "Tidak cocok", tone: "neutral", Icon: Minus },
+};
 
 export function SupportMatrix() {
   return (
-    <section id="support" className="mx-auto w-full max-w-7xl scroll-mt-20 px-4 py-16 sm:px-8">
+    <section id="support" className="mx-auto w-full max-w-6xl scroll-mt-24 px-4 pb-16 pt-4 sm:px-8 sm:pb-20">
       <div className="mx-auto mb-12 max-w-3xl text-center">
-        <h2 className="f-display text-[28px] font-bold leading-tight tracking-[-0.03em] text-white sm:text-[40px] sm:leading-[48px]">
-          Repo kamu cocok di mana?
-        </h2>
-        <p className="mt-4 text-[17px] leading-relaxed text-obs-sec">
-          Tiap platform punya batasnya. Depup hanya mengizinkan deploy yang memang bisa berhasil. Kalau tidak cocok, kamu dapat
-          alasan dan langkah deploy manual.
+        <h2 className="lp-h2">Repo kamu cocok di mana?</h2>
+        <p className="lp-lead">
+          Tiap platform ada batasnya. Depup hanya mengizinkan deploy yang memang bisa berhasil. Kalau tidak cocok, kamu mendapat
+          alasan beserta langkah deploy manual.
         </p>
       </div>
 
-      <div className="obs-card overflow-x-auto rounded-2xl">
+      <div className="surface-solid overflow-x-auto bg-[var(--frame)]">
         <table className="w-full min-w-[720px] text-left text-[14px]">
           <thead>
-            <tr className="border-b border-white/[0.08] bg-white/[0.03]">
-              <th scope="col" className="px-6 py-4 font-medium text-obs-sec">Isi repo</th>
-              <th scope="col" className="px-6 py-4 font-medium text-white">Vercel</th>
-              <th scope="col" className="px-6 py-4 font-medium text-white">Cloudflare Pages</th>
-              <th scope="col" className="px-6 py-4 font-medium text-white">Railway</th>
+            <tr className="text-[13px] text-text-muted">
+              <th scope="col" className="px-6 py-4 font-medium">Isi repo</th>
+              <th scope="col" className="px-6 py-4 font-semibold text-text">Vercel</th>
+              <th scope="col" className="px-6 py-4 font-semibold text-text">Cloudflare Pages</th>
+              <th scope="col" className="px-6 py-4 font-semibold text-text">Railway</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody className="bg-[var(--surface-solid)]">
             {ROWS.map((r) => (
-              <tr key={r.type} className="border-b border-white/[0.06] last:border-b-0">
-                <th scope="row" className="px-6 py-5 align-top font-medium text-white">
+              <tr key={r.type} className="surface-solid-row border-t border-[var(--surface-line)]">
+                <th scope="row" className="px-6 py-5 align-top font-semibold">
                   {r.type}
-                  <div className="mt-1 max-w-[320px] text-[12.5px] font-normal text-obs-sec">{r.examples}</div>
+                  <div className="mt-1 max-w-[320px] text-[12.5px] font-normal text-text-muted">{r.examples}</div>
                 </th>
                 {[r.v, r.c, r.r].map((l, idx) => {
                   const { text, tone, Icon } = META[l];
                   return (
-                    <td key={idx} className={`px-6 py-5 align-top ${tone}`}>
-                      <span className="inline-flex items-center gap-1.5">
-                        <Icon size={14} strokeWidth={l === "ok" ? 3 : 2} aria-hidden="true" />
+                    <td key={idx} className="px-6 py-5 align-top">
+                      <Badge tone={tone}>
+                        <Icon size={13} strokeWidth={l === "ok" ? 3 : 2} aria-hidden="true" />
                         {text}
-                      </span>
+                      </Badge>
                     </td>
                   );
                 })}
@@ -61,7 +60,7 @@ export function SupportMatrix() {
           </tbody>
         </table>
       </div>
-      <p className="mt-4 text-[13px] text-obs-mute">
+      <p className="mt-4 text-[13px] text-text-muted">
         Project di dalam subfolder (misalnya frontend/) perlu deploy manual dengan Root Directory. Depup akan memberi tahu
         langkahnya.
       </p>

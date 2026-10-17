@@ -29,11 +29,11 @@ const STEP_LABELS = [
 ];
 
 const LEVEL_STYLE: Record<Level, { tag: string; cls: string }> = {
-  info: { tag: "INFO", cls: "text-sky-300/80" },
-  ok: { tag: " OK ", cls: "text-emerald-300/90" },
-  warn: { tag: "WARN", cls: "text-amber-300/90" },
-  error: { tag: "ERR ", cls: "text-red-300/90" },
-  wait: { tag: "WAIT", cls: "text-white/35" },
+  info: { tag: "INFO", cls: "text-[#1d6a9e] dark:text-[#6aacda]" },
+  ok: { tag: " OK ", cls: "text-[var(--ok-fg)]" },
+  warn: { tag: "WARN", cls: "text-[var(--warn-fg)]" },
+  error: { tag: "ERR ", cls: "text-[var(--bad-fg)]" },
+  wait: { tag: "WAIT", cls: "text-[var(--text-faint)]" },
 };
 
 function fmt(ms: number) {
@@ -132,27 +132,27 @@ export function DeployDebugLog({
 
   return (
     <div
-      className={cn("rounded-xl bg-black/40 border border-white/[0.07] text-left", className)}
+      className={cn("rounded-xl border border-[var(--line)] bg-[var(--dm-log,var(--frame))] text-left", className)}
       role="log"
       aria-live="off"
       aria-label="Log proses debug"
     >
-      <div className="flex items-center justify-between px-3 pt-2 text-[10px] uppercase tracking-wider text-white/30">
+      <div className="flex items-center justify-between px-3 pt-2 text-[12px] uppercase tracking-wider text-[var(--text-faint)]">
         <span>Debug log</span>
         <span>{lines.length} baris</span>
       </div>
       <div
         ref={boxRef}
-        className={cn("mt-1 overflow-y-auto px-3 pb-2.5 font-mono text-[10.5px] leading-[1.6]", maxHeightClass)}
+        className={cn("mt-1 overflow-y-auto px-3 pb-2.5 font-mono text-[12px] leading-[1.6]", maxHeightClass)}
       >
-        {lines.length === 0 && <div className="text-white/30">Belum ada log.</div>}
+        {lines.length === 0 && <div className="text-[var(--text-faint)]">Belum ada log.</div>}
         {lines.map((l) => {
           const st = LEVEL_STYLE[l.level];
           return (
             <div key={l.id} className="flex gap-2 break-words">
-              <span className="shrink-0 text-white/25">{fmt(l.at)}</span>
+              <span className="shrink-0 text-[var(--text-faint)]">{fmt(l.at)}</span>
               <span className={cn("shrink-0 whitespace-pre", st.cls)}>{st.tag}</span>
-              <span className={cn("min-w-0 whitespace-pre-wrap break-words", l.level === "wait" ? "text-white/35" : "text-white/70")}>
+              <span className={cn("min-w-0 whitespace-pre-wrap break-words", l.level === "wait" ? "text-[var(--text-faint)]" : "text-[var(--text-muted)]")}>
                 {l.text}
               </span>
             </div>

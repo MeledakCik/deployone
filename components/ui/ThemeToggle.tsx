@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useTheme } from "next-themes";
-import { Sun, Moon } from "lucide-react";
+import { Sun, Moon } from "@/components/ui/icons";
 
 export function ThemeToggle() {
   const { theme, setTheme } = useTheme();
@@ -24,7 +24,9 @@ export function ThemeToggle() {
       onClick={() => setTheme(isLight ? "dark" : "light")}
     >
       <span className="theme-toggle-knob">
-        {isLight ? <Sun size={14} /> : <Moon size={14} />}
+        <span key={isLight ? "sun" : "moon"} className="theme-icon-swap grid place-items-center">
+          {isLight ? <Sun size={14} /> : <Moon size={14} />}
+        </span>
       </span>
     </button>
   );

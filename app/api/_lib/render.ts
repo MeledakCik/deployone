@@ -36,7 +36,7 @@ async function renderFetch<T>(
   });
 
   if (res.status === 401 || res.status === 403) {
-    throw new RenderApiError("Render API Key tidak valid atau tidak punya izin.", "invalid_token");
+    throw new RenderApiError("Render API Key tidak valid atau tidak memiliki izin.", "invalid_token");
   }
   if (res.status === 404) {
     throw new RenderApiError("Resource tidak ditemukan di Render.", "not_found");
@@ -121,7 +121,7 @@ export async function getRenderUser(
   const owner = owners[0]?.owner ?? null;
   if (!owner) {
     throw new RenderApiError(
-      "Akun Render ini tidak punya workspace yang bisa diakses token ini.",
+      "Akun Render ini tidak memiliki workspace yang bisa diakses token ini.",
       "render_error"
     );
   }
@@ -139,7 +139,7 @@ async function getDefaultOwnerId(renderToken: string): Promise<string> {
   const owner = owners[0]?.owner;
   if (!owner) {
     throw new RenderApiError(
-      "Akun Render ini belum punya workspace. Selesaikan setup akun dulu di dashboard.render.com.",
+      "Akun Render ini belum memiliki workspace. Selesaikan setup akun dulu di dashboard.render.com.",
       "render_error"
     );
   }
@@ -428,7 +428,7 @@ export async function getRenderDeployment(
     readyState,
     errorMessage:
       readyState === "ERROR"
-        ? "Build/deploy gagal di Render. Cek log di dashboard Render untuk detail."
+        ? "Build/deploy gagal di Render. Periksa log di dashboard Render untuk detail."
         : null,
   };
 }

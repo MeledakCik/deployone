@@ -1,4 +1,5 @@
 import type * as React from "react";
+import { CountUp } from "@/components/ui/CountUp";
 
 export function StatCard({
   id,
@@ -13,25 +14,24 @@ export function StatCard({
   icon: React.ElementType;
   tone: "violet" | "emerald" | "red";
 }) {
+  // Kartu pastel datar seperti referensi. Di tema gelap warnanya jadi tint transparan.
   const toneClass = {
-    violet: "text-violet-400",
-    emerald: "text-emerald-500",
-    red: "text-red-400",
+    violet: "bg-tone-lilac",
+    emerald: "bg-tone-mint",
+    red: "bg-tone-peach",
   }[tone];
 
   return (
-    // Only the sidebar and these 3 stat cards use backdrop-blur (kept light, 12px) — everything
-    // else in the dashboard uses solid surfaces so the app stays smooth on mobile.
-    <div className="stat-card-glass p-5">
-      <div className="flex items-center justify-between">
-        <span className={`stat-icon ${toneClass}`}>
-          <Icon size={18} />
+    <div className={`stat-card-glass p-5 ${toneClass}`}>
+      <div className="flex items-start justify-between gap-3">
+        <p className="pt-1 text-[13.5px] font-medium text-text-muted">{label}</p>
+        <span className="stat-icon text-text">
+          <Icon size={19} />
         </span>
       </div>
-      <p id={id} className="mt-4 text-[28px] font-semibold tracking-tight">
-        {value}
+      <p id={id} className="mt-7 text-[40px] font-bold leading-none tracking-[-0.03em] tabular-nums">
+        <CountUp value={value} />
       </p>
-      <p className="text-[13px] text-text-muted">{label}</p>
     </div>
   );
 }

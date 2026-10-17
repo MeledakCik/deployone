@@ -185,6 +185,8 @@ interface DeployContextValue {
   setView: (v: DashboardView) => void;
   stats: { total: number; ready: number; failed: number };
   history: HistoryItem[];
+  /** true setelah riwayat selesai dimuat dari penyimpanan (supaya UI bisa menampilkan kerangka loading). */
+  historyReady: boolean;
   form: DeployFormValues;
   setFormField: <K extends keyof DeployFormValues>(
     key: K,
@@ -268,6 +270,8 @@ interface DeployContextValue {
       alsoDeleteFromVercel?: boolean;
       alsoDeleteFromCloudflare?: boolean;
       alsoDeleteFromRailway?: boolean;
+      /** "owner/repo" — kalau diisi, repo GitHub ini ikut dihapus permanen. */
+      alsoDeleteGithubRepo?: string;
     },
   ) => Promise<void>;
 
@@ -363,7 +367,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     window.scrollTo({ top: 0 });
   }, []);
 
-  const [history, setHistory] = useCloudStorage<HistoryItem[]>(
+  const [history, setHistory, historyReady] = useCloudStorage<HistoryItem[]>(
     "history",
     [],
     "depup-history",
@@ -683,6 +687,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       platform: Platform,
       domain: string,
       status: HistoryItem["status"] = "ready",
+      repo?: string,
     ) => {
       const item: HistoryItem = {
         id: `${Date.now()}`,
@@ -691,6 +696,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         domain: normalizeDeployDomain(domain, platform),
         date: formatDate(new Date()),
         status,
+        ...(repo ? { repo } : {}),
       };
       setHistory((prev) => {
         const safePrev = Array.isArray(prev) ? prev : [];
@@ -911,7 +917,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
               analyticsUrl,
             },
           }));
-          addHistory(projectName, "vercel", status.url, "ready");
+          addHistory(projectName, "vercel", status.url, "ready", validation.fullName);
 
           void (async () => {
             try {
@@ -950,7 +956,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           if (intervalRef.current) clearInterval(intervalRef.current);
           failDeploy(
             data,
-            new Error(status.errorMessage ?? "Build gagal di Vercel. Cek inspector url untuk detail log."),
+            new Error(status.errorMessage ?? "Build gagal di Vercel. Periksa inspector url untuk detail log."),
             "build",
             validation,
           );
@@ -1073,7 +1079,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
               inspectorUrl: status.inspectorUrl,
             },
           }));
-          addHistory(projectName, "cloudflare", status.url, "ready");
+          addHistory(projectName, "cloudflare", status.url, "ready", validation.fullName);
           return;
         }
         if (
@@ -1083,7 +1089,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           if (intervalRef.current) clearInterval(intervalRef.current);
           failDeploy(
             data,
-            new Error(status.errorMessage ?? "Build gagal di Cloudflare Pages. Cek dashboard untuk detail log."),
+            new Error(status.errorMessage ?? "Build gagal di Cloudflare Pages. Periksa dashboard untuk detail log."),
             "build",
             validation,
           );
@@ -1199,7 +1205,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
               inspectorUrl: status.inspectorUrl,
             },
           }));
-          addHistory(actualName, "railway", domain, "ready");
+          addHistory(actualName, "railway", domain, "ready", validation.fullName);
           return;
         }
         if (
@@ -1209,7 +1215,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           if (intervalRef.current) clearInterval(intervalRef.current);
           failDeploy(
             data,
-            new Error(status.errorMessage ?? "Build gagal di Railway. Cek log di dashboard Railway untuk detail."),
+            new Error(status.errorMessage ?? "Build gagal di Railway. Periksa log di dashboard Railway untuk detail."),
             "build",
             validation,
           );
@@ -1308,12 +1314,12 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     const failed = deployState.status === "error";
     resetDeployState();
     if (failed) {
-      showToast("Deploy gagal — cek pesan error dan coba lagi.");
+      showToast("Deploy gagal — periksa pesan error dan coba lagi.");
       return;
     }
     setView("dashboard");
     setForm(emptyForm);
-    showToast("Deploy berhasil — cek dashboard!");
+    showToast("Deploy berhasil — periksa dashboard!");
   }, [deployState.status, resetDeployState, showToast, setView]);
 
   /* ================================================================
@@ -1408,6 +1414,17 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         return "deleted";
       };
 
+      const rememberRepo = (repo: string | null | undefined) => {
+        if (!repo) return;
+        setHistory((prev) =>
+          Array.isArray(prev)
+            ? prev.map((h) =>
+                h.name === name && h.platform === platform && h.repo !== repo ? { ...h, repo } : h,
+              )
+            : prev,
+        );
+      };
+
       if (platform === "cloudflare") {
         if (!savedCloudflareToken) return "skipped";
         return confirmMissingThenDelete(async () => {
@@ -1437,6 +1454,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
                 : prev,
             );
           }
+          if (status.exists) rememberRepo(status.linkedRepoFullName);
           return status.exists;
         });
       }
@@ -1447,6 +1465,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
             `/api/railway/status?project=${encodeURIComponent(name)}`,
             { headers: { "x-railway-token": savedRailwayToken.token } },
           );
+          if (status.exists) rememberRepo(status.linkedRepoFullName);
           return status.exists;
         });
       }
@@ -1457,6 +1476,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
             `/api/vercel/status?project=${encodeURIComponent(name)}`,
             { headers: { "x-vercel-token": vercelToken } },
           );
+          if (status.exists) rememberRepo(status.linkedRepoFullName);
           return status.exists;
         });
       }
@@ -1516,6 +1536,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         alsoDeleteFromVercel?: boolean;
         alsoDeleteFromCloudflare?: boolean;
         alsoDeleteFromRailway?: boolean;
+        alsoDeleteGithubRepo?: string;
       },
     ) => {
       // Look up (and later remove) strictly by name+platform — the same
@@ -1620,6 +1641,37 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         setDeletingProject(null);
       }
 
+      // Opsional: hapus juga repo GitHub-nya. Dijalankan SETELAH project di
+      // platform terhapus — kalau langkah ini gagal, project platform sudah
+      // terlanjur hilang, jadi riwayat tetap diperbarui dan user diberi tahu
+      // bahwa hanya repo-nya yang gagal.
+      const githubRepo = options.alsoDeleteGithubRepo?.trim();
+      let githubDeleted = false;
+      let githubError: string | null = null;
+      if (githubRepo) {
+        const pat = settingsTokens.githubPat ?? "";
+        if (!pat) {
+          githubError = "Isi GitHub PAT di Settings dulu untuk hapus repo di GitHub.";
+        } else {
+          setDeletingProject(name);
+          try {
+            await callApi(
+              `/api/github/repo?repo=${encodeURIComponent(githubRepo)}`,
+              { method: "DELETE", headers: { "x-github-pat": pat } },
+            );
+            githubDeleted = true;
+          } catch (err) {
+            githubError = err instanceof Error ? err.message : "Gagal menghapus repo di GitHub.";
+          }
+          setDeletingProject(null);
+        }
+        // Tidak ada yang berhasil dihapus sama sekali → jangan ubah riwayat.
+        if (githubError && !alsoDelete) {
+          showToast(`Gagal menghapus repo ${githubRepo}: ${githubError}`);
+          return;
+        }
+      }
+
       if (alsoDelete) {
         // The real project is actually gone now — keep the row as a
         // permanent record instead of dropping it, so the Dashboard's
@@ -1632,25 +1684,32 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           ),
         );
       } else {
-        // "Hapus di Depup saja" — the real project is still alive on its
-        // platform, so nothing was actually deleted; this just stops
-        // Depup from tracking it. There's no deletion to keep a record of,
-        // so the entry is simply removed.
+        // Default "Hapus di Depup saja" (atau hanya repo GitHub yang
+        // dihapus) — project aslinya masih hidup di platformnya, jadi tidak
+        // ada penghapusan yang perlu dicatat; entri cukup dilepas dari Depup.
         setHistory((prev) =>
           (Array.isArray(prev) ? prev : []).filter(
             (h) => !(h.name === name && h.platform === platform),
           ),
         );
       }
+
+      const platformName = isVercelProject
+        ? "Vercel"
+        : isCloudflareProject
+          ? "Cloudflare"
+          : "Railway";
+      const removedFrom = ["Depup"];
+      if (alsoDelete) removedFrom.push(platformName);
+      if (githubDeleted) removedFrom.push("GitHub");
+      const base = alsoDelete || githubDeleted
+        ? `Project "${name}" dihapus dari ${removedFrom.join(" & ")}.`
+        : `Project "${name}" dihapus dari Depup (tetap ada di platform aslinya).`;
       showToast(
-        alsoDelete
-          ? `Project "${name}" dihapus dari Depup & ${
-              isVercelProject ? "Vercel" : isCloudflareProject ? "Cloudflare" : "Railway"
-            }.`
-          : `Project "${name}" dihapus dari Depup (tetap ada di platform aslinya).`,
+        githubError ? `${base} Namun repo ${githubRepo} gagal dihapus: ${githubError}` : base,
       );
     },
-    [history, setHistory, showToast, vercelToken, savedCloudflareToken, savedRailwayToken],
+    [history, setHistory, showToast, vercelToken, savedCloudflareToken, savedRailwayToken, settingsTokens.githubPat],
   );
 
   const fetchImportableVercelProjects = React.useCallback(async () => {
@@ -2089,7 +2148,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         } catch (err) {
           if (isPairCall) {
             showToast(
-              `Domain utama tersimpan, tapi gagal menambahkan pasangan "${trimmedDomain}" otomatis: ${
+              `Domain utama tersimpan, tetapi gagal menambahkan pasangan "${trimmedDomain}" otomatis: ${
                 err instanceof Error ? err.message : "unknown error"
               }`,
             );
@@ -2142,7 +2201,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         } catch (err) {
           if (isPairCall) {
             showToast(
-              `Domain utama tersimpan, tapi gagal menambahkan pasangan "${trimmedDomain}" otomatis: ${
+              `Domain utama tersimpan, tetapi gagal menambahkan pasangan "${trimmedDomain}" otomatis: ${
                 err instanceof Error ? err.message : "unknown error"
               }`,
             );
@@ -2194,7 +2253,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         } catch (err) {
           if (isPairCall) {
             showToast(
-              `Domain utama tersimpan, tapi gagal menambahkan pasangan "${trimmedDomain}" otomatis: ${
+              `Domain utama tersimpan, tetapi gagal menambahkan pasangan "${trimmedDomain}" otomatis: ${
                 err instanceof Error ? err.message : "unknown error"
               }`,
             );
@@ -2476,7 +2535,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           );
         } catch (err) {
           showToast(
-            err instanceof Error ? err.message : "Gagal cek status domain.",
+            err instanceof Error ? err.message : "Gagal memeriksa status domain.",
           );
         }
         return;
@@ -2519,7 +2578,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           );
         } catch (err) {
           showToast(
-            err instanceof Error ? err.message : "Gagal cek status domain.",
+            err instanceof Error ? err.message : "Gagal memeriksa status domain.",
           );
         }
         return;
@@ -2560,7 +2619,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         );
       } catch (err) {
         showToast(
-          err instanceof Error ? err.message : "Gagal cek status domain.",
+          err instanceof Error ? err.message : "Gagal memeriksa status domain.",
         );
       }
     },
@@ -2712,11 +2771,11 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       });
       showToast(
         syncedToVercel
-          ? `Secret disimpan untuk "${trimmedProject}" & di-push ke Vercel.`
+          ? `Secret disimpan untuk "${trimmedProject}" & dikirim ke Vercel.`
           : syncedToCloudflare
-            ? `Secret disimpan untuk "${trimmedProject}" & di-push ke Cloudflare.`
+            ? `Secret disimpan untuk "${trimmedProject}" & dikirim ke Cloudflare.`
             : syncedToRailway
-              ? `Secret disimpan untuk "${trimmedProject}" & di-push ke Railway.`
+              ? `Secret disimpan untuk "${trimmedProject}" & dikirim ke Railway.`
               : `Secret disimpan untuk project "${trimmedProject}".`,
       );
       if (syncedToVercel) {
@@ -2841,6 +2900,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     setView,
     stats,
     history: Array.isArray(history) ? history : [],
+    historyReady,
     form,
     setFormField,
     platformTokenLabel,

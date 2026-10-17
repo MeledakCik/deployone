@@ -86,7 +86,7 @@ function primaryUrlFor(d: VercelDeploymentResponse): string {
 
 async function parseVercelError(res: Response): Promise<VercelApiError> {
   if (res.status === 401 || res.status === 403) {
-    return new VercelApiError("Vercel token tidak valid atau tidak punya izin.", "invalid_token");
+    return new VercelApiError("Vercel token tidak valid atau tidak memiliki izin.", "invalid_token");
   }
   if (res.status === 404) {
     return new VercelApiError("Deployment tidak ditemukan di Vercel.", "not_found");
@@ -234,7 +234,7 @@ export async function redeployProject(
   }
   if (!project.latestDeploymentId) {
     throw new VercelApiError(
-      `Project "${projectName}" belum punya deployment sebelumnya di Vercel untuk di-redeploy.`,
+      `Project "${projectName}" belum memiliki deployment sebelumnya di Vercel untuk dideploy ulang.`,
       "not_found"
     );
   }

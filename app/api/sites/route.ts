@@ -68,7 +68,7 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
   if (!email) return fail("Sesi login habis. Silakan login lagi.", 401, "unauthorized");
   if (!sitesEnabled()) {
     return fail(
-      "Hosting Link Instan belum diaktifkan oleh admin (TUNNEL_BASE_DOMAIN belum di-set).",
+      "Hosting Link Instan belum diaktifkan oleh admin (TUNNEL_BASE_DOMAIN belum diatur).",
       503
     );
   }

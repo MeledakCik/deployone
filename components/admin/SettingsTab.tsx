@@ -1,9 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { CheckCircle2, XCircle } from "lucide-react";
+import { CheckCircle2, XCircle } from "@/components/ui/icons";
 import { adminFetch, useAdminData } from "./api";
-import { Btn, Card, ErrorBox, Loading, PageHead, Toggle } from "./ui";
+import { Btn, Card, ErrorBox, Loading, PageHead, SelectField, Toggle } from "./ui";
 
 interface Settings {
   signupOpen: boolean;
@@ -62,20 +62,20 @@ export function SettingsTab({ toast }: { toast: (m: string) => void }) {
   if (!data || !s) return <Loading />;
 
   const rows: { key: "signupOpen" | "sitesEnabled" | "tunnelEnabled"; title: string; desc: string }[] = [
-    { key: "signupOpen", title: "Pendaftaran akun baru", desc: "Matikan untuk menutup pendaftaran. Pengguna yang sudah punya akun tetap bisa login." },
+    { key: "signupOpen", title: "Pendaftaran akun baru", desc: "Matikan untuk menutup pendaftaran. Pengguna yang sudah memiliki akun tetap bisa login." },
     { key: "sitesEnabled", title: "Link Instan (hosting statis)", desc: "Matikan untuk menghentikan upload situs baru, mis. saat ada gelombang phishing atau Redis hampir penuh." },
     { key: "tunnelEnabled", title: "Link Gaib (tunnel CLI)", desc: "Matikan untuk menolak pembuatan tunnel baru. Tunnel yang sudah berjalan sampai kedaluwarsa." },
   ];
   const ann = s.announcement;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <PageHead title="Pengaturan" desc="Perubahan langsung berlaku (maks. ±15 detik di semua server)." />
 
       <Card title="Saklar layanan">
         <ul>
           {rows.map((r) => (
-            <li key={r.key} className="flex items-center justify-between gap-4 border-b border-[var(--surface-line)] px-5 py-4 last:border-0">
+            <li key={r.key} className="flex items-center justify-between gap-4 border-b border-[var(--surface-line)] px-6 py-4 last:border-0">
               <div className="min-w-0">
                 <p className="text-[14px] font-medium">{r.title}</p>
                 <p className="text-[12.5px] text-text-muted">{r.desc}</p>
@@ -87,7 +87,7 @@ export function SettingsTab({ toast }: { toast: (m: string) => void }) {
       </Card>
 
       <Card title="Banner pengumuman di dashboard">
-        <div className="space-y-3 p-5">
+        <div className="space-y-3 p-6">
           <textarea
             value={ann.text}
             onChange={(e) => setS({ ...s, announcement: { ...ann, text: e.target.value.slice(0, 300) } })}
@@ -98,16 +98,16 @@ export function SettingsTab({ toast }: { toast: (m: string) => void }) {
             className="input-solid w-full resize-none px-4 py-2.5 text-[13px]"
           />
           <div className="flex flex-wrap items-center gap-3">
-            <select
+            <SelectField
               value={ann.level}
-              onChange={(e) => setS({ ...s, announcement: { ...ann, level: e.target.value as Settings["announcement"]["level"] } })}
-              aria-label="Tingkat pengumuman"
-              className="input-solid px-3 py-2 text-[13px]"
-            >
-              <option value="info">Info</option>
-              <option value="warn">Peringatan</option>
-              <option value="critical">Penting</option>
-            </select>
+              onValueChange={(v) => setS({ ...s, announcement: { ...ann, level: v as Settings["announcement"]["level"] } })}
+              label="Tingkat pengumuman"
+              options={[
+                { value: "info", label: "Info" },
+                { value: "warn", label: "Peringatan" },
+                { value: "critical", label: "Penting" },
+              ]}
+            />
             <label className="flex items-center gap-2 text-[13px]">
               <Toggle checked={ann.active} label="Tampilkan pengumuman" onChange={(v) => setS({ ...s, announcement: { ...ann, active: v } })} /> Tampilkan ke pengguna
             </label>
@@ -115,7 +115,7 @@ export function SettingsTab({ toast }: { toast: (m: string) => void }) {
               Simpan pengumuman
             </Btn>
           </div>
-          <span className="text-[11.5px] text-text-faint">{ann.text.length}/300 karakter</span>
+          <span className="text-[12px] text-text-muted">{ann.text.length}/300 karakter</span>
         </div>
       </Card>
 
@@ -133,7 +133,7 @@ export function SettingsTab({ toast }: { toast: (m: string) => void }) {
             <StatusRow key={e.name} ok={e.ok} label={e.label} extra={e.ok ? undefined : `isi ${e.name}`} />
           ))}
         </ul>
-        <div className="border-t border-[var(--surface-line)] px-5 py-4 text-[12.5px] text-text-muted">
+        <div className="border-t border-[var(--surface-line)] px-6 py-4 text-[12.5px] text-text-muted">
           <p>
             Admin: <span className="text-text">{data.system.admins.join(", ")}</span>
           </p>
@@ -148,10 +148,10 @@ export function SettingsTab({ toast }: { toast: (m: string) => void }) {
 
 function StatusRow({ ok, label, extra }: { ok: boolean; label: string; extra?: string }) {
   return (
-    <li className="flex items-center gap-2.5 px-5 py-2.5 text-[13px]">
-      {ok ? <CheckCircle2 size={16} className="shrink-0 text-emerald-500" /> : <XCircle size={16} className="shrink-0 text-red-400" />}
+    <li className="flex items-center gap-2.5 px-6 py-2.5 text-[13px]">
+      {ok ? <CheckCircle2 size={16} className="shrink-0 text-ok-fg" /> : <XCircle size={16} className="shrink-0 text-bad-fg" />}
       <span>{label}</span>
-      <span className="ml-auto text-[11.5px] text-text-faint">{ok ? (extra ?? "OK") : (extra ?? "belum diatur")}</span>
+      <span className="ml-auto text-[12px] text-text-muted">{ok ? (extra ?? "OK") : (extra ?? "belum diatur")}</span>
     </li>
   );
 }

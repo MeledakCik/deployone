@@ -77,7 +77,7 @@ export async function GET(req: NextRequest) {
   const profile = (await profileRes.json()) as GoogleProfile;
 
   if (!profile.email) {
-    return fail("Akun Google tidak punya email publik yang bisa dipakai.");
+    return fail("Akun Google tidak memiliki email publik yang bisa dipakai.");
   }
 
   if (profile.email_verified === false) {
@@ -96,7 +96,7 @@ export async function GET(req: NextRequest) {
         return fail("Pendaftaran akun baru sedang ditutup sementara. Coba lagi nanti.");
       }
     } catch (e) {
-      console.error("[auth] pengecekan admin gagal (diabaikan)", (e as Error)?.message);
+      console.error("[auth] pemeriksaan admin gagal (diabaikan)", (e as Error)?.message);
     }
   }
   try {

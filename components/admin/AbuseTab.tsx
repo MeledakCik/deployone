@@ -1,9 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { ExternalLink, Gavel, ShieldBan } from "lucide-react";
+import { ExternalLink, Trash2, CheckCircle2 } from "@/components/ui/icons";
 import { adminFetch, useAdminData } from "./api";
-import { Badge, Btn, Card, Empty, ErrorBox, Loading, PageHead, fmtDateTime } from "./ui";
+import { useAdminCounts } from "./context";
+import { useConfirm } from "./confirm";
+import { Badge, Btn, Card, Checkbox, Empty, ErrorBox, Loading, PageHead, fmtDateTime } from "./ui";
 
 interface Report {
   id: string;
@@ -39,15 +41,27 @@ export function AbuseTab({ toast }: { toast: (m: string) => void }) {
   const [slug, setSlug] = React.useState("");
   const [ban, setBan] = React.useState(false);
   const [manualBusy, setManualBusy] = React.useState(false);
+  const confirm = useConfirm();
+  const { setAbuseOpen } = useAdminCounts();
 
-  async function act(r: Report, action: "takedown" | "takedown_ban" | "dismiss" | "reopen") {
-    const msg =
-      action === "takedown"
-        ? `Hapus link "${r.slug}" sekarang?`
-        : action === "takedown_ban"
-          ? `Hapus link "${r.slug}" DAN larang ${r.owner} membuat Link Instan selama 30 hari?`
-          : null;
-    if (msg && !window.confirm(msg)) return;
+  // Badge menu ikut angka terbaru setiap data dimuat ulang
+  React.useEffect(() => {
+    if (data) setAbuseOpen(data.counts.open);
+  }, [data, setAbuseOpen]);
+
+  async function act(r: Report, requested: "takedown" | "dismiss" | "reopen") {
+    let action: "takedown" | "takedown_ban" | "dismiss" | "reopen" = requested;
+    if (requested === "takedown") {
+      const res = await confirm({
+        title: `Takedown link "${r.slug}"?`,
+        description: "Link akan langsung mati. Laporan ini ditandai sudah ditindak.",
+        impact: [`Jenis: ${r.kind === "site" ? "Link Instan" : "Link Gaib"}`, `Pemilik: ${r.owner ?? "anonim (tunnel CLI)"}`],
+        confirmLabel: "Takedown",
+        option: r.owner ? { label: `Larang ${r.owner} membuat Link Instan selama 30 hari` } : undefined,
+      });
+      if (!res.ok) return;
+      if (res.option) action = "takedown_ban";
+    }
     setBusyId(r.id);
     try {
       await adminFetch("/api/admin/abuse", { method: "POST", body: { id: r.id, action } });
@@ -63,7 +77,13 @@ export function AbuseTab({ toast }: { toast: (m: string) => void }) {
   async function manual(e: React.FormEvent) {
     e.preventDefault();
     if (!slug.trim()) return;
-    if (!window.confirm(`Hapus link "${slug.trim()}"${ban ? " dan larang pemiliknya selama 30 hari" : ""}?`)) return;
+    const res = await confirm({
+      title: `Hapus link "${slug.trim()}"?`,
+      description: "Takedown manual langsung mematikan link, tanpa melalui laporan.",
+      impact: ban ? ["Pemilik link juga dilarang membuat Link Instan selama 30 hari."] : undefined,
+      confirmLabel: "Hapus link",
+    });
+    if (!res.ok) return;
     setManualBusy(true);
     try {
       const r = await adminFetch<{ slug: string; removedSite: boolean; banned: boolean }>("/api/admin/takedown", { method: "POST", body: { slug: slug.trim(), ban } });
@@ -78,11 +98,11 @@ export function AbuseTab({ toast }: { toast: (m: string) => void }) {
   }
 
   return (
-    <div>
+    <div className="space-y-5">
       <PageHead title="Abuse & Takedown" desc="Laporan phishing/penipuan/malware dari halaman /laporkan. Periksa dulu, lalu hapus link atau abaikan." />
 
-      <Card title="Takedown manual" className="mb-4">
-        <form onSubmit={manual} className="flex flex-wrap items-center gap-3 p-4">
+      <Card title="Takedown manual">
+        <form onSubmit={manual} className="flex flex-wrap items-center gap-3 p-5">
           <input
             value={slug}
             onChange={(e) => setSlug(e.target.value)}
@@ -91,16 +111,16 @@ export function AbuseTab({ toast }: { toast: (m: string) => void }) {
             className="input-solid min-w-[220px] flex-1 px-4 py-2 text-[13px]"
             maxLength={300}
           />
-          <label className="flex items-center gap-2 text-[12.5px] text-text-muted">
-            <input type="checkbox" checked={ban} onChange={(e) => setBan(e.target.checked)} /> Larang pemilik 30 hari
-          </label>
+          <Checkbox checked={ban} onChange={setBan}>
+            Larang pemilik 30 hari
+          </Checkbox>
           <Btn variant="danger" type="submit" busy={manualBusy} disabled={!slug.trim()}>
-            <Gavel size={13} /> Hapus link
+            <Trash2 size={13} /> Hapus link
           </Btn>
         </form>
       </Card>
 
-      <div className="mb-3 flex flex-wrap gap-2" role="tablist" aria-label="Filter status laporan">
+      <div className="flex flex-wrap gap-2" role="tablist" aria-label="Filter status laporan">
         {FILTERS.map((f) => {
           const count = data ? (f.id === "all" ? data.counts.open + data.counts.actioned + data.counts.dismissed : data.counts[f.id as "open"]) : null;
           return (
@@ -109,10 +129,10 @@ export function AbuseTab({ toast }: { toast: (m: string) => void }) {
               role="tab"
               aria-selected={filter === f.id}
               onClick={() => setFilter(f.id)}
-              className={`rounded-full border px-3.5 py-1.5 text-[12.5px] transition ${filter === f.id ? "border-violet-500/50 bg-violet-500/15 text-text" : "border-[var(--line-strong)] text-text-muted hover:bg-[var(--card-hover)]"}`}
+              className={`rounded-full px-3.5 py-1.5 text-[12.5px] font-medium transition ${filter === f.id ? "chip-on" : "pill"}`}
             >
               {f.label}
-              {count !== null && <span className="ml-1.5 text-text-faint">{count}</span>}
+              {count !== null && <span className="ml-1.5 opacity-70">{count}</span>}
             </button>
           );
         })}
@@ -124,20 +144,20 @@ export function AbuseTab({ toast }: { toast: (m: string) => void }) {
         ) : !data ? (
           <Loading />
         ) : data.reports.length === 0 ? (
-          <Empty>{filter === "open" ? "Tidak ada laporan yang menunggu. 🎉" : "Tidak ada laporan di kategori ini."}</Empty>
+          <Empty icon={filter === "open" ? CheckCircle2 : undefined}>{filter === "open" ? "Tidak ada laporan yang menunggu." : "Tidak ada laporan di kategori ini."}</Empty>
         ) : (
           <ul className={loading ? "opacity-60" : undefined}>
             {data.reports.map((r) => (
-              <li key={r.id} className="border-b border-[var(--surface-line)] px-5 py-4 last:border-0">
+              <li key={r.id} className="surface-solid-row border-b border-[var(--surface-line)] px-6 py-5 last:border-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="mono text-[12px] text-text-faint">{r.id}</span>
+                  <span className="mono text-[12px] text-text-muted">{r.id}</span>
                   <span className="font-medium">{r.slug}</span>
                   <Badge tone="violet">{r.kind === "site" ? "Link Instan" : "Link Gaib"}</Badge>
-                  <Badge tone={r.status === "open" ? "bad" : r.status === "actioned" ? "good" : "neutral"}>
+                  <Badge dot={r.status === "open"} tone={r.status === "open" ? "bad" : r.status === "actioned" ? "good" : "neutral"}>
                     {r.status === "open" ? "Terbuka" : r.status === "actioned" ? "Ditindak" : "Diabaikan"}
                   </Badge>
-                  <Badge tone={r.live ? "warn" : "neutral"}>{r.live ? "Masih aktif" : "Sudah tidak ada"}</Badge>
-                  <span className="ml-auto text-[12px] text-text-faint">{fmtDateTime(r.createdAt)}</span>
+                  <Badge dot={r.live} tone={r.live ? "warn" : "neutral"}>{r.live ? "Masih aktif" : "Sudah tidak ada"}</Badge>
+                  <span className="ml-auto text-[12px] text-text-muted">{fmtDateTime(r.createdAt)}</span>
                 </div>
                 <p className="mt-2 whitespace-pre-wrap break-words text-[13.5px]">{r.reason}</p>
                 <p className="mt-1 text-[12px] text-text-muted">
@@ -151,7 +171,7 @@ export function AbuseTab({ toast }: { toast: (m: string) => void }) {
                       href={r.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 rounded-full border border-[var(--line-strong)] px-3.5 py-1.5 text-[12.5px] font-medium hover:bg-[var(--card-hover)]"
+                      className="pill inline-flex items-center gap-1.5 px-3.5 py-1.5 text-[12.5px] font-medium"
                       title="Hati-hati: ini mungkin halaman phishing. Jangan isi data apa pun."
                     >
                       <ExternalLink size={13} /> Periksa link
@@ -161,16 +181,11 @@ export function AbuseTab({ toast }: { toast: (m: string) => void }) {
                     <>
                       {r.live && (
                         <Btn variant="danger" busy={busyId === r.id} onClick={() => void act(r, "takedown")}>
-                          <Gavel size={13} /> Takedown
-                        </Btn>
-                      )}
-                      {r.live && r.owner && (
-                        <Btn variant="danger" busy={busyId === r.id} onClick={() => void act(r, "takedown_ban")}>
-                          <ShieldBan size={13} /> Takedown + larang pemilik
+                          <Trash2 size={13} /> Takedown
                         </Btn>
                       )}
                       <Btn busy={busyId === r.id} onClick={() => void act(r, "dismiss")}>
-                        {r.live ? "Abaikan (bukan abuse)" : "Tandai selesai"}
+                        {r.live ? "Abaikan (bukan penyalahgunaan)" : "Tandai selesai"}
                       </Btn>
                     </>
                   ) : (

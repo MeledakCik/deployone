@@ -1,5 +1,6 @@
 "use client";
 
+import { PageTitle } from "@/components/ui/primitives";
 import * as React from "react";
 import { Check, Download, ExternalLink, Heart, Loader2, QrCode, RefreshCw } from "lucide-react";
 import { ViewFade } from "@/components/ui/ViewFade";
@@ -85,7 +86,7 @@ export function DonateView() {
         }
         return "Pembayaran belum terdeteksi. Coba lagi beberapa detik setelah kamu membayar.";
       }
-      return body?.error ?? "Status belum bisa dicek. Coba lagi sebentar lagi.";
+      return body?.error ?? "Status belum bisa diperiksa. Coba lagi sebentar lagi.";
     } catch {
       return "Koneksi bermasalah. Coba lagi sebentar lagi.";
     } finally {
@@ -128,7 +129,7 @@ export function DonateView() {
       setDonation(body.data as Donation);
       setPhase("qr");
     } catch {
-      setError("Koneksi bermasalah. Cek internet kamu lalu coba lagi.");
+      setError("Koneksi bermasalah. Periksa internet kamu lalu coba lagi.");
     } finally {
       setBusy(false);
     }
@@ -156,10 +157,7 @@ export function DonateView() {
     <ViewFade>
       <div className="mx-auto max-w-xl space-y-6">
         <div>
-          <h2 className="text-[22px] font-semibold">Donasi</h2>
-          <p className="text-[13px] text-text-muted">
-            Depup gratis dipakai. Kalau terbantu, kamu bisa mendukung pengembangannya lewat QRIS (Saweria).
-          </p>
+          <PageTitle title="Donasi" desc={<>Depup gratis dipakai. Kalau terbantu, kamu bisa mendukung pengembangannya lewat QRIS (Saweria).</>} />
         </div>
 
         {configError && (
@@ -211,7 +209,7 @@ export function DonateView() {
                 />
               </div>
               {amountStr && !amountValid && (
-                <p className="mt-1.5 text-[12px] text-red-500">
+                <p className="mt-1.5 text-[12px] text-bad-fg">
                   Minimal {rupiah(config.minAmount)}, maksimal {rupiah(config.maxAmount)}.
                 </p>
               )}
@@ -247,11 +245,11 @@ export function DonateView() {
                 placeholder="Semangat terus!"
                 className="input-solid w-full resize-none px-3.5 py-3 text-[14px]"
               />
-              <span className="mt-1 block text-right text-[11px] text-text-muted">{message.length}/150</span>
+              <span className="mt-1 block text-right text-[12px] text-text-muted">{message.length}/150</span>
             </label>
 
             {error && (
-              <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-3.5 py-3 text-[13px] text-red-500">{error}</div>
+              <div className="notice notice-bad !rounded-xl" role="alert">{error}</div>
             )}
 
             <button
@@ -295,13 +293,13 @@ export function DonateView() {
               <Loader2 size={14} className="animate-spin" /> Menunggu pembayaran…
             </p>
             {checkNote && (
-              <p className="text-[12.5px] text-amber-500" role="status">
+              <p className="text-[12.5px] text-warn-fg" role="status">
                 {checkNote}
               </p>
             )}
             <div className="flex flex-wrap items-center justify-center gap-2">
               <button type="button" onClick={manualCheck} disabled={checking} className="pill inline-flex items-center gap-1.5 px-3.5 py-2 text-[12.5px] font-medium disabled:opacity-50">
-                <RefreshCw size={13} className={checking ? "animate-spin" : ""} /> Sudah bayar? Cek
+                <RefreshCw size={13} className={checking ? "animate-spin" : ""} /> Sudah bayar? Periksa
               </button>
               <a
                 href={donation.qrImage}
@@ -322,7 +320,7 @@ export function DonateView() {
 
         {phase === "paid" && (
           <div className="surface-solid space-y-3 p-8 text-center">
-            <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-emerald-500/15 text-emerald-500">
+            <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-tone-mint text-ok-fg">
               <Check size={28} strokeWidth={3} />
             </span>
             <h3 className="text-[18px] font-semibold">Terima kasih banyak!</h3>
@@ -338,7 +336,7 @@ export function DonateView() {
         {phase === "expired" && (
           <div className="surface-solid space-y-3 p-8 text-center">
             <h3 className="text-[16px] font-semibold">QRIS sudah kedaluwarsa</h3>
-            <p className="text-[13px] text-text-muted">Kalau kamu sudah membayar, tidak perlu khawatir; cek email bukti dari Saweria.</p>
+            <p className="text-[13px] text-text-muted">Kalau kamu sudah membayar, tidak perlu khawatir; periksa email bukti dari Saweria.</p>
             <div className="flex flex-wrap justify-center gap-2">
               <button type="button" onClick={again} className="btn-primary px-5 py-2.5 text-[13px]">
                 Buat QRIS baru
@@ -352,7 +350,7 @@ export function DonateView() {
           </div>
         )}
 
-        {error && phase !== "form" && <p className="text-center text-[12.5px] text-red-500">{error}</p>}
+        {error && phase !== "form" && <p className="text-center text-[12.5px] text-bad-fg">{error}</p>}
       </div>
     </ViewFade>
   );

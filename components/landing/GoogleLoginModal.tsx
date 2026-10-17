@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { X } from "lucide-react";
+import { X } from "@/components/ui/icons";
 import { useAuth } from "@/lib/auth-context";
 import { useDialogA11y } from "@/components/ui/useDialogA11y";
 
@@ -24,7 +24,7 @@ export function GoogleLoginModal({ open, onClose }: { open: boolean; onClose: ()
 
   return (
     <div
-      className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 px-4 backdrop-blur-md"
+      className="anim-fade fixed inset-0 z-[100] flex items-center justify-center modal-scrim px-4 backdrop-blur-sm"
       onClick={onClose}
     >
       <div
@@ -33,34 +33,34 @@ export function GoogleLoginModal({ open, onClose }: { open: boolean; onClose: ()
         aria-modal="true"
         aria-label="Masuk ke Depup"
         tabIndex={-1}
-        className="obs-overlay w-full max-w-sm rounded-2xl p-6 text-white outline-none"
+        className="anim-pop w-full max-w-sm surface-solid p-7 shadow-[0_40px_90px_-30px_rgba(20,18,31,0.55)] outline-none"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-1 flex items-center justify-between">
-          <h3 className="f-display text-[18px] font-semibold tracking-tight">Masuk ke Depup</h3>
+          <h3 className="text-[22px] font-bold tracking-[-0.03em]">Masuk ke Depup</h3>
           <button
             type="button"
             onClick={onClose}
             aria-label="Tutup"
-            className="grid h-8 w-8 place-items-center rounded-lg text-obs-mute transition-colors hover:bg-white/10 hover:text-white"
+            className="pill grid h-9 w-9 place-items-center"
           >
             <X size={18} />
           </button>
         </div>
 
-        <p className="mb-6 text-[13px] text-obs-sec">untuk melanjutkan ke dashboard Depup</p>
+        <p className="mb-6 text-[13.5px] text-text-muted">untuk melanjutkan ke dashboard Depup</p>
 
         <button
           type="button"
           onClick={login}
-          className="flex w-full items-center justify-center gap-3 rounded-lg bg-white px-4 py-3 text-[14px] font-semibold text-black transition hover:bg-white/90 active:scale-[0.99]"
+          className="btn-primary flex w-full items-center justify-center gap-3 px-4 py-3.5 text-[14px]"
         >
           <GoogleMark size={18} />
           <span>Lanjutkan dengan Google</span>
         </button>
 
-        <p className="mt-5 text-center text-[12px] leading-relaxed text-obs-mute">
-          Kamu akan diarahkan ke halaman login Google asli, lalu kembali otomatis ke dashboard.
+        <p className="mt-5 text-center text-[12px] leading-relaxed text-text-muted">
+          Kamu akan diarahkan ke halaman masuk Google yang asli, lalu otomatis kembali ke dashboard.
         </p>
       </div>
     </div>

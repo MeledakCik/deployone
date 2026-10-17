@@ -62,7 +62,7 @@ export function prepareSite(files: UploadFile[]): PreparedSite {
     const hasPkg = paths.has("package.json");
     throw new SiteError(
       hasPkg
-        ? "Ini project Node/framework (ada package.json tapi belum ada index.html). Jalankan `npm run build` dulu, lalu upload folder hasilnya (dist / build / out)."
+        ? "Ini project Node/framework (ada package.json tetapi belum ada index.html). Jalankan `npm run build` dulu, lalu upload folder hasilnya (dist / build / out)."
         : "File index.html tidak ditemukan. Link Instan khusus website statis — pastikan index.html ada di root zip/folder."
     );
   }
@@ -202,7 +202,7 @@ export function analyzeProject(c: Pick<CollectResult, "files" | "skipped" | "env
       notes.push({
         level: "error",
         text: exportMode
-          ? "Belum di-build. Jalankan `npm run build`, lalu upload folder `out/` yang terbentuk."
+          ? "Belum dibangun. Jalankan `npm run build`, lalu upload folder `out/` yang terbentuk."
           : "Next.js harus diekspor ke HTML statis dulu: tambahkan `output: 'export'` di next.config.js, jalankan `npm run build`, lalu upload folder `out/`. Kalau project-mu butuh API/SSR, pakai menu Upload (deploy ke Vercel/Railway).",
       });
     } else if (!exportMode && apiPaths.length === 0) {
@@ -211,7 +211,7 @@ export function analyzeProject(c: Pick<CollectResult, "files" | "skipped" | "env
   } else if (label && /^(Nuxt|SvelteKit|Remix|Astro|Gatsby|Angular|Create React App|Vite|Vue|React|Svelte)/.test(label) && !hasIndex) {
     blocked = true;
     const out = label.startsWith("Angular") ? "dist/<nama-project>/browser" : label.startsWith("Create React App") ? "build" : label.startsWith("Gatsby") ? "public" : label.startsWith("Nuxt") ? ".output/public (jalankan `npx nuxi generate`)" : "dist";
-    notes.push({ level: "error", text: `Project ${label} belum di-build. Jalankan \`npm run build\`, lalu upload folder hasilnya (${out}).` });
+    notes.push({ level: "error", text: `Project ${label} belum dibangun. Jalankan \`npm run build\`, lalu upload folder hasilnya (${out}).` });
   }
 
   // --- Source Vite/CRA yang belum di-build (index.html ada, tapi mengacu ke /src/*.jsx) ---
@@ -229,7 +229,7 @@ export function analyzeProject(c: Pick<CollectResult, "files" | "skipped" | "env
   if (hadEnv || has(/^\.env\.(example|sample|template)$/)) {
     notes.push({
       level: "warn",
-      text: "Environment variable TIDAK bisa dipakai di Link Instan (tidak ada server). File .env tidak ikut di-upload. Variabel publik (NEXT_PUBLIC_*, VITE_*) harus sudah tertanam saat build di laptopmu; variabel rahasia/server tidak akan berfungsi.",
+      text: "Environment variable TIDAK bisa dipakai di Link Instan (tidak ada server). File .env tidak ikut diunggah. Variabel publik (NEXT_PUBLIC_*, VITE_*) harus sudah tertanam saat build di laptopmu; variabel rahasia/server tidak akan berfungsi.",
     });
   }
 
@@ -245,7 +245,7 @@ async function api<T>(url: string, init?: RequestInit): Promise<T> {
   try {
     res = await fetch(url, init);
   } catch {
-    throw new SiteError("Koneksi ke server gagal. Cek internet lalu coba lagi.");
+    throw new SiteError("Koneksi ke server gagal. Periksa internet lalu coba lagi.");
   }
   let json: { ok?: boolean; data?: T; error?: string } | null = null;
   try {

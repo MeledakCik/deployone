@@ -2,81 +2,213 @@
 @tailwind components;
 @tailwind utilities;
 
-* {
-  font-family: "Inter Tight Variable", "Inter Tight", Inter, system-ui, -apple-system, sans-serif;
-}
+/* ==========================================================================
+   Depup — sistem desain
+   Bahasa visual: frame terang → sidebar violet brand melayang → kartu datar
+   tanpa garis tepi. Violet #7b50ff (warna ikon Depup) = warna utama.
+   Tema terang adalah default; tema gelap memakai bahasa yang sama.
+   ========================================================================== */
 
+/* Brand DepUp v1.0 — Ungu #7B50FF (utama), Lime #C6F432 (aksen, ±10%), Midnight #1E1150 (latar gelap),
+   Mist #EDE8FF (latar lembut), Ink #120B2E (teks). Proporsi: Ungu 45 / Mist-putih 25 / Midnight 20 / Lime 10. */
 :root,
-[data-theme="dark"] {
-  --bg-base: #070a0f;
-  --bg-grad-1: radial-gradient(900px 700px at 0% 0%, rgba(139, 92, 246, 0.18) 0%, transparent 60%);
-  --bg-grad-2: radial-gradient(1100px 900px at 100% 100%, rgba(56, 189, 248, 0.12) 0%, transparent 60%);
-  --bg-grad-3: radial-gradient(600px 600px at 50% 0%, rgba(139, 92, 246, 0.08) 0%, transparent 70%);
-  --glass-bg: rgba(255, 255, 255, 0.05);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-blur: blur(10px) saturate(1.15);
-  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.06);
-  --text: #f8fafc;
-  --text-muted: rgba(248, 250, 252, 0.55);
-  --text-faint: rgba(248, 250, 252, 0.32);
-  --line: rgba(255, 255, 255, 0.08);
-  --line-strong: rgba(255, 255, 255, 0.14);
-  --btn-from: #ffffff;
-  --btn-to: #e2e8f0;
-  --btn-text: #070a0f;
-  --sidebar-bg: rgba(8, 10, 16, 0.72);
-  --card-hover: rgba(255, 255, 255, 0.07);
-  --input-bg: rgba(255, 255, 255, 0.04);
-  --input-border: rgba(255, 255, 255, 0.1);
-  --pill-bg: rgba(255, 255, 255, 0.06);
-  --surface-solid: #12151e;
-  --surface-solid-2: #1a1d29;
-  --surface-line: rgba(255, 255, 255, 0.06);
-  --row-hover: rgba(255, 255, 255, 0.04);
-}
-
 [data-theme="light"] {
-  --bg-base: #f8fafc;
-  --bg-grad-1: radial-gradient(900px 700px at 0% 0%, rgba(139, 92, 246, 0.08) 0%, transparent 60%);
-  --bg-grad-2: radial-gradient(1000px 800px at 100% 100%, rgba(59, 130, 246, 0.07) 0%, transparent 60%);
-  --bg-grad-3: radial-gradient(700px 600px at 50% -10%, rgba(255, 255, 255, 0.9) 0%, transparent 60%);
-  --glass-bg: rgba(255, 255, 255, 0.72);
-  --glass-border: rgba(255, 255, 255, 0.8);
-  --glass-blur: blur(10px) saturate(1.1);
-  --glass-shadow: 0 8px 32px rgba(15, 23, 42, 0.06), 0 1px 0 rgba(255, 255, 255, 0.9) inset;
-  --text: #0f172a;
-  --text-muted: rgba(15, 23, 42, 0.55);
-  --text-faint: rgba(15, 23, 42, 0.35);
-  --line: rgba(15, 23, 42, 0.08);
-  --line-strong: rgba(15, 23, 42, 0.12);
-  --btn-from: #0f172a;
-  --btn-to: #1e293b;
-  --btn-text: #ffffff;
-  --sidebar-bg: rgba(255, 255, 255, 0.68);
-  --card-hover: rgba(15, 23, 42, 0.03);
-  --input-bg: rgba(255, 255, 255, 0.8);
-  --input-border: rgba(15, 23, 42, 0.1);
-  --pill-bg: rgba(15, 23, 42, 0.06);
+  color-scheme: light;
+
+  /* Kanvas & frame */
+  --bg-base: #7b50ff;
+  --canvas: linear-gradient(145deg, #ede8ff 0%, #b69fff 46%, #7b50ff 100%);
+  --frame: #f4f1ff;
+  --frame-line: rgba(255, 255, 255, 0.7);
+  --frame-shadow: 0 40px 90px -40px rgba(56, 35, 129, 0.45);
+
+  /* Teks (Ink) */
+  --text: #120b2e;
+  --text-muted: rgba(18, 11, 46, 0.7);
+  --text-faint: rgba(18, 11, 46, 0.64);
+  --line: rgba(18, 11, 46, 0.08);
+  --line-strong: rgba(18, 11, 46, 0.16);
+
+  /* Permukaan */
   --surface-solid: #ffffff;
-  --surface-solid-2: #ffffff;
-  --surface-line: rgba(15, 23, 42, 0.08);
-  --row-hover: rgba(15, 23, 42, 0.035);
+  --surface-solid-2: #ede8ff;
+  --surface-line: rgba(18, 11, 46, 0.06);
+  --surface-shadow: 0 1px 2px rgba(56, 35, 129, 0.05), 0 16px 34px -20px rgba(90, 57, 192, 0.24);
+  --card-hover: rgba(123, 80, 255, 0.07);
+  --row-hover: rgba(123, 80, 255, 0.05);
+  --pill-bg: #ede8ff;
+  --input-bg: #ede8ff;
+  --input-border: transparent;
+
+  /* Fill utama: Ungu DepUp, teks putih (kontras 4.7:1) */
+  --ink-fill: #7b50ff;
+  --ink-fill-text: #ffffff;
+  --ink-fill-hover: #6a45e0;
+
+  /* Aksen */
+  --accent: #7b50ff;
+  --accent-text: #5a39c0;
+  --ring: #7b50ff;
+  --select-bg: rgba(123, 80, 255, 0.22);
+  --lime: #c6f432;
+  --lime-hover: #d3f65f;
+  --lime-text: #1e1150;
+
+  /* Sidebar: Ungu DepUp */
+  --sidebar-bg: #7b50ff;
+  --sidebar-text: #ffffff;
+  --sidebar-muted: rgba(255, 255, 255, 0.95);
+  --sidebar-hover: rgba(255, 255, 255, 0.14);
+  --sidebar-line: rgba(255, 255, 255, 0.22);
+  --sidebar-active-bg: #ffffff;
+  --sidebar-active-text: #5a39c0;
+
+  /* Kartu pastel (turunan palet + colorway) */
+  --tone-lilac: #ede8ff;
+  --tone-peach: #ffe6e0;
+  --tone-mint: #f5fdda;
+  --tone-sky: #ddf6ff;
+  --tone-peri: #e7e0ff;
+  --tone-pink: #ffe9e5;
+  --tone-lemon: #fff1c9;
+  --tone-chip: rgba(255, 255, 255, 0.62);
+
+  /* Chip: isian Mist, tanpa garis */
+  --chip-bg: #ede8ff;
+  --chip-line: transparent;
+
+  /* Toast */
+  --toast-bg: #1e1150;
+  /* Status: warna solid per tema */
+  --scrim-bg: rgba(30, 17, 80, 0.16);
+  --ok-bg: #e9f6ef;
+  --ok-line: #bfe2d0;
+  --warn-bg: #fef5e7;
+  --warn-line: #fce7c2;
+  --bad-bg: #fdecec;
+  --bad-line: #fac7c7;
+
+  --toast-text: #ffffff;
+
+  /* Status: teks (fg), titik/grafik (dot), dan isian tombol bahaya (solid). Semua lulus kontras di tema ini. */
+  --ok-fg: #047857;
+  --warn-fg: #92400e;
+  --bad-fg: #b91c1c;
+  --ok-dot: #1f9d63;
+  --warn-dot: #c98a12;
+  --bad-dot: #d6455d;
+  --bad-solid: #b91c1c;
 }
 
-/* Single source of truth for how long/with-what-easing COLOR changes
-   animate when the theme is switched. Every element that recolors on
-   dark/light toggle uses this exact pair so the whole UI fades in sync
-   instead of finishing at slightly different times. */
+[data-theme="dark"] {
+  color-scheme: dark;
+
+  --bg-base: #120b2e;
+  --canvas: radial-gradient(1000px 700px at 8% -5%, rgba(123, 80, 255, 0.3), transparent 60%),
+    radial-gradient(900px 700px at 100% 100%, rgba(123, 80, 255, 0.16), transparent 60%),
+    linear-gradient(160deg, #1e1150 0%, #120b2e 55%, #170d3a 100%);
+  --frame: #120b2e;
+  --frame-line: rgba(255, 255, 255, 0.07);
+  --frame-shadow: 0 40px 90px -40px rgba(0, 0, 0, 0.8);
+
+  --text: #f4f1ff;
+  --text-muted: #aba5c4;
+  --text-faint: #948cb0;
+  --line: #322660;
+  --line-strong: #42376c;
+
+  /* Midnight sebagai permukaan */
+  --surface-solid: #1e1150;
+  --surface-solid-2: #2b1b6b;
+  --surface-line: #2e225c;
+  --surface-shadow: none;
+  --card-hover: #2c1f5a;
+  --row-hover: #281c58;
+  --pill-bg: #322660;
+  --input-bg: #2b1b6b;
+  --input-border: transparent;
+
+  --ink-fill: #7b50ff;
+  --ink-fill-text: #ffffff;
+  --ink-fill-hover: #9876ff;
+
+  --accent: #7b50ff;
+  --accent-text: #b69fff;
+  --ring: #9876ff;
+  --select-bg: rgba(123, 80, 255, 0.38);
+  --lime: #c6f432;
+  --lime-hover: #d3f65f;
+  --lime-text: #1e1150;
+
+  --sidebar-bg: #1e1150;
+  --sidebar-text: #ffffff;
+  --sidebar-muted: #b2aec4;
+  --sidebar-hover: #30245e;
+  --sidebar-line: #342962;
+  --sidebar-active-bg: #7b50ff;
+  --sidebar-active-text: #ffffff;
+
+  --tone-lilac: #321f76;
+  --tone-peach: #52293a;
+  --tone-mint: #1d4a3c;
+  --tone-sky: #1d3c52;
+  --tone-peri: #342370;
+  --tone-pink: #4d2832;
+  --tone-lemon: #4a3a16;
+  --tone-chip: #322660;
+
+  --chip-bg: #322660;
+  --chip-line: transparent;
+
+  /* Lime di atas Midnight/ungu (kontras 13:1) */
+  --toast-bg: #c6f432;
+  /* Status: warna solid per tema */
+  --scrim-bg: rgba(10, 6, 28, 0.5);
+  --ok-bg: #1f3d2f;
+  --ok-line: #2f6a4b;
+  --warn-bg: #45381a;
+  --warn-line: #6b5a2a;
+  --bad-bg: #4a2230;
+  --bad-line: #7a3a48;
+
+  --toast-text: #1e1150;
+
+  --ok-fg: #6ee7b7;
+  --warn-fg: #fcd34d;
+  --bad-fg: #fca5a5;
+  --ok-dot: #34d399;
+  --warn-dot: #fbbf24;
+  --bad-dot: #f87171;
+  --bad-solid: #dc2626;
+}
+
+/* Jarak elemen melayang (sidebar, tombol Bantuan, panel chat) ke tepi layar — satu sumber supaya selalu sejajar */
 :root {
-  --theme-duration: 260ms;
+  --edge: 12px;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-soft: cubic-bezier(0.34, 1.3, 0.64, 1);
+}
+@media (min-width: 640px) {
+  :root {
+    --edge: 16px;
+  }
+}
+
+/* Dashboard tanpa bezel ungu: seluruh halaman (termasuk gutter scrollbar) memakai warna frame */
+html:has(.app-canvas),
+html:has(.app-canvas) body {
+  background-color: var(--frame);
+  background-image: none;
+}
+
+/* Satu sumber untuk durasi/easing perubahan warna saat tema diganti */
+:root {
+  --theme-duration: 240ms;
   --theme-ease: cubic-bezier(0.4, 0, 0.2, 1);
-  /* Trimmed down from the original (which also animated `background` and
-     `box-shadow`): those two are the most expensive properties to transition
-     because they force a repaint of large gradient/shadow areas on every
-     theme toggle. Color/border/fill still transition smoothly. */
+  /* Sengaja TANPA `color`: warna teks diwariskan, dan transisi color di banyak leluhur
+     membuat teks turunan (mis. judul kartu) bisa tertinggal di warna tema lama saat tema diganti. */
   --theme-transition: background-color var(--theme-duration) var(--theme-ease),
-    border-color var(--theme-duration) var(--theme-ease), color var(--theme-duration) var(--theme-ease),
-    fill var(--theme-duration) var(--theme-ease);
+    border-color var(--theme-duration) var(--theme-ease);
 }
 
 * {
@@ -88,364 +220,969 @@ html {
 }
 
 body {
+  font-family: "Inter Tight Variable", "Inter Tight", "Inter Variable", "Inter", Helvetica, Arial, sans-serif;
+  font-feature-settings: "cv11", "ss03";
   background-color: var(--bg-base);
-  background-image: var(--bg-grad-1), var(--bg-grad-2), var(--bg-grad-3);
+  background-image: var(--canvas);
   background-attachment: fixed;
   color: var(--text);
   transition: var(--theme-transition);
 }
 
-.mono {
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
-}
-
-.glass {
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  box-shadow: var(--glass-shadow);
-  border-radius: 32px;
-  transition: var(--theme-transition), transform 200ms ease;
-}
-
-.glass-flat {
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
-  box-shadow: var(--glass-shadow);
-}
-
-.sidebar {
-  background: var(--sidebar-bg);
-  backdrop-filter: blur(8px) saturate(1.1);
-  -webkit-backdrop-filter: blur(8px) saturate(1.1);
-  border-right: 1px solid var(--glass-border);
-  transition: var(--theme-transition);
-}
-
-.sidebar-topbar {
-  border-right: none;
-  border-bottom: 1px solid var(--glass-border);
-}
-
-/* Lightweight glass reserved ONLY for the sidebar and the 3 top stat cards.
-   Everything else in the dashboard uses the solid surfaces below for perf. */
-.stat-card-glass {
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  backdrop-filter: blur(8px) saturate(1.1);
-  -webkit-backdrop-filter: blur(8px) saturate(1.1);
-  box-shadow: var(--glass-shadow);
-  border-radius: 24px;
-  transition: var(--theme-transition), transform 200ms ease;
-}
-.stat-card-glass:hover {
-  transform: translateY(-1px);
-}
-
-/* Explicit exception: the 3 Docs items use a very light glass touch, per spec. */
-.docs-item-glass {
-  background: var(--glass-bg);
-  border: 1px solid var(--glass-border);
-  backdrop-filter: blur(6px) saturate(1.05);
-  -webkit-backdrop-filter: blur(6px) saturate(1.05);
-  border-radius: 20px;
-  transition: var(--theme-transition), transform 180ms ease;
-}
-.docs-item-glass:hover {
-  transform: translateY(-1px);
-  background: var(--card-hover);
-}
-
-/* Solid, blur-free surfaces for tables, forms, modals, cards */
-.surface-solid {
-  background: var(--surface-solid);
-  border: 1px solid var(--surface-line);
-  border-radius: 24px;
-}
-.surface-solid-row:hover {
-  background: var(--row-hover);
-}
-
-.input-solid {
-  background: var(--surface-solid-2);
-  border: 1px solid var(--surface-line);
-  border-radius: 16px;
-  color: var(--text);
-  transition: var(--theme-transition);
-}
-.input-solid:focus {
-  outline: none;
-  border-color: rgba(139, 92, 246, 0.5);
-}
-
-/* Status dot without glow/animation, for dashboard use */
-.dot-flat {
-  display: inline-block;
-}
-
-.btn-primary {
-  background: linear-gradient(180deg, var(--btn-from) 0%, var(--btn-to) 100%);
-  color: var(--btn-text);
-  border-radius: 9999px;
-  font-weight: 600;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.04) inset;
-  transition: var(--theme-transition), transform 220ms ease, filter 220ms ease;
-}
-.btn-primary:hover {
-  transform: translateY(-1px);
-  filter: brightness(1.02);
-  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
-}
-.btn-primary:active {
-  transform: translateY(0px) scale(0.98);
-}
-
-.pill {
-  background: var(--pill-bg);
-  border: 1px solid var(--line);
-  border-radius: 9999px;
-  transition: var(--theme-transition);
-}
-
-.theme-toggle {
-  width: 52px;
-  height: 32px;
-  border-radius: 9999px;
-  background: var(--pill-bg);
-  border: 1px solid var(--line);
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  padding: 2px;
-  cursor: pointer;
-  transition: var(--theme-transition);
-}
-.theme-toggle-knob {
-  width: 26px;
-  height: 26px;
-  border-radius: 9999px;
-  background: var(--text);
-  color: var(--bg-base);
-  display: grid;
-  place-items: center;
-  transition: var(--theme-transition), transform var(--theme-duration) var(--theme-ease);
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.16);
-}
-[data-theme="light"] .theme-toggle-knob {
-  transform: translateX(20px);
-}
-[data-theme="dark"] .theme-toggle-knob {
-  transform: translateX(0px);
-}
-
-.stat-icon {
-  width: 44px;
-  height: 44px;
-  border-radius: 14px;
-  display: grid;
-  place-items: center;
-  border: 1px solid var(--line);
-}
-
-.glow-dot {
-  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
-  animation: glow 2s ease-in-out infinite;
-}
-
-.card-hover-row:hover {
-  background: var(--card-hover);
-}
-
-.input-glass {
-  background: var(--input-bg);
-  border: 1px solid var(--input-border);
-  border-radius: 14px;
-  color: var(--text);
-  transition: var(--theme-transition);
-}
-.input-glass:focus {
-  outline: none;
-  border-color: rgba(139, 92, 246, 0.5);
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.12);
-}
-
-/* Toast */
-#toast {
-  position: fixed;
-  right: 24px;
-  bottom: 24px;
-  z-index: 100;
-  padding: 12px 20px;
-  border-radius: 14px;
-  font-size: 13px;
-  font-weight: 500;
-  opacity: 0;
-  transform: translateY(12px);
-  pointer-events: none;
-  transition: opacity 220ms ease, transform 220ms ease;
-}
-#toast.show {
-  opacity: 1;
-  transform: translateY(0);
-  pointer-events: auto;
-}
-
-/* Deploy step list */
-.deploy-step {
-  opacity: 0.4;
-  transition: opacity 200ms ease;
-}
-.deploy-step.done {
-  opacity: 1;
-}
-
-/* Hero mockup 3D tilt */
-.hero-mockup {
-  transform: perspective(1400px) rotateY(-6deg) rotateX(2deg) rotateZ(-2deg);
-  transition: transform 500ms cubic-bezier(0.16, 1, 0.3, 1);
-}
-.hero-mockup:hover {
-  transform: perspective(1400px) rotateY(-2deg) rotateX(0deg) rotateZ(-1deg);
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
 }
 
 ::selection {
-  background: rgba(139, 92, 246, 0.3);
+  background: var(--select-bg);
 }
 
-/* Lightweight replacement for the old framer-motion ViewFade.
-   Opacity-only (no transform) so the browser can composite it cheaply. */
-.view-fade {
-  animation: view-fade-in 160ms ease-out;
-}
-@keyframes view-fade-in {
-  from {
-    opacity: 0;
-  }
-  to {
-    opacity: 1;
-  }
-}
-
-/* ---- Landing page (always-dark, glassmorphic) ---- */
-@keyframes landing-blink {
-  0%,
-  100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.3;
-  }
-}
-@keyframes landing-float {
-  0%,
-  100% {
-    transform: translateY(0px) rotate(-2deg);
-  }
-  50% {
-    transform: translateY(-10px) rotate(-1deg);
-  }
-}
-@keyframes landing-glow-pulse {
-  0%,
-  100% {
-    opacity: 0.6;
-  }
-  50% {
-    opacity: 0.9;
-  }
-}
-
-/* Gerakan di landing dimatikan untuk pengguna yang memilih reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  .lp-motion { animation: none !important; transition: none !important; }
-}
-
-/* ---- Landing "Obsidian Edge" (desain Stitch, selalu gelap) ----
-   Semua di bawah .obsidian supaya tidak mengubah dashboard. */
-.obsidian {
-  color-scheme: dark;
-  --text: #ffffff;
-  --text-muted: #94a3b8;
-  --text-faint: #64748b;
-  --line: rgba(255, 255, 255, 0.08);
-  --line-strong: rgba(255, 255, 255, 0.16);
-  background: #0a0a0e;
-  color: #fff;
-  font-family: "Inter Variable", "Inter Tight Variable", system-ui, sans-serif;
-}
-.obsidian *,
-.obsidian *::before,
-.obsidian *::after {
-  font-family: inherit;
-}
-.obsidian .f-display {
-  font-family: "Geist Variable", "Inter Variable", system-ui, sans-serif;
-}
-.obsidian .f-mono {
-  font-family: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
-}
-.obsidian ::selection {
-  background: rgba(139, 92, 246, 0.35);
-  color: #e9ddff;
-}
-.obsidian a:focus-visible,
-.obsidian button:focus-visible {
-  outline: 2px solid #a855f7;
+:focus-visible {
+  outline: 2px solid var(--ring);
   outline-offset: 2px;
 }
-.obs-gradient-text {
-  background-image: linear-gradient(135deg, #8b5cf6 0%, #a855f7 50%, #ec4899 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+
+@layer components {
+  .mono {
+    font-family: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-feature-settings: normal;
+  }
+
+  /* ---------- Frame aplikasi (tanpa bezel) ---------- */
+  .app-canvas {
+    min-height: 100dvh;
+    color: var(--text);
+    background: var(--frame);
+    transition: var(--theme-transition);
+  }
+  .app-frame {
+    min-height: 100dvh;
+    padding: var(--edge);
+  }
+
+  /* ---------- Judul halaman ---------- */
+  .page-title {
+    font-size: 28px;
+    line-height: 1.1;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+  }
+  @media (min-width: 640px) {
+    .page-title {
+      font-size: 34px;
+    }
+  }
+
+  /* ---------- Sidebar (ungu brand / midnight di tema gelap, melayang) ---------- */
+  .sidebar {
+    background: var(--sidebar-bg);
+    color: var(--sidebar-text);
+    border-radius: 28px;
+  }
+  .sidebar-topbar {
+    border-radius: 20px;
+  }
+
+  /* ---------- Permukaan ---------- */
+  /* Kartu putih bersih. `.glass` hanyalah alias lama dari `.surface-solid`; kode baru pakai <Surface> / .surface-solid. */
+  .glass,
+  .surface-solid {
+    color: var(--text);
+    background: var(--surface-solid);
+    border: 0;
+    border-radius: 28px;
+    box-shadow: var(--surface-shadow);
+    transition: var(--theme-transition);
+  }
+  .glass-flat {
+    background: var(--toast-bg);
+    color: var(--toast-text);
+    border-radius: 16px;
+    box-shadow: 0 18px 40px -14px rgba(20, 18, 31, 0.45);
+  }
+  .surface-solid-row {
+    transition: background-color 180ms ease;
+  }
+  .surface-solid-row:hover {
+    background: var(--row-hover);
+  }
+  .stat-card-glass {
+    border-radius: 26px;
+    transition: transform 260ms var(--ease-out);
+  }
+  .stat-card-glass:hover {
+    transform: translateY(-2px);
+  }
+
+  /* Kartu hero ungu (dipakai di landing) */
+  .hero-card {
+    position: relative;
+    overflow: hidden;
+    background: #7b50ff;
+    color: #ffffff;
+    border-radius: 28px;
+  }
+  [data-theme="dark"] .hero-card {
+    background: #5a39c0;
+  }
+
+  /* ---------- Input ---------- */
+  .input-solid,
+  .input-glass {
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 14px;
+    color: var(--text);
+    transition: var(--theme-transition), box-shadow 160ms ease;
+  }
+  .input-solid::placeholder,
+  .input-glass::placeholder {
+    color: var(--text-faint);
+  }
+  .input-solid:focus,
+  .input-glass:focus,
+  .input-solid[data-state="open"] {
+    outline: none;
+    box-shadow: inset 0 0 0 2px var(--ring);
+  }
+
+  /* ---------- Tombol ---------- */
+  .btn-primary {
+    background: var(--ink-fill);
+    color: var(--ink-fill-text);
+    border-radius: 9999px;
+    font-weight: 600;
+    transition: var(--theme-transition), transform 200ms var(--ease-out), background-color 180ms ease;
+  }
+  .btn-primary:hover {
+    background: var(--ink-fill-hover);
+    transform: translateY(-1px);
+  }
+  .btn-primary:active {
+    transform: scale(0.98);
+  }
+  /* Alias lama dari .btn-lime — dipakai landing. Untuk kode baru pakai .btn-lime */
+  .btn-lav {
+    background: var(--lime);
+    color: var(--lime-text);
+    border-radius: 9999px;
+    font-weight: 600;
+    transition: background-color 180ms ease, transform 180ms ease;
+  }
+  .btn-lav:hover {
+    background: var(--lime-hover);
+  }
+  .btn-lav:active {
+    transform: scale(0.98);
+  }
+  /* Tombol aksen lime (Midnight di atas Lime, kontras 13:1) */
+  .btn-lime {
+    background: var(--lime);
+    color: var(--lime-text);
+    border-radius: 9999px;
+    font-weight: 600;
+    transition: background-color 180ms ease, transform 200ms var(--ease-out);
+  }
+  .btn-lime:hover {
+    background: var(--lime-hover);
+    transform: translateY(-1px);
+  }
+  .btn-lime:active {
+    transform: scale(0.98);
+  }
+  /* Tombol sekunder: isian Mist, tanpa garis */
+  .pill {
+    background: var(--pill-bg);
+    border: 0;
+    border-radius: 9999px;
+    color: var(--text);
+    transition: var(--theme-transition), background-color 160ms ease, transform 160ms var(--ease-out), filter 160ms ease;
+  }
+  .pill:hover {
+    background: color-mix(in srgb, var(--accent) 16%, var(--pill-bg));
+  }
+  .pill:active {
+    transform: scale(0.97);
+  }
+
+  /* Layar sentuh: tombol minimal 40px supaya mudah ditekan */
+  @media (pointer: coarse) {
+    .pill,
+    .btn-primary,
+    .btn-lime,
+    .btn-lav {
+      min-height: 40px;
+    }
+  }
+
+  /* Banner status (info/peringatan/bahaya): isian solid per tema, teks memakai token fg */
+  .notice {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    border-radius: 16px;
+    padding: 12px 16px;
+    font-size: 13px;
+    line-height: 1.5;
+  }
+  .notice-warn { background: var(--warn-bg); color: var(--warn-fg); box-shadow: inset 0 0 0 1px var(--warn-line); }
+  .notice-bad { background: var(--bad-bg); color: var(--bad-fg); box-shadow: inset 0 0 0 1px var(--bad-line); }
+  .notice-ok { background: var(--ok-bg); color: var(--ok-fg); box-shadow: inset 0 0 0 1px var(--ok-line); }
+  .notice-info { background: var(--tone-lilac); color: var(--accent-text); }
+
+  /* Chip/tab terpilih & tidak terpilih */
+  .chip-on {
+    background: var(--ink-fill);
+    color: var(--ink-fill-text);
+    border-color: transparent;
+  }
+
+  /* Status chip: titik berwarna + teks */
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    border: 0;
+    background: var(--chip-bg);
+    color: var(--text);
+    border-radius: 9999px;
+    padding: 2px 10px;
+    font-size: 12px;
+    font-weight: 500;
+    line-height: 1.5;
+  }
+
+  /* Toggle tema: berada di sidebar berwarna, jadi warnanya tetap */
+  .theme-toggle {
+    width: 52px;
+    height: 30px;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.18);
+    border: 0;
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    padding: 3px;
+    cursor: pointer;
+  }
+  .theme-toggle-knob {
+    width: 24px;
+    height: 24px;
+    border-radius: 9999px;
+    background: #ffffff;
+    color: #5a39c0;
+    display: grid;
+    place-items: center;
+    transition: transform var(--theme-duration) var(--theme-ease);
+  }
+  [data-theme="light"] .theme-toggle-knob {
+    transform: translateX(22px);
+  }
+  [data-theme="dark"] .theme-toggle-knob {
+    transform: translateX(0px);
+  }
+
+  .stat-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 14px;
+    display: grid;
+    place-items: center;
+    background: var(--tone-chip);
+  }
+
+  .dot-flat {
+    display: inline-block;
+  }
+  .glow-dot {
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+    animation: glow 2s ease-in-out infinite;
+  }
+  .card-hover-row:hover {
+    background: var(--card-hover);
+  }
+
+  /* Toast */
+  #toast {
+    position: fixed;
+    right: 24px;
+    bottom: 24px;
+    z-index: 100;
+    padding: 12px 18px;
+    font-size: 13px;
+    font-weight: 500;
+    opacity: 0;
+    transform: translateY(12px);
+    pointer-events: none;
+    transition: opacity 240ms ease, transform 320ms var(--ease-out);
+  }
+  #toast.show {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+  }
+
+  .deploy-step {
+    opacity: 0.4;
+    transition: opacity 200ms ease;
+  }
+  .deploy-step.done {
+    opacity: 1;
+  }
+
+  .view-fade {
+    animation: view-fade-in 260ms var(--ease-out) backwards;
+  }
+  @keyframes view-fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  /* Blok-blok halaman muncul berurutan (hanya anak langsung konten utama, bukan modal) */
+  .view-fade > div:first-child > * {
+    animation: rise-in 420ms var(--ease-out) backwards;
+  }
+  .view-fade > div:first-child > *:nth-child(2) { animation-delay: 45ms; }
+  .view-fade > div:first-child > *:nth-child(3) { animation-delay: 90ms; }
+  .view-fade > div:first-child > *:nth-child(4) { animation-delay: 135ms; }
+  .view-fade > div:first-child > *:nth-child(5) { animation-delay: 180ms; }
+  .view-fade > div:first-child > *:nth-child(n + 6) { animation-delay: 220ms; }
+
+  /* Baris tabel / item list: masuk halus, delay dihitung dari --i (dibatasi di 10) */
+  .row-in {
+    animation: rise-in 360ms var(--ease-out) backwards;
+    animation-delay: calc(min(var(--i, 0), 10) * 28ms);
+  }
+  @keyframes rise-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  /* Modal & panel */
+  .anim-fade {
+    animation: anim-fade 200ms ease-out backwards;
+  }
+  .anim-pop {
+    animation: anim-pop 300ms var(--ease-out) backwards;
+  }
+  .anim-panel {
+    transform-origin: bottom right;
+    animation: anim-panel 320ms var(--ease-out) backwards;
+  }
+  .anim-fab {
+    animation: anim-fab 380ms var(--ease-soft) backwards;
+  }
+  @keyframes anim-fade {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+  @keyframes anim-pop {
+    from { opacity: 0; transform: translateY(10px) scale(0.97); }
+    to { opacity: 1; transform: none; }
+  }
+  /* Panel chat: muncul dari pojok dengan sedikit memantul, lalu tenang */
+  @keyframes anim-panel {
+    0% { opacity: 0; transform: translateY(18px) scale(0.92); }
+    55% { opacity: 1; transform: translateY(-3px) scale(1.012); }
+    80% { transform: translateY(1px) scale(0.998); }
+    100% { opacity: 1; transform: none; }
+  }
+  .anim-panel-out {
+    transform-origin: bottom right;
+    animation: anim-panel-out 180ms ease-in forwards;
+  }
+  @keyframes anim-panel-out {
+    to { opacity: 0; transform: translateY(10px) scale(0.96); }
+  }
+  @keyframes anim-fab {
+    0% { opacity: 0; transform: translateY(10px) scale(0.6); }
+    60% { opacity: 1; transform: translateY(-2px) scale(1.07); }
+    100% { opacity: 1; transform: none; }
+  }
+
+  /* Chat bantuan ala iOS: tombol kecil "membuka" jadi panel (clip-path tumbuh dari posisi tombol) */
+  .morph {
+    --fab-off: var(--edge, 16px);
+    --panel-r: 0px;
+    --fab-w: 58px;
+    --fab-h: 48px;
+    will-change: clip-path;
+  }
+  @media (min-width: 640px) {
+    .morph {
+      --fab-off: 0px;
+      --panel-r: 24px;
+    }
+  }
+  .morph-open {
+    animation:
+      morph-open 620ms cubic-bezier(0.32, 0.72, 0, 1) backwards,
+      morph-bg-open 440ms cubic-bezier(0.33, 1, 0.68, 1) backwards;
+  }
+  .morph-close {
+    animation:
+      morph-close 460ms cubic-bezier(0.32, 0.72, 0, 1) forwards,
+      morph-bg-close 460ms cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  }
+  @keyframes morph-open {
+    from {
+      clip-path: inset(
+        calc(100% - var(--fab-h) - var(--fab-off)) var(--fab-off) var(--fab-off)
+          calc(100% - var(--fab-w) - var(--fab-off)) round calc(var(--fab-h) / 2)
+      );
+    }
+    to {
+      clip-path: inset(-48px -48px -48px -48px round var(--panel-r));
+    }
+  }
+  @keyframes morph-close {
+    from {
+      clip-path: inset(-48px -48px -48px -48px round var(--panel-r));
+    }
+    to {
+      clip-path: inset(
+        calc(100% - var(--fab-h) - var(--fab-off)) var(--fab-off) var(--fab-off)
+          calc(100% - var(--fab-w) - var(--fab-off)) round calc(var(--fab-h) / 2)
+      );
+    }
+  }
+  @keyframes morph-bg-open {
+    from { background-color: #c6f432; }
+  }
+  @keyframes morph-bg-close {
+    to { background-color: #c6f432; }
+  }
+  /* Salinan tombol Bantuan di dalam panel: memudar saat membuka, muncul lagi saat menutup */
+  .morph-fab {
+    position: absolute;
+    right: var(--fab-off);
+    bottom: var(--fab-off);
+    width: var(--fab-w);
+    height: var(--fab-h);
+    z-index: 20;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    border-radius: 9999px;
+    background: #c6f432;
+    color: #1e1150;
+    font-size: 13.5px;
+    font-weight: 600;
+  }
+  .morph-fab-out {
+    animation: morph-fab-out 320ms cubic-bezier(0.33, 1, 0.68, 1) forwards;
+  }
+  .morph-fab-in {
+    animation: morph-fab-in 460ms cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  }
+  @keyframes morph-fab-out {
+    from { opacity: 1; transform: scale(1); }
+    to { opacity: 0; transform: scale(0.8); }
+  }
+  @keyframes morph-fab-in {
+    0%, 55% { opacity: 0; transform: scale(0.8); }
+    100% { opacity: 1; transform: scale(1); }
+  }
+  .morph-open > *:not(.morph-fab) {
+    animation: morph-content 420ms cubic-bezier(0.33, 1, 0.68, 1) 160ms backwards;
+  }
+  .morph-close > *:not(.morph-fab) {
+    animation: morph-content-out 160ms ease-in forwards;
+  }
+  @keyframes morph-content {
+    from { opacity: 0; transform: translateY(8px) scale(0.985); }
+    to { opacity: 1; transform: none; }
+  }
+  @keyframes morph-content-out {
+    to { opacity: 0; }
+  }
+
+  /* Latar di belakang chat: ngeblur pelan supaya fokus ke percakapan */
+  .chat-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 55;
+    background-color: var(--scrim-bg);
+    -webkit-backdrop-filter: blur(10px) saturate(1.05);
+    backdrop-filter: blur(10px) saturate(1.05);
+    animation: scrim-in 520ms cubic-bezier(0.32, 0.72, 0, 1) backwards;
+  }
+  .chat-scrim-out {
+    animation: scrim-out 440ms cubic-bezier(0.32, 0.72, 0, 1) forwards;
+  }
+  @keyframes scrim-in {
+    from {
+      background-color: transparent;
+      -webkit-backdrop-filter: blur(0px) saturate(1);
+      backdrop-filter: blur(0px) saturate(1);
+    }
+  }
+  @keyframes scrim-out {
+    to {
+      background-color: transparent;
+      -webkit-backdrop-filter: blur(0px) saturate(1);
+      backdrop-filter: blur(0px) saturate(1);
+    }
+  }
+
+  /* Gelembung chat: masuk dengan pantulan kecil dari sisi pengirimnya */
+  .bubble-in-l,
+  .bubble-in-r {
+    animation: bubble-in 360ms var(--ease-soft) backwards;
+  }
+  .bubble-in-l { transform-origin: top left; }
+  .bubble-in-r { transform-origin: top right; }
+  @keyframes bubble-in {
+    from { opacity: 0; transform: translateY(8px) scale(0.92); }
+    to { opacity: 1; transform: none; }
+  }
+  .chip-in {
+    animation: bubble-in 380ms var(--ease-soft) backwards;
+    animation-delay: calc(var(--i, 0) * 60ms + 120ms);
+  }
+  @keyframes dot-bounce {
+    0%, 60%, 100% { transform: translateY(0); opacity: 0.55; }
+    30% { transform: translateY(-4px); opacity: 1; }
+  }
+  .bot-wiggle {
+    animation: bot-wiggle 700ms var(--ease-out) 220ms backwards;
+  }
+  @keyframes bot-wiggle {
+    0% { transform: rotate(0) scale(0.8); }
+    35% { transform: rotate(-12deg) scale(1.1); }
+    65% { transform: rotate(8deg) scale(1.03); }
+    100% { transform: none; }
+  }
+
+  /* Akordeon (Docs): tinggi membuka halus, langkah-langkahnya masuk bergantian */
+  .acc {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 380ms var(--ease-out);
+  }
+  .acc[data-open="true"] { grid-template-rows: 1fr; }
+  .acc-inner {
+    min-height: 0;
+    overflow: hidden;
+    visibility: hidden;
+    transition: visibility 0s linear 380ms;
+  }
+  .acc[data-open="true"] .acc-inner {
+    visibility: visible;
+    transition-delay: 0s;
+  }
+  .acc-step {
+    opacity: 0;
+    transform: translateY(8px);
+    transition: opacity 160ms ease, transform 160ms ease;
+  }
+  .acc[data-open="true"] .acc-step {
+    opacity: 1;
+    transform: none;
+    transition: opacity 280ms ease, transform 460ms var(--ease-soft);
+    transition-delay: calc(var(--i, 0) * 55ms + 90ms);
+  }
+  .bounce-t {
+    transition: transform 460ms var(--ease-soft);
+  }
+
+  /* Tombol Bantuan: sedikit terangkat saat hover, ikon bergoyang tipis */
+  .fab {
+    transition: transform 220ms var(--ease-out), box-shadow 220ms var(--ease-out), background-color 180ms ease;
+  }
+  .fab:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 28px -10px rgba(20, 18, 31, 0.45);
+  }
+  .fab:active {
+    transform: scale(0.97);
+  }
+
+  /* Indikator seleksi navigasi: meluncur ke item aktif */
+  .nav-indicator {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 2px;
+    z-index: 0;
+    border-radius: 16px;
+    background: var(--sidebar-active-bg);
+    pointer-events: none;
+    will-change: transform;
+  }
+  .nav-indicator-anim {
+    transition: transform 340ms var(--ease-out), background-color var(--theme-duration) var(--theme-ease);
+  }
+  .nav:active {
+    transform: scale(0.985);
+  }
+
+  /* Ikon toggle tema: muncul dengan putaran kecil */
+  .theme-icon-swap {
+    animation: icon-swap 320ms var(--ease-out) backwards;
+  }
+  @keyframes icon-swap {
+    from {
+      opacity: 0;
+      transform: rotate(-70deg) scale(0.6);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes glow {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.4;
+    }
+  }
+
+  /* ---------- Switch: trek 44×24, knob 20, jarak 2px di semua sisi (simetris) ---------- */
+  .switch {
+    position: relative;
+    display: inline-block;
+    flex-shrink: 0;
+    width: 44px;
+    height: 24px;
+    padding: 0;
+    border: 0;
+    border-radius: 9999px;
+    background: var(--line-strong);
+    cursor: pointer;
+    transition: background-color 220ms var(--ease-out);
+    -webkit-tap-highlight-color: transparent;
+  }
+  .switch[aria-checked="true"] {
+    background: var(--accent);
+  }
+  .switch-knob {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 20px;
+    height: 20px;
+    border-radius: 9999px;
+    background: #ffffff;
+    box-shadow: 0 1px 3px rgba(18, 11, 46, 0.3);
+    /* Hanya transform + width: knob meluncur di compositor, tanpa layout (beda dengan animasi `left`) */
+    transform: translateX(0);
+    transition: transform 280ms var(--ease-soft), width 160ms var(--ease-out);
+  }
+  .switch[aria-checked="true"] .switch-knob {
+    transform: translateX(20px);
+  }
+  /* Knob memanjang sedikit saat ditekan; sisi tujuan tetap menempel 2px dari tepi */
+  .switch:active:not(:disabled) .switch-knob {
+    width: 24px;
+  }
+  .switch[aria-checked="true"]:active:not(:disabled) .switch-knob {
+    transform: translateX(16px);
+  }
+  .switch:disabled {
+    cursor: not-allowed;
+    opacity: 0.55;
+  }
+
+  /* ---------- Penanda mode admin: garis tipis permanen di tepi atas layar ---------- */
+  .admin-strip {
+    position: fixed;
+    inset: 0 0 auto 0;
+    z-index: 60;
+    height: 3px;
+    background: linear-gradient(90deg, #7b50ff 0%, #c6f432 100%);
+    pointer-events: none;
+  }
+
+  /* ---------- Checkbox kustom 20×20 ---------- */
+  .check-box {
+    display: inline-grid;
+    place-items: center;
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    border-radius: 7px;
+    border: 0;
+    background: var(--line-strong);
+    color: #ffffff;
+    cursor: pointer;
+    transition: background-color 180ms var(--ease-out), transform 160ms var(--ease-out);
+  }
+  .check-box[aria-checked="true"] {
+    background: var(--accent);
+  }
+  .check-box:active {
+    transform: scale(0.9);
+  }
+  .check-box svg {
+    transform: scale(0);
+    transition: transform 240ms var(--ease-soft);
+  }
+  .check-box[aria-checked="true"] svg {
+    transform: scale(1);
+  }
+
+  /* ---------- Animasi mikro ---------- */
+  /* Garis hero tergambar dari kiri ke kanan (pathLength=1) */
+  .draw-line {
+    stroke-dasharray: 1;
+    animation: draw-line 1100ms var(--ease-out) 150ms backwards;
+  }
+  @keyframes draw-line {
+    from {
+      stroke-dashoffset: 1;
+    }
+    to {
+      stroke-dashoffset: 0;
+    }
+  }
+  /* Grafik garis: tergambar */
+  .line-draw {
+    stroke-dasharray: 1;
+    animation: draw-line 900ms var(--ease-out) backwards;
+  }
+  /* Grafik batang: tumbuh dari dasar (transform saja) */
+  .bar-grow {
+    transform-box: fill-box;
+    transform-origin: 50% 100%;
+    animation: bar-grow 520ms var(--ease-out) backwards;
+    animation-delay: calc(var(--i, 0) * 14ms);
+  }
+  @keyframes bar-grow {
+    from {
+      transform: scaleY(0);
+    }
+  }
+  /* Batang horizontal (BarList): mengisi dari kiri */
+  .bar-fill {
+    transform-origin: 0 50%;
+    animation: bar-fill 640ms var(--ease-out) backwards;
+    animation-delay: calc(var(--i, 0) * 70ms + 120ms);
+  }
+  @keyframes bar-fill {
+    from {
+      transform: scaleX(0);
+    }
+  }
+  /* Badge muncul dengan pantulan kecil */
+  .pop-in {
+    animation: pop-in 320ms var(--ease-soft) backwards;
+  }
+  @keyframes pop-in {
+    from {
+      opacity: 0;
+      transform: scale(0.8);
+    }
+  }
+  /* Titik status; `.live-dot-pulse` menambah cincin berdenyut (opacity + transform saja), dipakai hemat */
+  .live-dot {
+    position: relative;
+    display: inline-block;
+    width: 6px;
+    height: 6px;
+    border-radius: 9999px;
+    background: currentColor;
+  }
+  .live-dot-pulse::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    background: currentColor;
+    animation: live-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+  }
+  @keyframes live-ping {
+    0% {
+      opacity: 0.55;
+      transform: scale(1);
+    }
+    80%,
+    100% {
+      opacity: 0;
+      transform: scale(2.8);
+    }
+  }
+  /* Anak langsung masuk bergantian (kartu statistik / grid grafik) */
+  .stagger-in > * {
+    animation: rise-in 420ms var(--ease-out) backwards;
+  }
+  .stagger-in > *:nth-child(2) { animation-delay: 40ms; }
+  .stagger-in > *:nth-child(3) { animation-delay: 80ms; }
+  .stagger-in > *:nth-child(4) { animation-delay: 120ms; }
+  .stagger-in > *:nth-child(5) { animation-delay: 160ms; }
+  .stagger-in > *:nth-child(6) { animation-delay: 200ms; }
+  .stagger-in > *:nth-child(n + 7) { animation-delay: 240ms; }
+  /* Ikon chevron berputar saat akordeon / select terbuka */
+  .chev {
+    transition: transform 260ms var(--ease-soft);
+  }
+  .chev[data-open="true"] {
+    transform: rotate(180deg);
+  }
+  /* Kartu di luar layar tidak dirender sampai mendekati viewport (hemat layout/paint di Chrome) */
+  .cv-auto {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 320px;
+  }
+  /* Ikon tombol segarkan berputar sekali saat diklik */
+  .spin-once svg {
+    animation: spin-once 600ms var(--ease-out);
+  }
+  @keyframes spin-once {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  /* Tombol & kartu yang bisa diklik: umpan balik tekan */
+  .press {
+    transition: transform 160ms var(--ease-out), filter 160ms ease;
+  }
+  .press:active {
+    transform: scale(0.97);
+  }
+
+  /* ==========================================================================
+     Landing page. Selalu terang (data-theme="light" di <main>), jadi tidak
+     mengikuti pilihan tema dashboard. Memakai token yang sama dengan dashboard
+     (permukaan, teks, radius, status); karakternya ada di kanvas gradien,
+     lembar putih besar, navbar melayang, dan kartu CTA Midnight.
+     ========================================================================== */
+  .lp {
+    color: var(--text);
+    background-color: var(--bg-base);
+    background-image: var(--canvas);
+  }
+  .lp-sheet {
+    background: var(--surface-solid);
+    border-radius: 32px;
+    box-shadow: var(--frame-shadow);
+  }
+  @media (min-width: 640px) {
+    .lp-sheet {
+      border-radius: 44px;
+    }
+  }
+  .lp-nav {
+    background: rgba(255, 255, 255, 0.86);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    box-shadow: 0 18px 40px -22px rgba(54, 28, 120, 0.5);
+  }
+  /* Jendela pratinjau: bingkai yang sama dengan .app-canvas dashboard (Frost, tanpa garis) */
+  .lp-window {
+    background: var(--frame);
+    border-radius: 32px;
+    box-shadow: 0 50px 90px -40px rgba(30, 12, 80, 0.55);
+  }
+  @media (min-width: 640px) {
+    .lp-window {
+      border-radius: 40px;
+    }
+  }
+  /* Judul bagian & paragraf pembuka: skala tipografi yang sama di semua bagian landing */
+  .lp-h2 {
+    font-size: 30px;
+    line-height: 1.08;
+    font-weight: 700;
+    letter-spacing: -0.03em;
+    color: var(--text);
+  }
+  .lp-lead {
+    margin-top: 16px;
+    font-size: 17px;
+    line-height: 1.6;
+    color: var(--text-muted);
+  }
+  @media (min-width: 640px) {
+    .lp-h2 {
+      font-size: 44px;
+    }
+  }
+  /* Latar gelap di belakang dialog (satu sumber untuk semua modal) */
+  .modal-scrim {
+    background: rgba(18, 11, 46, 0.66);
+  }
 }
-.obs-btn-primary {
-  background-image: linear-gradient(135deg, #8b5cf6 0%, #a855f7 50%, #ec4899 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 4px 24px rgba(168, 85, 247, 0.35);
-  transition: box-shadow 200ms ease;
-}
-.obs-btn-primary:hover {
-  background-image: linear-gradient(135deg, #9b73f8 0%, #b56bf9 50%, #f063a8 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3), 0 4px 30px rgba(168, 85, 247, 0.5);
-}
-.obs-btn-glass {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  transition: background 200ms ease, border-color 200ms ease;
-}
-.obs-btn-glass:hover {
-  background: rgba(255, 255, 255, 0.08);
-  border-color: rgba(255, 255, 255, 0.2);
-}
-.obs-glass {
-  background: rgba(17, 17, 24, 0.72);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  -webkit-backdrop-filter: blur(16px);
-  backdrop-filter: blur(16px);
-}
-.obs-card {
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.04) 0%, rgba(255, 255, 255, 0) 100%), #111118;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  transition: border-color 200ms ease, box-shadow 200ms ease;
-}
-.obs-card:hover {
-  border-color: rgba(255, 255, 255, 0.16);
-  box-shadow: 0 0 24px rgba(139, 92, 246, 0.12);
-}
-.obs-overlay {
-  background: rgba(24, 24, 34, 0.92);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  -webkit-backdrop-filter: blur(24px);
-  backdrop-filter: blur(24px);
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.65);
-}
+
+/* Gerakan dekoratif di landing dimatikan untuk pengguna yang memilih reduced motion */
 @media (prefers-reduced-motion: reduce) {
-  .obsidian .animate-pulse,
-  .obsidian .animate-spin {
+  .acc,
+  .acc-inner,
+  .acc-step,
+  .bounce-t {
+    transition: none !important;
+  }
+  .chat-scrim,
+  .morph-open,
+  .morph-close,
+  .morph-fab,
+  .morph-open > *:not(.morph-fab),
+  .morph-close > *:not(.morph-fab),
+  .bubble-in-l,
+  .bubble-in-r,
+  .chip-in,
+  .bot-wiggle {
     animation: none !important;
+  }
+  .lp-motion,
+  .lp .animate-pulse {
+    animation: none !important;
+    transition: none !important;
+  }
+  .draw-line,
+  .line-draw,
+  .bar-grow,
+  .bar-fill,
+  .pop-in,
+  .live-dot-pulse::after,
+  .stagger-in > *,
+  .spin-once svg,
+  .view-fade,
+  .view-fade > div:first-child > *,
+  .row-in,
+  .anim-fade,
+  .anim-pop,
+  .anim-panel,
+  .anim-fab {
+    animation: none !important;
+  }
+  .switch,
+  .switch-knob,
+  .check-box,
+  .check-box svg,
+  .chev,
+  .press,
+  .fab,
+  .fab svg,
+  .nav svg,
+  .nav-indicator-anim,
+  .btn-primary {
+    transition: none !important;
+  }
+  .theme-icon-swap {
+    animation: none !important;
+  }
+  .nav:active {
+    transform: none !important;
   }
 }
 
@@ -468,32 +1205,6 @@ body {
   --kuli-cloud: #ffffff;
   --kuli-cloud-o: 0.85;
 }
-/* Landing selalu gelap, apa pun tema pengguna */
-.obsidian .kuli-root,
-.kuli-on-dark .kuli-root {
-  --kuli-sky-a: #0b0d1f;
-  --kuli-sky-b: #2b1f63;
-  --kuli-ground: #1b1730;
-  --kuli-far: #17153a;
-  --kuli-cloud: #ffffff;
-  --kuli-cloud-o: 0.09;
-}
-/* Token dashboard dikunci gelap di landing supaya panel demo (Card/Btn) terbaca */
-.kuli-on-dark {
-  --text: #f8fafc;
-  --line-strong: rgba(255, 255, 255, 0.14);
-}
-.obsidian,
-.kuli-on-dark {
-  --card-hover: rgba(255, 255, 255, 0.07);
-  --surface-solid: #12151e;
-  --surface-solid-2: #1a1d29;
-  --surface-line: rgba(255, 255, 255, 0.06);
-  --btn-from: #ffffff;
-  --btn-to: #e2e8f0;
-  --btn-text: #070a0f;
-}
-
 .kuli-paused,
 .kuli-paused * {
   animation-play-state: paused !important;

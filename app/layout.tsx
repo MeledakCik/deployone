@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
+import "@fontsource-variable/inter";
 import "@fontsource-variable/inter-tight";
-import "@fontsource-variable/bricolage-grotesque";
+import "@fontsource-variable/jetbrains-mono";
 import "./globals.css";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import { AuthProvider } from "@/lib/auth-context";
@@ -10,14 +11,14 @@ const SITE_URL =
   (
     process.env.NEXT_PUBLIC_SITE_URL ??
     process.env.NEXT_PUBLIC_APP_URL ??
-    "https://depup.web.id"
+    "https://depup.app"
   ).replace(/\/$/, "");
 
 const SITE_NAME = "Depup";
 const SITE_TAGLINE = "Deploy without the hassle.";
 
 const SITE_DESCRIPTION =
-  "Depup adalah dashboard modern untuk mengelola deployment Vercel, Cloudflare Pages, dan Railway dalam satu tempat. Import repo, deploy, atur domain & environment variables, semua dari satu dashboard glass yang cantik — tanpa perlu buka banyak tab.";
+  "Depup adalah dashboard untuk mengelola deployment Vercel, Cloudflare Pages, dan Railway di satu tempat. Impor repo, deploy, atur domain dan environment variables, semuanya dari satu dashboard yang rapi, tanpa perlu membuka banyak tab.";
 
 const SITE_KEYWORDS = [
   "depup",
@@ -147,8 +148,8 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
   },
   other: {
-    "msapplication-TileColor": "#0a0a0f",
-    "theme-color": "#0a0a0f",
+    "msapplication-TileColor": "#7B50FF",
+    "theme-color": "#7B50FF",
   },
 };
 
@@ -157,8 +158,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0a0f" },
+    { media: "(prefers-color-scheme: light)", color: "#7B50FF" },
+    { media: "(prefers-color-scheme: dark)", color: "#120B2E" },
   ],
   colorScheme: "dark light",
 };
@@ -191,10 +192,10 @@ export default function RootLayout({
     featureList: [
       "Deploy ke Vercel dalam satu klik",
       "Deploy ke Cloudflare Pages",
-      "Kelola domain custom",
+      "Kelola domain kustom",
       "Environment variables",
-      "Auto-redeploy saat secret berubah",
-      "Import project yang sudah ada",
+      "Redeploy otomatis saat secret berubah",
+      "Impor project yang sudah ada",
     ],
   };
 
@@ -212,7 +213,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className="antialiased selection:bg-violet-500/30 min-h-screen w-full">
+      <body className="antialiased min-h-screen w-full">
         <ThemeProvider>
           <AuthProvider>
             <ToastProvider>{children}</ToastProvider>

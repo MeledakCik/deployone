@@ -15,7 +15,7 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
   } catch (e) {
     if (e instanceof SaweriaError) {
       console.error("[donate/status]", e.kind, e.message);
-      return fail("Status belum bisa dicek. Coba lagi sebentar lagi.", 502, "donate_unavailable");
+      return fail("Status belum bisa diperiksa. Coba lagi sebentar lagi.", 502, "donate_unavailable");
     }
     throw e;
   }

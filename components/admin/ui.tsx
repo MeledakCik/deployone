@@ -1,8 +1,14 @@
 "use client";
 
 import * as React from "react";
-import { Loader2, AlertTriangle, RefreshCw } from "lucide-react";
+import { Check, ArrowLeft, ArrowRight } from "@/components/ui/icons";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Badge, Btn } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils";
+
+// Komponen dasar kini ada di components/ui/primitives.tsx (dipakai juga oleh dashboard).
+// Re-export di sini supaya impor lama dari "./ui" tetap berfungsi.
+export { Card, Badge, Btn, Loading, Skeleton, ErrorBox, Empty, PageHead, PageTitle, KpiCard } from "@/components/ui/primitives";
 
 export function fmtBytes(n: number): string {
   if (!n) return "0 B";
@@ -26,136 +32,20 @@ export function timeLeft(expiresAt: number): string {
   return `${Math.floor(s / 86400)} hari lagi`;
 }
 
-export function Card({ title, action, children, className }: { title?: string; action?: React.ReactNode; children: React.ReactNode; className?: string }) {
-  return (
-    <section className={cn("surface-solid overflow-hidden", className)}>
-      {(title || action) && (
-        <div className="flex items-center justify-between gap-3 border-b border-[var(--surface-line)] px-5 py-3.5">
-          <h3 className="text-[14px] font-semibold">{title}</h3>
-          {action}
-        </div>
-      )}
-      {children}
-    </section>
-  );
-}
-
-const TONES = {
-  neutral: "bg-zinc-500/10 text-text-muted border-zinc-500/20",
-  good: "bg-emerald-500/10 text-emerald-500 border-emerald-500/20",
-  warn: "bg-amber-500/10 text-amber-500 border-amber-500/25",
-  bad: "bg-red-500/10 text-red-400 border-red-500/25",
-  violet: "bg-violet-500/10 text-violet-400 border-violet-500/25",
-} as const;
-
-export function Badge({ tone = "neutral", children }: { tone?: keyof typeof TONES; children: React.ReactNode }) {
-  return <span className={cn("inline-flex items-center gap-1 whitespace-nowrap rounded-full border px-2 py-0.5 text-[11px] font-medium", TONES[tone])}>{children}</span>;
-}
-
-type BtnVariant = "primary" | "ghost" | "danger";
-export function Btn({
-  variant = "ghost",
-  busy,
-  className,
-  children,
-  ...rest
-}: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: BtnVariant; busy?: boolean }) {
-  const base = "inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 text-[12.5px] font-medium transition disabled:cursor-not-allowed disabled:opacity-50";
-  const v =
-    variant === "primary"
-      ? "btn-primary"
-      : variant === "danger"
-        ? "border border-red-500/30 bg-red-500/10 text-red-400 hover:bg-red-500/20"
-        : "border border-[var(--line-strong)] text-text hover:bg-[var(--card-hover)]";
-  return (
-    <button type="button" {...rest} disabled={rest.disabled || busy} className={cn(base, v, className)}>
-      {busy && <Loader2 size={13} className="animate-spin" />}
-      {children}
-    </button>
-  );
-}
-
-export function Toggle({ checked, onChange, label, disabled }: { checked: boolean; onChange: (v: boolean) => void; label: string; disabled?: boolean }) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      aria-label={label}
-      disabled={disabled}
-      onClick={() => onChange(!checked)}
-      className={cn("relative h-6 w-11 shrink-0 rounded-full border transition disabled:opacity-50", checked ? "border-violet-500/60 bg-violet-500" : "border-[var(--line-strong)] bg-[var(--pill-bg)]")}
-    >
-      <span className={cn("absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-all", checked ? "left-[22px]" : "left-0.5")} />
-    </button>
-  );
-}
-
-export function Loading({ label = "Memuat…" }: { label?: string }) {
-  return (
-    <div className="flex items-center justify-center gap-2 px-6 py-12 text-[13px] text-text-muted">
-      <Loader2 size={16} className="animate-spin" /> {label}
-    </div>
-  );
-}
-
-export function ErrorBox({ message, onRetry }: { message: string; onRetry?: () => void }) {
-  return (
-    <div className="flex flex-wrap items-center gap-3 px-5 py-6 text-[13px] text-red-400">
-      <AlertTriangle size={16} /> <span className="min-w-0 flex-1">{message}</span>
-      {onRetry && (
-        <Btn onClick={onRetry}>
-          <RefreshCw size={13} /> Coba lagi
-        </Btn>
-      )}
-    </div>
-  );
-}
-
-export function Empty({ children }: { children: React.ReactNode }) {
-  return <p className="px-6 py-10 text-center text-[13px] text-text-muted">{children}</p>;
-}
-
-export function PageHead({ title, desc, right }: { title: string; desc?: string; right?: React.ReactNode }) {
-  return (
-    <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
-      <div>
-        <h2 className="font-display text-[22px] font-semibold tracking-tight">{title}</h2>
-        {desc && <p className="mt-0.5 text-[13px] text-text-muted">{desc}</p>}
-      </div>
-      {right}
-    </div>
-  );
-}
-
-export function KpiCard({ label, value, sub, tone, onClick }: { label: string; value: string | number; sub?: string; tone?: "bad" | "warn"; onClick?: () => void }) {
-  const Comp = onClick ? "button" : "div";
-  return (
-    <Comp
-      {...(onClick ? { type: "button" as const, onClick } : {})}
-      className={cn("surface-solid p-4 text-left", onClick && "transition hover:border-violet-500/40")}
-    >
-      <p className="text-[12px] text-text-muted">{label}</p>
-      <p className={cn("mt-1 text-[26px] font-semibold tracking-tight", tone === "bad" && "text-red-400", tone === "warn" && "text-amber-500")}>{value}</p>
-      {sub && <p className="mt-0.5 text-[11.5px] text-text-faint">{sub}</p>}
-    </Comp>
-  );
-}
-
 /** Meter pemakaian terhadap batas paket. used = null → tampil "—" dengan keterangan. */
 export function UsageCard({ label, used, limitBytes, note }: { label: string; used: number | null; limitBytes: number; note: string }) {
   const pct = used === null ? null : Math.min(100, (used / limitBytes) * 100);
   const tone = pct === null ? "neutral" : pct >= 90 ? "bad" : pct >= 70 ? "warn" : "good";
-  const bar = { neutral: "bg-zinc-500/40", good: "bg-emerald-500", warn: "bg-amber-500", bad: "bg-red-500" }[tone];
+  const barColor = { neutral: "var(--text-faint)", good: "var(--ok-dot)", warn: "var(--warn-dot)", bad: "var(--bad-dot)" }[tone];
   return (
-    <div className="surface-solid p-4">
+    <div className="px-6 py-4">
       <div className="flex items-baseline justify-between gap-2">
-        <p className="text-[12px] text-text-muted">{label}</p>
-        {pct !== null && <Badge tone={tone === "neutral" ? "neutral" : tone}>{pct < 1 ? "<1" : Math.round(pct)}%</Badge>}
+        <p className="text-[12.5px] text-text-muted">{label}</p>
+        {pct !== null && <Badge tone={tone}>{pct < 1 ? "<1" : Math.round(pct)}%</Badge>}
       </div>
-      <p className="mt-1 text-[26px] font-semibold tracking-tight">
+      <p className="mt-1 text-[22px] font-bold tracking-tight tabular-nums">
         {used === null ? "—" : fmtBytes(used)}
-        <span className="ml-1.5 text-[13px] font-normal text-text-faint">/ {fmtBytes(limitBytes)}</span>
+        <span className="ml-1.5 text-[13px] font-normal text-text-muted">/ {fmtBytes(limitBytes)}</span>
       </p>
       <div
         role="progressbar"
@@ -163,11 +53,93 @@ export function UsageCard({ label, used, limitBytes, note }: { label: string; us
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={pct === null ? undefined : Math.round(pct)}
-        className="mt-2 h-1.5 overflow-hidden rounded-full bg-zinc-500/15"
+        className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--pill-bg)]"
       >
-        <div className={cn("h-full rounded-full transition-[width]", bar)} style={{ width: `${pct ?? 0}%` }} />
+        <div className="h-full rounded-full transition-[width]" style={{ width: `${pct ?? 0}%`, background: barColor }} />
       </div>
-      <p className="mt-1.5 text-[11.5px] text-text-faint">{note}</p>
+      <p className="mt-1.5 text-[12px] text-text-muted">{note}</p>
+    </div>
+  );
+}
+
+/** Switch simetris 44×24: knob 20px dengan jarak 2px di keempat sisi, bergeser lewat transform. */
+export function Toggle({ checked, onChange, label, disabled }: { checked: boolean; onChange: (v: boolean) => void; label: string; disabled?: boolean }) {
+  return (
+    <button type="button" role="switch" aria-checked={checked} aria-label={label} disabled={disabled} onClick={() => onChange(!checked)} className="switch">
+      <span className="switch-knob" />
+    </button>
+  );
+}
+
+/** Checkbox kustom 20×20 dengan centang yang "memantul" saat dicentang. */
+export function Checkbox({ checked, onChange, label, children }: { checked: boolean; onChange: (v: boolean) => void; label?: string; children?: React.ReactNode }) {
+  return (
+    <label className="inline-flex cursor-pointer select-none items-center gap-2.5 text-[12.5px] text-text-muted">
+      <button type="button" role="checkbox" aria-checked={checked} aria-label={label} onClick={() => onChange(!checked)} className="check-box">
+        <Check size={13} />
+      </button>
+      {children}
+    </label>
+  );
+}
+
+/** Select kustom (Radix) — pengganti <select> bawaan browser supaya sama dengan dropdown di dashboard. */
+export function SelectField({
+  value,
+  onValueChange,
+  options,
+  label,
+  className,
+}: {
+  value: string;
+  onValueChange: (v: string) => void;
+  options: { value: string; label: string }[];
+  label: string;
+  className?: string;
+}) {
+  return (
+    <Select value={value} onValueChange={onValueChange}>
+      <SelectTrigger aria-label={label} className={cn("h-10 w-auto min-w-[150px] gap-3 rounded-[14px]", className)}>
+        <SelectValue />
+      </SelectTrigger>
+      <SelectContent>
+        {options.map((o) => (
+          <SelectItem key={o.value} value={o.value}>
+            {o.label}
+          </SelectItem>
+        ))}
+      </SelectContent>
+    </Select>
+  );
+}
+
+/** Pagination sisi klien: reset ke halaman 1 saat `resetKey` (filter/pencarian) berubah. */
+export function usePager<T>(rows: T[], size = 25, resetKey = "") {
+  const [page, setPage] = React.useState(0);
+  React.useEffect(() => setPage(0), [resetKey]);
+  const pages = Math.max(1, Math.ceil(rows.length / size));
+  const cur = Math.min(page, pages - 1);
+  return { page: cur, pages, size, total: rows.length, setPage, slice: rows.slice(cur * size, (cur + 1) * size) };
+}
+export type PagerState = { page: number; pages: number; size: number; total: number; setPage: (n: number) => void };
+
+export function Pager({ pager }: { pager: PagerState }) {
+  if (pager.pages <= 1) return null;
+  const from = pager.page * pager.size + 1;
+  const to = Math.min(pager.total, (pager.page + 1) * pager.size);
+  return (
+    <div className="flex items-center justify-between gap-3 border-t border-[var(--surface-line)] px-6 py-3 text-[12.5px] text-text-muted">
+      <span className="tabular-nums">
+        {from}–{to} dari {pager.total}
+      </span>
+      <div className="flex gap-2">
+        <Btn aria-label="Halaman sebelumnya" disabled={pager.page === 0} onClick={() => pager.setPage(pager.page - 1)}>
+          <ArrowLeft size={13} /> Sebelumnya
+        </Btn>
+        <Btn aria-label="Halaman berikutnya" disabled={pager.page >= pager.pages - 1} onClick={() => pager.setPage(pager.page + 1)}>
+          Berikutnya <ArrowRight size={13} />
+        </Btn>
+      </div>
     </div>
   );
 }
@@ -176,7 +148,7 @@ export function Avatar({ src, name }: { src: string | null; name: string }) {
   const [bad, setBad] = React.useState(false);
   if (src && !bad) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={src} alt="" referrerPolicy="no-referrer" onError={() => setBad(true)} className="h-8 w-8 rounded-full object-cover" />;
+    return <img src={src} alt="" referrerPolicy="no-referrer" onError={() => setBad(true)} className="h-9 w-9 rounded-xl object-cover" />;
   }
-  return <span className="grid h-8 w-8 place-items-center rounded-full bg-violet-500/20 text-[12px] font-semibold text-violet-400">{(name || "?").slice(0, 1).toUpperCase()}</span>;
+  return <span className="grid h-9 w-9 place-items-center rounded-xl bg-tone-lilac text-[12px] font-semibold text-lav-text">{(name || "?").slice(0, 1).toUpperCase()}</span>;
 }

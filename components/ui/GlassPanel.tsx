@@ -6,6 +6,10 @@ interface GlassPanelProps extends React.HTMLAttributes<HTMLDivElement> {
   as?: "div" | "section" | "article";
 }
 
+/**
+ * @deprecated Untuk kartu biasa pakai <Surface> (components/ui/Surface.tsx). `flat` hanya dipakai untuk gaya toast.
+ * `.glass` di CSS hanyalah alias lama dari `.surface-solid`.
+ */
 export function GlassPanel({ className, flat, as = "div", children, ...props }: GlassPanelProps) {
   const Comp = as as any;
   return (

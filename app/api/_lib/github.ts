@@ -59,6 +59,52 @@ export async function getGithubUser(pat: string): Promise<{ login: string; name:
 }
 
 /**
+ * Permanently deletes a GitHub repository. Sengaja TIDAK memakai GITHUB_TOKEN
+ * milik server sebagai fallback — hapus repo hanya boleh dengan PAT milik
+ * pengguna sendiri (scope `delete_repo`), supaya akun server tidak pernah
+ * dipakai untuk menghapus repo orang lain.
+ */
+export async function deleteGithubRepo(fullName: string, pat: string): Promise<void> {
+  const match = /^([A-Za-z0-9_.-]+)\/([A-Za-z0-9_.-]+)$/.exec(fullName.trim());
+  if (!match) {
+    throw new GithubApiError("Format repo harus nama-akun/nama-repo.", "invalid_url");
+  }
+  const [, owner, repo] = match;
+  const token = pat.trim();
+  if (!token) {
+    throw new GithubApiError("GitHub PAT wajib diisi untuk menghapus repo.", "github_auth_required");
+  }
+
+  const res = await fetch(
+    `https://api.github.com/repos/${encodeURIComponent(owner)}/${encodeURIComponent(repo)}`,
+    {
+      method: "DELETE",
+      headers: { Accept: "application/vnd.github+json", Authorization: `Bearer ${token}` },
+      cache: "no-store",
+    }
+  );
+
+  if (res.status === 204) return;
+  if (res.status === 404) {
+    // GitHub membalas 404 juga untuk repo privat yang tidak bisa diakses token ini.
+    throw new GithubApiError(
+      `Repo ${owner}/${repo} tidak ditemukan, atau token tidak memiliki akses ke repo itu.`,
+      "repo_not_found"
+    );
+  }
+  if (res.status === 401) {
+    throw new GithubApiError("GitHub token tidak valid.", "github_auth_required");
+  }
+  if (res.status === 403) {
+    throw new GithubApiError(
+      "GitHub menolak penghapusan. Pastikan PAT memiliki izin delete_repo (classic) atau Administration: write (fine-grained), dan kamu pemilik/admin repo.",
+      "github_auth_required"
+    );
+  }
+  throw new GithubApiError(`GitHub API error (${res.status})`, "bad_request");
+}
+
+/**
  * Railway's builder (railpack) runs a mandatory security scan on the
  * lockfile before it will even attempt `npm run build` — a HIGH-severity
  * CVE in a dependency hard-fails the deploy with no way to opt out on
@@ -74,7 +120,7 @@ function checkKnownVulnerableNext(depsVersion: string | undefined): string | nul
   if (!m) return null;
   const [major, minor, patch] = [Number(m[1]), Number(m[2]), Number(m[3])];
   if (major === 14 && minor === 2 && patch < 35) {
-    return `next@${depsVersion} punya CVE HIGH (CVE-2025-55184, CVE-2025-67779) yang bakal diblokir Railway saat build. Update ke next@^14.2.35 di package.json sebelum deploy ke Railway.`;
+    return `next@${depsVersion} memiliki CVE HIGH (CVE-2025-55184, CVE-2025-67779) yang akan diblokir Railway saat build. Update ke next@^14.2.35 di package.json sebelum deploy ke Railway.`;
   }
   return null;
 }
@@ -202,7 +248,7 @@ function describeGithubFailure(res: Response, hadToken: boolean): GithubApiError
   }
   if (res.status === 401 || res.status === 403) {
     return new GithubApiError(
-      "GitHub menolak akses ke repo ini. Kalau repo-nya private, isi GitHub Token (izin: repo). Kalau sudah diisi, cek apakah token masih berlaku.",
+      "GitHub menolak akses ke repo ini. Kalau repo-nya private, isi GitHub Token (izin: repo). Kalau sudah diisi, periksa apakah token masih berlaku.",
       "github_auth_required"
     );
   }
@@ -260,8 +306,8 @@ export async function validateGithubRepo(
   if (repoRes.status === 404) {
     throw new GithubApiError(
       githubPat || process.env.GITHUB_TOKEN
-        ? "Repository tidak ditemukan. Cek penulisan URL-nya, atau pastikan GitHub Token punya akses ke repo ini."
-        : "Repository tidak ditemukan. Cek penulisan URL-nya. Kalau repo ini private, isi GitHub Token di form.",
+        ? "Repository tidak ditemukan. Periksa penulisan URL-nya, atau pastikan GitHub Token memiliki akses ke repo ini."
+        : "Repository tidak ditemukan. Periksa penulisan URL-nya. Kalau repo ini private, isi GitHub Token di form.",
       "repo_not_found"
     );
   }
@@ -303,7 +349,7 @@ export async function validateGithubRepo(
       pkg = JSON.parse(raw) as Record<string, unknown>;
     } catch {
       pkgBroken = true;
-      warnings.push("package.json ditemukan tapi isinya tidak valid (format JSON rusak). Perbaiki dulu sebelum deploy.");
+      warnings.push("package.json ditemukan tetapi isinya tidak valid (format JSON rusak). Perbaiki dulu sebelum deploy.");
     }
   }
 
@@ -342,7 +388,7 @@ export async function validateGithubRepo(
       );
     }
     if (!project.framework) {
-      warnings.push("Framework web tidak terdeteksi otomatis — pastikan project ini bisa di-build.");
+      warnings.push("Framework web tidak terdeteksi otomatis — pastikan project ini bisa dibangun.");
     }
     const nextVersion = (pkg.dependencies as Record<string, string> | undefined)?.next;
     const vulnWarning = checkKnownVulnerableNext(nextVersion);

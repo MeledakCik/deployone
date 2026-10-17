@@ -1,10 +1,11 @@
 "use client";
 
 import * as React from "react";
-import { Mail, Send, ShieldCheck, Sparkles } from "lucide-react";
+import { Mail, Send } from "lucide-react";
+import { ShieldCheck, Sparkles } from "@/components/ui/icons";
 import { adminFetch, useAdminData } from "./api";
 import { TEMPLATES, renderRich, type MailFeature, type TemplateId } from "@/lib/email-template";
-import { Badge, Btn, Card, Empty, ErrorBox, KpiCard, Loading, PageHead, fmtDateTime } from "./ui";
+import { Badge, Btn, Card, Empty, ErrorBox, KpiCard, Loading, PageHead, SelectField, fmtDateTime } from "./ui";
 
 interface Campaign {
   id: string;
@@ -147,22 +148,22 @@ export function PromoTab({ toast }: { toast: (m: string) => void }) {
     }
   }
 
-  if (error) return <ErrorBox message={error} onRetry={reload} />;
-  if (!data) return <Loading />;
+  if (error) return <Card><ErrorBox message={error} onRetry={reload} /></Card>;
+  if (!data) return <Card><Loading /></Card>;
 
   const canSubmit = subject.trim().length > 0 && body.trim().length >= 10;
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
       <PageHead title="Promosi" desc="Kirim email promosi / pengumuman ke pengguna lewat Resend." />
 
       {!data.configured && (
-        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-[13px] text-amber-500">
+        <div className="notice notice-warn" role="alert">
           RESEND_API_KEY belum diisi di environment server (Vercel → Settings → Environment Variables), lalu redeploy. Sampai itu, tombol kirim tidak akan jalan.
         </div>
       )}
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <KpiCard label="Akan menerima" value={data.audience.eligible} sub="akun aktif & berlangganan" />
         <KpiCard label="Total akun" value={data.audience.total} />
         <KpiCard label="Berhenti langganan" value={data.audience.unsubscribed} />
@@ -170,7 +171,7 @@ export function PromoTab({ toast }: { toast: (m: string) => void }) {
       </div>
 
       <Card title="Buat dengan AI">
-        <div className="space-y-3 p-5">
+        <div className="space-y-3 p-6">
           <p className="text-[12.5px] text-text-muted">Ketik topiknya saja, AI menyusun subjek, pratinjau, isi, dan teks tombol. Hasilnya mengisi form di bawah dan tetap bisa kamu edit.</p>
           <textarea
             value={topic}
@@ -181,22 +182,27 @@ export function PromoTab({ toast }: { toast: (m: string) => void }) {
             className="input-solid w-full resize-none px-4 py-2.5 text-[13px]"
           />
           <div className="flex flex-wrap items-center gap-2">
-            <select value={tone} onChange={(e) => setTone(e.target.value as typeof tone)} aria-label="Gaya bahasa" className="input-solid px-3 py-2 text-[13px]">
-              <option value="santai">Gaya santai</option>
-              <option value="profesional">Gaya profesional</option>
-              <option value="singkat">Singkat saja</option>
-            </select>
+            <SelectField
+              value={tone}
+              onValueChange={(v) => setTone(v as typeof tone)}
+              label="Gaya bahasa"
+              options={[
+                { value: "santai", label: "Gaya santai" },
+                { value: "profesional", label: "Gaya profesional" },
+                { value: "singkat", label: "Singkat saja" },
+              ]}
+            />
             <Btn variant="primary" busy={generating} disabled={topic.trim().length < 5} onClick={() => void generate()}>
               <Sparkles size={13} /> Buat template
             </Btn>
-            <span className="text-[11.5px] text-text-faint">Mengganti isi form di bawah. Fakta seperti harga/tanggal tetap periksa sendiri.</span>
+            <span className="text-[12px] text-text-muted">Mengganti isi form di bawah. Fakta seperti harga/tanggal tetap periksa sendiri.</span>
           </div>
         </div>
       </Card>
 
       <Card title="Tulis email">
-        <div className="space-y-3 p-5">
-          <p className="flex items-center gap-1.5 text-[12px] text-text-faint">
+        <div className="space-y-3 p-6">
+          <p className="flex items-center gap-1.5 text-[12px] text-text-muted">
             <Mail size={13} /> Pengirim: <span className="mono text-text-muted">{data.from}</span>
           </p>
           <div>
@@ -211,8 +217,8 @@ export function PromoTab({ toast }: { toast: (m: string) => void }) {
                   onClick={() => setTemplate(t.id)}
                   title={t.desc}
                   className={
-                    "rounded-xl border p-2.5 text-left transition " +
-                    (template === t.id ? "border-violet-500 bg-violet-500/10" : "border-[var(--line-strong)] hover:bg-[var(--card-hover)]")
+                    "rounded-xl bg-[var(--surface-solid-2)] p-2.5 text-left transition " +
+                    (template === t.id ? "ring-2 ring-[var(--ring)]" : "hover:brightness-95")
                   }
                 >
                   <span className="block h-7 w-full rounded-md border border-black/10" style={{ background: `linear-gradient(135deg, ${t.swatch[0]} 0%, ${t.swatch[0]} 50%, ${t.swatch[1]} 50%, ${t.swatch[1]} 100%)` }} />
@@ -248,7 +254,7 @@ export function PromoTab({ toast }: { toast: (m: string) => void }) {
             <input value={ctaLabel} onChange={(e) => setCtaLabel(e.target.value.slice(0, 60))} placeholder="Teks tombol (opsional), mis. Coba sekarang" aria-label="Teks tombol" className="input-solid px-4 py-2.5 text-[13px]" />
             <input value={ctaUrl} onChange={(e) => setCtaUrl(e.target.value)} placeholder="https://depup.web.id/dashboard" aria-label="URL tombol" className="input-solid px-4 py-2.5 text-[13px]" />
           </div>
-          <p className="flex items-start gap-1.5 text-[11.5px] text-text-faint">
+          <p className="flex items-start gap-1.5 text-[12px] text-text-muted">
             <ShieldCheck size={13} className="mt-0.5 shrink-0" />
             Link berhenti berlangganan & header one-click otomatis ditambahkan (membantu email masuk Inbox/tab Promosi, bukan Spam). Hindari kata “GRATIS!!!”, banyak tanda seru, dan link pemendek URL.
           </p>
@@ -264,7 +270,7 @@ export function PromoTab({ toast }: { toast: (m: string) => void }) {
               </Btn>
             ) : (
               <span className="ml-auto flex items-center gap-2">
-                <span className="text-[12.5px] text-amber-500">Yakin kirim ke {Math.min(data.audience.eligible, data.maxRecipients)} akun? Tidak bisa dibatalkan.</span>
+                <span className="text-[12.5px] text-warn-fg">Yakin kirim ke {Math.min(data.audience.eligible, data.maxRecipients)} akun? Tidak bisa dibatalkan.</span>
                 <Btn onClick={() => setConfirming(false)} disabled={busy === "send"}>
                   Batal
                 </Btn>
@@ -274,14 +280,14 @@ export function PromoTab({ toast }: { toast: (m: string) => void }) {
               </span>
             )}
           </div>
-          <p className="text-[11.5px] text-text-faint">Kirim tes dulu ke emailmu sendiri dan cek tampilannya. Cek juga batas kirim plan Resend-mu (plan gratis ±100 email/hari).</p>
+          <p className="text-[12px] text-text-muted">Kirim tes dulu ke emailmu sendiri dan cek tampilannya. Cek juga batas kirim plan Resend-mu (plan gratis ±100 email/hari).</p>
         </div>
       </Card>
 
       <Card title="Pratinjau email">
         <div className="p-4">
           <iframe title="Pratinjau email" sandbox="" srcDoc={previewHtml} className="h-[640px] w-full rounded-xl border border-[var(--surface-line)] bg-white" />
-          <p className="mt-2 text-[11.5px] text-text-faint">Tampilan asli bisa sedikit beda di tiap aplikasi email (Gmail, Outlook, dll). Selalu kirim tes sebelum kirim massal.</p>
+          <p className="mt-2 text-[12px] text-text-muted">Tampilan asli bisa sedikit beda di tiap aplikasi email (Gmail, Outlook, dll). Selalu kirim tes sebelum kirim massal.</p>
         </div>
       </Card>
 
@@ -293,11 +299,11 @@ export function PromoTab({ toast }: { toast: (m: string) => void }) {
         ) : (
           <ul>
             {data.campaigns.map((c) => (
-              <li key={c.id} className="border-b border-[var(--surface-line)] px-5 py-3.5 last:border-0">
+              <li key={c.id} className="border-b border-[var(--surface-line)] px-6 py-4 last:border-0">
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="mono text-[12px] text-text-faint">{c.id}</span>
+                  <span className="mono text-[12px] text-text-muted">{c.id}</span>
                   <Badge tone={STATUS[c.status].tone}>{STATUS[c.status].label}</Badge>
-                  <span className="ml-auto text-[12px] text-text-faint">{fmtDateTime(c.createdAt)}</span>
+                  <span className="ml-auto text-[12px] text-text-muted">{fmtDateTime(c.createdAt)}</span>
                 </div>
                 <p className="mt-1 text-[13.5px]">{c.subject}</p>
                 <p className="text-[12px] text-text-muted">

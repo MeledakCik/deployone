@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Check, CircleAlert, ExternalLink, Loader2, RotateCw } from "lucide-react";
+import { Check, CircleAlert, ExternalLink, Loader2, RotateCw } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 import { useDeploy } from "@/lib/deploy-context";
 import { PLATFORM_NAME, manualDeployGuide } from "@/lib/deploy-guides";
@@ -20,7 +20,7 @@ export function RepoCheckCard({ platform }: { platform: Platform }) {
   if (status === "idle") {
     if (url && url.toLowerCase().includes("github.com")) {
       return (
-        <div className="mt-2 text-[10.5px] sm:text-[11px] text-[var(--dc-text-faint)] flex items-start gap-1.5">
+        <div className="mt-2 text-[12px] sm:text-[12px] text-[var(--dc-text-faint)] flex items-start gap-1.5">
           <CircleAlert className="w-3 h-3 shrink-0 mt-0.5" />
           <span>
             Link belum lengkap. Formatnya{" "}
@@ -34,20 +34,20 @@ export function RepoCheckCard({ platform }: { platform: Platform }) {
 
   if (status === "checking") {
     return (
-      <div className="mt-2 text-[10.5px] sm:text-[11px] text-[var(--dc-text-faint)] flex items-center gap-1.5">
+      <div className="mt-2 text-[12px] sm:text-[12px] text-[var(--dc-text-faint)] flex items-center gap-1.5">
         <Loader2 className="w-3 h-3 shrink-0 animate-spin" />
-        Mengecek repo: jenis project, framework, dan env var…
+        Memeriksa repo: jenis project, framework, dan env var…
       </div>
     );
   }
 
   if (status === "error") {
     return (
-      <div className="mt-3 rounded-xl border border-red-500/25 bg-red-500/[0.06] p-3 text-[11.5px] sm:text-[12px]">
-        <div className="flex items-start gap-2 text-red-600 dark:text-red-300">
+      <div className="mt-3 rounded-xl bg-[var(--bad-bg)] p-3 text-[12px] sm:text-[12px]">
+        <div className="flex items-start gap-2 text-bad-fg">
           <CircleAlert className="w-3.5 h-3.5 shrink-0 mt-0.5" />
           <div>
-            <div className="font-semibold">{errorGuide?.title ?? "Repo belum bisa dicek"}</div>
+            <div className="font-semibold">{errorGuide?.title ?? "Repo belum bisa diperiksa"}</div>
             <div className="mt-0.5 opacity-90">{errorGuide?.message}</div>
           </div>
         </div>
@@ -62,9 +62,9 @@ export function RepoCheckCard({ platform }: { platform: Platform }) {
           <button
             type="button"
             onClick={recheckRepo}
-            className="h-7 px-3 rounded-full border border-[var(--dc-line)] text-[11px] font-medium inline-flex items-center gap-1.5 hover:bg-black/5 dark:hover:bg-white/10"
+            className="h-7 px-3 rounded-full bg-[var(--dc-pill)] text-[12px] font-medium inline-flex items-center gap-1.5 hover:bg-[var(--dc-hover)]"
           >
-            <RotateCw className="w-3 h-3" /> Cek ulang
+            <RotateCw className="w-3 h-3" /> Periksa ulang
           </button>
           {errorGuide?.links?.map((l) => (
             <a
@@ -72,7 +72,7 @@ export function RepoCheckCard({ platform }: { platform: Platform }) {
               href={l.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="h-7 px-3 rounded-full border border-[var(--dc-line)] text-[11px] font-medium inline-flex items-center gap-1.5 hover:bg-black/5 dark:hover:bg-white/10"
+              className="h-7 px-3 rounded-full bg-[var(--dc-pill)] text-[12px] font-medium inline-flex items-center gap-1.5 hover:bg-[var(--dc-hover)]"
             >
               <ExternalLink className="w-3 h-3" /> {l.label}
             </a>
@@ -91,13 +91,13 @@ export function RepoCheckCard({ platform }: { platform: Platform }) {
 
   const tone =
     level === "blocked"
-      ? "border-red-500/25 bg-red-500/[0.06] text-red-600 dark:text-red-300"
+      ? "bg-[var(--bad-bg)] text-bad-fg"
       : level === "warn"
-        ? "border-amber-500/25 bg-amber-500/[0.06] text-amber-700 dark:text-amber-300"
-        : "border-emerald-500/25 bg-emerald-500/[0.06] text-emerald-700 dark:text-emerald-300";
+        ? "bg-[var(--warn-bg)] text-warn-fg"
+        : "bg-[var(--ok-bg)] text-ok-fg";
 
   return (
-    <div className={cn("mt-3 rounded-xl border p-3 text-[11.5px] sm:text-[12px]", tone)}>
+    <div className={cn("mt-3 rounded-xl p-3 text-[12px] sm:text-[12px]", tone)}>
       <div className="flex items-start gap-2">
         {level === "ok" ? (
           <Check className="w-3.5 h-3.5 shrink-0 mt-0.5" strokeWidth={3} />
@@ -137,7 +137,7 @@ export function RepoCheckCard({ platform }: { platform: Platform }) {
               <button
                 type="button"
                 onClick={() => setFormField("platform", guide.suggestPlatform as Platform)}
-                className="h-7 px-3 rounded-full bg-[var(--dc-text)] text-[var(--dc-surface)] text-[11px] font-semibold"
+                className="h-7 px-3 rounded-full bg-[var(--dc-text)] text-[var(--dc-surface)] text-[12px] font-semibold"
               >
                 Pakai {PLATFORM_NAME[guide.suggestPlatform]}
               </button>
@@ -145,9 +145,9 @@ export function RepoCheckCard({ platform }: { platform: Platform }) {
             <button
               type="button"
               onClick={recheckRepo}
-              className="h-7 px-3 rounded-full border border-[var(--dc-line)] text-[11px] font-medium inline-flex items-center gap-1.5 hover:bg-black/5 dark:hover:bg-white/10"
+              className="h-7 px-3 rounded-full bg-[var(--dc-pill)] text-[12px] font-medium inline-flex items-center gap-1.5 hover:bg-[var(--dc-hover)]"
             >
-              <RotateCw className="w-3 h-3" /> Cek ulang
+              <RotateCw className="w-3 h-3" /> Periksa ulang
             </button>
           </div>
 

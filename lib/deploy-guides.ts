@@ -98,7 +98,7 @@ export function manualDeployGuide(
 
   return {
     title: `Deploy manual ke ${name}`,
-    message: `Kalau deploy otomatis belum bisa, kamu tetap bisa deploy lewat dashboard ${name} — biasanya cuma 2–3 menit.`,
+    message: `Kalau deploy otomatis belum bisa, kamu tetap bisa deploy lewat dashboard ${name} — biasanya hanya 2–3 menit.`,
     steps,
     links: [PLATFORM_LINKS[platform]],
   };
@@ -167,11 +167,11 @@ export function evaluateCompat(
       profile,
       repoFullName,
       "Repo ini masih kosong",
-      "Belum ada file sama sekali di repo ini, jadi tidak ada yang bisa di-deploy.",
+      "Belum ada file sama sekali di repo ini, jadi tidak ada yang bisa dideploy.",
       [
         "Push minimal satu file (mis. index.html atau package.json) ke branch utama repo.",
-        'Pastikan branch default repo adalah branch yang berisi kodenya (cek di GitHub → Settings → Branches).',
-        "Setelah itu, cek ulang di sini.",
+        'Pastikan branch default repo adalah branch yang berisi kodenya (periksa di GitHub → Settings → Branches).',
+        "Setelah itu, periksa ulang di sini.",
       ],
     );
   }
@@ -183,10 +183,10 @@ export function evaluateCompat(
         profile,
         repoFullName,
         "Project ada di dalam subfolder",
-        `Di root repo tidak ada file project, tapi folder "${nested}" sepertinya berisi project-nya. Deploy otomatis hanya membaca root repo.`,
+        `Di root repo tidak ada file project, tetapi folder "${nested}" sepertinya berisi project-nya. Deploy otomatis hanya membaca root repo.`,
         [
-          `Cara termudah: deploy manual dan set "Root Directory" ke "${nested}" (lihat panduan di bawah).`,
-          "Atau pindahkan isi folder itu ke root repo, lalu cek ulang di sini.",
+          `Cara termudah: deploy manual dan atur "Root Directory" ke "${nested}" (lihat panduan di bawah).`,
+          "Atau pindahkan isi folder itu ke root repo, lalu periksa ulang di sini.",
         ],
       );
     }
@@ -211,11 +211,11 @@ export function evaluateCompat(
       notes.push(`index.html ada di folder "${profile.staticDir}", bukan di root — output directory akan diarahkan ke sana.`);
     }
     if (profile.staticDir === null) {
-      notes.push("Tidak ada index.html — halaman utama mungkin tidak muncul. Ganti nama file utama jadi index.html.");
+      notes.push("Tidak ada index.html — halaman utama mungkin tidak muncul. Ganti nama file utama menjadi index.html.");
     }
     return {
       level: notes.length ? "warn" : "ok",
-      summary: `Situs HTML statis — tidak perlu package.json, siap di-deploy ke ${name}.`,
+      summary: `Situs HTML statis — tidak perlu package.json, siap dideploy ke ${name}.`,
       notes,
     };
   }
@@ -232,12 +232,12 @@ export function evaluateCompat(
         [
           "Buka package.json di GitHub dan cari tanda baca yang salah (koma berlebih/kurang, kutip tidak tertutup).",
           "Tempel isinya ke jsonlint.com untuk melihat baris yang bermasalah.",
-          "Setelah diperbaiki dan di-push, klik “Cek ulang”.",
+          "Setelah diperbaiki dan dipush, klik “Periksa ulang”.",
         ],
       );
     }
     const notes: string[] = [];
-    if (nested) notes.push(`Ada juga project di folder "${nested}" — pastikan root repo memang project yang mau di-deploy.`);
+    if (nested) notes.push(`Ada juga project di folder "${nested}" — pastikan root repo memang project yang mau dideploy.`);
 
     if (platform === "cloudflare" && profile.framework && /^(Express|Fastify|NestJS|Koa)$/i.test(profile.framework)) {
       return blocked(
@@ -272,7 +272,7 @@ export function evaluateCompat(
     }
     return {
       level: notes.length ? "warn" : "ok",
-      summary: `${profile.label} — siap di-deploy ke ${name}.`,
+      summary: `${profile.label} — siap dideploy ke ${name}.`,
       notes,
     };
   }
@@ -294,7 +294,7 @@ export function evaluateCompat(
     `Repo ini berisi ${what(profile)}. ${name} hanya cocok untuk situs web (HTML statis atau framework JavaScript), jadi deploy otomatis ke sana tidak akan berhasil.`,
     [
       "Ganti platform tujuan ke Railway — Railway bisa membangun Dockerfile, Python, Go, PHP, Ruby, Java, dan lainnya.",
-      `Atau kalau tetap ingin pakai ${name}, ubah project-nya jadi situs statis / framework JavaScript lebih dulu.`,
+      `Atau kalau tetap ingin pakai ${name}, ubah project-nya menjadi situs statis / framework JavaScript lebih dulu.`,
     ],
     "railway",
   );

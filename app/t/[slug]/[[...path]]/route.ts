@@ -137,7 +137,7 @@ async function handle(req: Request, ctx: Ctx): Promise<Response> {
     const site = await loadSiteCached(slug);
     if (site) {
       const siteTarget = safeTarget(req.headers.get("x-depup-target") ?? "/" + (ctx.params.path ?? []).join("/") + new URL(req.url).search);
-      if (!siteTarget) return page(400, "Request tidak valid", `<h1>Request tidak valid</h1><p>Path mengandung karakter yang tidak diperbolehkan.</p>`);
+      if (!siteTarget) return page(400, "Permintaan tidak valid", `<h1>Permintaan tidak valid</h1><p>Alamat mengandung karakter yang tidak diperbolehkan.</p>`);
       return serveSite(req, site, siteTarget);
     }
   }
@@ -148,7 +148,7 @@ async function handle(req: Request, ctx: Ctx): Promise<Response> {
   // Path + query asli dari pengunjung — diisi middleware (tidak bisa dipalsukan klien).
   const fallback = "/" + (ctx.params.path ?? []).join("/") + new URL(req.url).search;
   const target = safeTarget(req.headers.get("x-depup-target") ?? fallback);
-  if (!target) return page(400, "Request tidak valid", `<h1>Request tidak valid</h1><p>Path mengandung karakter yang tidak diperbolehkan.</p>`);
+  if (!target) return page(400, "Permintaan tidak valid", `<h1>Permintaan tidak valid</h1><p>Alamat mengandung karakter yang tidak diperbolehkan.</p>`);
 
   const url = new URL(target, "http://x");
 
@@ -198,7 +198,7 @@ async function handle(req: Request, ctx: Ctx): Promise<Response> {
 
   const rl = await rateLimit("tunnel-hit", slug, 600, 60);
   if (!rl.allowed) {
-    return page(429, "Terlalu ramai", `<h1>Terlalu banyak request</h1><p>Link ini sedang menerima terlalu banyak kunjungan. Coba lagi sebentar.</p>`);
+    return page(429, "Terlalu ramai", `<h1>Terlalu banyak permintaan</h1><p>Link ini sedang menerima terlalu banyak kunjungan. Coba lagi sebentar lagi.</p>`);
   }
 
   // Body request (inline di KV, jadi ada batasnya).
@@ -206,7 +206,7 @@ async function handle(req: Request, ctx: Ctx): Promise<Response> {
   if (method !== "GET" && method !== "HEAD") {
     const buf = Buffer.from(await req.arrayBuffer());
     if (buf.length > MAX_REQ_BODY_BYTES) {
-      return page(413, "Upload terlalu besar", `<h1>Upload terlalu besar</h1><p>Link Gaib membatasi body request sampai ${Math.floor(MAX_REQ_BODY_BYTES / 1024)} KB.</p>`);
+      return page(413, "Unggahan terlalu besar", `<h1>Unggahan terlalu besar</h1><p>Link Gaib membatasi ukuran data yang dikirim sampai ${Math.floor(MAX_REQ_BODY_BYTES / 1024)} KB.</p>`);
     }
     if (buf.length > 0) bodyB64 = buf.toString("base64");
   }
@@ -249,7 +249,7 @@ async function handle(req: Request, ctx: Ctx): Promise<Response> {
     return page(
       504,
       "Tidak ada respons",
-      `<h1>Localhost tidak merespons</h1><p>Komputer pemilik link online, tapi server di <code>localhost:${meta.port}</code> tidak menjawab dalam ${HEAD_WAIT_MS / 1000} detik.</p>`
+      `<h1>Localhost tidak merespons</h1><p>Komputer pemilik link online, tetapi server di <code>localhost:${meta.port}</code> tidak menjawab dalam ${HEAD_WAIT_MS / 1000} detik.</p>`
     );
   }
 

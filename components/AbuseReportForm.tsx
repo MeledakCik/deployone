@@ -33,9 +33,9 @@ export function AbuseReportForm({ initialTarget }: { initialTarget: string }) {
 
   if (state.kind === "done") {
     return (
-      <div className="w-full max-w-md rounded-2xl border border-[var(--line)] p-6 text-center">
-        <h2 className="text-lg font-semibold text-[var(--text)]">Terima kasih</h2>
-        <p className="mt-2 text-[13.5px] text-[var(--text-muted)]">
+      <div className="surface-solid w-full max-w-md p-7 text-center">
+        <h2 className="text-[20px] font-bold tracking-[-0.025em]">Terima kasih</h2>
+        <p className="mt-2 text-[13.5px] text-text-muted">
           Laporanmu sudah diteruskan ke admin Depup dan akan ditinjau.
         </p>
       </div>
@@ -43,11 +43,11 @@ export function AbuseReportForm({ initialTarget }: { initialTarget: string }) {
   }
 
   return (
-    <form onSubmit={submit} className="flex w-full max-w-md flex-col gap-3 text-left">
-      <label className="flex flex-col gap-1 text-[13px] text-[var(--text-muted)]">
+    <form onSubmit={submit} className="surface-solid flex w-full max-w-md flex-col gap-4 p-6 text-left sm:p-7">
+      <label className="flex flex-col gap-1 text-[13px] text-text-muted">
         Alamat link yang dilaporkan
         <input
-          className="input-solid rounded-lg px-3 py-2 text-[14px] text-[var(--text)]"
+          className="input-solid px-3.5 py-2.5 text-[14px]"
           value={target}
           onChange={(e) => setTarget(e.target.value)}
           placeholder="https://nama-link.domain/"
@@ -55,34 +55,34 @@ export function AbuseReportForm({ initialTarget }: { initialTarget: string }) {
           required
         />
       </label>
-      <label className="flex flex-col gap-1 text-[13px] text-[var(--text-muted)]">
+      <label className="flex flex-col gap-1 text-[13px] text-text-muted">
         Kenapa dilaporkan? (phishing, penipuan, malware, dll.)
         <textarea
-          className="input-solid min-h-[96px] rounded-lg px-3 py-2 text-[14px] text-[var(--text)]"
+          className="input-solid min-h-[96px] px-3.5 py-2.5 text-[14px]"
           value={reason}
           onChange={(e) => setReason(e.target.value)}
           maxLength={500}
           required
         />
       </label>
-      <label className="flex flex-col gap-1 text-[13px] text-[var(--text-muted)]">
+      <label className="flex flex-col gap-1 text-[13px] text-text-muted">
         Kontak kamu (opsional, kalau perlu ditanya lagi)
         <input
-          className="input-solid rounded-lg px-3 py-2 text-[14px] text-[var(--text)]"
+          className="input-solid px-3.5 py-2.5 text-[14px]"
           value={contact}
           onChange={(e) => setContact(e.target.value)}
           maxLength={100}
         />
       </label>
       {state.kind === "error" && (
-        <p role="alert" className="text-[13px] text-red-500">
+        <p role="alert" className="text-[13px] text-bad-fg">
           {state.message}
         </p>
       )}
       <button
         type="submit"
         disabled={state.kind === "busy"}
-        className="btn-primary mt-1 rounded-full px-5 py-2.5 text-[13px] disabled:opacity-60"
+        className="btn-primary mt-1 px-5 py-2.5 text-[13px] disabled:opacity-60"
       >
         {state.kind === "busy" ? "Mengirim…" : "Kirim laporan"}
       </button>

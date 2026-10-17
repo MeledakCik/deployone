@@ -1,8 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { AlertTriangle, Check, Hammer, Play, RotateCcw, Rocket, Search, UploadCloud, X } from "lucide-react";
-import { Badge, Btn, Card } from "@/components/admin/ui";
+import { Play } from "lucide-react";
+import { AlertTriangle, Check, Hammer, RotateCcw, Rocket, Search, UploadCloud, X } from "@/components/ui/icons";
+import { Badge, Btn, Card } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils";
 import { KuliProyek, usePageVisible, type KuliStage } from "./KuliProyek";
 
@@ -33,10 +34,10 @@ type StepState = "todo" | "active" | "done" | "bad";
 const STATE_TEXT: Record<StepState, string> = { todo: "belum", active: "sedang berjalan", done: "selesai", bad: "gagal" };
 
 const STATE_CLS: Record<StepState, string> = {
-  todo: "border-[var(--line-strong)] text-[var(--text-faint)]",
-  active: "border-violet-500/50 bg-violet-500/15 text-violet-400 motion-safe:animate-pulse",
-  done: "border-emerald-500/30 bg-emerald-500/10 text-emerald-500",
-  bad: "border-red-500/30 bg-red-500/10 text-red-400",
+  todo: "border-[var(--line-strong)] text-[var(--text-muted)]",
+  active: "border-transparent bg-tone-lilac text-lav-text motion-safe:animate-pulse",
+  done: "border-transparent bg-tone-mint text-ok-fg",
+  bad: "border-transparent bg-tone-pink text-bad-fg",
 };
 
 export function KuliProyekDemo({ className }: { className?: string }) {
@@ -103,7 +104,7 @@ export function KuliProyekDemo({ className }: { className?: string }) {
                 <span className={cn("grid h-9 w-9 place-items-center rounded-full border transition-colors", STATE_CLS[st])}>
                   {st === "done" ? <Check size={16} aria-hidden="true" /> : st === "bad" ? <X size={16} aria-hidden="true" /> : <Icon size={16} aria-hidden="true" />}
                 </span>
-                <span className={cn("text-[11px] font-medium sm:text-[12px]", st === "todo" ? "text-[var(--text-faint)]" : "text-[var(--text)]")}>
+                <span className={cn("text-[12px] font-medium", st === "todo" ? "text-[var(--text-muted)]" : "text-[var(--text)]")}>
                   {label}
                   <span className="sr-only">: {STATE_TEXT[st]}</span>
                 </span>
@@ -124,7 +125,7 @@ export function KuliProyekDemo({ className }: { className?: string }) {
           </Btn>
 
           <div role="group" aria-label="Kecepatan animasi" className="ml-auto flex items-center gap-1.5">
-            <span className="text-[11.5px] text-[var(--text-muted)]" aria-hidden="true">
+            <span className="text-[12px] text-[var(--text-muted)]" aria-hidden="true">
               Kecepatan
             </span>
             {SPEEDS.map((s) => (

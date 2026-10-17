@@ -32,7 +32,7 @@ async function railwayGraphQL<T>(
   });
 
   if (res.status === 401 || res.status === 403) {
-    throw new RailwayApiError("Railway token tidak valid atau tidak punya izin.", "invalid_token");
+    throw new RailwayApiError("Railway token tidak valid atau tidak memiliki izin.", "invalid_token");
   }
 
   // Railway's GraphQL endpoint doesn't always return 200 with an `errors`
@@ -57,7 +57,7 @@ async function railwayGraphQL<T>(
   if (Array.isArray(body?.errors) && body.errors.length > 0) {
     const message: string = body.errors[0]?.message ?? "Railway API error";
     if (/not authorized|unauthorized/i.test(message)) {
-      throw new RailwayApiError("Railway token tidak valid atau tidak punya izin.", "invalid_token");
+      throw new RailwayApiError("Railway token tidak valid atau tidak memiliki izin.", "invalid_token");
     }
     if (/not found/i.test(message)) {
       throw new RailwayApiError(message, "not_found");
@@ -128,7 +128,7 @@ async function getDefaultWorkspaceId(railwayToken: string): Promise<string> {
   const workspace = data.me.workspaces[0];
   if (!workspace) {
     throw new RailwayApiError(
-      "Akun Railway ini belum punya workspace. Buat workspace dulu di railway.com sebelum deploy.",
+      "Akun Railway ini belum memiliki workspace. Buat workspace dulu di railway.com sebelum deploy.",
       "railway_error"
     );
   }
@@ -730,7 +730,7 @@ export async function createRailwayDeployment(
     project.baseEnvironmentId ?? project.environments.edges[0]?.node.id ?? null;
   if (!environmentId) {
     throw new RailwayApiError(
-      `Project "${projectName}" di Railway tidak punya environment default.`,
+      `Project "${projectName}" di Railway tidak memiliki environment default.`,
       "railway_error"
     );
   }
@@ -922,7 +922,7 @@ export async function getRailwayDeployment(
   const errorMessage =
     readyState === "ERROR"
       ? (await fetchRailwayFailureReason(deploymentId, railwayToken)) ??
-        "Build/deploy gagal di Railway. Cek log di dashboard Railway untuk detail."
+        "Build/deploy gagal di Railway. Periksa log di dashboard Railway untuk detail."
       : null;
 
   return {
@@ -965,7 +965,7 @@ export async function redeployRailwayProject(
   );
   if (!latest) {
     throw new RailwayApiError(
-      `Redeploy terkirim tapi deployment baru belum muncul — cek dashboard Railway.`,
+      `Redeploy terkirim tetapi deployment baru belum muncul — periksa dashboard Railway.`,
       "railway_error"
     );
   }

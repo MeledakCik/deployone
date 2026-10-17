@@ -18,7 +18,7 @@ function getSecret(): string {
   const secret = process.env.AUTH_SECRET;
   if (!secret || secret.length < 16) {
     throw new Error(
-      "AUTH_SECRET belum di-set di server (env var, minimal 16 karakter acak). Login Google tidak bisa jalan tanpa ini."
+      "AUTH_SECRET belum diatur di server (env var, minimal 16 karakter acak). Login Google tidak bisa jalan tanpa ini."
     );
   }
   return secret;

@@ -95,7 +95,7 @@ function idFromJson(json: unknown): string | null {
 /** ID internal akun Saweria penerima. Dari env, atau dibaca dari Saweria. */
 async function resolveUserId(): Promise<string> {
   const u = username();
-  if (!u) throw new SaweriaError("not_configured", "SAWERIA_USERNAME belum di-set.");
+  if (!u) throw new SaweriaError("not_configured", "SAWERIA_USERNAME belum diatur.");
 
   const fromEnv = process.env.SAWERIA_USER_ID?.trim();
   if (fromEnv) {

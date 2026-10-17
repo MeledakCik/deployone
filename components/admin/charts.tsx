@@ -2,8 +2,8 @@
 
 import * as React from "react";
 
-/** Palet kategorikal tervalidasi (dark & light): violet, teal, magenta. Urutan tetap, tidak diputar. */
-export const SERIES_COLORS = ["#8b5cf6", "#0891b2", "#db2777"];
+/** Palet kategorikal tervalidasi (dark & light): violet brand #7b50ff, teal, magenta. Urutan tetap, tidak diputar. */
+export const SERIES_COLORS = ["#7b50ff", "#0891b2", "#db2777"];
 
 export interface Series {
   name: string;
@@ -11,8 +11,18 @@ export interface Series {
   color: string;
 }
 
-const H = 180;
-const PAD = { l: 34, r: 8, t: 10, b: 22 };
+/** Animasi intro grafik hanya diputar sekali per sesi (bukan tiap pindah tab / filter). */
+let introPlayed = false;
+function useIntro(): boolean {
+  const play = React.useRef(!introPlayed).current;
+  React.useEffect(() => {
+    introPlayed = true;
+  }, []);
+  return play;
+}
+
+const DEFAULT_H = 180;
+const PAD = { l: 38, r: 8, t: 10, b: 24 };
 
 function niceMax(v: number): number {
   if (v <= 4) return 4;
@@ -30,18 +40,32 @@ function shortDay(iso: string): string {
  * Grafik waktu: `bar` = batang bertumpuk, `line` = garis. Hover/fokus menampilkan crosshair + tooltip
  * semua seri pada hari itu. Legenda selalu ada untuk ≥ 2 seri; tabel ringkas tersedia untuk pembaca layar.
  */
-export function TimeChart({ days, series, kind, label }: { days: string[]; series: Series[]; kind: "bar" | "line"; label: string }) {
+export function TimeChart({ days, series, kind, label, height = DEFAULT_H }: { days: string[]; series: Series[]; kind: "bar" | "line"; label: string; height?: number }) {
+  const H = height;
   const [w, setW] = React.useState(640);
   const [hover, setHover] = React.useState<number | null>(null);
+  const intro = useIntro();
   const wrap = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
     const el = wrap.current;
     if (!el) return;
-    const ro = new ResizeObserver(() => setW(Math.max(280, el.clientWidth)));
+    // Ukur sekali per frame & hanya set state bila lebar berubah (hindari re-render beruntun saat resize di Chrome)
+    let raf = 0;
+    const measure = () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        const next = Math.max(280, el.clientWidth);
+        setW((cur) => (cur === next ? cur : next));
+      });
+    };
+    const ro = new ResizeObserver(measure);
     ro.observe(el);
     setW(Math.max(280, el.clientWidth));
-    return () => ro.disconnect();
+    return () => {
+      cancelAnimationFrame(raf);
+      ro.disconnect();
+    };
   }, []);
 
   const n = days.length;
@@ -83,17 +107,18 @@ export function TimeChart({ days, series, kind, label }: { days: string[]; serie
           onPointerMove={onMove}
           onPointerLeave={() => setHover(null)}
           className="block touch-pan-y"
+          style={{ contain: "layout paint" }}
         >
           {ticks.map((t) => (
             <g key={t}>
               <line x1={PAD.l} x2={w - PAD.r} y1={y(t)} y2={y(t)} stroke="var(--line)" strokeWidth={1} />
-              <text x={PAD.l - 6} y={y(t) + 3.5} textAnchor="end" fontSize={10.5} fill="var(--text-faint)">
+              <text x={PAD.l - 6} y={y(t) + 3.5} textAnchor="end" fontSize={12} fill="var(--text-faint)">
                 {t}
               </text>
             </g>
           ))}
           {[0, Math.floor((n - 1) / 2), n - 1].map((i) => (
-            <text key={i} x={xc(i)} y={H - 6} textAnchor={i === 0 ? "start" : i === n - 1 ? "end" : "middle"} fontSize={10.5} fill="var(--text-faint)">
+            <text key={i} x={xc(i)} y={H - 6} textAnchor={i === 0 ? "start" : i === n - 1 ? "end" : "middle"} fontSize={12} fill="var(--text-faint)">
               {shortDay(days[i])}
             </text>
           ))}
@@ -103,7 +128,7 @@ export function TimeChart({ days, series, kind, label }: { days: string[]; serie
               let acc = 0;
               const bw = Math.max(2, Math.min(18, step - 4));
               return (
-                <g key={i} opacity={hover === null || hover === i ? 1 : 0.45}>
+                <g key={i} opacity={hover === null || hover === i ? 1 : 0.45} style={{ transition: "opacity 140ms ease" }}>
                   {series.map((s, si) => {
                     const v = s.values[i] ?? 0;
                     if (!v) return null;
@@ -112,7 +137,7 @@ export function TimeChart({ days, series, kind, label }: { days: string[]; serie
                     const y1 = y(acc);
                     const top = si === series.length - 1 || series.slice(si + 1).every((x) => !(x.values[i] ?? 0));
                     return (
-                      <rect key={s.name} x={xc(i) - bw / 2} y={y1} width={bw} height={Math.max(1, y0 - y1 - 1.5)} rx={top ? 3 : 0} fill={s.color} />
+                      <rect key={s.name} className={intro ? "bar-grow" : undefined} style={{ "--i": i } as React.CSSProperties} x={xc(i) - bw / 2} y={y1} width={bw} height={Math.max(1, y0 - y1 - 1.5)} rx={top ? 3 : 0} fill={s.color} />
                     );
                   })}
                 </g>
@@ -123,6 +148,8 @@ export function TimeChart({ days, series, kind, label }: { days: string[]; serie
             series.map((s) => (
               <g key={s.name}>
                 <polyline
+                  className={intro ? "line-draw" : undefined}
+                  pathLength={intro ? 1 : undefined}
                   fill="none"
                   stroke={s.color}
                   strokeWidth={2}
@@ -154,10 +181,10 @@ export function TimeChart({ days, series, kind, label }: { days: string[]; serie
             ))}
           </div>
         )}
-        {empty && <p className="pointer-events-none absolute inset-0 grid place-items-center text-[12.5px] text-text-faint">Belum ada data pada periode ini</p>}
+        {empty && <p className="pointer-events-none absolute inset-0 grid place-items-center text-[12.5px] text-text-muted">Belum ada data pada periode ini</p>}
       </div>
 
-      <details className="mt-1 text-[12px] text-text-faint">
+      <details className="mt-1 text-[12px] text-text-muted">
         <summary className="cursor-pointer select-none">Lihat sebagai tabel</summary>
         <div className="mt-2 max-h-48 overflow-auto">
           <table className="w-full text-left">
@@ -192,9 +219,10 @@ export function TimeChart({ days, series, kind, label }: { days: string[]; serie
 
 /** Daftar batang horizontal untuk komposisi (platform, status). Nilai selalu tertulis sebagai teks. */
 export function BarList({ items }: { items: { label: string; value: number; color?: string }[] }) {
+  const intro = useIntro();
   const total = items.reduce((s, i) => s + i.value, 0);
   const max = Math.max(1, ...items.map((i) => i.value));
-  if (items.length === 0 || total === 0) return <p className="py-6 text-center text-[12.5px] text-text-faint">Belum ada data</p>;
+  if (items.length === 0 || total === 0) return <p className="py-6 text-center text-[12.5px] text-text-muted">Belum ada data</p>;
   return (
     <ul className="space-y-3">
       {items.map((it, idx) => (
@@ -202,11 +230,11 @@ export function BarList({ items }: { items: { label: string; value: number; colo
           <div className="mb-1 flex items-baseline justify-between text-[12.5px]">
             <span className="text-text-muted">{it.label}</span>
             <span className="font-medium">
-              {it.value} <span className="text-text-faint">({Math.round((it.value / total) * 100)}%)</span>
+              {it.value} <span className="text-text-muted">({Math.round((it.value / total) * 100)}%)</span>
             </span>
           </div>
-          <div className="h-2 rounded-full bg-[var(--pill-bg)]">
-            <div className="h-2 rounded-full" style={{ width: `${(it.value / max) * 100}%`, background: it.color ?? SERIES_COLORS[idx % SERIES_COLORS.length] }} />
+          <div className="h-2 overflow-hidden rounded-full bg-[var(--pill-bg)]">
+            <div className={`${intro ? "bar-fill " : ""}h-2 rounded-full`} style={{ "--i": idx, width: `${(it.value / max) * 100}%`, background: it.color ?? SERIES_COLORS[idx % SERIES_COLORS.length] } as React.CSSProperties} />
           </div>
         </li>
       ))}

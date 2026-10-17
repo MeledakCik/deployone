@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Bot, CheckCircle2, Copy, Info, Loader2, MessageCircle, RotateCcw, SendHorizonal, TriangleAlert, X, XCircle } from "lucide-react";
+import { Bot, CheckCircle2, Copy, Info, Loader2, MessageCircle, RotateCcw, SendHorizonal, TriangleAlert, X, XCircle } from "@/components/ui/icons";
 import { useAuth } from "@/lib/auth-context";
 import { useDeploy } from "@/lib/deploy-context";
 import { useToast } from "@/components/ui/Toast";
@@ -26,8 +26,8 @@ export interface SupportMessage {
 const MAX_INPUT = 1000;
 
 const SUGGESTIONS = [
-  "Deploy saya gagal, tolong cek akun saya",
-  "Repo saya tidak bisa di-deploy, kenapa?",
+  "Deploy saya gagal, tolong periksa akun saya",
+  "Repo saya tidak bisa dideploy, kenapa?",
   "Cara dapat token Vercel",
   "Kapan pakai Railway, bukan Vercel?",
 ];
@@ -51,7 +51,7 @@ function renderInline(text: string, keyPrefix: string): React.ReactNode[] {
       const tail = p.slice(href.length);
       return (
         <React.Fragment key={key}>
-          <a href={href} target="_blank" rel="noopener noreferrer" className="break-all text-violet-500 underline underline-offset-2">
+          <a href={href} target="_blank" rel="noopener noreferrer" className="break-all text-lav-text underline underline-offset-2">
             {href}
           </a>
           {tail}
@@ -62,9 +62,12 @@ function renderInline(text: string, keyPrefix: string): React.ReactNode[] {
   });
 }
 
+/** Jawaban AI kadang menyelipkan emoji; UI Depup memakai ikon, jadi emoji dibuang saat ditampilkan. */
+const EMOJI_RE = /[\p{Extended_Pictographic}\u{FE0F}\u{200D}]/gu;
+
 function RichText({ text }: { text: string }) {
   const blocks: React.ReactNode[] = [];
-  const lines = text.split("\n");
+  const lines = text.replace(EMOJI_RE, "").replace(/[ \t]+$/gm, "").split("\n");
   let list: { ordered: boolean; items: string[] } | null = null;
 
   const flush = () => {
@@ -108,14 +111,14 @@ function RichText({ text }: { text: string }) {
 
 function DiagnosticsCard({ checks }: { checks: DiagCheckView[] }) {
   const icon = {
-    ok: <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-emerald-500" aria-label="OK" />,
-    problem: <XCircle size={14} className="mt-0.5 shrink-0 text-red-500" aria-label="Masalah" />,
-    warn: <TriangleAlert size={14} className="mt-0.5 shrink-0 text-amber-500" aria-label="Perhatian" />,
+    ok: <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-ok-fg" aria-label="OK" />,
+    problem: <XCircle size={14} className="mt-0.5 shrink-0 text-bad-fg" aria-label="Masalah" />,
+    warn: <TriangleAlert size={14} className="mt-0.5 shrink-0 text-warn-fg" aria-label="Perhatian" />,
     unknown: <Info size={14} className="mt-0.5 shrink-0 text-text-muted" aria-label="Tidak diketahui" />,
   } as const;
   return (
-    <div className="w-full max-w-[92%] rounded-2xl border border-[var(--line)] px-3.5 py-3">
-      <p className="mb-2 text-[11.5px] font-semibold uppercase tracking-wide text-text-muted">Hasil pemeriksaan akunmu</p>
+    <div className="w-full max-w-[92%] rounded-2xl bg-[var(--pill-bg)] px-3.5 py-3">
+      <p className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-text-muted">Hasil pemeriksaan akunmu</p>
       <ul className="space-y-1.5">
         {checks.map((c) => (
           <li key={c.id} className="flex gap-2 text-[12.5px] leading-snug">
@@ -138,6 +141,10 @@ export function SupportChat() {
   const { showToast } = useToast();
 
   const [open, setOpen] = React.useState(false);
+  const [closing, setClosing] = React.useState(false);
+  const fabRef = React.useRef<HTMLButtonElement>(null);
+  const firstFab = React.useRef(true);
+  const [fabBox, setFabBox] = React.useState<{ w: number; h: number } | null>(null);
   const [messages, setMessages] = React.useState<SupportMessage[]>([]);
   const [input, setInput] = React.useState("");
   const [sending, setSending] = React.useState(false);
@@ -151,6 +158,24 @@ export function SupportChat() {
 
   React.useEffect(() => () => abortRef.current?.abort(), []);
 
+  // Tutup dengan animasi keluar singkat, baru di-unmount.
+  const closeChat = React.useCallback(() => {
+    if (closing) return;
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    setClosing(true);
+    window.setTimeout(() => {
+      setOpen(false);
+      setClosing(false);
+    }, reduce ? 0 : 460);
+  }, [closing]);
+
+  const openChat = React.useCallback(() => {
+    const r = fabRef.current?.getBoundingClientRect();
+    if (r) setFabBox({ w: Math.round(r.width), h: Math.round(r.height) });
+    firstFab.current = false;
+    setOpen(true);
+  }, []);
+
   React.useEffect(() => {
     const el = listRef.current;
     if (el) el.scrollTop = el.scrollHeight;
@@ -162,10 +187,10 @@ export function SupportChat() {
 
   React.useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && closeChat();
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [open]);
+  }, [open, closeChat]);
 
   const request = React.useCallback(
     async (history: SupportMessage[]) => {
@@ -198,7 +223,7 @@ export function SupportChat() {
         if (typeof body.data.reportId === "string") setReportedId(body.data.reportId);
       } catch (e) {
         if ((e as { name?: string })?.name === "AbortError") return;
-        setError("Koneksi bermasalah. Cek internet kamu lalu coba lagi.");
+        setError("Koneksi bermasalah. Periksa internet kamu lalu coba lagi.");
       } finally {
         setSending(false);
       }
@@ -231,7 +256,7 @@ export function SupportChat() {
 
   async function copyTranscript() {
     const header = [
-      "Laporan chat CS Depup",
+      "Laporan chat bantuan Depup",
       user ? `Akun: ${user.email}` : null,
       `Halaman: ${view}`,
       `Waktu: ${new Date().toLocaleString("id-ID")}`,
@@ -278,10 +303,11 @@ export function SupportChat() {
     <>
       {!open && (
         <button
+          ref={fabRef}
           type="button"
-          onClick={() => setOpen(true)}
+          onClick={openChat}
           aria-label="Buka chat bantuan"
-          className="btn-primary fixed bottom-5 right-5 z-40 flex h-12 items-center gap-2 px-5 text-[13.5px] shadow-lg"
+          className={`btn-lime fab ${firstFab.current ? "anim-fab" : ""} fixed bottom-[var(--edge)] right-[var(--edge)] z-40 flex h-12 items-center gap-2 px-5 text-[13.5px] shadow-lg`}
         >
           <MessageCircle size={18} />
           <span className="hidden sm:inline">Bantuan</span>
@@ -289,19 +315,34 @@ export function SupportChat() {
       )}
 
       {open && (
+        <div
+          aria-hidden
+          onClick={closeChat}
+          className={`chat-scrim ${closing ? "chat-scrim-out" : ""}`}
+        />
+      )}
+
+      {open && (
         <section
           role="dialog"
           aria-label="Chat bantuan Depup"
-          className="surface-solid fixed inset-0 z-[60] flex flex-col overflow-hidden !rounded-none shadow-2xl sm:inset-auto sm:bottom-5 sm:right-5 sm:h-[600px] sm:max-h-[calc(100vh-40px)] sm:w-[400px] sm:!rounded-[24px]"
+          className={`surface-solid morph ${closing ? "morph-close" : "morph-open"} fixed inset-0 z-[60] flex flex-col overflow-hidden !rounded-none shadow-2xl sm:inset-auto sm:bottom-[var(--edge)] sm:right-[var(--edge)] sm:h-[600px] sm:max-h-[calc(100dvh-var(--edge)*2)] sm:w-[400px] sm:!rounded-[24px]`}
+          style={fabBox ? ({ "--fab-w": `${fabBox.w}px`, "--fab-h": `${fabBox.h}px` } as React.CSSProperties) : undefined}
         >
+          {/* Salinan tombol Bantuan: jembatan visual antara tombol dan panel */}
+          <div aria-hidden className={`morph-fab ${closing ? "morph-fab-in" : "morph-fab-out"}`}>
+            <MessageCircle size={18} />
+            <span className="hidden sm:inline">Bantuan</span>
+          </div>
+
           {/* Header */}
           <header className="flex items-center gap-3 border-b border-[var(--line)] px-4 py-3">
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-gradient-to-br from-violet-500 to-fuchsia-500 text-white">
+            <span className="bot-wiggle grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-lav text-ink">
               <Bot size={18} />
             </span>
             <div className="min-w-0 flex-1">
               <h2 className="text-[14px] font-semibold leading-tight">Asisten Depup</h2>
-              <p className="text-[11.5px] text-text-muted">Dijawab AI, bisa saja keliru</p>
+              <p className="text-[12px] text-text-muted">Dijawab AI, bisa saja keliru</p>
             </div>
             {messages.length > 0 && (
               <>
@@ -327,7 +368,7 @@ export function SupportChat() {
             )}
             <button
               type="button"
-              onClick={() => setOpen(false)}
+              onClick={closeChat}
               aria-label="Tutup chat"
               className="grid h-8 w-8 place-items-center rounded-full text-text-muted hover:bg-[var(--card-hover)] hover:text-text"
             >
@@ -339,17 +380,18 @@ export function SupportChat() {
           <div ref={listRef} role="log" aria-live="polite" className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
             {messages.length === 0 && (
               <div className="space-y-4">
-                <div className="rounded-2xl rounded-tl-md bg-[var(--pill-bg)] px-3.5 py-3 text-[13.5px] leading-relaxed">
+                <div className="bubble-in-l rounded-2xl rounded-tl-md bg-[var(--pill-bg)] px-3.5 py-3 text-[13.5px] leading-relaxed">
                   Halo{user?.name ? `, ${user.name.split(" ")[0]}` : ""}! Aku asisten Depup. Tanya soal deploy, token, domain, atau
                   error yang kamu temui.
                 </div>
                 <div className="flex flex-col items-start gap-2">
-                  {SUGGESTIONS.map((s) => (
+                  {SUGGESTIONS.map((s, i) => (
                     <button
                       key={s}
+                      style={{ "--i": i } as React.CSSProperties}
                       type="button"
                       onClick={() => send(s)}
-                      className="pill px-3.5 py-2 text-left text-[12.5px] text-text-muted transition hover:text-text"
+                      className="pill chip-in px-3.5 py-2 text-left text-[12.5px] text-text-muted transition hover:text-text"
                     >
                       {s}
                     </button>
@@ -361,18 +403,18 @@ export function SupportChat() {
             {messages.map((m, i) =>
               m.role === "user" ? (
                 <div key={i} className="flex justify-end">
-                  <div className="max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-tr-md bg-violet-600 px-3.5 py-2.5 text-[13.5px] leading-relaxed text-white">
+                  <div className="bubble-in-r max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-tr-md bg-lav px-3.5 py-2.5 text-[13.5px] leading-relaxed text-ink">
                     {m.content}
                   </div>
                 </div>
               ) : (
                 <div key={i} className="flex flex-col items-start gap-2">
                   {m.diagnostics && m.diagnostics.length > 0 && <DiagnosticsCard checks={m.diagnostics} />}
-                  <div className="max-w-[92%] break-words rounded-2xl rounded-tl-md bg-[var(--pill-bg)] px-3.5 py-2.5 text-[13.5px] leading-relaxed">
+                  <div className="bubble-in-l max-w-[92%] break-words rounded-2xl rounded-tl-md bg-[var(--pill-bg)] px-3.5 py-2.5 text-[13.5px] leading-relaxed">
                     <RichText text={m.content} />
                   </div>
                   {m.reportId && (
-                    <p className="px-1 text-[11.5px] text-text-muted">
+                    <p className="px-1 text-[12px] text-text-muted">
                       Laporan otomatis diteruskan ke developer · <span className="font-mono">{m.reportId}</span>
                     </p>
                   )}
@@ -382,12 +424,12 @@ export function SupportChat() {
 
             {sending && (
               <div className="flex" aria-label="Asisten sedang mengetik">
-                <div className="flex items-center gap-1 rounded-2xl rounded-tl-md bg-[var(--pill-bg)] px-4 py-3.5">
+                <div className="bubble-in-l flex items-center gap-1 rounded-2xl rounded-tl-md bg-[var(--pill-bg)] px-4 py-3.5">
                   {[0, 1, 2].map((d) => (
                     <span
                       key={d}
                       className="lp-motion h-1.5 w-1.5 rounded-full bg-text-muted"
-                      style={{ animation: `landing-blink 1.2s ${d * 0.2}s infinite` }}
+                      style={{ animation: `dot-bounce 1s ${d * 0.15}s infinite ease-in-out` }}
                     />
                   ))}
                 </div>
@@ -395,7 +437,7 @@ export function SupportChat() {
             )}
 
             {error && !sending && (
-              <div className="rounded-2xl border border-red-500/30 bg-red-500/10 px-3.5 py-3 text-[13px] text-red-500">
+              <div className="rounded-2xl bg-[var(--bad-bg)] px-3.5 py-3 text-[13px] text-bad-fg">
                 <p>{error}</p>
                 {messages.length > 0 && messages[messages.length - 1].role === "user" && (
                   <button type="button" onClick={retry} className="mt-2 font-semibold underline underline-offset-2">
@@ -407,7 +449,7 @@ export function SupportChat() {
 
             {hasReply && !sending && (
               reportedId ? (
-                <p className="rounded-2xl bg-emerald-500/10 px-3.5 py-2.5 text-center text-[12.5px] text-emerald-500">
+                <p className="rounded-2xl bg-[var(--ok-bg)] px-3.5 py-2.5 text-center text-[12.5px] text-ok-fg">
                   Laporan sudah diterima developer · <span className="font-mono">{reportedId}</span>
                 </p>
               ) : (
@@ -457,7 +499,7 @@ export function SupportChat() {
                 <SendHorizonal size={17} />
               </button>
             </div>
-            <p className="mt-2 px-1 text-[11px] text-text-muted">
+            <p className="mt-2 px-1 text-[12px] text-text-muted">
               Jangan tempel token atau password di sini.
             </p>
           </form>

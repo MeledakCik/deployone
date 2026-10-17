@@ -1,5 +1,6 @@
 "use client";
 
+import { PageTitle } from "@/components/ui/primitives";
 import * as React from "react";
 import {
   UploadCloud,
@@ -219,21 +220,18 @@ export function HostingView() {
   return (
     <ViewFade>
       <div className="mb-6">
-        <h2 className="text-[22px] font-semibold">Link Instan</h2>
-        <p className="mt-1 text-[13px] text-text-muted">
-          Upload website statis (zip atau folder) dan langsung dapat link publik sementara
+        <PageTitle title="Link Instan" desc={<>Upload website statis (zip atau folder) dan langsung dapat link publik sementara
           {config?.baseDomain ? (
             <>
               {" "}
               seperti <code>nama-xxxxx.{config.baseDomain}</code>
             </>
           ) : null}
-          . Tanpa CLI, tanpa GitHub.
-        </p>
+          . Tanpa CLI, tanpa GitHub.</>} />
       </div>
 
       {config && !config.enabled && (
-        <div className="mb-4 flex items-start gap-2.5 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-[12.5px] text-amber-300">
+        <div className="notice notice-warn mb-4">
           <CircleAlert size={16} className="mt-0.5 shrink-0" />
           <span>
             Fitur ini belum aktif di server. Admin perlu mengisi env <code>TUNNEL_BASE_DOMAIN</code> (domain wildcard) lalu
@@ -245,7 +243,7 @@ export function HostingView() {
       {(error || loadError) && (
         <div
           role="alert"
-          className="mb-4 flex items-start gap-2.5 rounded-2xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-[12.5px] text-red-300"
+          className="notice notice-bad mb-4"
         >
           <CircleAlert size={16} className="mt-0.5 shrink-0" />
           <span className="min-w-0 flex-1 break-words">{error ?? loadError}</span>
@@ -266,12 +264,8 @@ export function HostingView() {
       {report && (
         <div
           className={cn(
-            "mb-4 rounded-2xl border px-4 py-3.5 text-[12.5px]",
-            report.status === "blocked"
-              ? "border-red-500/30 bg-red-500/10"
-              : report.status === "warn"
-                ? "border-amber-500/30 bg-amber-500/10"
-                : "border-emerald-500/30 bg-emerald-500/10"
+            "notice mb-4 !block !px-4 !py-3.5",
+            report.status === "blocked" ? "notice-bad" : report.status === "warn" ? "notice-warn" : "notice-ok"
           )}
         >
           <p className="text-[13px] font-semibold">
@@ -284,7 +278,7 @@ export function HostingView() {
                 {n.level === "info" ? (
                   <Info size={14} className="mt-0.5 shrink-0 text-text-muted" />
                 ) : (
-                  <TriangleAlert size={14} className={cn("mt-0.5 shrink-0", n.level === "error" ? "text-red-300" : "text-amber-300")} />
+                  <TriangleAlert size={14} className={cn("mt-0.5 shrink-0", n.level === "error" ? "text-bad-fg" : "text-warn-fg")} />
                 )}
                 <span className="min-w-0 break-words">{n.text}</span>
               </li>
@@ -322,7 +316,7 @@ export function HostingView() {
             </>
           ) : full ? (
             <>
-              <CircleAlert size={34} className="text-amber-300" />
+              <CircleAlert size={34} className="text-warn-fg" />
               <p className="mt-4 text-[14px] font-medium">Batas {config.maxSites} link aktif tercapai</p>
               <p className="mt-1 text-[12px] text-text-muted">Hapus salah satu link di bawah, atau tunggu sampai kedaluwarsa.</p>
             </>
@@ -375,7 +369,7 @@ export function HostingView() {
                 <span className="font-normal text-text-muted">· {formatBytes(prepared.totalBytes)}</span>
               </p>
               {prepared.rootDir && (
-                <p className="mt-0.5 text-[11.5px] text-text-muted">
+                <p className="mt-0.5 text-[12px] text-text-muted">
                   Folder <code>{prepared.rootDir}/</code> dipakai sebagai root situs.
                 </p>
               )}
@@ -409,7 +403,7 @@ export function HostingView() {
                 placeholder="mis. tugas-web"
                 className={inputCls}
               />
-              <p className="mt-1 text-[11.5px] text-text-muted">Huruf kecil, angka, strip. Akhiran acak ditambah otomatis.</p>
+              <p className="mt-1 text-[12px] text-text-muted">Huruf kecil, angka, strip. Akhiran acak ditambah otomatis.</p>
             </div>
             <div>
               <label htmlFor="site-ttl" className="mb-1.5 block text-[12px] font-medium">
@@ -428,7 +422,7 @@ export function HostingView() {
                   </option>
                 ))}
               </select>
-              <p className="mt-1 text-[11.5px] text-text-muted">Setelah itu link & file otomatis dihapus.</p>
+              <p className="mt-1 text-[12px] text-text-muted">Setelah itu link & file otomatis dihapus.</p>
             </div>
           </div>
 
@@ -483,7 +477,7 @@ export function HostingView() {
                 >
                   {s.url.replace(/^https?:\/\//, "").replace(/\/$/, "")}
                 </a>
-                <p className="mt-0.5 flex flex-wrap items-center gap-x-3 text-[11.5px] text-text-muted">
+                <p className="mt-0.5 flex flex-wrap items-center gap-x-3 text-[12px] text-text-muted">
                   <span className="inline-flex items-center gap-1">
                     <Clock size={11} /> {remaining(s.expiresAt, now)}
                   </span>
@@ -509,7 +503,7 @@ export function HostingView() {
                   type="button"
                   onClick={() => remove(s.id)}
                   aria-label="Hapus link"
-                  className="pill inline-flex items-center px-2.5 py-1.5 text-red-300"
+                  className="pill inline-flex items-center px-2.5 py-1.5 text-bad-fg"
                 >
                   <Trash2 size={13} />
                 </button>

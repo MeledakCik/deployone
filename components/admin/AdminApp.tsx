@@ -1,13 +1,17 @@
 "use client";
 
 import * as React from "react";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Flag, Gauge, History, LifeBuoy, Link2, LogOut, Megaphone, Settings2, Users, ArrowLeft } from "lucide-react";
+import { LayoutDashboard, ShieldAlert, Link2, Users, MessageCircle, Settings2, History, LogOut, ArrowLeft } from "@/components/ui/icons";
+import { Megaphone } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/components/ui/Toast";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import { cn } from "@/lib/utils";
+import { ViewFade } from "@/components/ui/ViewFade";
+import { AppSidebar, SIDEBAR_LINK_CLASS, type NavGroup } from "@/components/ui/AppSidebar";
+import { getInitials, avatarColorFor } from "@/lib/utils";
+import { adminFetch } from "./api";
+import { AdminCountsContext } from "./context";
+import { ConfirmProvider } from "./confirm";
 import { OverviewTab } from "./OverviewTab";
 import { AbuseTab } from "./AbuseTab";
 import { LinksTab } from "./LinksTab";
@@ -18,12 +22,12 @@ import { SettingsTab } from "./SettingsTab";
 import { AuditTab } from "./AuditTab";
 
 const TABS = [
-  { id: "overview", label: "Ringkasan", icon: Gauge },
-  { id: "abuse", label: "Abuse & Takedown", icon: Flag },
+  { id: "overview", label: "Ringkasan", icon: LayoutDashboard },
+  { id: "abuse", label: "Abuse & Takedown", icon: ShieldAlert },
   { id: "links", label: "Link aktif", icon: Link2 },
   { id: "users", label: "Pengguna", icon: Users },
+  { id: "support", label: "Bantuan", icon: MessageCircle },
   { id: "promo", label: "Promosi", icon: Megaphone },
-  { id: "support", label: "Bantuan", icon: LifeBuoy },
   { id: "settings", label: "Pengaturan", icon: Settings2 },
   { id: "audit", label: "Log admin", icon: History },
 ] as const;
@@ -31,9 +35,34 @@ type TabId = (typeof TABS)[number]["id"];
 
 export function AdminApp({ name, email }: { name: string; email: string }) {
   const router = useRouter();
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const { showToast } = useToast();
   const [tab, setTab] = React.useState<TabId>("overview");
+  const closeRef = React.useRef<(() => void) | null>(null);
+  const [abuseOpen, setAbuseOpen] = React.useState<number | null>(null);
+
+  // Hitungan laporan abuse terbuka untuk badge menu: ringan (?countOnly=1), diperbarui tiap 60 dtk saat tab terlihat.
+  React.useEffect(() => {
+    let alive = true;
+    const pull = async () => {
+      if (document.hidden) return;
+      try {
+        const d = await adminFetch<{ counts: { open: number } }>("/api/admin/abuse?countOnly=1");
+        if (alive) setAbuseOpen(d.counts.open);
+      } catch {
+        /* badge hanya tambahan; diam saja bila gagal */
+      }
+    };
+    void pull();
+    const id = window.setInterval(pull, 60_000);
+    document.addEventListener("visibilitychange", pull);
+    return () => {
+      alive = false;
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", pull);
+    };
+  }, []);
+  const counts = React.useMemo(() => ({ abuseOpen, setAbuseOpen }), [abuseOpen]);
 
   React.useEffect(() => {
     const fromHash = window.location.hash.replace("#", "") as TabId;
@@ -47,75 +76,85 @@ export function AdminApp({ name, email }: { name: string; email: string }) {
     window.scrollTo({ top: 0 });
   }, []);
 
+  function handleLogout() {
+    closeRef.current?.();
+    void logout().then(() => router.push("/"));
+  }
+
+  const picture = user?.picture ?? null;
+  const GROUPS = React.useMemo<NavGroup[]>(
+    () => [
+      {
+        items: TABS.map((t) => ({
+          id: t.id,
+          label: t.label,
+          icon: t.icon,
+          ...(t.id === "abuse" ? { badge: abuseOpen, badgeLabel: `${abuseOpen} laporan terbuka` } : {}),
+        })),
+      },
+    ],
+    [abuseOpen],
+  );
+
   return (
-    <div className="min-h-[100dvh]">
-      <header className="sidebar sidebar-topbar sticky top-0 z-30 flex items-center gap-3 px-4 py-3 sm:px-6">
-        <span className="grid h-8 w-8 place-items-center overflow-hidden rounded-full bg-gradient-to-br from-violet-500 to-cyan-400">
-          <Image src="/logo.png" alt="Depup" width={32} height={32} />
-        </span>
-        <div className="min-w-0">
-          <p className="font-display text-[15px] font-semibold leading-tight">Depup Admin</p>
-          <p className="truncate text-[11.5px] text-text-faint" title={email}>
-            {name} · {email}
-          </p>
-        </div>
-        <div className="ml-auto flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => router.push("/dashboard")}
-            className="hidden items-center gap-1.5 rounded-full border border-[var(--line-strong)] px-3 py-1.5 text-[12.5px] text-text-muted hover:bg-[var(--card-hover)] sm:inline-flex"
-          >
-            <ArrowLeft size={13} /> Dashboard
-          </button>
-          <ThemeToggle />
-          <button
-            type="button"
-            aria-label="Keluar"
-            title="Keluar"
-            onClick={() => void logout().then(() => router.push("/"))}
-            className="grid h-9 w-9 place-items-center rounded-full text-text-muted hover:bg-[var(--card-hover)] hover:text-text"
-          >
-            <LogOut size={16} />
-          </button>
-        </div>
-      </header>
+    <AdminCountsContext.Provider value={counts}>
+    <ConfirmProvider>
+    <div className="app-canvas">
+      <div className="admin-strip" aria-hidden />
+      <div className="app-frame flex flex-col md:flex-row md:items-start md:gap-4">
+        <AppSidebar
+          groups={GROUPS}
+          active={tab}
+          onSelect={go}
+          navLabel="Menu admin"
+          tag="Mode Admin"
+          tagShort="Admin"
+          mobileDot={!!abuseOpen}
+          mobileDotLabel={`${abuseOpen} laporan penyalahgunaan terbuka`}
+          onCloseDrawerRef={closeRef}
+          footer={
+            <>
+              <div className="flex items-center gap-3 rounded-2xl bg-[var(--sidebar-hover)] p-3 text-white">
+                {picture ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={picture} alt={name} referrerPolicy="no-referrer" className="h-9 w-9 shrink-0 rounded-xl object-cover" />
+                ) : (
+                  <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl text-[12px] font-semibold text-white ${avatarColorFor(email)}`}>{getInitials(name)}</span>
+                )}
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-[13px] font-semibold">{name}</span>
+                  <span className="block truncate text-[12px] text-white/80" title={email}>
+                    {email}
+                  </span>
+                </span>
+              </div>
+              <a href="/dashboard" className={SIDEBAR_LINK_CLASS}>
+                <ArrowLeft size={18} /> Ke Dashboard
+              </a>
+              <button type="button" onClick={handleLogout} className={SIDEBAR_LINK_CLASS}>
+                <LogOut size={18} /> Logout
+              </button>
+            </>
+          }
+        />
 
-      <div className="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-4 sm:px-6 md:flex-row md:py-6">
-        <nav aria-label="Menu admin" className="md:w-52 md:shrink-0">
-          <ul className="-mx-1 flex gap-1 overflow-x-auto px-1 pb-1 md:sticky md:top-20 md:flex-col md:overflow-visible">
-            {TABS.map((t) => {
-              const Icon = t.icon;
-              const active = tab === t.id;
-              return (
-                <li key={t.id} className="shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => go(t.id)}
-                    aria-current={active ? "page" : undefined}
-                    className={cn(
-                      "flex w-full items-center gap-2.5 whitespace-nowrap rounded-xl px-3.5 py-2.5 text-[13.5px] transition",
-                      active ? "bg-violet-500/15 font-medium text-text" : "text-text-muted hover:bg-[var(--card-hover)] hover:text-text"
-                    )}
-                  >
-                    <Icon size={16} className={active ? "text-violet-400" : undefined} /> {t.label}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        </nav>
-
-        <main className="min-w-0 flex-1">
-          {tab === "overview" && <OverviewTab goto={go} />}
-          {tab === "abuse" && <AbuseTab toast={showToast} />}
-          {tab === "links" && <LinksTab toast={showToast} />}
-          {tab === "users" && <UsersTab toast={showToast} />}
-          {tab === "promo" && <PromoTab toast={showToast} />}
-          {tab === "support" && <SupportTab toast={showToast} />}
-          {tab === "settings" && <SettingsTab toast={showToast} />}
-          {tab === "audit" && <AuditTab />}
-        </main>
+        <div className="min-w-0 flex-1 px-2 py-4 sm:px-4 sm:py-5 lg:px-6">
+          <main className="mx-auto max-w-6xl" id={tab}>
+            <ViewFade key={tab}>
+              {tab === "overview" && <OverviewTab goto={go} />}
+              {tab === "abuse" && <AbuseTab toast={showToast} />}
+              {tab === "links" && <LinksTab toast={showToast} />}
+              {tab === "users" && <UsersTab toast={showToast} />}
+              {tab === "support" && <SupportTab toast={showToast} />}
+              {tab === "promo" && <PromoTab toast={showToast} />}
+              {tab === "settings" && <SettingsTab toast={showToast} />}
+              {tab === "audit" && <AuditTab />}
+            </ViewFade>
+          </main>
+        </div>
       </div>
     </div>
+    </ConfirmProvider>
+    </AdminCountsContext.Provider>
   );
 }

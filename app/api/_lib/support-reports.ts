@@ -100,7 +100,7 @@ async function sendTelegram(text: string): Promise<{ ok: boolean; note: string }
     });
     if (status === 200) return { ok: true, note: "Terkirim ke Telegram." };
     console.error(`[support-report] telegram membalas ${status}`);
-    if (status === 401 || status === 404) return { ok: false, note: "Token bot ditolak Telegram (cek TELEGRAM_BOT_TOKEN)." };
+    if (status === 401 || status === 404) return { ok: false, note: "Token bot ditolak Telegram (periksa TELEGRAM_BOT_TOKEN)." };
     if (status === 400) return { ok: false, note: "Chat ID salah, atau kamu belum menekan Start / mengirim pesan ke bot." };
     if (status === 403) return { ok: false, note: "Bot diblokir atau dikeluarkan dari chat tujuan." };
     return { ok: false, note: `Telegram membalas kode ${status}.` };

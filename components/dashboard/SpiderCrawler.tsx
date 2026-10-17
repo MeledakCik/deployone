@@ -122,8 +122,84 @@ const ease = (t: number) => t * t * (3 - 2 * t);
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 const clamp = (v: number, lo: number, hi: number) => Math.max(lo, Math.min(hi, v));
 const clamp01 = (v: number) => clamp(v, 0, 1);
-const rgba = (c: Rgb, a: number) =>
+const rawRgba = (c: Rgb, a: number) =>
   `rgba(${Math.round(c[0])},${Math.round(c[1])},${Math.round(c[2])},${a})`;
+
+/**
+ * Palet per tema. Tema gelap memakai cahaya aditif ("lighter") dengan goresan putih.
+ * Di latar terang, cahaya aditif menghilang (putih di atas putih), jadi tema terang
+ * memakai blending biasa, warna gugus digelapkan, dan goresan netral berwarna ungu tua.
+ */
+export type SpiderTheme = "light" | "dark";
+type Palette = {
+  light: boolean;
+  add: GlobalCompositeOperation;
+  glow: number;
+  tone: (c: Rgb) => Rgb;
+  dust: string;
+  route: string;
+  thread: string;
+  spark: string;
+  hud: string;
+  hudLine: string;
+  band: string;
+  bandEdge: string;
+  chipBg: string;
+  chipEdge: string;
+  chipText: string;
+  satellite: string;
+  label: (act: number) => string;
+  sub: (act: number) => string;
+  teal: (a: number) => string;
+  glint: (a: number) => string;
+};
+
+const PALETTES: Record<SpiderTheme, Palette> = {
+  dark: {
+    light: false,
+    add: "lighter",
+    glow: 1,
+    tone: (c) => c,
+    dust: "rgba(200,205,225,0.18)",
+    route: "rgba(255,255,255,0.08)",
+    thread: "rgba(235,240,255,0.95)",
+    spark: "#ffffff",
+    hud: "rgba(255,255,255,0.32)",
+    hudLine: "rgba(255,255,255,0.2)",
+    band: "rgba(255,255,255,0.035)",
+    bandEdge: "rgba(255,255,255,0)",
+    chipBg: "rgba(10,12,20,0.75)",
+    chipEdge: "rgba(255,255,255,0.32)",
+    chipText: "rgba(235,240,255,0.92)",
+    satellite: "rgba(167,243,232,0.9)",
+    label: (a) => `rgba(255,255,255,${0.5 + 0.45 * a})`,
+    sub: (a) => `rgba(200,205,220,${0.38 + 0.3 * a})`,
+    teal: (a) => `rgba(94,234,212,${a})`,
+    glint: (a) => `rgba(235,240,255,${a})`,
+  },
+  light: {
+    light: true,
+    add: "source-over",
+    glow: 0.75,
+    tone: (c) => [c[0] * 0.78, c[1] * 0.78, c[2] * 0.78],
+    dust: "rgba(90,57,192,0.2)",
+    route: "rgba(30,17,80,0.18)",
+    thread: "rgba(90,57,192,0.85)",
+    spark: "#2a1a6e",
+    hud: "rgba(30,17,80,0.55)",
+    hudLine: "rgba(30,17,80,0.24)",
+    band: "rgba(90,57,192,0.03)",
+    bandEdge: "rgba(90,57,192,0)",
+    chipBg: "rgba(255,255,255,0.94)",
+    chipEdge: "rgba(90,57,192,0.4)",
+    chipText: "rgba(30,17,80,0.92)",
+    satellite: "rgba(13,148,136,0.95)",
+    label: (a) => `rgba(30,17,80,${0.66 + 0.3 * a})`,
+    sub: (a) => `rgba(30,17,80,${0.6 + 0.22 * a})`,
+    teal: (a) => `rgba(13,148,136,${Math.min(1, a * 1.5)})`,
+    glint: (a) => `rgba(90,57,192,${a})`,
+  },
+};
 
 function angleLerp(a: number, b: number, t: number) {
   let d = ((b - a + Math.PI) % (Math.PI * 2)) - Math.PI;
@@ -134,19 +210,28 @@ function angleLerp(a: number, b: number, t: number) {
 export function SpiderCrawler({
   stepIndex,
   className,
+  theme = "dark",
 }: {
   stepIndex: number;
   className?: string;
+  /** Tema aktif aplikasi. Animasi mengikuti dan langsung berganti saat tema diubah. */
+  theme?: SpiderTheme;
 }) {
   const wrapRef = React.useRef<HTMLDivElement>(null);
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const stepRef = React.useRef(stepIndex);
   const redrawRef = React.useRef<(() => void) | null>(null);
+  const themeRef = React.useRef<SpiderTheme>(theme);
 
   React.useEffect(() => {
     stepRef.current = stepIndex;
     redrawRef.current?.();
   }, [stepIndex]);
+
+  React.useEffect(() => {
+    themeRef.current = theme;
+    redrawRef.current?.();
+  }, [theme]);
 
   React.useEffect(() => {
     const wrap = wrapRef.current;
@@ -159,6 +244,10 @@ export function SpiderCrawler({
 
     const reduced =
       window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false;
+
+    // Palet aktif; diperbarui di awal setiap draw() sehingga pergantian tema langsung berlaku.
+    let P: Palette = PALETTES[themeRef.current];
+    const rgba = (c: Rgb, a: number) => rawRgba(P.tone(c), a);
 
     // ---------- ukuran responsif (diperbarui di resize) ----------
     let w = 320;
@@ -447,7 +536,7 @@ export function SpiderCrawler({
 
     // ---------- gambar ----------
     const drawDust = () => {
-      ctx.fillStyle = "rgba(200,205,225,0.18)";
+      ctx.fillStyle = P.dust;
       const sz = Math.max(1, k);
       for (const d of dust) {
         ctx.globalAlpha = 0.6 + 0.4 * Math.sin(time * 0.8 + d.tw);
@@ -479,7 +568,7 @@ export function SpiderCrawler({
 
         ctx.setLineDash([2 * k, 7 * k]);
         ctx.lineWidth = 1;
-        ctx.strokeStyle = "rgba(255,255,255,0.08)";
+        ctx.strokeStyle = P.route;
         ctx.beginPath();
         quadTo(A, C, B, 1, 24);
         ctx.stroke();
@@ -489,7 +578,7 @@ export function SpiderCrawler({
           const g = ctx.createLinearGradient(A.x, A.y, B.x, B.y);
           g.addColorStop(0, rgba(CLUSTERS[i].rgb, 0.7));
           g.addColorStop(1, rgba(CLUSTERS[i + 1].rgb, 0.7));
-          ctx.globalCompositeOperation = "lighter";
+          ctx.globalCompositeOperation = P.add;
           ctx.strokeStyle = g;
           ctx.lineWidth = 1.7 * k;
           ctx.setLineDash([0.1, 5 * k]);
@@ -519,9 +608,9 @@ export function SpiderCrawler({
         ];
 
         // kabut lembut (aditif supaya terasa berpendar)
-        const glow = 0.08 + 0.22 * c.act + 0.07 * c.dn;
+        const glow = (0.08 + 0.22 * c.act + 0.07 * c.dn) * P.glow;
         ctx.save();
-        ctx.globalCompositeOperation = "lighter";
+        ctx.globalCompositeOperation = P.add;
         ctx.translate(cc.x, cc.y);
         ctx.scale(c.asp, 1);
         const g = ctx.createRadialGradient(0, 0, 0, 0, 0, R * 1.5);
@@ -565,7 +654,7 @@ export function SpiderCrawler({
           calcPt(i, p, tmp);
           ctx.fillRect(tmp.x, tmp.y, p.s * ps, p.s * ps);
         }
-        ctx.fillStyle = "#ffffff";
+        ctx.fillStyle = P.spark;
         for (let n = 0; n < ptLimit; n++) {
           const p = c.pts[n];
           if (!p.bright) continue;
@@ -590,16 +679,33 @@ export function SpiderCrawler({
         ctx.textAlign = "left";
         ctx.textBaseline = "alphabetic";
         ctx.font = `600 ${nameFont}px ${MONO}`;
-        ctx.fillStyle = `rgba(255,255,255,${0.5 + 0.45 * c.act})`;
-        ctx.fillText(c.name + (done ? " ✓" : ""), lx, ly);
+        ctx.fillStyle = P.label(c.act);
+        ctx.fillText(c.name, lx, ly);
+        if (done) {
+          // centang digambar sebagai garis (bukan karakter teks)
+          const tw = ctx.measureText(c.name).width;
+          const s = nameFont * 0.55;
+          const x0 = lx + tw + 6 * k;
+          ctx.save();
+          ctx.strokeStyle = ctx.fillStyle as string;
+          ctx.lineWidth = Math.max(1.5, 1.7 * k);
+          ctx.lineCap = "round";
+          ctx.lineJoin = "round";
+          ctx.beginPath();
+          ctx.moveTo(x0, ly - s * 0.45);
+          ctx.lineTo(x0 + s * 0.4, ly - s * 0.08);
+          ctx.lineTo(x0 + s, ly - s * 0.9);
+          ctx.stroke();
+          ctx.restore();
+        }
         ctx.font = `400 ${subFont}px ${MONO}`;
-        ctx.fillStyle = `rgba(200,205,220,${0.38 + 0.3 * c.act})`;
+        ctx.fillStyle = P.sub(c.act);
         ctx.fillText(`${n}/${c.total} node · ${status}`, lx, ly + subFont + 2 * k);
       });
     };
 
     const drawRings = () => {
-      ctx.globalCompositeOperation = "lighter";
+      ctx.globalCompositeOperation = P.add;
       for (const r of rings) {
         const e = 1 - Math.pow(1 - r.t, 3);
         ctx.strokeStyle = rgba(r.rgb, 0.7 * (1 - r.t));
@@ -613,10 +719,10 @@ export function SpiderCrawler({
 
     const drawTrail = () => {
       if (trail.length < 2) return;
-      ctx.globalCompositeOperation = "lighter";
+      ctx.globalCompositeOperation = P.add;
       for (let i = 0; i < trail.length; i++) {
         const t = i / trail.length;
-        ctx.fillStyle = rgba([235, 240, 255], t * 0.85);
+        ctx.fillStyle = P.glint(t * 0.85);
         ctx.beginPath();
         ctx.arc(trail[i].x, trail[i].y, (0.6 + t * 1.1) * k, 0, Math.PI * 2);
         ctx.fill();
@@ -646,7 +752,7 @@ export function SpiderCrawler({
         const steps = Math.max(6, Math.round(dist / 6));
 
         ctx.globalAlpha = 0.35 + 0.6 * L.reach;
-        ctx.strokeStyle = "rgba(235,240,255,0.95)";
+        ctx.strokeStyle = P.thread;
         ctx.lineWidth = 1.7 * k;
         ctx.setLineDash([0.1, 4.4 * k]);
         ctx.lineDashOffset = time * 18;
@@ -666,7 +772,7 @@ export function SpiderCrawler({
 
         // ujung kaki
         if (L.reach > 0.5) {
-          ctx.fillStyle = "#ffffff";
+          ctx.fillStyle = P.spark;
           ctx.beginPath();
           ctx.arc(ex, ey, 2 * k, 0, Math.PI * 2);
           ctx.fill();
@@ -674,7 +780,7 @@ export function SpiderCrawler({
 
         // paket cahaya mengalir dari ujung kaki kembali ke badan
         if (L.reach > 0.9) {
-          ctx.globalCompositeOperation = "lighter";
+          ctx.globalCompositeOperation = P.add;
           for (let q = 0; q < 3; q++) {
             const t = 1 - ((time * 0.8 + idx * 0.37) % 1) + q * 0.035;
             if (t > 1) continue;
@@ -708,12 +814,12 @@ export function SpiderCrawler({
             ctx.fillRect(bx, by, tw + 10 * k, ph);
             ctx.fillStyle = "#1a0b10";
           } else {
-            ctx.fillStyle = "rgba(10,12,20,0.75)";
+            ctx.fillStyle = P.chipBg;
             ctx.fillRect(bx, by, tw + 10 * k, ph);
-            ctx.strokeStyle = "rgba(255,255,255,0.32)";
+            ctx.strokeStyle = P.chipEdge;
             ctx.lineWidth = 0.8;
             ctx.strokeRect(bx + 0.4, by + 0.4, tw + 10 * k - 0.8, ph - 0.8);
-            ctx.fillStyle = "rgba(235,240,255,0.92)";
+            ctx.fillStyle = P.chipText;
           }
           ctx.textAlign = "left";
           ctx.textBaseline = "middle";
@@ -729,7 +835,7 @@ export function SpiderCrawler({
       const br = 12 * k;
 
       // glow aditif
-      ctx.globalCompositeOperation = "lighter";
+      ctx.globalCompositeOperation = P.add;
       const gl = ctx.createRadialGradient(x, y, 2, x, y, br * 3.4);
       gl.addColorStop(0, rgba(sp.core, 0.38));
       gl.addColorStop(1, rgba(sp.core, 0));
@@ -741,7 +847,7 @@ export function SpiderCrawler({
       // cincin orbit putus-putus + satelit
       ctx.lineCap = "round";
       ctx.lineWidth = 1 * k;
-      ctx.strokeStyle = "rgba(94,234,212,0.38)";
+      ctx.strokeStyle = P.teal(0.38);
       ctx.setLineDash([3 * k, 5 * k]);
       ctx.lineDashOffset = -time * 12;
       ctx.beginPath();
@@ -752,11 +858,11 @@ export function SpiderCrawler({
         const ang = time * 1.4 + (s * Math.PI * 2) / 3;
         const sx = x + Math.cos(ang) * br * 1.85;
         const sy = y + Math.sin(ang) * br * 1.85;
-        ctx.fillStyle = "rgba(167,243,232,0.9)";
+        ctx.fillStyle = P.satellite;
         ctx.beginPath();
         ctx.arc(sx, sy, 1.7 * k, 0, Math.PI * 2);
         ctx.fill();
-        ctx.fillStyle = "rgba(94,234,212,0.2)";
+        ctx.fillStyle = P.teal(0.2);
         ctx.beginPath();
         ctx.arc(sx, sy, 4.5 * k, 0, Math.PI * 2);
         ctx.fill();
@@ -765,7 +871,7 @@ export function SpiderCrawler({
 
       // duri radial pendek
       ctx.lineWidth = 0.9 * k;
-      ctx.strokeStyle = "rgba(94,234,212,0.6)";
+      ctx.strokeStyle = P.teal(0.6);
       for (let n = 0; n < SPIKE_COUNT; n++) {
         const ang = (n / SPIKE_COUNT) * Math.PI * 2 + 0.08 * Math.sin(time * 1.3 + n);
         const len = br * (0.8 + 0.7 * (0.5 + 0.5 * Math.sin(time * 2.1 + n * 1.7)));
@@ -812,7 +918,7 @@ export function SpiderCrawler({
       const bl = 11 * k;
       ctx.setLineDash([]);
       ctx.lineWidth = 1;
-      ctx.strokeStyle = "rgba(255,255,255,0.2)";
+      ctx.strokeStyle = P.hudLine;
       for (const sx of [0, 1]) {
         for (const sy of [0, 1]) {
           const x = sx ? w - m : m;
@@ -836,7 +942,7 @@ export function SpiderCrawler({
       });
       const font = Math.max(8.5, 9.5 * k);
       ctx.font = `500 ${font}px ${MONO}`;
-      ctx.fillStyle = "rgba(255,255,255,0.32)";
+      ctx.fillStyle = P.hud;
       ctx.textBaseline = "alphabetic";
       ctx.textAlign = "left";
       ctx.fillText("SPIDER · CRAWL", m + bl + 6 * k, m + font * 0.8);
@@ -854,16 +960,17 @@ export function SpiderCrawler({
       const band = 60 * k;
       const by = ((time * 38 * k) % (H + band * 2)) - band;
       const sg = ctx.createLinearGradient(0, by - band, 0, by + band);
-      sg.addColorStop(0, "rgba(255,255,255,0)");
-      sg.addColorStop(0.5, "rgba(255,255,255,0.035)");
-      sg.addColorStop(1, "rgba(255,255,255,0)");
-      ctx.globalCompositeOperation = "lighter";
+      sg.addColorStop(0, P.bandEdge);
+      sg.addColorStop(0.5, P.band);
+      sg.addColorStop(1, P.bandEdge);
+      ctx.globalCompositeOperation = P.add;
       ctx.fillStyle = sg;
       ctx.fillRect(0, by - band, w, band * 2);
       ctx.globalCompositeOperation = "source-over";
     };
 
     const draw = () => {
+      P = PALETTES[themeRef.current];
       ctx.clearRect(0, 0, w, H);
       ctx.save();
       ctx.translate(w / 2, H / 2);

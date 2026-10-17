@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Loader2 } from "lucide-react";
+import { Loader2 } from "@/components/ui/icons";
 import { useAuth } from "@/lib/auth-context";
 
 /** Wraps /dashboard so it's only reachable with a real Google session. */

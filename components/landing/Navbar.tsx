@@ -4,7 +4,7 @@ import * as React from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ArrowUpRight, Menu, X } from "lucide-react";
+import { ArrowUpRight, Menu, X } from "@/components/ui/icons";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/components/ui/Toast";
 import { GoogleLoginModal, GoogleMark } from "./GoogleLoginModal";
@@ -51,27 +51,33 @@ export function Navbar() {
 
   return (
     <>
-      <header className="fixed inset-x-0 top-0 z-50 border-b border-white/[0.06] bg-obs-subtle/80 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-8">
-          <div className="flex items-center gap-10">
-            <Link href="/" className="flex items-center gap-2.5" aria-label="Depup, beranda">
-              <Image src="/logo.png" alt="" width={32} height={32} priority className="h-8 w-8 rounded-lg" />
-              <span className="f-display text-[20px] font-bold tracking-tight text-white">Depup</span>
-            </Link>
-            <nav className="hidden items-center gap-7 md:flex" aria-label="Utama">
-              {NAV_LINKS.map((l) => (
-                <a key={l.href} href={l.href} className="text-[13px] text-obs-sec transition-colors hover:text-white">
-                  {l.label}
-                </a>
-              ))}
-            </nav>
-          </div>
+      <header className="fixed inset-x-0 top-3 z-50 px-3 sm:top-4 sm:px-6">
+        <div className="lp-nav mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 rounded-full pl-2.5 pr-2 sm:h-16 sm:pl-3">
+          <Link href="/" className="flex items-center gap-2.5" aria-label="Depup, beranda">
+            <Image src="/logo.png" alt="" width={36} height={36} priority className="h-9 w-9" />
+            <span className="text-[19px] font-bold tracking-tight text-text">Depup</span>
+          </Link>
 
-          <div className="hidden items-center gap-2.5 md:flex">
+          <nav
+            className="hidden items-center gap-1 rounded-full bg-[var(--pill-bg)] p-1 md:flex"
+            aria-label="Utama"
+          >
+            {NAV_LINKS.map((l) => (
+              <a
+                key={l.href}
+                href={l.href}
+                className="rounded-full px-4 py-2 text-[13px] font-medium text-text-muted transition-colors hover:bg-[var(--surface-solid)] hover:text-text"
+              >
+                {l.label}
+              </a>
+            ))}
+          </nav>
+
+          <div className="hidden items-center gap-2 md:flex">
             {loggedIn ? (
               <DashboardLink
                 href="/dashboard"
-                className="obs-btn-primary inline-flex h-9 items-center gap-1.5 rounded-lg px-4 text-[13px] font-semibold text-white"
+                className="btn-primary inline-flex h-10 items-center gap-1.5 px-5 text-[13px]"
               >
                 Buka dashboard <ArrowUpRight size={14} />
               </DashboardLink>
@@ -80,14 +86,14 @@ export function Navbar() {
                 <button
                   type="button"
                   onClick={() => setLoginOpen(true)}
-                  className="obs-btn-glass inline-flex h-9 items-center gap-2 rounded-lg px-4 text-[13px] font-medium text-white"
+                  className="pill inline-flex h-10 items-center gap-2 px-4 text-[13px] font-medium"
                 >
                   <GoogleMark size={14} />
                   Masuk
                 </button>
                 <DashboardLink
                   href="/dashboard"
-                  className="obs-btn-primary inline-flex h-9 items-center gap-1.5 rounded-lg px-4 text-[13px] font-semibold text-white"
+                  className="btn-primary inline-flex h-10 items-center gap-1.5 px-5 text-[13px]"
                 >
                   Deploy sekarang <ArrowUpRight size={14} />
                 </DashboardLink>
@@ -97,7 +103,7 @@ export function Navbar() {
 
           <button
             type="button"
-            className="obs-btn-glass grid h-9 w-9 place-items-center rounded-lg text-white md:hidden"
+            className="pill grid h-10 w-10 place-items-center md:hidden"
             onClick={() => setMenuOpen((v) => !v)}
             aria-label={menuOpen ? "Tutup menu" : "Buka menu"}
             aria-expanded={menuOpen}
@@ -107,13 +113,13 @@ export function Navbar() {
         </div>
 
         {menuOpen && (
-          <div className="flex max-h-[calc(100dvh-4rem)] flex-col gap-1 overflow-y-auto overscroll-contain border-t border-white/[0.06] bg-obs-subtle/95 px-4 py-3 backdrop-blur-xl md:hidden">
+          <div className="lp-nav mx-auto mt-2 flex max-h-[calc(100dvh-5.5rem)] max-w-6xl flex-col gap-1 overflow-y-auto overscroll-contain rounded-[28px] p-3 md:hidden">
             {NAV_LINKS.map((l) => (
               <a
                 key={l.href}
                 href={l.href}
                 onClick={() => setMenuOpen(false)}
-                className="rounded-lg px-3 py-2.5 text-[15px] text-obs-sec hover:bg-white/5 hover:text-white"
+                className="rounded-2xl px-4 py-3 text-[15px] font-medium text-text-muted hover:bg-[var(--pill-bg)] hover:text-text"
               >
                 {l.label}
               </a>
@@ -123,7 +129,7 @@ export function Navbar() {
                 <DashboardLink
                   href="/dashboard"
                   onClick={() => setMenuOpen(false)}
-                  className="obs-btn-primary flex h-11 items-center justify-center gap-1.5 rounded-lg text-[14px] font-semibold text-white"
+                  className="btn-primary flex h-12 items-center justify-center gap-1.5 text-[14px]"
                 >
                   Buka dashboard <ArrowUpRight size={15} />
                 </DashboardLink>
@@ -135,7 +141,7 @@ export function Navbar() {
                       setMenuOpen(false);
                       setLoginOpen(true);
                     }}
-                    className="obs-btn-glass flex h-11 items-center justify-center gap-2 rounded-lg text-[14px] font-medium text-white"
+                    className="pill flex h-12 items-center justify-center gap-2 text-[14px] font-medium"
                   >
                     <GoogleMark size={16} />
                     Masuk dengan Google
@@ -143,7 +149,7 @@ export function Navbar() {
                   <DashboardLink
                     href="/dashboard"
                     onClick={() => setMenuOpen(false)}
-                    className="obs-btn-primary flex h-11 items-center justify-center gap-1.5 rounded-lg text-[14px] font-semibold text-white"
+                    className="btn-primary flex h-12 items-center justify-center gap-1.5 text-[14px]"
                   >
                     Deploy sekarang <ArrowUpRight size={15} />
                   </DashboardLink>

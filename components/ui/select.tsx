@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import * as SelectPrimitive from "@radix-ui/react-select";
-import { Check, ChevronDown } from "lucide-react";
+import { Check, ChevronDown } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
 
 const Select = SelectPrimitive.Root;
@@ -17,7 +17,7 @@ const SelectTrigger = React.forwardRef<
     ref={ref}
     className={cn(
       "input-solid flex h-11 w-full items-center justify-between px-3.5 py-2.5 text-[13px] text-text",
-      "focus:border-violet-500/50 disabled:cursor-not-allowed disabled:opacity-50",
+      "disabled:cursor-not-allowed disabled:opacity-50",
       "data-[placeholder]:text-text-faint",
       className
     )}
@@ -25,7 +25,7 @@ const SelectTrigger = React.forwardRef<
   >
     {children}
     <SelectPrimitive.Icon asChild>
-      <ChevronDown size={15} className="opacity-60 shrink-0" />
+      <ChevronDown size={15} className="chev shrink-0 opacity-60 [[data-state=open]>&]:rotate-180" />
     </SelectPrimitive.Icon>
   </SelectPrimitive.Trigger>
 ));
@@ -41,7 +41,7 @@ const SelectContent = React.forwardRef<
       position={position}
       sideOffset={6}
       className={cn(
-        "surface-solid z-[200] overflow-hidden text-text shadow-lg",
+        "surface-solid z-[200] overflow-hidden !rounded-2xl text-text shadow-lg data-[state=open]:anim-pop",
         position === "popper" &&
           "min-w-[var(--radix-select-trigger-width)] translate-y-0",
         className
@@ -62,7 +62,7 @@ const SelectItem = React.forwardRef<
     ref={ref}
     className={cn(
       "relative flex w-full cursor-pointer select-none items-center rounded-xl py-2.5 pl-8 pr-3 text-[13px] outline-none",
-      "hover:bg-white/[0.08] focus:bg-white/[0.08] data-[state=checked]:bg-white/[0.06]",
+      "hover:bg-[var(--card-hover)] focus:bg-[var(--card-hover)] data-[state=checked]:bg-tone-lilac",
       "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       className
     )}

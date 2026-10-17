@@ -74,7 +74,7 @@ export function toFriendlyError(err: unknown, ctx: ErrorContext): ErrorGuide {
       title: "Koneksi internet terputus",
       message: "Aplikasi tidak bisa menghubungi server. Ini biasanya masalah sinyal/WiFi, bukan kesalahan kamu.",
       steps: [
-        "Cek koneksi internet kamu, lalu klik “Coba lagi”.",
+        "Periksa koneksi internet kamu, lalu klik “Coba lagi”.",
         "Kalau memakai VPN atau ad-blocker, coba matikan sebentar.",
       ],
       technical,
@@ -97,7 +97,7 @@ export function toFriendlyError(err: unknown, ctx: ErrorContext): ErrorGuide {
           title: "Link GitHub belum benar",
           message: "Link yang dimasukkan tidak terbaca sebagai repository GitHub.",
           steps: [
-            "Buka repo kamu di GitHub, lalu salin link dari address bar.",
+            "Buka repo kamu di GitHub, lalu salin link dari bilah alamat browser.",
             "Formatnya: https://github.com/nama-akun/nama-repo",
           ],
           technical,
@@ -107,7 +107,7 @@ export function toFriendlyError(err: unknown, ctx: ErrorContext): ErrorGuide {
           title: "Repo tidak ditemukan",
           message: rawMessage,
           steps: [
-            "Cek lagi penulisan link-nya (nama akun & nama repo).",
+            "Periksa lagi penulisan link-nya (nama akun & nama repo).",
             "Kalau repo ini private, isi GitHub Token di form — tanpa token, repo private terlihat seperti “tidak ada”.",
           ],
           links: [GITHUB_TOKEN_LINK],
@@ -119,7 +119,7 @@ export function toFriendlyError(err: unknown, ctx: ErrorContext): ErrorGuide {
           message: rawMessage,
           steps: [
             "Kalau repo private: isi GitHub Token dengan izin “repo”.",
-            "Kalau sudah mengisi token: cek apakah token sudah kedaluwarsa, lalu buat yang baru.",
+            "Kalau sudah mengisi token: periksa apakah token sudah kedaluwarsa, lalu buat yang baru.",
           ],
           links: [GITHUB_TOKEN_LINK],
           technical,
@@ -143,7 +143,7 @@ export function toFriendlyError(err: unknown, ctx: ErrorContext): ErrorGuide {
             "Buat token baru (link di bawah), lalu salin seluruhnya tanpa spasi di awal/akhir.",
             "Tempel di Settings → Token (atau di form deploy), lalu coba lagi.",
             ctx.platform === "cloudflare"
-              ? "Pastikan token punya izin “Cloudflare Pages: Edit”."
+              ? "Pastikan token memiliki izin “Cloudflare Pages: Edit”."
               : "Pastikan token tidak dibatasi ke project/team lain.",
           ],
           links: [TOKEN_LINKS[ctx.platform]],
@@ -165,7 +165,7 @@ export function toFriendlyError(err: unknown, ctx: ErrorContext): ErrorGuide {
             "Cloudflare harus diberi izin membaca repo GitHub kamu satu kali. Ini hanya dilakukan sekali per akun.",
           steps: [
             "Buka dashboard Cloudflare → Workers & Pages → Create → Pages → Connect to Git.",
-            "Pilih GitHub, lalu izinkan akses ke repo yang mau di-deploy.",
+            "Pilih GitHub, lalu izinkan akses ke repo yang mau dideploy.",
             "Kembali ke sini dan klik “Coba lagi”.",
           ],
           links: [manual.links?.[0]].filter(Boolean) as GuideLink[],
@@ -191,10 +191,10 @@ export function toFriendlyError(err: unknown, ctx: ErrorContext): ErrorGuide {
     if (err.status && err.status >= 500) {
       return withManual({
         title: `${platformName} sedang bermasalah`,
-        message: "Server sedang error — ini bukan kesalahan kamu. Biasanya hilang sendiri dalam beberapa menit.",
+        message: "Platform sedang mengalami gangguan. Ini bukan kesalahan kamu, dan biasanya pulih sendiri dalam beberapa menit.",
         steps: [
           "Tunggu 1–2 menit, lalu klik “Coba lagi”.",
-          `Cek status layanan ${platformName} kalau masalah berlanjut.`,
+          `Periksa status layanan ${platformName} kalau masalah berlanjut.`,
           "Atau deploy lewat panduan manual di bawah.",
         ],
         links: manual.links,
@@ -208,17 +208,17 @@ export function toFriendlyError(err: unknown, ctx: ErrorContext): ErrorGuide {
     return {
       title: "Build gagal di server",
       message:
-        "Repo terhubung dengan benar, tapi proses build di " +
+        "Repo terhubung dengan benar, tetapi proses build di " +
         `${platformName} berhenti dengan error. Ini biasanya karena masalah di kode/konfigurasi project, bukan di Depup.`,
       steps: [
         "Klik “Lihat log” untuk membaca baris error terakhir — itu petunjuk utamanya.",
         ...(isNode
           ? [
               "Coba jalankan `npm install && npm run build` di komputermu; kalau gagal di sana, perbaiki dulu.",
-              "Kalau project butuh environment variable, isi di step Environment Variables lalu deploy ulang.",
+              "Kalau project butuh environment variable, isi di bagian Environment Variables, lalu deploy ulang.",
             ]
           : ["Pastikan file konfigurasi project (mis. Dockerfile / requirements) sudah benar."]),
-        "Setelah diperbaiki dan di-push ke GitHub, klik “Coba lagi”.",
+        "Setelah diperbaiki dan dipush ke GitHub, klik “Coba lagi”.",
       ],
       links: manual.links,
       technical: `${rawMessage}\n(platform=${ctx.platform}, tahap=build)`,

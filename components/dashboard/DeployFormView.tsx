@@ -1,27 +1,11 @@
 "use client";
 
 import { useDialogA11y } from "@/components/ui/useDialogA11y";
+import { Icon } from "@/components/ui/Icon";
+import { CloudflareIcon, RailwayIcon, VercelIcon } from "@/components/ui/PlatformIcon";
 import * as React from "react";
-import {
-  HelpCircle,
-  Loader2,
-  ShieldCheck,
-  Terminal,
-  Check,
-  Rocket,
-  ArrowRight,
-  ArrowLeft,
-  X,
-  Globe,
-  Cloud,
-  TramFront,
-  Github,
-  KeyRound,
-  CircleAlert,
-  ExternalLink,
-  Hammer,
-  FolderOutput,
-} from "lucide-react";
+import { HelpCircle, Loader2, ShieldCheck, Terminal, Check, Rocket, ArrowRight, ArrowLeft, X, Globe, KeyRound, CircleAlert, ExternalLink, Hammer, FolderOutput } from "@/components/ui/icons";
+import { Github } from "lucide-react";
 import { ViewFade } from "@/components/ui/ViewFade";
 import { cn } from "@/lib/utils";
 import { useDeploy } from "@/lib/deploy-context";
@@ -35,32 +19,36 @@ const PLATFORMS: {
   label: string;
   desc: string;
   accent: string;
-  letter: string;
+  tone: string;
+  toneVar: string;
   Icon: any;
 }[] = [
   {
     id: "vercel",
     label: "Vercel",
     desc: "Frontend Cloud terbaik untuk Next.js",
-    accent: "#0a0a0f", // di-override CSS var di render
-    letter: "▲",
-    Icon: Globe,
+    accent: "#120B2E", // di-override CSS var di render
+    tone: "bg-tone-peri",
+    toneVar: "--tone-peri",
+    Icon: VercelIcon,
+  },
+  {
+    id: "railway",
+    label: "Railway",
+    desc: "Deploy app & database tanpa repot",
+    accent: "#7b50ff",
+    tone: "bg-tone-lilac",
+    toneVar: "--tone-lilac",
+    Icon: RailwayIcon,
   },
   {
     id: "cloudflare",
     label: "Cloudflare",
     desc: "Pages & Workers global edge network",
     accent: "#f6821f",
-    letter: "☁️",
-    Icon: Cloud,
-  },
-  {
-    id: "railway",
-    label: "Railway",
-    desc: "Deploy app & database tanpa ribet",
-    accent: "#a78bfa",
-    letter: "◧",
-    Icon: TramFront,
+    tone: "bg-tone-peach",
+    toneVar: "--tone-peach",
+    Icon: CloudflareIcon,
   },
 ];
 
@@ -74,13 +62,13 @@ function domainSuffixFor(p: Platform): string {
 /* ---------------- Shared classes ---------------- */
 
 const inputCls =
-  "w-full h-11 sm:h-[46px] rounded-xl sm:rounded-[12px] bg-[var(--dc-input)] border border-[var(--dc-line)] px-3.5 sm:px-4 text-[13.5px] sm:text-[14px] text-[var(--dc-text)] placeholder:text-[var(--dc-text-faint)] focus:outline-none focus:border-[var(--dc-line-strong)] focus:bg-[var(--dc-input-focus)] transition-colors";
+  "w-full h-11 sm:h-[46px] rounded-xl sm:rounded-[12px] bg-[var(--dc-input)] border border-transparent px-3.5 sm:px-4 text-[13.5px] sm:text-[14px] text-[var(--dc-text)] placeholder:text-[var(--dc-text-faint)] focus:outline-none focus:ring-[3px] focus:ring-violet-200 dark:focus:ring-violet-800 focus:bg-[var(--dc-input-focus)] transition-colors";
 
 const textareaCls =
-  "w-full rounded-xl sm:rounded-[12px] bg-[var(--dc-input)] border border-[var(--dc-line)] px-3.5 sm:px-4 py-2.5 sm:py-3 text-[12.5px] sm:text-[13px] text-[var(--dc-text)] placeholder:text-[var(--dc-text-faint)] focus:outline-none focus:border-[var(--dc-line-strong)] focus:bg-[var(--dc-input-focus)] transition-colors resize-none font-mono";
+  "w-full rounded-xl sm:rounded-[12px] bg-[var(--dc-input)] border border-transparent px-3.5 sm:px-4 py-2.5 sm:py-3 text-[12.5px] sm:text-[13px] text-[var(--dc-text)] placeholder:text-[var(--dc-text-faint)] focus:outline-none focus:ring-[3px] focus:ring-violet-200 dark:focus:ring-violet-800 focus:bg-[var(--dc-input-focus)] transition-colors resize-none font-mono";
 
 const labelCls =
-  "block text-[10.5px] sm:text-[11px] tracking-wide uppercase text-[var(--dc-text-faint)] font-medium";
+  "block text-[12px] sm:text-[12px] tracking-wide uppercase text-[var(--dc-text-faint)] font-medium";
 
 /* ---------------- Step definitions ---------------- */
 
@@ -98,14 +86,14 @@ function getStepsForPlatform(p: Platform): StepDef[] {
     {
       id: "projectName",
       title: "Nama Project",
-      desc: "Nama unik untuk project kamu. Ini akan jadi subdomain kamu nantinya.",
+      desc: "Nama unik untuk project-mu. Nama ini akan menjadi subdomain situsmu nanti.",
       required: true,
       icon: Rocket,
     },
     {
       id: "githubUrl",
       title: "GitHub URL",
-      desc: "Link repository GitHub yang mau di-deploy. Pastikan repo public atau isi token private nanti.",
+      desc: "Link repository GitHub yang ingin dideploy. Pastikan repo-nya public, atau isi GitHub Token untuk repo private.",
       required: true,
       icon: Github,
     },
@@ -117,14 +105,14 @@ function getStepsForPlatform(p: Platform): StepDef[] {
       {
         id: "platformToken",
         title: "Vercel Token",
-        desc: "Token untuk autentikasi ke akun Vercel kamu. Kalau sudah ada di Settings, bisa langsung pakai.",
+        desc: "Token untuk menghubungkan Depup ke akun Vercel-mu. Kalau sudah tersimpan di Settings, langsung pakai saja.",
         required: true,
         icon: KeyRound,
       },
       {
         id: "githubPat",
         title: "GitHub Token",
-        desc: "Hanya untuk repo private. Bisa dilewati kalau repo kamu public.",
+        desc: "Hanya untuk repo private. Lewati saja kalau repo-mu public.",
         optional: true,
         icon: Github,
       },
@@ -142,21 +130,21 @@ function getStepsForPlatform(p: Platform): StepDef[] {
       {
         id: "accountId",
         title: "Account ID",
-        desc: "ID akun Cloudflare kamu. Otomatis terisi kalau token dari Settings.",
+        desc: "ID akun Cloudflare-mu. Terisi otomatis kalau tokennya diambil dari Settings.",
         required: true,
         icon: Globe,
       },
       {
         id: "build",
         title: "Build Config",
-        desc: "Opsional. Kosongkan = auto-detect framework (Next.js, Vite, dll).",
+        desc: "Opsional. Kosongkan agar framework (Next.js, Vite, dll.) terdeteksi otomatis.",
         optional: true,
         icon: Hammer,
       },
       {
         id: "githubPat",
         title: "GitHub Token",
-        desc: "Untuk repo private. Bisa dilewati.",
+        desc: "Untuk repo private. Boleh dilewati.",
         optional: true,
         icon: Github,
       },
@@ -167,7 +155,7 @@ function getStepsForPlatform(p: Platform): StepDef[] {
       {
         id: "platformToken",
         title: "Railway Token",
-        desc: "Token Railway kamu.",
+        desc: "Token akun Railway-mu.",
         required: true,
         icon: KeyRound,
       },
@@ -189,9 +177,9 @@ function TokenHelpLink({ topic }: { topic: string }) {
     <button
       type="button"
       onClick={() => setView("docs")}
-      className="inline-flex items-center gap-1 sm:gap-1.5 text-[10.5px] sm:text-[11px] font-medium text-violet-500 dark:text-violet-400 hover:text-[var(--dc-text)] transition-colors shrink-0"
+      className="inline-flex items-center gap-1 sm:gap-1.5 text-[12px] sm:text-[12px] font-medium text-lav-text hover:text-[var(--dc-text)] transition-colors shrink-0"
     >
-      <HelpCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Cara dapetin {topic}
+      <HelpCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Cara mendapatkan {topic}
     </button>
   );
 }
@@ -212,7 +200,7 @@ function FieldLabel({
   return (
     <div className="mb-2 flex items-center justify-between gap-2 flex-wrap">
       <label htmlFor={htmlFor} className={labelCls}>
-        {children} {required && <span className="text-red-500 dark:text-red-400">*</span>}
+        {children} {required && <span className="text-bad-fg">*</span>}
         {optional && (
           <span className="text-[var(--dc-text-faint)] lowercase normal-case ml-1">
             (opsional)
@@ -241,8 +229,8 @@ function VercelTokenField() {
 
   if (savedVercelTokenStatus === "checking") {
     return (
-      <p className="inline-flex items-center gap-2 text-[11.5px] sm:text-xs text-[var(--dc-text-muted)]">
-        <Loader2 size={13} className="animate-spin" /> Mengecek token...
+      <p className="inline-flex items-center gap-2 text-[12px] sm:text-xs text-[var(--dc-text-muted)]">
+        <Loader2 size={13} className="animate-spin" /> Memeriksa token...
       </p>
     );
   }
@@ -253,23 +241,23 @@ function VercelTokenField() {
         <FieldLabel htmlFor="platformToken" required>
           Vercel Token
         </FieldLabel>
-        <div className="rounded-xl sm:rounded-[14px] border border-[var(--dc-green-line)] bg-[var(--dc-green-bg)] p-3.5 sm:p-4">
+        <div className="rounded-xl sm:rounded-[14px] bg-[var(--dc-green-bg)] p-3.5 sm:p-4">
           <div className="flex items-center gap-3">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-500/15 dark:bg-emerald-400/20 flex items-center justify-center shrink-0">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[var(--ok-bg)] dark:bg-[var(--ok-bg)] flex items-center justify-center shrink-0">
               <ShieldCheck
                 size={14}
-                className="sm:hidden text-emerald-600 dark:text-emerald-300"
+                className="sm:hidden text-ok-fg"
               />
               <ShieldCheck
                 size={16}
-                className="hidden sm:block text-emerald-600 dark:text-emerald-300"
+                className="hidden sm:block text-ok-fg"
               />
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-[12px] sm:text-[13px] font-medium text-[var(--dc-green-fg)] truncate">
                 Terhubung sebagai @{savedVercelToken.username}
               </div>
-              <div className="text-[10.5px] sm:text-[11px] text-[var(--dc-green-fg-muted)] mt-0.5">
+              <div className="text-[12px] sm:text-[12px] text-[var(--dc-green-fg-muted)] mt-0.5">
                 Token dari Settings • aman
               </div>
             </div>
@@ -278,14 +266,14 @@ function VercelTokenField() {
             <button
               type="button"
               onClick={() => setManualOverride(false)}
-              className="h-9 rounded-full bg-emerald-500 text-white dark:bg-emerald-400 dark:text-black text-[12px] sm:text-[13px] font-medium hover:opacity-90 transition-opacity"
+              className="h-9 rounded-full bg-ok-fg text-white dark:text-midnight text-[12px] sm:text-[13px] font-medium hover:opacity-90 transition-opacity"
             >
               Pakai token ini
             </button>
             <button
               type="button"
               onClick={() => setManualOverride(true)}
-              className="h-9 rounded-full bg-[var(--dc-pill)] border border-[var(--dc-line)] text-[var(--dc-text-muted)] text-[12px] sm:text-[13px] font-medium hover:bg-[var(--dc-hover)] transition-colors"
+              className="h-9 rounded-full bg-[var(--dc-pill)] text-[var(--dc-text-muted)] text-[12px] sm:text-[13px] font-medium hover:bg-[var(--dc-hover)] transition-colors"
             >
               Ganti token
             </button>
@@ -315,7 +303,7 @@ function VercelTokenField() {
         <button
           type="button"
           onClick={() => setManualOverride(false)}
-          className="mt-2 sm:mt-2.5 text-[10.5px] sm:text-[11px] text-[var(--dc-text-muted)] hover:text-[var(--dc-text)] underline underline-offset-4"
+          className="mt-2 sm:mt-2.5 text-[12px] sm:text-[12px] text-[var(--dc-text-muted)] hover:text-[var(--dc-text)] underline underline-offset-4"
         >
           Pakai token tersimpan lagi
         </button>
@@ -346,8 +334,8 @@ function CloudflareTokenField() {
 
   if (savedCloudflareTokenStatus === "checking") {
     return (
-      <p className="inline-flex items-center gap-2 text-[11.5px] sm:text-xs text-[var(--dc-text-muted)]">
-        <Loader2 size={13} className="animate-spin" /> Mengecek token...
+      <p className="inline-flex items-center gap-2 text-[12px] sm:text-xs text-[var(--dc-text-muted)]">
+        <Loader2 size={13} className="animate-spin" /> Memeriksa token...
       </p>
     );
   }
@@ -358,23 +346,23 @@ function CloudflareTokenField() {
         <FieldLabel htmlFor="platformToken" required>
           Cloudflare Token
         </FieldLabel>
-        <div className="rounded-xl sm:rounded-[14px] border border-[var(--dc-green-line)] bg-[var(--dc-green-bg)] p-3.5 sm:p-4">
+        <div className="rounded-xl sm:rounded-[14px] bg-[var(--dc-green-bg)] p-3.5 sm:p-4">
           <div className="flex items-center gap-3">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-500/15 dark:bg-emerald-400/20 flex items-center justify-center shrink-0">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[var(--ok-bg)] dark:bg-[var(--ok-bg)] flex items-center justify-center shrink-0">
               <ShieldCheck
                 size={14}
-                className="sm:hidden text-emerald-600 dark:text-emerald-300"
+                className="sm:hidden text-ok-fg"
               />
               <ShieldCheck
                 size={16}
-                className="hidden sm:block text-emerald-600 dark:text-emerald-300"
+                className="hidden sm:block text-ok-fg"
               />
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-[12px] sm:text-[13px] font-medium text-[var(--dc-green-fg)] truncate">
                 {savedCloudflareToken.accountName}
               </div>
-              <div className="text-[10.5px] sm:text-[11px] text-[var(--dc-green-fg-muted)] mt-0.5">
+              <div className="text-[12px] sm:text-[12px] text-[var(--dc-green-fg-muted)] mt-0.5">
                 Token dari Settings
               </div>
             </div>
@@ -383,14 +371,14 @@ function CloudflareTokenField() {
             <button
               type="button"
               onClick={() => setManualOverride(false)}
-              className="h-9 rounded-full bg-emerald-500 text-white dark:bg-emerald-400 dark:text-black text-[12px] sm:text-[13px] font-medium hover:opacity-90 transition-opacity"
+              className="h-9 rounded-full bg-ok-fg text-white dark:text-midnight text-[12px] sm:text-[13px] font-medium hover:opacity-90 transition-opacity"
             >
               Pakai token ini
             </button>
             <button
               type="button"
               onClick={() => setManualOverride(true)}
-              className="h-9 rounded-full bg-[var(--dc-pill)] border border-[var(--dc-line)] text-[var(--dc-text-muted)] text-[12px] sm:text-[13px] font-medium hover:bg-[var(--dc-hover)] transition-colors"
+              className="h-9 rounded-full bg-[var(--dc-pill)] text-[var(--dc-text-muted)] text-[12px] sm:text-[13px] font-medium hover:bg-[var(--dc-hover)] transition-colors"
             >
               Ganti token
             </button>
@@ -420,7 +408,7 @@ function CloudflareTokenField() {
         <button
           type="button"
           onClick={() => setManualOverride(false)}
-          className="mt-2 sm:mt-2.5 text-[10.5px] sm:text-[11px] text-[var(--dc-text-muted)] hover:text-[var(--dc-text)] underline underline-offset-4"
+          className="mt-2 sm:mt-2.5 text-[12px] sm:text-[12px] text-[var(--dc-text-muted)] hover:text-[var(--dc-text)] underline underline-offset-4"
         >
           Pakai token tersimpan lagi
         </button>
@@ -444,8 +432,8 @@ function RailwayTokenField() {
 
   if (savedRailwayTokenStatus === "checking") {
     return (
-      <p className="inline-flex items-center gap-2 text-[11.5px] sm:text-xs text-[var(--dc-text-muted)]">
-        <Loader2 size={13} className="animate-spin" /> Mengecek token...
+      <p className="inline-flex items-center gap-2 text-[12px] sm:text-xs text-[var(--dc-text-muted)]">
+        <Loader2 size={13} className="animate-spin" /> Memeriksa token...
       </p>
     );
   }
@@ -456,23 +444,23 @@ function RailwayTokenField() {
         <FieldLabel htmlFor="platformToken" required>
           Railway Token
         </FieldLabel>
-        <div className="rounded-xl sm:rounded-[14px] border border-[var(--dc-green-line)] bg-[var(--dc-green-bg)] p-3.5 sm:p-4">
+        <div className="rounded-xl sm:rounded-[14px] bg-[var(--dc-green-bg)] p-3.5 sm:p-4">
           <div className="flex items-center gap-3">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-emerald-500/15 dark:bg-emerald-400/20 flex items-center justify-center shrink-0">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[var(--ok-bg)] dark:bg-[var(--ok-bg)] flex items-center justify-center shrink-0">
               <ShieldCheck
                 size={14}
-                className="sm:hidden text-emerald-600 dark:text-emerald-300"
+                className="sm:hidden text-ok-fg"
               />
               <ShieldCheck
                 size={16}
-                className="hidden sm:block text-emerald-600 dark:text-emerald-300"
+                className="hidden sm:block text-ok-fg"
               />
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-[12px] sm:text-[13px] font-medium text-[var(--dc-green-fg)] truncate">
                 {savedRailwayToken.name}
               </div>
-              <div className="text-[10.5px] sm:text-[11px] text-[var(--dc-green-fg-muted)] mt-0.5">
+              <div className="text-[12px] sm:text-[12px] text-[var(--dc-green-fg-muted)] mt-0.5">
                 Token dari Settings
               </div>
             </div>
@@ -481,14 +469,14 @@ function RailwayTokenField() {
             <button
               type="button"
               onClick={() => setManualOverride(false)}
-              className="h-9 rounded-full bg-emerald-500 text-white dark:bg-emerald-400 dark:text-black text-[12px] sm:text-[13px] font-medium hover:opacity-90 transition-opacity"
+              className="h-9 rounded-full bg-ok-fg text-white dark:text-midnight text-[12px] sm:text-[13px] font-medium hover:opacity-90 transition-opacity"
             >
               Pakai token ini
             </button>
             <button
               type="button"
               onClick={() => setManualOverride(true)}
-              className="h-9 rounded-full bg-[var(--dc-pill)] border border-[var(--dc-line)] text-[var(--dc-text-muted)] text-[12px] sm:text-[13px] font-medium hover:bg-[var(--dc-hover)] transition-colors"
+              className="h-9 rounded-full bg-[var(--dc-pill)] text-[var(--dc-text-muted)] text-[12px] sm:text-[13px] font-medium hover:bg-[var(--dc-hover)] transition-colors"
             >
               Ganti token
             </button>
@@ -518,7 +506,7 @@ function RailwayTokenField() {
         <button
           type="button"
           onClick={() => setManualOverride(false)}
-          className="mt-2 sm:mt-2.5 text-[10.5px] sm:text-[11px] text-[var(--dc-text-muted)] hover:text-[var(--dc-text)] underline underline-offset-4"
+          className="mt-2 sm:mt-2.5 text-[12px] sm:text-[12px] text-[var(--dc-text-muted)] hover:text-[var(--dc-text)] underline underline-offset-4"
         >
           Pakai token tersimpan lagi
         </button>
@@ -644,82 +632,43 @@ export function DeployFormView() {
     <ViewFade>
       {/* ============ THEME TOKENS (dark ↔ light) ============ */}
       <style>{`
+        /* Alias ke token global (globals.css). Tema terang/gelap mengikuti [data-theme] otomatis. */
         .dc-root {
-          --dc-text: #0a0a0f;
-          --dc-text-muted: rgba(10, 10, 15, 0.55);
-          --dc-text-faint: rgba(10, 10, 15, 0.35);
+          --dc-text: var(--text);
+          --dc-text-muted: var(--text-muted);
+          --dc-text-faint: var(--text-faint);
 
-          --dc-surface: #ffffff;
-          --dc-surface-2: #f5f5f8;
-          --dc-surface-solid: #f0f0f4;
+          --dc-surface: var(--surface-solid);
+          --dc-surface-2: var(--frame);
+          --dc-surface-solid: var(--surface-solid-2);
 
-          --dc-input: #ffffff;
-          --dc-input-focus: #fafafc;
+          --dc-input: var(--input-bg);
+          --dc-input-focus: var(--surface-solid);
 
-          --dc-line: rgba(10, 10, 15, 0.08);
-          --dc-line-strong: rgba(10, 10, 15, 0.16);
+          --dc-line: var(--line);
+          --dc-line-strong: var(--line-strong);
 
-          --dc-pill: rgba(10, 10, 15, 0.05);
-          --dc-hover: rgba(10, 10, 15, 0.07);
+          --dc-pill: var(--pill-bg);
+          --dc-hover: var(--card-hover);
 
-          --dc-btn-bg: #0a0a0f;
-          --dc-btn-fg: #ffffff;
+          --dc-btn-bg: var(--ink-fill);
+          --dc-btn-fg: var(--ink-fill-text);
 
-          --dc-backdrop: rgba(10, 10, 15, 0.45);
+          --dc-backdrop: rgba(18, 11, 46, 0.5);
 
-          --dc-green-bg: #ecfdf5;
-          --dc-green-line: rgba(16, 185, 129, 0.25);
-          --dc-green-fg: #065f46;
-          --dc-green-fg-muted: rgba(6, 95, 70, 0.55);
+          --dc-green-bg: var(--ok-bg);
+          --dc-green-line: var(--ok-line);
+          --dc-green-fg: var(--ok-fg);
+          --dc-green-fg-muted: color-mix(in srgb, var(--ok-fg) 78%, var(--ok-bg));
 
-          --dc-shadow-card:
-            0 0 0 1px rgba(0, 0, 0, 0.04) inset,
-            0 10px 40px -10px rgba(10, 10, 15, 0.12);
-          --dc-shadow-modal:
-            0 20px 80px -20px rgba(10, 10, 15, 0.25),
-            0 0 0 1px rgba(0, 0, 0, 0.04) inset;
-          --dc-shadow-btn: 0 4px 20px -6px rgba(10, 10, 15, 0.35);
+          --dc-shadow-card: var(--surface-shadow);
+          --dc-shadow-modal: 0 40px 90px -30px rgba(20, 18, 31, 0.5);
+          --dc-shadow-btn: 0 14px 28px -14px rgba(123, 80, 255, 0.6);
         }
-
-        .dark .dc-root,
-        [data-theme="dark"] .dc-root,
-        html[data-theme="dark"] .dc-root,
-        .dark.dc-root,
-        [data-theme="dark"].dc-root {
-          --dc-text: #ffffff;
-          --dc-text-muted: rgba(255, 255, 255, 0.55);
-          --dc-text-faint: rgba(255, 255, 255, 0.35);
-
-          --dc-surface: #15151f;
-          --dc-surface-2: #1a1a28;
-          --dc-surface-solid: #1e1e2f;
-
-          --dc-input: #1e1e2f;
-          --dc-input-focus: #23233a;
-
-          --dc-line: rgba(255, 255, 255, 0.08);
-          --dc-line-strong: rgba(255, 255, 255, 0.16);
-
-          --dc-pill: rgba(255, 255, 255, 0.06);
-          --dc-hover: rgba(255, 255, 255, 0.1);
-
-          --dc-btn-bg: #ffffff;
-          --dc-btn-fg: #000000;
-
-          --dc-backdrop: rgba(6, 6, 10, 0.8);
-
-          --dc-green-bg: #0f2a22;
-          --dc-green-line: rgba(52, 211, 153, 0.2);
-          --dc-green-fg: #d1fae5;
-          --dc-green-fg-muted: rgba(209, 250, 229, 0.5);
-
-          --dc-shadow-card:
-            0 0 0 1px rgba(255, 255, 255, 0.08) inset,
-            0 10px 40px -10px rgba(0, 0, 0, 0.6);
-          --dc-shadow-modal:
-            0 20px 80px -20px rgba(0, 0, 0, 0.8),
-            0 0 0 1px rgba(255, 255, 255, 0.05) inset;
-          --dc-shadow-btn: 0 4px 20px -6px rgba(255, 255, 255, 0.4);
+        [data-theme="dark"] .dc-root {
+          --dc-backdrop: rgba(18, 11, 46, 0.78);
+          --dc-shadow-modal: 0 40px 90px -30px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+          --dc-shadow-btn: 0 14px 28px -14px rgba(123, 80, 255, 0.55);
         }
 
         @keyframes dcSlideInRight { from { opacity:0; transform: translateX(18px) } to { opacity:1; transform: translateX(0) } }
@@ -732,163 +681,94 @@ export function DeployFormView() {
         <div className="relative z-10">
           {/* ---------- HERO ---------- */}
           <div className="text-center mb-8 sm:mb-10 px-1">
-            <h1 className="text-[26px] xs:text-[30px] sm:text-[36px] md:text-[44px] font-[700] tracking-tight leading-[1.05] sm:leading-[0.95] text-[var(--dc-text)]">
+            <h1 className="page-title text-[var(--dc-text)]">
               Pilih Platform Deploy
             </h1>
-            <p className="mt-3 text-[13px] sm:text-[14px] md:text-[15px] text-[var(--dc-text-muted)] max-w-[460px] mx-auto leading-relaxed px-2">
-              Pilih provider favorit kamu. Kami akan bantu setup deploy otomatis
-              dengan panduan step-by-step.
+            <p className="mx-auto mt-1.5 max-w-[460px] text-[13.5px] leading-relaxed text-[var(--dc-text-muted)]">
+              Pilih platform favoritmu. Depup akan memandu proses deploy otomatis
+              langkah demi langkah.
             </p>
           </div>
 
-          {/* ---------- PLATFORM GRID ---------- */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 md:gap-5 max-w-[720px] mx-auto">
+          {/* ---------- PLATFORM LIST ---------- */}
+          <div className="flex flex-col gap-4 sm:gap-6 max-w-[720px] mx-auto" role="radiogroup" aria-label="Platform deploy">
             {PLATFORMS.map((p) => {
               const selected = platform === p.id;
-              const accent = accentFor(p);
               return (
                 <button
                   key={p.id}
                   type="button"
+                  role="radio"
+                  aria-checked={selected}
                   onClick={() => setFormField("platform", p.id)}
                   className={cn(
-                    "group text-left relative rounded-[18px] sm:rounded-[22px] p-[1px] transition-all duration-300",
-                    selected ? "sm:scale-[1.01]" : "sm:hover:scale-[1.01]",
+                    "group block w-full text-left rounded-[24px] sm:rounded-[28px] p-5 sm:p-6 min-h-[132px] sm:min-h-[152px]",
+                    "flex flex-col justify-between transition-all duration-300 active:scale-[0.995]",
+                    selected
+                      ? "bg-violet-500 shadow-[0_18px_36px_-22px_rgba(123,80,255,0.8)]"
+                      : "bg-white dark:bg-[#1e1150] shadow-[0_10px_30px_-20px_rgba(30,17,80,0.35)] dark:shadow-none sm:hover:-translate-y-0.5",
                   )}
-                  style={{
-                    background: selected ? accent : "var(--dc-line)",
-                  }}
                 >
-                  <div
-                    className={cn(
-                      "relative rounded-[17px] sm:rounded-[21px] bg-[var(--dc-surface)] p-4 sm:p-5 md:p-6 h-full flex flex-col justify-between overflow-hidden transition-all",
-                      selected
-                        ? "shadow-[var(--dc-shadow-card)]"
-                        : "hover:bg-[var(--dc-surface-2)]",
-                    )}
-                  >
+                  <div className="flex items-center gap-3.5 min-w-0">
                     <div
-                      className="absolute -top-20 -right-20 w-40 sm:w-48 h-40 sm:h-48 rounded-full opacity-20 blur-[30px] transition-opacity group-hover:opacity-30"
-                      style={{ background: accent }}
-                    />
-
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
-                        <div
-                          className="w-10 h-10 sm:w-[42px] sm:h-[42px] rounded-[12px] sm:rounded-[13px] flex items-center justify-center border text-[16px] sm:text-[18px] font-bold tracking-tight shrink-0"
-                          style={{
-                            background: `color-mix(in srgb, ${accent} 12%, transparent)`,
-                            borderColor: `color-mix(in srgb, ${accent} 25%, transparent)`,
-                            color: accent,
-                          }}
-                        >
-                          {p.letter}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="text-[14.5px] sm:text-[16px] font-semibold tracking-tight leading-none text-[var(--dc-text)]">
-                            {p.label}
-                          </div>
-                          <div className="mt-1 sm:mt-1.5 text-[11.5px] sm:text-[12px] leading-[1.35] text-[var(--dc-text-muted)] sm:max-w-[170px]">
-                            {p.desc}
-                          </div>
-                        </div>
-                      </div>
-
+                      className={cn(
+                        "w-10 h-10 sm:w-[42px] sm:h-[42px] rounded-[12px] flex items-center justify-center shrink-0 transition-colors duration-300",
+                        selected
+                          ? "bg-white text-violet-600"
+                          : "bg-violet-100 text-violet-500 dark:bg-white dark:text-[#1e1150]",
+                      )}
+                    >
+                      <p.Icon size={22} />
+                    </div>
+                    <div className="min-w-0">
                       <div
                         className={cn(
-                          "w-[18px] h-[18px] sm:w-5 sm:h-5 rounded-full border flex items-center justify-center transition-all shrink-0 mt-0.5",
-                          selected
-                            ? "bg-[var(--dc-text)] border-[var(--dc-text)]"
-                            : "border-[var(--dc-line-strong)] bg-[var(--dc-pill)]",
+                          "text-[15px] sm:text-[16px] font-semibold tracking-[-0.01em] leading-none transition-colors duration-300",
+                          selected ? "text-white" : "text-ink dark:text-[#c9c2e6]",
                         )}
                       >
-                        {selected && (
-                          <Check
-                            className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[var(--dc-surface)]"
-                            strokeWidth={3}
-                          />
+                        {p.label}
+                      </div>
+                      <div
+                        className={cn(
+                          "mt-1.5 text-[12px] leading-[1.35] transition-colors duration-300",
+                          selected ? "text-violet-100" : "text-[var(--dc-text-muted)]",
                         )}
+                      >
+                        {p.desc}
                       </div>
                     </div>
+                  </div>
 
-                    <div className="mt-4 sm:mt-5 flex items-center gap-2 text-[10.5px] sm:text-[11px] font-medium tracking-wide">
+                  <div className="mt-6 flex items-center gap-2 text-[12px] font-medium">
+                    {["Deploy otomatis", "GitHub"].map((chip) => (
                       <span
+                        key={chip}
                         className={cn(
-                          "px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full border transition-colors",
+                          "px-2.5 py-1 rounded-full transition-colors duration-300",
                           selected
-                            ? "bg-[var(--dc-pill)] border-[var(--dc-line-strong)] text-[var(--dc-text)]"
-                            : "bg-[var(--dc-pill)] border-[var(--dc-line)] text-[var(--dc-text-faint)] group-hover:text-[var(--dc-text-muted)]",
+                            ? "bg-lime-500 text-[#1e1150]"
+                            : "bg-mist text-ink dark:bg-ink dark:text-[#b9b3d8]",
                         )}
                       >
-                        Auto Deploy
+                        {chip}
                       </span>
-                      <span
-                        className={cn(
-                          "px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full border transition-colors",
-                          selected
-                            ? "bg-[var(--dc-pill)] border-[var(--dc-line-strong)] text-[var(--dc-text)]"
-                            : "bg-[var(--dc-pill)] border-[var(--dc-line)] text-[var(--dc-text-faint)] group-hover:text-[var(--dc-text-muted)]",
-                        )}
-                      >
-                        GitHub
-                      </span>
-                    </div>
-
-                    {selected && (
-                      <div
-                        className="absolute bottom-0 left-5 right-5 sm:left-6 sm:right-6 h-[1px]"
-                        style={{
-                          background: `linear-gradient(to right, transparent, color-mix(in srgb, ${accent} 50%, transparent), transparent)`,
-                        }}
-                      />
-                    )}
+                    ))}
                   </div>
                 </button>
               );
             })}
           </div>
 
-          {/* ---------- PREVIEW BAR ---------- */}
-          <div className="max-w-[720px] mx-auto mt-4 sm:mt-6">
-            <div className="rounded-2xl sm:rounded-[18px] bg-[var(--dc-surface-2)] border border-[var(--dc-line)] p-3 sm:p-4 flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
-                <div className="w-8 h-8 rounded-full bg-[var(--dc-surface-solid)] border border-[var(--dc-line)] flex items-center justify-center shrink-0"
-                  style={{ color: activePlatformInfo ? accentFor(activePlatformInfo) : undefined }}
-                >
-                  {activePlatformInfo && (
-                    <activePlatformInfo.Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
-                  )}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="text-[12px] sm:text-[13px] font-medium truncate text-[var(--dc-text)]">
-                    Siap deploy ke {activePlatformInfo?.label}
-                  </div>
-                  <div className="text-[10.5px] sm:text-[11px] text-[var(--dc-text-muted)] flex items-center gap-1.5 mt-0.5 min-w-0">
-                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
-                    <span className="truncate">
-                      {previewDomain}
-                      <span className="hidden sm:inline"> • {repoHost}</span>
-                    </span>
-                  </div>
-                </div>
-              </div>
-              <div className="hidden md:flex items-center gap-2 text-[11px] text-[var(--dc-text-faint)]">
-                <span className="px-2 py-1 rounded-md bg-[var(--dc-pill)] border border-[var(--dc-line)]">
-                  Preview
-                </span>
-              </div>
-            </div>
-          </div>
-
           {/* ---------- START BUTTON ---------- */}
-          <div className="max-w-[720px] mx-auto mt-5 sm:mt-7 flex justify-center">
+          <div className="max-w-[720px] mx-auto mt-6 sm:mt-8 flex justify-center">
             <button
               type="button"
               onClick={openWizard}
               className="group relative w-full sm:w-auto sm:px-8 h-12 sm:h-[48px] rounded-full font-medium text-[14px] flex items-center justify-center gap-2.5 transition-all duration-300 bg-[var(--dc-btn-bg)] text-[var(--dc-btn-fg)] hover:opacity-90 shadow-[var(--dc-shadow-btn)] active:scale-[0.98]"
             >
               <Rocket className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
-              Mulai Deploy
+              Mulai deploy
               <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
             </button>
           </div>
@@ -915,7 +795,7 @@ export function DeployFormView() {
               aria-label={`Deploy ke ${activePlatformInfo?.label ?? "platform"}`}
               tabIndex={-1}
               className={cn(
-                "relative w-full bg-[var(--dc-surface)] border border-[var(--dc-line)] shadow-[var(--dc-shadow-modal)] overflow-hidden flex flex-col outline-none",
+                "relative w-full bg-[var(--dc-surface)] shadow-[var(--dc-shadow-modal)] overflow-hidden flex flex-col outline-none",
                 "max-w-full rounded-t-[24px] max-h-[92vh]",
                 "sm:max-w-[520px] sm:rounded-[28px] sm:max-h-[90vh]",
               )}
@@ -926,24 +806,22 @@ export function DeployFormView() {
                 <div className="w-10 h-1 rounded-full bg-[var(--dc-line-strong)]" />
               </div>
 
-              <div className="h-[1px] w-full bg-gradient-to-r from-transparent via-[var(--dc-line-strong)] to-transparent shrink-0" />
 
               {/* HEADER */}
               <div className="px-4 sm:px-7 md:px-8 pt-4 sm:pt-6 pb-3 sm:pb-5 flex items-center justify-between gap-3 shrink-0">
                 <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                   <div
-                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-[var(--dc-surface-solid)] border border-[var(--dc-line)] flex items-center justify-center shrink-0"
-                    style={{ color: activePlatformInfo ? accentFor(activePlatformInfo) : undefined }}
+                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-violet-100 text-violet-500 dark:bg-white dark:text-[#1e1150] flex items-center justify-center shrink-0"
                   >
                     {activePlatformInfo && (
-                      <activePlatformInfo.Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
+                      <activePlatformInfo.Icon size={17} />
                     )}
                   </div>
                   <div className="min-w-0">
                     <div className="text-[12.5px] sm:text-[13px] font-semibold leading-tight truncate text-[var(--dc-text)]">
                       Deploy ke {activePlatformInfo?.label}
                     </div>
-                    <div className="text-[10.5px] sm:text-[11px] text-[var(--dc-text-muted)] mt-0.5 truncate">
+                    <div className="text-[12px] sm:text-[12px] text-[var(--dc-text-muted)] mt-0.5 truncate">
                       Langkah {currentStep + 1} dari {steps.length} •{" "}
                       {step?.title}
                     </div>
@@ -951,7 +829,7 @@ export function DeployFormView() {
                 </div>
                 <button
                   onClick={closeModal}
-                  className="w-8 h-8 rounded-full bg-[var(--dc-pill)] border border-[var(--dc-line)] flex items-center justify-center hover:bg-[var(--dc-hover)] transition-colors shrink-0"
+                  className="w-8 h-8 rounded-full bg-[var(--dc-pill)] flex items-center justify-center hover:bg-[var(--dc-hover)] transition-colors shrink-0"
                   aria-label="Tutup"
                 >
                   <X className="w-4 h-4 text-[var(--dc-text-muted)]" />
@@ -982,7 +860,7 @@ export function DeployFormView() {
                           {complete && (
                             <div className="absolute inset-0 flex items-center justify-center">
                               <Check
-                                className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-[var(--dc-surface)]"
+                                className="w-2.5 h-2.5 sm:w-3 sm:h-3 text-white"
                                 strokeWidth={3}
                               />
                             </div>
@@ -1002,7 +880,7 @@ export function DeployFormView() {
                     );
                   })}
                 </div>
-                <div className="mt-1.5 sm:mt-2 flex justify-between text-[9px] sm:text-[10px] tracking-wide text-[var(--dc-text-faint)] uppercase">
+                <div className="mt-1.5 sm:mt-2 flex justify-between text-[9px] sm:text-[12px] tracking-wide text-[var(--dc-text-faint)] uppercase">
                   <span>1. Mulai</span>
                   <span className="hidden xs:inline">2. Input + Penjelasan</span>
                   <span className="xs:hidden">2. Input</span>
@@ -1024,14 +902,14 @@ export function DeployFormView() {
                     }}
                   >
                     <div className="flex items-start gap-3 sm:gap-3.5 mb-4 sm:mb-6">
-                      <div className="mt-0.5 w-8 h-8 sm:w-9 sm:h-9 shrink-0 rounded-xl bg-[var(--dc-surface-solid)] border border-[var(--dc-line)] flex items-center justify-center text-[var(--dc-text-muted)]">
+                      <div className="mt-0.5 w-8 h-8 sm:w-9 sm:h-9 shrink-0 rounded-xl bg-[var(--dc-surface-solid)] flex items-center justify-center text-[var(--dc-text-muted)]">
                         <step.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="text-[15px] sm:text-[17px] font-semibold tracking-tight leading-tight flex items-center gap-2 flex-wrap text-[var(--dc-text)]">
                           {step.title}
                           {step.optional && (
-                            <span className="text-[9.5px] sm:text-[10px] px-1.5 sm:px-2 py-0.5 rounded-full bg-[var(--dc-pill)] border border-[var(--dc-line)] text-[var(--dc-text-faint)] font-medium tracking-wide uppercase">
+                            <span className="text-[9.5px] sm:text-[12px] px-1.5 sm:px-2 py-0.5 rounded-full bg-[var(--dc-pill)] text-[var(--dc-text-faint)] font-medium tracking-wide uppercase">
                               Opsional
                             </span>
                           )}
@@ -1065,12 +943,12 @@ export function DeployFormView() {
                               className={cn(inputCls, "pr-24")}
                             />
                             {(form.projectName || "").length > 0 && (
-                              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[10.5px] sm:text-[11px] text-[var(--dc-text-faint)] pointer-events-none">
+                              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[12px] sm:text-[12px] text-[var(--dc-text-faint)] pointer-events-none">
                                 .{domainSuffixFor(platform)}
                               </div>
                             )}
                           </div>
-                          <div className="mt-2.5 sm:mt-3 rounded-xl sm:rounded-[10px] bg-[var(--dc-surface-2)] border border-[var(--dc-line)] px-3 py-2 sm:py-2.5 flex items-center gap-2 text-[10.5px] sm:text-[11px] text-[var(--dc-text-faint)]">
+                          <div className="mt-2.5 sm:mt-3 rounded-xl sm:rounded-[10px] bg-[var(--dc-surface-2)] px-3 py-2 sm:py-2.5 flex items-center gap-2 text-[12px] sm:text-[12px] text-[var(--dc-text-faint)]">
                             <Globe className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
                             <span className="truncate">
                               Preview:{" "}
@@ -1103,7 +981,7 @@ export function DeployFormView() {
                           />
                           {form.githubUrl &&
                             !form.githubUrl.includes("github.com") && (
-                              <div className="mt-2 text-[10.5px] sm:text-[11px] text-amber-600 dark:text-amber-300/70 flex items-center gap-1.5">
+                              <div className="mt-2 text-[12px] sm:text-[12px] text-warn-fg flex items-center gap-1.5">
                                 <CircleAlert className="w-3 h-3 shrink-0" /> URL
                                 harus mengandung github.com
                               </div>
@@ -1111,15 +989,15 @@ export function DeployFormView() {
                           <RepoCheckCard platform={platform} />
                           {repoEnvCheck.status === "ok" &&
                             repoEnvCheck.detectedEnvVars.length > 0 && (
-                              <div className="mt-2 text-[10.5px] sm:text-[11px] text-violet-600 dark:text-violet-300 flex items-start gap-1.5">
+                              <div className="mt-2 text-[12px] sm:text-[12px] text-lav-text flex items-start gap-1.5">
                                 <CircleAlert className="w-3 h-3 shrink-0 mt-0.5" />
                                 <span>
                                   Repo ini butuh env var:{" "}
                                   <span className="font-mono">
                                     {repoEnvCheck.detectedEnvVars.join(", ")}
                                   </span>{" "}
-                                  — sudah diisi otomatis di step Environment
-                                  Variables, tinggal isi value-nya.
+                                  — sudah terisi otomatis di bagian Environment
+                                  Variables, tinggal isi nilainya.
                                 </span>
                               </div>
                             )}
@@ -1127,7 +1005,7 @@ export function DeployFormView() {
                             repoEnvCheck.warnings.map((w, i) => (
                               <div
                                 key={i}
-                                className="mt-2 text-[10.5px] sm:text-[11px] text-amber-600 dark:text-amber-300/70 flex items-start gap-1.5"
+                                className="mt-2 text-[12px] sm:text-[12px] text-warn-fg flex items-start gap-1.5"
                               >
                                 <CircleAlert className="w-3 h-3 shrink-0 mt-0.5" />
                                 <span>{w}</span>
@@ -1234,9 +1112,9 @@ export function DeployFormView() {
                             />
                             <Github className="absolute right-3 sm:right-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-[var(--dc-text-faint)]" />
                           </div>
-                          <div className="mt-2 sm:mt-2.5 flex items-center gap-1.5 text-[10.5px] sm:text-[11px] text-[var(--dc-text-faint)]">
+                          <div className="mt-2 sm:mt-2.5 flex items-center gap-1.5 text-[12px] sm:text-[12px] text-[var(--dc-text-faint)]">
                             <ExternalLink className="w-3 h-3 shrink-0" />
-                            Token tidak pernah dikirim ke server manapun
+                            Token hanya dipakai untuk deploy ini dan tidak disimpan
                           </div>
                         </div>
                       )}
@@ -1248,7 +1126,7 @@ export function DeployFormView() {
                           </FieldLabel>
                           {repoEnvCheck.status === "ok" &&
                             repoEnvCheck.detectedEnvVars.length > 0 && (
-                              <div className="mb-2 text-[10.5px] sm:text-[11px] text-violet-600 dark:text-violet-300 flex items-start gap-1.5">
+                              <div className="mb-2 text-[12px] sm:text-[12px] text-lav-text flex items-start gap-1.5">
                                 <CircleAlert className="w-3 h-3 shrink-0 mt-0.5" />
                                 <span>
                                   Terdeteksi dari repo:{" "}
@@ -1292,7 +1170,7 @@ export function DeployFormView() {
                     "h-10 sm:h-9 px-3.5 sm:px-4 rounded-full text-[12.5px] sm:text-[13px] font-medium flex items-center gap-1.5 transition-colors shrink-0",
                     currentStep === 0
                       ? "text-[var(--dc-text-faint)] cursor-not-allowed"
-                      : "bg-[var(--dc-pill)] border border-[var(--dc-line)] text-[var(--dc-text-muted)] hover:bg-[var(--dc-hover)] hover:text-[var(--dc-text)] active:scale-[0.97]",
+                      : "bg-[var(--dc-pill)] text-[var(--dc-text-muted)] hover:bg-[var(--dc-hover)] hover:text-[var(--dc-text)] active:scale-[0.97]",
                   )}
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />

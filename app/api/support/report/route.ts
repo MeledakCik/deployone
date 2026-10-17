@@ -72,7 +72,7 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
 export const GET = withErrorHandling(async (req: NextRequest) => {
   const email = getSessionEmail(req);
   if (!email) return fail("Belum login.", 401, "unauthorized");
-  if (!isAdminEmail(email)) return fail("Tidak punya akses.", 403, "bad_request");
+  if (!isAdminEmail(email)) return fail("Tidak memiliki akses.", 403, "bad_request");
   const limit = Number(req.nextUrl.searchParams.get("limit")) || 30;
   return ok({ reports: await listSupportReports(limit) });
 });

@@ -17,9 +17,9 @@ import { EnvironmentView } from "@/components/dashboard/EnvironmentView";
 import { DocsView } from "@/components/dashboard/DocsView";
 import { SettingsView } from "@/components/dashboard/SettingsView";
 import { DonateView } from "@/components/dashboard/DonateView";
+import { AnnouncementBanner } from "@/components/dashboard/AnnouncementBanner";
 import { DeployModal } from "@/components/dashboard/DeployModal";
 import { SupportChat } from "@/components/dashboard/SupportChat";
-import { AnnouncementBanner } from "@/components/dashboard/AnnouncementBanner";
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -33,7 +33,7 @@ export default function DashboardPage() {
     const onError = () => {
       if (Date.now() - last < 10_000) return;
       last = Date.now();
-      showToast("Perubahan belum tersimpan ke server — cek koneksi, lalu coba lagi.");
+      showToast("Perubahan belum tersimpan ke server — periksa koneksi, lalu coba lagi.");
     };
     window.addEventListener("depup:sync-error", onError);
     return () => window.removeEventListener("depup:sync-error", onError);
@@ -65,23 +65,25 @@ export default function DashboardPage() {
   }
 
   return (
-    <div className="flex min-h-[100dvh] w-full flex-col md:flex-row md:items-start">
-      <Sidebar />
-      <div className="min-w-0 flex-1 px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
-        <div className="mx-auto max-w-6xl">
-          <AnnouncementBanner />
-        </div>
-        <div className="mx-auto max-w-6xl view active" id={view}>
-          {view === "dashboard" && <DashboardHomeView />}
-          {view === "deploy" && <DeployFormView />}
-          {view === "upload" && <UploadView />}
-          {view === "hosting" && <HostingView />}
-          {view === "projects" && <ProjectsView />}
-          {view === "domains" && <DomainsView />}
-          {view === "env" && <EnvironmentView />}
-          {view === "docs" && <DocsView />}
-          {view === "settings" && <SettingsView />}
-          {view === "donate" && <DonateView />}
+    <div className="app-canvas">
+      <div className="app-frame flex flex-col md:flex-row md:items-start md:gap-4">
+        <Sidebar />
+        <div className="min-w-0 flex-1 px-2 py-4 sm:px-4 sm:py-5 lg:px-6">
+          <div className="mx-auto max-w-6xl">
+            <AnnouncementBanner />
+          </div>
+          <div className="mx-auto max-w-6xl view active" id={view}>
+            {view === "dashboard" && <DashboardHomeView />}
+            {view === "deploy" && <DeployFormView />}
+            {view === "upload" && <UploadView />}
+            {view === "hosting" && <HostingView />}
+            {view === "projects" && <ProjectsView />}
+            {view === "domains" && <DomainsView />}
+            {view === "env" && <EnvironmentView />}
+            {view === "docs" && <DocsView />}
+            {view === "settings" && <SettingsView />}
+            {view === "donate" && <DonateView />}
+          </div>
         </div>
       </div>
 

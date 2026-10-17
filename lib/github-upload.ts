@@ -86,7 +86,7 @@ function skipReason(path: string): string | null {
   const parts = path.split("/");
   const name = parts[parts.length - 1];
   for (const dir of parts.slice(0, -1)) {
-    if (IGNORED_DIRS.has(dir)) return `folder ${dir}/ tidak perlu di-upload`;
+    if (IGNORED_DIRS.has(dir)) return `folder ${dir}/ tidak perlu diunggah`;
   }
   if (IGNORED_FILES.has(name)) return "file sistem";
   if (isSecretEnvFile(name)) return "berisi rahasia (env) — isi lewat Environment Variables";
@@ -178,7 +178,7 @@ function finalize(rawInput: UploadFile[]): CollectResult {
 
   const totalBytes = files.reduce((n, f) => n + f.data.byteLength, 0);
   if (files.length === 0) {
-    throw new UploadError("Tidak ada file yang bisa di-upload. Pastikan zip/folder-nya tidak kosong.");
+    throw new UploadError("Tidak ada file yang bisa diunggah. Pastikan zip/folder-nya tidak kosong.");
   }
   if (files.length > MAX_FILES) {
     throw new UploadError(
@@ -423,7 +423,7 @@ async function gh<T>(
         await sleep(800 * (attempt + 1));
         continue;
       }
-      throw new UploadError("Tidak bisa menghubungi GitHub. Cek koneksi internet lalu coba lagi.");
+      throw new UploadError("Tidak bisa menghubungi GitHub. Periksa koneksi internet lalu coba lagi.");
     }
 
     const retryable =
@@ -453,7 +453,7 @@ function failFor(status: number, data: unknown, fallback: string): UploadError {
   }
   if (status === 403) {
     return new UploadError(
-      `GitHub menolak akses${ghMessage(data) ? ` (${ghMessage(data)})` : ""}. Pastikan token punya izin "repo" (classic) atau "Contents: read & write" + "Administration: write" (fine-grained).`,
+      `GitHub menolak akses${ghMessage(data) ? ` (${ghMessage(data)})` : ""}. Pastikan token memiliki izin "repo" (classic) atau "Contents: read & write" + "Administration: write" (fine-grained).`,
       403
     );
   }
@@ -512,7 +512,7 @@ export async function uploadToGithub(files: UploadFile[], opts: UploadOptions): 
       );
     }
     if (existing.data.permissions && existing.data.permissions.push === false) {
-      throw new UploadError(`Token tidak punya izin menulis ke ${owner}/${repoName}.`, 403);
+      throw new UploadError(`Token tidak memiliki izin menulis ke ${owner}/${repoName}.`, 403);
     }
     branch = existing.data.default_branch ?? "main";
     repoPrivate = !!existing.data.private;
@@ -533,7 +533,7 @@ export async function uploadToGithub(files: UploadFile[], opts: UploadOptions): 
       body: {
         name: repoName,
         private: isPrivate,
-        description: opts.description?.slice(0, 340) || "Di-upload lewat Depup",
+        description: opts.description?.slice(0, 340) || "Diunggah lewat Depup",
         // auto_init membuat commit pertama — Git Data API menolak repo yang benar-benar kosong.
         auto_init: true,
       },
@@ -557,9 +557,9 @@ export async function uploadToGithub(files: UploadFile[], opts: UploadOptions): 
       if (ref.status === 200 && ref.data.object?.sha) parentSha = ref.data.object.sha;
       else await sleep(600 * (i + 1));
     }
-    if (!parentSha) throw new UploadError("Repo sudah dibuat, tapi branch awalnya belum siap. Coba lagi beberapa detik lagi (pilih 'Timpa repo yang sudah ada').");
+    if (!parentSha) throw new UploadError("Repo sudah dibuat, tetapi branch awalnya belum siap. Coba lagi beberapa detik lagi (pilih 'Timpa repo yang sudah ada').");
   } else {
-    throw failFor(existing.status, existing.data, "Gagal mengecek repo");
+    throw failFor(existing.status, existing.data, "Gagal memeriksa repo");
   }
 
   /* ---- 2. Blob per file ---- */

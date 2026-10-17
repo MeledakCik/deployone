@@ -2,198 +2,98 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
-import {
-  LayoutDashboard,
-  FolderKanban,
-  Rocket,
-  UploadCloud,
-  Link2,
-  Globe2,
-  KeyRound,
-  BookOpen,
-  Settings2,
-  Heart,
-  LogOut,
-  Menu,
-  X,
-  ShieldCheck,
-} from "lucide-react";
+import { LayoutDashboard, FolderKanban, Rocket, UploadCloud, Link2, Globe2, KeyRound, BookOpen, Settings2, Heart, LogOut, ShieldCheck } from "@/components/ui/icons";
 import { useAuth } from "@/lib/auth-context";
 import { useDeploy } from "@/lib/deploy-context";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
-import { lockBodyScroll } from "@/lib/scroll-lock";
+import { AppSidebar, SIDEBAR_LINK_CLASS, type NavGroup } from "@/components/ui/AppSidebar";
 import { getInitials, avatarColorFor } from "@/lib/utils";
 import type { DashboardView } from "@/types";
-
-const NAV_ITEMS: { id: DashboardView; label: string; icon: React.ElementType }[] = [
-  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { id: "projects", label: "Projects", icon: FolderKanban },
-  { id: "deploy", label: "Deploy", icon: Rocket },
-  { id: "upload", label: "Upload", icon: UploadCloud },
-  { id: "hosting", label: "Link Instan", icon: Link2 },
-  { id: "domains", label: "Domains", icon: Globe2 },
-  { id: "env", label: "Environment", icon: KeyRound },
-  { id: "docs", label: "Docs", icon: BookOpen },
-  { id: "settings", label: "Settings", icon: Settings2 },
-  { id: "donate", label: "Donasi", icon: Heart },
-];
 
 export function Sidebar() {
   const router = useRouter();
   const { user, logout } = useAuth();
-  const { view, setView } = useDeploy();
-  const [open, setOpen] = React.useState(false);
+  const { view, setView, stats } = useDeploy();
+  const closeRef = React.useRef<(() => void) | null>(null);
 
-  // Close the mobile drawer automatically whenever the active view changes.
-  React.useEffect(() => {
-    setOpen(false);
-  }, [view]);
-
-  // Drawer mobile terbuka → kunci scroll halaman di belakangnya.
-  React.useEffect(() => {
-    if (!open) return;
-    return lockBodyScroll();
-  }, [open]);
+  // Menu dikelompokkan menurut tujuan: melihat kondisi, merilis, mengatur, dan sisanya.
+  const groups = React.useMemo<NavGroup[]>(
+    () => [
+      {
+        label: "Ringkasan",
+        items: [
+          { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, badge: stats.failed, badgeLabel: `${stats.failed} deploy gagal` },
+          { id: "projects", label: "Projects", icon: FolderKanban },
+        ],
+      },
+      {
+        label: "Rilis",
+        items: [
+          { id: "deploy", label: "Deploy", icon: Rocket },
+          { id: "upload", label: "Upload", icon: UploadCloud },
+          { id: "hosting", label: "Link Instan", icon: Link2 },
+        ],
+      },
+      {
+        label: "Pengaturan",
+        items: [
+          { id: "domains", label: "Domains", icon: Globe2 },
+          { id: "env", label: "Environment", icon: KeyRound },
+          { id: "settings", label: "Settings", icon: Settings2 },
+        ],
+      },
+      {
+        label: "Lainnya",
+        items: [
+          { id: "docs", label: "Docs", icon: BookOpen },
+          { id: "donate", label: "Donasi", icon: Heart },
+        ],
+      },
+    ],
+    [stats.failed],
+  );
 
   function handleLogout() {
-    setOpen(false);
+    closeRef.current?.();
     void logout().then(() => router.push("/"));
   }
 
   return (
-    <>
-      {/* Mobile top bar — only visible below md, sits above the page content */}
-      <div className="sidebar sidebar-topbar sticky top-0 z-30 flex items-center justify-between px-4 py-3 md:hidden">
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          aria-label="Buka menu"
-          className="grid h-9 w-9 place-items-center rounded-xl text-text-muted hover:bg-[var(--card-hover)] hover:text-text"
-        >
-          <Menu size={19} />
-        </button>
-        <div className="flex items-center gap-2">
-          <span className="grid h-7 w-7 place-items-center rounded-full bg-gradient-to-br from-violet-500 to-cyan-400 text-white overflow-hidden">
-            <Image
-              src="/logo.png"
-              alt="Depup logo"
-              width={28}
-              height={28}
-              className="h-full w-full object-cover"
-              priority
-            />
-          </span>
-          <span className="text-[14px] font-semibold tracking-tight">Depup</span>
-        </div>
-        <ThemeToggle />
-      </div>
-
-      {/* Backdrop for the mobile drawer */}
-      {open && (
-        <div
-          className="fixed inset-0 z-40 bg-black/60 md:hidden"
-          onClick={() => setOpen(false)}
-          aria-hidden
-        />
-      )}
-
-      <aside
-        className={`sidebar fixed inset-y-0 left-0 z-50 flex h-[100dvh] w-72 max-w-[82%] shrink-0 flex-col overscroll-contain p-3 transition-transform duration-300 ease-out md:sticky md:top-0 md:z-auto md:w-60 md:max-w-none md:translate-x-0 md:self-start lg:w-64 lg:p-4 ${open ? "translate-x-0" : "-translate-x-full"
-          }`}
-      >
-        <div className="mb-2 flex items-center justify-between px-2 py-2 md:mb-3">
-          <div className="flex items-center gap-2">
-            <span className="grid h-8 w-8 place-items-center rounded-full bg-gradient-to-br from-violet-500 to-cyan-400 text-white">
-              <Image
-              src="/logo.png"
-              alt="Depup logo"
-              width={28}
-              height={28}
-              className="h-full w-full object-cover"
-              priority
-            />
-            </span>
-            <span className="text-[15px] font-semibold tracking-tight">Depup</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setOpen(false)}
-            aria-label="Tutup menu"
-            className="grid h-8 w-8 place-items-center rounded-full text-text-muted hover:bg-[var(--card-hover)] hover:text-text md:hidden"
-          >
-            <X size={16} />
-          </button>
-        </div>
-
-        <nav className="min-h-0 flex-1 space-y-0.5 overflow-y-auto overscroll-contain py-1" aria-label="Menu dashboard">
-          {NAV_ITEMS.map((item) => {
-            const active = view === item.id;
-            return (
-              <button
-                key={item.id}
-                type="button"
-                data-view={item.id}
-                aria-current={active ? "page" : undefined}
-                className={`nav flex w-full items-center gap-3 rounded-xl px-3 py-2 text-[13px] font-medium transition md:py-2 ${active ? "bg-[var(--card-hover)] text-text" : "text-text-muted hover:text-text hover:bg-[var(--card-hover)]"
-                  }`}
-                onClick={() => setView(item.id)}
-              >
-                <item.icon size={17} />
-                {item.label}
-              </button>
-            );
-          })}
-        </nav>
-
-        <div className="shrink-0 border-t border-[var(--line)] pt-2">
+    <AppSidebar
+      groups={groups}
+      active={view}
+      onSelect={(id) => setView(id as DashboardView)}
+      navLabel="Menu dashboard"
+      onCloseDrawerRef={closeRef}
+      footer={
+        <>
           {user && (
-            <div className="pill mb-1.5 flex items-center gap-2.5 px-2.5 py-2">
+            <div className="flex items-center gap-3 rounded-2xl bg-[var(--sidebar-hover)] p-3 text-white">
               {user.picture ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={user.picture}
-                  alt={user.name}
-                  referrerPolicy="no-referrer"
-                  className="h-8 w-8 shrink-0 rounded-full object-cover"
-                />
+                <img src={user.picture} alt={user.name} referrerPolicy="no-referrer" className="h-9 w-9 shrink-0 rounded-xl object-cover" />
               ) : (
-                <span
-                  className={`grid h-8 w-8 shrink-0 place-items-center rounded-full text-[12px] font-semibold text-white ${avatarColorFor(
-                    user.email
-                  )}`}
-                >
+                <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl text-[12px] font-semibold text-white ${avatarColorFor(user.email)}`}>
                   {getInitials(user.name)}
                 </span>
               )}
               <span className="min-w-0 flex-1">
-                <span className="block truncate text-[13px] font-medium">{user.name}</span>
-                <span className="block truncate text-[11px] text-text-muted">{user.email}</span>
+                <span className="block truncate text-[13px] font-semibold">{user.name}</span>
+                <span className="block truncate text-[12px] text-white/80" title={user.email}>
+                  {user.email}
+                </span>
               </span>
             </div>
           )}
           {user?.isAdmin && (
-            <a
-              href="/admin"
-              className="mb-1 flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-violet-400 transition hover:bg-[var(--card-hover)]"
-            >
-              <ShieldCheck size={17} /> Panel Admin
+            <a href="/admin" className={SIDEBAR_LINK_CLASS}>
+              <ShieldCheck size={18} /> Panel Admin
             </a>
           )}
-          <div className="flex items-center justify-between gap-2">
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="flex flex-1 items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-text-muted transition hover:bg-[var(--card-hover)] hover:text-text"
-            >
-              <LogOut size={17} /> Logout
-            </button>
-            <div className="hidden md:block">
-              <ThemeToggle />
-            </div>
-          </div>
-        </div>
-      </aside>
-    </>
+          <button type="button" onClick={handleLogout} className={SIDEBAR_LINK_CLASS}>
+            <LogOut size={18} /> Logout
+          </button>
+        </>
+      }
+    />
   );
 }

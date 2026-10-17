@@ -48,7 +48,7 @@ async function parseCloudflareError(res: Response): Promise<CloudflareApiError> 
   // that here first stops it from being misreported as an invalid token.
   if (parsedBody && /github|installation|authoriz|repo/i.test(message)) {
     return new CloudflareApiError(
-      "GitHub App Cloudflare Pages belum punya akses ke repo ini. Kalau repo ini bukan milik akun GitHub yang ke-connect ke Cloudflare, minta pemilik repo invite kamu sebagai collaborator, lalu tambahkan repo itu ke akses GitHub App Cloudflare Pages (github.com/settings/installations → Configure → Repository access).",
+      "GitHub App Cloudflare Pages belum memiliki akses ke repo ini. Kalau repo ini bukan milik akun GitHub yang ke-connect ke Cloudflare, minta pemilik repo invite kamu sebagai collaborator, lalu tambahkan repo itu ke akses GitHub App Cloudflare Pages (github.com/settings/installations → Configure → Repository access).",
       "github_not_connected"
     );
   }
@@ -57,7 +57,7 @@ async function parseCloudflareError(res: Response): Promise<CloudflareApiError> 
   }
   if (res.status === 401 || res.status === 403) {
     return new CloudflareApiError(
-      parsedBody ? message : "Cloudflare token tidak valid atau tidak punya izin.",
+      parsedBody ? message : "Cloudflare token tidak valid atau tidak memiliki izin.",
       "invalid_token"
     );
   }
@@ -269,7 +269,7 @@ export function cloudflareBuildPreset(framework: string | null, project?: Projec
         outputDir: ".vercel/output/static",
         compatFlags: ["nodejs_compat"],
         warning:
-          "Next.js di Cloudflare Pages pakai adapter next-on-pages (deprecated tapi masih jalan untuk kebanyakan app) — sebagian fitur Next.js (terutama API routes/SSR yang kompleks) best-effort, tidak sekonsisten di Vercel. Untuk dukungan penuh, Cloudflare sekarang merekomendasikan deploy sebagai Cloudflare Worker via OpenNext, tapi itu belum bisa diotomasi lewat API publik Cloudflare (harus setup manual di dashboard Cloudflare).",
+          "Next.js di Cloudflare Pages pakai adapter next-on-pages (deprecated tetapi masih jalan untuk kebanyakan app) — sebagian fitur Next.js (terutama API routes/SSR yang kompleks) best-effort, tidak sekonsisten di Vercel. Untuk dukungan penuh, Cloudflare sekarang merekomendasikan deploy sebagai Cloudflare Worker via OpenNext, tetapi itu belum bisa diotomasi lewat API publik Cloudflare (harus setup manual di dashboard Cloudflare).",
       };
     case "Vite + React":
     case "Vite":
@@ -307,14 +307,14 @@ export function cloudflareBuildPreset(framework: string | null, project?: Projec
         buildCommand: "npm run build",
         outputDir: "build",
         warning:
-          "SvelteKit butuh @sveltejs/adapter-cloudflare terpasang di repo supaya build-nya cocok buat Cloudflare Pages — cek dulu adapter di svelte.config.js.",
+          "SvelteKit butuh @sveltejs/adapter-cloudflare terpasang di repo supaya build-nya cocok buat Cloudflare Pages — periksa dulu adapter di svelte.config.js.",
       };
     case "Nuxt":
       return {
         buildCommand: "npm run build",
         outputDir: "dist",
         warning:
-          "Nuxt butuh nitro preset \"cloudflare-pages\" (nuxt.config.ts) supaya build-nya cocok buat Cloudflare Pages — kalau belum di-set, build kemungkinan gagal.",
+          "Nuxt butuh nitro preset \"cloudflare-pages\" (nuxt.config.ts) supaya build-nya cocok buat Cloudflare Pages — kalau belum diatur, build kemungkinan gagal.",
       };
     case "Remix":
       return {
@@ -327,7 +327,7 @@ export function cloudflareBuildPreset(framework: string | null, project?: Projec
       return {
         buildCommand: "npm run build",
         outputDir: "dist",
-        warning: "Framework tidak terdeteksi otomatis — build command & output dir pakai default umum, cek lagi kalau build gagal.",
+        warning: "Framework tidak terdeteksi otomatis — build command & output dir pakai default umum, periksa lagi kalau build gagal.",
       };
   }
 }
@@ -474,7 +474,7 @@ export async function getCloudflareDeployment(
     }
     errorMessage = logSummary
       ? `Build gagal di tahap "${failedStage?.name ?? "build"}":\n${logSummary}`
-      : `Build gagal di tahap "${failedStage?.name ?? "build"}". Cek log deployment di Cloudflare dashboard untuk detail.`;
+      : `Build gagal di tahap "${failedStage?.name ?? "build"}". Periksa log deployment di Cloudflare dashboard untuk detail.`;
   }
 
   return {

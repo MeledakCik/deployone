@@ -18,7 +18,7 @@ function getKey(): Buffer {
   const secret = process.env.AUTH_SECRET;
   if (!secret || secret.length < 16) {
     throw new Error(
-      "AUTH_SECRET belum di-set — dibutuhkan juga untuk enkripsi token yang disimpan."
+      "AUTH_SECRET belum diatur — dibutuhkan juga untuk enkripsi token yang disimpan."
     );
   }
   if (cachedKey && cachedKey.secret === secret) return cachedKey.key;

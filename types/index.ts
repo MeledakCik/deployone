@@ -9,6 +9,8 @@ export interface HistoryItem {
   domain: string;
   date: string;
   status: DeployStatus;
+  /** Repo GitHub sumber project (owner/repo), disimpan saat deploy agar bisa terisi otomatis saat hapus. */
+  repo?: string;
 }
 
 /** Real Google profile fields, decoded from the signed session cookie. */
@@ -96,10 +98,9 @@ export type DashboardView =
   | "projects"
   | "domains"
   | "env"
- 
-  | "donate"
   | "docs"
   | "settings"
+  | "donate"
   | "upload"
   | "hosting";
 
@@ -124,9 +125,9 @@ export interface ApiError {
     | "railway_error"
     | "rate_limited"
     | "ai_not_configured"
+    | "ai_unavailable"
     | "donate_not_configured"
     | "donate_unavailable"
-    | "ai_unavailable"
     | "github_not_connected"
     | "missing_account"
     | "project_conflict"

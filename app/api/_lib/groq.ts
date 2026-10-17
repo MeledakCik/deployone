@@ -34,7 +34,7 @@ export function getGroqModel(): string {
 
 export async function groqChat(system: string, messages: ChatMessage[]): Promise<string> {
   const apiKey = process.env.GROQ_API_KEY?.trim();
-  if (!apiKey) throw new GroqError("not_configured", "GROQ_API_KEY belum di-set.");
+  if (!apiKey) throw new GroqError("not_configured", "GROQ_API_KEY belum diatur.");
 
   const model = getGroqModel();
   const baseUrl = (process.env.GROQ_BASE_URL?.trim() || DEFAULT_BASE_URL).replace(/\/$/, "");

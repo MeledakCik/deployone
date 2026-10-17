@@ -1,23 +1,23 @@
 "use client";
 
+import { PageTitle } from "@/components/ui/primitives";
 import * as React from "react";
-import {
-  FolderOpen,
-  ExternalLink,
-  RotateCw,
-  Globe2,
-  RefreshCw,
-  ShieldAlert,
-  Trash2,
-  X,
-  Download,
-  AlertTriangle,
-} from "lucide-react";
+import { FolderOpen, ExternalLink, RotateCw, Globe2, RefreshCw, ShieldAlert, Trash2, X, Download, AlertTriangle } from "@/components/ui/icons";
 import { Surface } from "@/components/ui/Surface";
 import { ViewFade } from "@/components/ui/ViewFade";
 import { useDeploy } from "@/lib/deploy-context";
 import { deployDomainToUrl, normalizeDeployDomain } from "@/lib/utils";
 import type { CloudflareProjectSummary, HistoryItem, Platform, RailwayProjectSummary, VercelProjectSummary } from "@/types";
+
+const BULAN: Record<string, string> = {
+  jan: "Januari", feb: "Februari", mar: "Maret", apr: "April", may: "Mei", jun: "Juni",
+  jul: "Juli", aug: "Agustus", sep: "September", sept: "September", oct: "Oktober", nov: "November", dec: "Desember",
+};
+
+/** "13 Oct 2026" → "13 Oktober 2026" (nama bulan lain dibiarkan apa adanya). */
+function tanggalIndonesia(date: string) {
+  return date.replace(/[A-Za-z]+/g, (w) => BULAN[w.toLowerCase().slice(0, w.toLowerCase().startsWith("sept") ? 4 : 3)] ?? w);
+}
 
 function groupByProject(history: HistoryItem[]) {
   const safeHistory = Array.isArray(history) ? history : [];
@@ -39,7 +39,56 @@ function groupByProject(history: HistoryItem[]) {
   return Array.from(map.values());
 }
 
-/** Confirms whether a project delete should also hit the real Vercel/Cloudflare project, or stay local-only. */
+/** Saklar on/off yang aksesibel (role="switch"). */
+function DeleteSwitch({
+  id,
+  title,
+  description,
+  checked,
+  disabled,
+  onChange,
+}: {
+  id: string;
+  title: string;
+  description: React.ReactNode;
+  checked: boolean;
+  disabled?: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <div className="flex items-start justify-between gap-3">
+      <div className="min-w-0">
+        <label htmlFor={id} className={`block text-[13px] font-medium ${disabled ? "opacity-50" : "cursor-pointer"}`}>
+          {title}
+        </label>
+        <p className="mt-0.5 text-[12px] leading-relaxed text-text-muted">{description}</p>
+      </div>
+      <button
+        id={id}
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        disabled={disabled}
+        onClick={() => onChange(!checked)}
+        className={`relative mt-0.5 h-6 w-11 shrink-0 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
+          checked ? "bg-bad" : "bg-[var(--line-strong)]"
+        }`}
+      >
+        <span
+          className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-white shadow transition-transform duration-300 [transition-timing-function:var(--ease-soft)] ${
+            checked ? "translate-x-5" : "translate-x-0"
+          }`}
+        />
+      </button>
+    </div>
+  );
+}
+
+/**
+ * Dialog hapus project. Default-nya hanya menghapus dari Depup; user bisa
+ * menyalakan saklar untuk ikut menghapus project di platformnya (Vercel /
+ * Cloudflare / Railway) dan/atau repo GitHub-nya.
+ */
 function DeleteProjectModal({
   project,
   onClose,
@@ -47,22 +96,80 @@ function DeleteProjectModal({
   project: HistoryItem | null;
   onClose: () => void;
 }) {
-  const { deleteProject, deletingProject, vercelToken, savedCloudflareToken, savedRailwayToken } = useDeploy();
+  const { deleteProject, deletingProject, vercelToken, savedCloudflareToken, savedRailwayToken, githubPat, setView } =
+    useDeploy();
+  const [deleteRemote, setDeleteRemote] = React.useState(false);
+  const [deleteGithub, setDeleteGithub] = React.useState(false);
+  const [repoInput, setRepoInput] = React.useState("");
+  const [repoLookup, setRepoLookup] = React.useState<"idle" | "loading" | "found" | "notfound">("idle");
+
+  const projectKey = project ? `${project.name}::${project.platform}` : null;
+  const isVercelProject = project?.platform === "vercel";
+
+  // Selalu mulai dari default (Depup saja) setiap dialog dibuka untuk project lain.
+  React.useEffect(() => {
+    setDeleteRemote(false);
+    setDeleteGithub(false);
+    setRepoInput("");
+    setRepoLookup("idle");
+  }, [projectKey]);
+
+  // Repo GitHub diisi otomatis begitu dialog dibuka: pertama dari riwayat
+  // (disimpan saat deploy), kalau tidak ada dibaca dari link project di
+  // platformnya (Vercel / Cloudflare / Railway). User tetap bisa mengubahnya manual.
+  React.useEffect(() => {
+    if (!project) return;
+    if (project.repo) {
+      setRepoInput(project.repo);
+      setRepoLookup("found");
+      return;
+    }
+    let url: string | null = null;
+    const headers: Record<string, string> = {};
+    if (project.platform === "vercel" && vercelToken) {
+      url = `/api/vercel/status?project=${encodeURIComponent(project.name)}`;
+      headers["x-vercel-token"] = vercelToken;
+    } else if (project.platform === "cloudflare" && savedCloudflareToken) {
+      url = `/api/cloudflare/status?project=${encodeURIComponent(project.name)}&accountId=${encodeURIComponent(
+        savedCloudflareToken.accountId,
+      )}`;
+      headers["x-cloudflare-token"] = savedCloudflareToken.token;
+    } else if (project.platform === "railway" && savedRailwayToken) {
+      url = `/api/railway/status?project=${encodeURIComponent(project.name)}`;
+      headers["x-railway-token"] = savedRailwayToken.token;
+    }
+    if (!url) {
+      setRepoLookup("notfound");
+      return;
+    }
+    let cancelled = false;
+    setRepoLookup("loading");
+    fetch(url, { headers })
+      .then((res) => res.json().catch(() => null))
+      .then((body) => {
+        if (cancelled) return;
+        const repo: string | null = body?.ok ? body.data?.linkedRepoFullName ?? null : null;
+        if (repo) {
+          setRepoInput(repo);
+          setRepoLookup("found");
+        } else {
+          setRepoLookup("notfound");
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setRepoLookup("notfound");
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [projectKey]);
+
   if (!project) return null;
 
-  const isVercelProject = project.platform === "vercel";
   const isCloudflareProject = project.platform === "cloudflare";
   const isRailwayProject = project.platform === "railway";
   const busy = deletingProject === project.name;
-
-  async function handleChoice(alsoDelete: boolean) {
-    await deleteProject(project!.name, project!.platform, {
-      alsoDeleteFromVercel: alsoDelete && isVercelProject,
-      alsoDeleteFromCloudflare: alsoDelete && isCloudflareProject,
-      alsoDeleteFromRailway: alsoDelete && isRailwayProject,
-    });
-    onClose();
-  }
 
   const platformLabel = isVercelProject ? "Vercel" : isCloudflareProject ? "Cloudflare" : isRailwayProject ? "Railway" : null;
   const canDeleteRemote = isVercelProject
@@ -72,12 +179,37 @@ function DeleteProjectModal({
       : isRailwayProject
         ? Boolean(savedRailwayToken)
         : false;
+  const canDeleteGithub = Boolean(githubPat);
+
+  const repoValid = /^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repoInput.trim());
+  const githubReady = !deleteGithub || (canDeleteGithub && repoValid);
+  const remoteActive = deleteRemote && Boolean(platformLabel) && canDeleteRemote;
+  const destructive = remoteActive || deleteGithub;
+
+  async function handleDelete() {
+    await deleteProject(project!.name, project!.platform, {
+      alsoDeleteFromVercel: remoteActive && isVercelProject,
+      alsoDeleteFromCloudflare: remoteActive && isCloudflareProject,
+      alsoDeleteFromRailway: remoteActive && isRailwayProject,
+      alsoDeleteGithubRepo: deleteGithub && repoValid ? repoInput.trim() : undefined,
+    });
+    onClose();
+  }
+
+  const targets = ["Depup", ...(remoteActive && platformLabel ? [platformLabel] : []), ...(deleteGithub ? ["GitHub"] : [])];
+  const buttonLabel = busy
+    ? "Menghapus..."
+    : destructive
+      ? `Hapus permanen (${targets.join(" + ")})`
+      : platformLabel
+        ? "Hapus di Depup saja"
+        : "Hapus";
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 px-4">
-      <Surface className="w-full max-w-sm p-6">
+    <div className="anim-fade fixed inset-0 z-[100] flex items-center justify-center modal-scrim px-4">
+      <Surface className="anim-pop w-full max-w-sm p-6">
         <div className="flex items-center justify-between mb-4">
-          <span className="stat-icon text-red-400">
+          <span className="stat-icon text-bad-fg">
             <AlertTriangle size={18} />
           </span>
           <button
@@ -90,34 +222,118 @@ function DeleteProjectModal({
           </button>
         </div>
         <h3 className="text-[15px] font-semibold mb-2">Hapus &quot;{project.name}&quot;?</h3>
-        <p className="text-[13px] leading-relaxed text-text-muted mb-6">
-          {platformLabel
-            ? `Pilih mau dihapus di kedua sisi (${platformLabel} + Depup) atau di Depup saja — project di ${platformLabel} tetap jalan kalau kamu pilih Depup saja.`
-            : "Project ini bukan platform Vercel/Cloudflare/Railway, jadi hanya akan dihapus dari daftar Depup."}
+        <p className="text-[13px] leading-relaxed text-text-muted mb-5">
+          Secara default, project hanya dihapus dari daftar Depup. Project di platform dan repo GitHub kamu tidak
+          disentuh. Nyalakan saklar di bawah kalau ingin ikut menghapusnya.
         </p>
-        <div className="space-y-2">
+
+        <div className="mb-5 space-y-4 rounded-2xl bg-[var(--surface-solid-2)] p-4">
+          <DeleteSwitch
+            id="deleteAlsoDepup"
+            title="Hapus di Depup"
+            description="Selalu aktif — project dilepas dari daftar Depup."
+            checked
+            disabled
+            onChange={() => {}}
+          />
+
           {platformLabel && (
-            <button
-              type="button"
-              onClick={() => void handleChoice(true)}
+            <DeleteSwitch
+              id="deleteAlsoRemote"
+              title={`Hapus juga di ${platformLabel}`}
+              description={
+                canDeleteRemote
+                  ? `Project di ${platformLabel} dihapus permanen beserta deployment-nya.`
+                  : `Hubungkan ${platformLabel} Token di Settings dulu untuk menghapus di ${platformLabel}.`
+              }
+              checked={deleteRemote}
               disabled={busy || !canDeleteRemote}
-              className="btn-primary w-full py-2.5 text-[13px] disabled:opacity-50"
-            >
-              {busy ? "Menghapus..." : `Hapus di kedua sisi (${platformLabel} + Depup)`}
-            </button>
+              onChange={setDeleteRemote}
+            />
           )}
-          {platformLabel && !canDeleteRemote && (
-            <p className="text-[11px] text-text-faint text-center">
-              Konek-kan {platformLabel} Token di Settings dulu untuk hapus di {platformLabel}.
+
+          <DeleteSwitch
+            id="deleteAlsoGithub"
+            title="Hapus juga repo GitHub"
+            description={
+              canDeleteGithub
+                ? "Repo di GitHub dihapus permanen. Token harus memiliki izin delete_repo (lihat Docs)."
+                : "Isi GitHub PAT di Settings dulu untuk menghapus repo di GitHub."
+            }
+            checked={deleteGithub}
+            disabled={busy || !canDeleteGithub}
+            onChange={setDeleteGithub}
+          />
+
+          {deleteGithub && canDeleteGithub && (
+            <div>
+              <label htmlFor="deleteGithubRepo" className="mb-1 block text-[12px] font-medium text-text-muted">
+                Repo yang akan dihapus
+              </label>
+              <input
+                id="deleteGithubRepo"
+                value={repoInput}
+                onChange={(e) => setRepoInput(e.target.value)}
+                disabled={busy}
+                placeholder="nama-akun/nama-repo"
+                spellCheck={false}
+                autoComplete="off"
+                className="mono w-full rounded-xl bg-[var(--surface-solid-2)] px-3 py-2 text-[12.5px] outline-none focus:shadow-[inset_0_0_0_2px_var(--bad-line)]"
+              />
+              <p className="mt-1 text-[12px] text-text-faint">
+                {repoLookup === "loading"
+                  ? "Mencari repo yang terhubung…"
+                  : repoLookup === "found"
+                    ? "Terisi otomatis dari project ini — pastikan sudah benar."
+                    : repoInput && !repoValid
+                      ? "Format harus nama-akun/nama-repo."
+                      : "Isi manual dengan format nama-akun/nama-repo."}
+              </p>
+            </div>
+          )}
+        </div>
+
+        {deleteGithub && canDeleteGithub && (
+          <div className="mb-4 rounded-xl bg-[var(--warn-bg)] px-3 py-2.5 text-[12px] leading-relaxed text-warn-fg">
+            <p className="flex items-start gap-2 font-medium">
+              <ShieldAlert size={14} className="mt-0.5 shrink-0" />
+              Pastikan GitHub Token kamu boleh menghapus repo.
             </p>
-          )}
+            <p className="mt-1 pl-[22px] text-warn-fg">
+              Token classic harus memiliki scope <span className="mono">delete_repo</span>; token fine-grained harus memiliki{" "}
+              <span className="mono">Administration: Read and write</span>. Kalau tidak, project di platform tetap
+              terhapus tetapi repo GitHub gagal dihapus.{" "}
+              <button
+                type="button"
+                onClick={() => {
+                  onClose();
+                  setView("docs");
+                }}
+                className="underline underline-offset-2 hover:opacity-80"
+              >
+                Lihat panduan di Docs
+              </button>
+            </p>
+          </div>
+        )}
+
+        {destructive && (
+          <p className="mb-4 flex items-start gap-2 rounded-xl bg-[var(--bad-bg)] px-3 py-2 text-[12px] leading-relaxed text-bad-fg">
+            <AlertTriangle size={14} className="mt-0.5 shrink-0" />
+            Penghapusan di {targets.slice(1).join(" dan ")} tidak bisa dibatalkan.
+          </p>
+        )}
+
+        <div className="space-y-2">
           <button
             type="button"
-            onClick={() => void handleChoice(false)}
-            disabled={busy}
-            className="pill w-full py-2.5 text-[13px] font-medium hover:brightness-110 disabled:opacity-50"
+            onClick={() => void handleDelete()}
+            disabled={busy || !githubReady}
+            className={`w-full py-2.5 text-[13px] font-medium disabled:opacity-50 ${
+              destructive ? "rounded-xl bg-bad text-white hover:brightness-110" : "pill hover:brightness-110"
+            }`}
           >
-            {platformLabel ? "Hapus di Depup saja" : "Hapus"}
+            {buttonLabel}
           </button>
           <button
             type="button"
@@ -161,7 +377,7 @@ function ImportProjectModal({ open, onClose }: { open: boolean; onClose: () => v
   React.useEffect(() => {
     if (!open) return;
     if (!connected) {
-      setError(`Konek-kan ${platformLabel} Token di Settings dulu untuk konek ke ${platformLabel}.`);
+      setError(`Hubungkan ${platformLabel} Token di Settings dulu untuk terhubung ke ${platformLabel}.`);
       setCandidates([]);
       return;
     }
@@ -175,7 +391,7 @@ function ImportProjectModal({ open, onClose }: { open: boolean; onClose: () => v
           : fetchImportableRailwayProjects;
     fetcher()
       .then((result) => setCandidates(result))
-      .catch((err) => setError(err instanceof Error ? err.message : "Gagal konek."))
+      .catch((err) => setError(err instanceof Error ? err.message : "Gagal terhubung."))
       .finally(() => setLoading(false));
   }, [
     open,
@@ -199,8 +415,8 @@ function ImportProjectModal({ open, onClose }: { open: boolean; onClose: () => v
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/60 px-4">
-      <Surface className="w-full max-w-md p-6">
+    <div className="anim-fade fixed inset-0 z-[100] flex items-center justify-center modal-scrim px-4">
+      <Surface className="anim-pop w-full max-w-md p-6">
         <div className="flex items-center justify-between mb-5">
           <h3 className="text-[15px] font-semibold">Import Project</h3>
           <button
@@ -219,10 +435,10 @@ function ImportProjectModal({ open, onClose }: { open: boolean; onClose: () => v
               key={t}
               type="button"
               onClick={() => setTab(t)}
-              className={`rounded-xl border px-3.5 py-1.5 text-[12.5px] font-medium capitalize transition-colors ${
+              className={`rounded-xl px-3.5 py-1.5 text-[12.5px] font-medium capitalize transition-colors ${
                 tab === t
-                  ? "border-violet-500/50 bg-violet-500/15 text-text"
-                  : "border-[var(--surface-line)] bg-[var(--surface-solid-2)] text-text-muted hover:text-text"
+                  ? "chip-on"
+                  : "bg-[var(--surface-solid-2)] text-text-muted hover:text-text"
               }`}
             >
               {t}
@@ -232,7 +448,7 @@ function ImportProjectModal({ open, onClose }: { open: boolean; onClose: () => v
 
         {!connected ? (
           <div className="flex flex-col items-center gap-3 py-10 text-center">
-            <ShieldAlert size={36} className="text-amber-400" />
+            <ShieldAlert size={36} className="text-warn-fg" />
             <p className="text-[13px] text-text-muted max-w-xs">{error}</p>
           </div>
         ) : loading ? (
@@ -242,7 +458,7 @@ function ImportProjectModal({ open, onClose }: { open: boolean; onClose: () => v
           </div>
         ) : error ? (
           <div className="flex flex-col items-center gap-3 py-10 text-center">
-            <ShieldAlert size={36} className="text-red-400" />
+            <ShieldAlert size={36} className="text-bad-fg" />
             <p className="text-[13px] text-text-muted max-w-xs">{error}</p>
           </div>
         ) : candidates.length === 0 ? (
@@ -257,17 +473,17 @@ function ImportProjectModal({ open, onClose }: { open: boolean; onClose: () => v
             {candidates.map((p) => (
               <div
                 key={p.id}
-                className="flex items-center justify-between gap-3 rounded-2xl border border-[var(--surface-line)] px-3.5 py-2.5"
+                className="flex items-center justify-between gap-3 rounded-2xl bg-[var(--surface-solid-2)] px-3.5 py-2.5"
               >
                 <div className="min-w-0">
                   <p className="truncate text-[13px] font-medium">{p.name}</p>
-                  <p className="mono truncate text-[11.5px] text-text-faint">{p.domain}</p>
+                  <p className="mono truncate text-[12px] text-text-faint">{p.domain}</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => handleImport(p)}
                   disabled={importingName === p.name}
-                  className="pill shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-[11.5px] font-medium hover:brightness-110 disabled:opacity-50"
+                  className="pill shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium hover:brightness-110 disabled:opacity-50"
                 >
                   <Download size={12} /> Import
                 </button>
@@ -307,6 +523,14 @@ export function ProjectsView() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vercelToken, savedCloudflareToken, savedRailwayToken]);
 
+  function canCheck(platform: Platform) {
+    return (
+      (platform === "vercel" && Boolean(vercelToken)) ||
+      (platform === "cloudflare" && Boolean(savedCloudflareToken)) ||
+      (platform === "railway" && Boolean(savedRailwayToken))
+    );
+  }
+
   async function handleCheck(name: string, platform: Platform) {
     const key = `${name}::${platform}`;
     setCheckingKey(key);
@@ -319,16 +543,13 @@ export function ProjectsView() {
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-xl font-semibold">Projects</h2>
-            <p className="text-sm text-text-muted">
-              {projects.length} project {platformTab !== "all" ? `(${platformTab}) ` : ""}unik dari riwayat deployment kamu.
-            </p>
+            <PageTitle title="Projects" desc={<>{projects.length} project {platformTab !== "all" ? `(${platformTab}) ` : ""}unik dari riwayat deployment kamu.</>} />
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => setImportOpen(true)}
-              className="pill inline-flex items-center gap-2 px-4 py-2 text-sm font-medium hover:brightness-110"
+              className="pill inline-flex h-10 items-center gap-2 px-4 text-[13px] font-medium hover:brightness-110"
             >
               <Download size={13} /> Import Project
             </button>
@@ -337,13 +558,13 @@ export function ProjectsView() {
                 type="button"
                 onClick={() => void syncAllProjects()}
                 disabled={syncingProjects}
-                className="pill inline-flex items-center gap-2 px-4 py-2 text-sm font-medium hover:brightness-110 disabled:opacity-50"
+                className="pill inline-flex h-10 items-center gap-2 px-4 text-[13px] font-medium hover:brightness-110 disabled:opacity-50"
               >
                 <RefreshCw size={13} className={syncingProjects ? "animate-spin" : ""} />
                 {syncingProjects ? "Sinkronisasi..." : "Sinkronkan"}
               </button>
             ) : (
-              <span className="inline-flex items-center gap-1.5 text-[11.5px] text-text-faint">
+              <span className="inline-flex items-center gap-1.5 text-[12px] text-text-faint">
                 <ShieldAlert size={13} /> Konek-kan token di Settings untuk sinkronisasi otomatis
               </span>
             )}
@@ -356,10 +577,10 @@ export function ProjectsView() {
               key={t}
               type="button"
               onClick={() => setPlatformTab(t)}
-              className={`rounded-xl border px-3.5 py-1.5 text-[12.5px] font-medium capitalize transition-colors ${
+              className={`rounded-full px-4 py-1.5 text-[12.5px] font-medium capitalize transition-colors ${
                 platformTab === t
-                  ? "border-violet-500/50 bg-violet-500/15 text-text"
-                  : "border-[var(--surface-line)] bg-[var(--surface-solid-2)] text-text-muted hover:text-text"
+                  ? "chip-on"
+                  : "bg-[var(--surface-solid-2)] text-text-muted hover:text-text"
               }`}
             >
               {t === "all" ? "Semua" : t}
@@ -381,99 +602,62 @@ export function ProjectsView() {
               const isReady = project.status === "ready";
               const isChecking = checkingKey === `${project.name}::${project.platform}`;
               return (
-                <Surface key={`${project.name}::${project.platform}`} className="p-5">
+                <Surface key={`${project.name}::${project.platform}`} className="p-5 transition-transform hover:-translate-y-0.5">
                   <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <h3 className="truncate text-base light:text-black dark:text-white font-semibold">{project.name}</h3>
-                      <p className="mono text-xs text-text-faint capitalize mt-0.5">
-                        {project.platform} • {project.date}
-                      </p>
-                    </div>
-                    <span
-                      className={`shrink-0 inline-flex items-center gap-1.5 rounded-pill border px-2.5 py-0.5 text-xs font-medium ${isReady
-                          ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
-                          : "border-red-500/20 bg-red-500/10 text-red-400"
-                        }`}
-                    >
-                      <span className={`h-1.5 w-1.5 rounded-full ${isReady ? "bg-emerald-400" : "bg-red-400"}`} />
-                      {isReady ? "Ready" : "Failed"}
+                    <h3 className="min-w-0 truncate text-[17px] font-semibold tracking-[-0.01em]">{project.name}</h3>
+                    <span className="chip shrink-0">
+                      <span className={`h-1.5 w-1.5 rounded-full ${isReady ? "bg-ok" : "bg-bad"}`} />
+                      {isReady ? "Berhasil" : "Gagal"}
                     </span>
                   </div>
 
-                  <div className="mt-3 flex items-center gap-1.5 text-sm text-text-muted">
-                    <Globe2 size={13} className="shrink-0" />
-                    <span className="mono truncate">{project.domain}</span>
+                  <div className="mt-4 text-[12px] leading-[1.45] text-text-muted">
+                    <p className="capitalize">{project.platform}</p>
+                    <p>{tanggalIndonesia(project.date)}</p>
                   </div>
 
-                  <div className="mt-5 flex items-center gap-2">
+                  <div className="mt-4 flex items-center gap-1.5 text-[12.5px] text-text-muted">
+                    <Globe2 size={14} className="shrink-0" />
+                    <span className="truncate">{project.domain}</span>
+                  </div>
+
+                  <div className="mt-5 grid grid-cols-2 gap-2">
                     <a
                       href={deployDomainToUrl(project.domain, project.platform)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="pill flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium hover:brightness-110"
+                      className="inline-flex h-9 items-center justify-center gap-1.5 rounded-full bg-violet-500 px-3 text-[12px] font-semibold text-white transition hover:brightness-110 active:scale-[0.98]"
                     >
                       <ExternalLink size={13} /> Visit
                     </a>
                     <button
                       type="button"
                       onClick={() => redeploy(project.name)}
-                      className="pill flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium hover:brightness-110"
+                      className="pill inline-flex h-9 items-center justify-center gap-1.5 px-3 text-[12px] font-semibold hover:brightness-110"
                     >
                       <RotateCw size={13} /> Redeploy
                     </button>
                   </div>
 
-                  {project.platform === "vercel" && vercelToken && (
-                    <div className="mt-2 flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => void handleCheck(project.name, project.platform)}
-                        disabled={isChecking}
-                        className="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-text-faint hover:text-text disabled:opacity-50"
-                      >
-                        <RefreshCw size={11} className={isChecking ? "animate-spin" : ""} />
-                        {isChecking ? "Mengecek..." : "Cek status di Vercel"}
-                      </button>
-                    </div>
-                  )}
-
-                  {project.platform === "cloudflare" && savedCloudflareToken && (
-                    <div className="mt-2 flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => void handleCheck(project.name, project.platform)}
-                        disabled={isChecking}
-                        className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-text-faint hover:text-text disabled:opacity-50"
-                      >
-                        <RefreshCw size={11} className={isChecking ? "animate-spin" : ""} />
-                        {isChecking ? "Mengecek..." : "Cek status di Cloudflare"}
-                      </button>
-                    </div>
-                  )}
-
-                  {project.platform === "railway" && savedRailwayToken && (
-                    <div className="mt-2 flex items-center gap-1">
-                      <button
-                        type="button"
-                        onClick={() => void handleCheck(project.name, project.platform)}
-                        disabled={isChecking}
-                        className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-text-faint hover:text-text disabled:opacity-50"
-                      >
-                        <RefreshCw size={11} className={isChecking ? "animate-spin" : ""} />
-                        {isChecking ? "Mengecek..." : "Cek status di Railway"}
-                      </button>
-                    </div>
-                  )}
-
-                  <div className="mt-1">
+                  {canCheck(project.platform) && (
                     <button
                       type="button"
-                      onClick={() => setDeleteTarget(project)}
-                      className="w-full inline-flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-medium text-red-400 hover:brightness-110"
+                      onClick={() => void handleCheck(project.name, project.platform)}
+                      disabled={isChecking}
+                      className="pill mt-2 inline-flex h-9 w-full items-center justify-center gap-1.5 px-3 text-[12px] font-semibold hover:brightness-110 disabled:opacity-50"
                     >
-                      <Trash2 size={12} /> Hapus Project
+                      <RefreshCw size={13} className={isChecking ? "animate-spin" : ""} />
+                      {isChecking ? "Memeriksa..." : "Periksa Status"}
                     </button>
-                  </div>
+                  )}
+
+                  <button
+                    type="button"
+                    onClick={() => setDeleteTarget(project)}
+                    className="mt-2 inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-full bg-[var(--bad-solid)] px-3 text-[12px] font-semibold text-white transition hover:brightness-110 active:scale-[0.98]"
+                  >
+                    <Trash2 size={13} /> Hapus project
+                  </button>
                 </Surface>
               );
             })}

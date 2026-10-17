@@ -1,9 +1,10 @@
 "use client";
 
 import * as React from "react";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, Users, Rocket, Link2, ShieldAlert, XCircle } from "@/components/ui/icons";
 import { adminFetch } from "./api";
 import { BarList, SERIES_COLORS, TimeChart, type Series } from "./charts";
+import { useAdminCounts } from "./context";
 import { Btn, Card, ErrorBox, KpiCard, Loading, PageHead, UsageCard, fmtBytes, fmtDateTime } from "./ui";
 
 interface Stats {
@@ -35,6 +36,7 @@ const STATUS_LABEL: Record<string, string> = { ready: "Berhasil", failed: "Gagal
 const OTHER_COLOR = "#64748b";
 
 export function OverviewTab({ goto }: { goto: (tab: string) => void }) {
+  const { setAbuseOpen } = useAdminCounts();
   const [stats, setStats] = React.useState<Stats | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [busy, setBusy] = React.useState(true);
@@ -55,6 +57,10 @@ export function OverviewTab({ goto }: { goto: (tab: string) => void }) {
     void load(false);
   }, [load]);
 
+  React.useEffect(() => {
+    if (stats) setAbuseOpen(stats.totals.abuseOpen);
+  }, [stats, setAbuseOpen]);
+
   const platformSeries = React.useMemo<Series[]>(() => {
     if (!stats) return [];
     const names = Object.keys(stats.deploysPerDay).sort((a, b) => (stats.deployPlatforms[b] ?? 0) - (stats.deployPlatforms[a] ?? 0));
@@ -67,57 +73,81 @@ export function OverviewTab({ goto }: { goto: (tab: string) => void }) {
     return out.length ? out : [{ name: "Deploy", values: stats.days.map(() => 0), color: SERIES_COLORS[0] }];
   }, [stats]);
 
-  if (!stats) return error ? <ErrorBox message={error} onRetry={() => void load(true)} /> : <Loading label="Menghitung statistik…" />;
+  if (!stats)
+    return <Card>{error ? <ErrorBox message={error} onRetry={() => void load(true)} /> : <Loading label="Menghitung statistik…" />}</Card>;
   const t = stats.totals;
 
   return (
-    <div>
+    <div className="space-y-5">
       <PageHead
         title="Ringkasan"
-        desc={`Data per ${fmtDateTime(stats.generatedAt)} (diperbarui otomatis tiap 5 menit).`}
+        desc={`Data per ${fmtDateTime(stats.generatedAt)} · diperbarui otomatis tiap 5 menit.`}
         right={
           <Btn onClick={() => void load(true)} busy={busy}>
             <RefreshCw size={13} /> Segarkan
           </Btn>
         }
       />
-      {error && <ErrorBox message={error} />}
+      {error && (
+        <Card>
+          <ErrorBox message={error} />
+        </Card>
+      )}
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-        <KpiCard label="Pengguna" value={t.users} sub={stats.usersTruncated ? "dihitung maks. 1.500 akun" : "akun dengan data dashboard"} onClick={() => goto("users")} />
-        <KpiCard label="Total deploy tercatat" value={t.deploys} sub="dari riwayat dashboard pengguna" />
-        <KpiCard label="Link aktif" value={t.activeSites + t.activeTunnels} sub={`${t.activeSites} Link Instan · ${t.activeTunnels} Link Gaib`} onClick={() => goto("links")} />
-        <KpiCard
-          label="Laporan abuse terbuka"
-          value={t.abuseOpen}
-          sub={`${t.abuseTotal} laporan tersimpan`}
-          tone={t.abuseOpen > 0 ? "bad" : undefined}
-          onClick={() => goto("abuse")}
-        />
-        <KpiCard label="Data link di Redis" value={fmtBytes(t.linkBytes)} sub="situs statis + trafik tunnel" />
-        <KpiCard label="Akun diblokir" value={t.blocked} tone={t.blocked > 0 ? "warn" : undefined} />
-        <KpiCard label="Jumlah key Redis" value={t.redisKeys ?? "—"} sub="termasuk potongan file situs" />
+      {/* Yang butuh tindakan didahulukan: warna hanya muncul di sini saat ada sesuatu yang harus dikerjakan */}
+      {t.abuseOpen > 0 && (
+        <div className="notice notice-bad flex-wrap items-center !rounded-[28px] !p-5 sm:!p-6" role="alert">
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[var(--tone-chip)]">
+            <ShieldAlert size={22} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="flex items-center gap-2 text-[18px] font-bold tracking-tight">
+              <span className="live-dot live-dot-pulse" aria-hidden />
+              {t.abuseOpen} laporan abuse menunggu ditinjau
+            </p>
+            <p className="mt-0.5 text-[13px]">
+              Laporan phishing/penipuan/malware dari halaman /laporkan. Periksa dulu, lalu takedown atau abaikan.
+            </p>
+          </div>
+          <button type="button" onClick={() => goto("abuse")} className="btn-primary press inline-flex items-center gap-2 px-5 py-2.5 text-[13px]">
+            Tinjau laporan
+          </button>
+        </div>
+      )}
+
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <KpiCard icon={Users} label="Pengguna" value={t.users} sub={stats.usersTruncated ? "dihitung maks. 1.500 akun" : "akun dengan data dashboard"} onClick={() => goto("users")} />
+        <KpiCard icon={Rocket} label="Total deploy tercatat" value={t.deploys} sub="dari riwayat dashboard pengguna" />
+        <KpiCard icon={Link2} label="Link aktif" value={t.activeSites + t.activeTunnels} sub={`${t.activeSites} Link Instan · ${t.activeTunnels} Link Gaib`} onClick={() => goto("links")} />
+        <KpiCard icon={XCircle} label="Akun diblokir" value={t.blocked} sub={t.blocked > 0 ? "Kelola di tab Pengguna" : "Tidak ada"} tone={t.blocked > 0 ? "bad" : "neutral"} onClick={() => goto("users")} />
       </div>
 
-      <div className="mt-3 grid gap-3 sm:grid-cols-2">
-        <UsageCard
-          label="Database Supabase"
-          used={t.supabaseBytes ?? null}
-          limitBytes={(t.limits?.supabaseMb ?? 500) * 1024 * 1024}
-          note={t.supabaseBytes == null ? "Belum terbaca — jalankan ulang supabase/schema.sql di SQL Editor." : "Ukuran total database. Batas paket Free ±500 MB."}
-        />
-        <UsageCard
-          label="Memori Redis"
-          used={t.redisBytes ?? null}
-          limitBytes={(t.limits?.redisMb ?? 256) * 1024 * 1024}
-          note={t.redisBytes == null ? "Tidak terbaca dari penyedia Redis. Cek di console Upstash/Vercel Storage." : "Kuota jumlah perintah/bulan tidak bisa dibaca dari sini — lihat console Redis."}
-        />
-      </div>
+      <Card title="Infrastruktur">
+        <dl className="grid divide-[var(--surface-line)] sm:grid-cols-2 sm:divide-x max-sm:divide-y">
+          <InfraStat label="Data link di Redis" value={fmtBytes(t.linkBytes)} sub="situs statis + trafik tunnel" />
+          <InfraStat label="Jumlah key Redis" value={t.redisKeys === null ? "—" : t.redisKeys.toLocaleString("id-ID")} sub="termasuk potongan file situs" />
+        </dl>
+        <div className="grid divide-[var(--surface-line)] border-t border-[var(--surface-line)] sm:grid-cols-2 sm:divide-x max-sm:divide-y">
+          <UsageCard
+            label="Database Supabase"
+            used={t.supabaseBytes ?? null}
+            limitBytes={(t.limits?.supabaseMb ?? 500) * 1024 * 1024}
+            note={t.supabaseBytes == null ? "Belum terbaca — jalankan ulang supabase/schema.sql di SQL Editor." : "Ukuran total database. Batas paket Free ±500 MB."}
+          />
+          <UsageCard
+            label="Memori Redis"
+            used={t.redisBytes ?? null}
+            limitBytes={(t.limits?.redisMb ?? 256) * 1024 * 1024}
+            note={t.redisBytes == null ? "Tidak terbaca dari penyedia Redis. Periksa di console Upstash/Vercel Storage." : "Kuota jumlah perintah/bulan tidak bisa dibaca dari sini — lihat console Redis."}
+          />
+        </div>
+      </Card>
 
-      <div className="mt-4 grid gap-4 lg:grid-cols-2">
-        <Card title="Login & pendaftar baru · 30 hari">
-          <div className="p-4">
+      <div className="grid gap-4 lg:grid-cols-2">
+        <Card className="cv-auto lg:col-span-2" title="Login & pendaftar baru · 30 hari">
+          <div className="p-5">
             <TimeChart
+              height={240}
               kind="line"
               label="Grafik garis login dan pendaftar baru per hari selama 30 hari"
               days={stats.days}
@@ -128,13 +158,13 @@ export function OverviewTab({ goto }: { goto: (tab: string) => void }) {
             />
           </div>
         </Card>
-        <Card title="Deploy per hari · 30 hari">
-          <div className="p-4">
+        <Card className="cv-auto" title="Deploy per hari · 30 hari">
+          <div className="p-5">
             <TimeChart kind="bar" label="Grafik batang jumlah deploy per hari menurut platform" days={stats.days} series={platformSeries} />
           </div>
         </Card>
-        <Card title="Link dibuat per hari · 30 hari">
-          <div className="p-4">
+        <Card className="cv-auto" title="Link dibuat per hari · 30 hari">
+          <div className="p-5">
             <TimeChart
               kind="bar"
               label="Grafik batang Link Instan dan Link Gaib yang dibuat per hari"
@@ -146,8 +176,8 @@ export function OverviewTab({ goto }: { goto: (tab: string) => void }) {
             />
           </div>
         </Card>
-        <Card title="Laporan abuse & takedown · 30 hari">
-          <div className="p-4">
+        <Card className="cv-auto" title="Laporan abuse & takedown · 30 hari">
+          <div className="p-5">
             <TimeChart
               kind="line"
               label="Grafik garis laporan abuse dan takedown per hari"
@@ -159,25 +189,35 @@ export function OverviewTab({ goto }: { goto: (tab: string) => void }) {
             />
           </div>
         </Card>
-        <Card title="Deploy menurut platform">
-          <div className="p-5">
+        <Card className="cv-auto" title="Deploy menurut platform">
+          <div className="p-6">
             <BarList items={Object.entries(stats.deployPlatforms).sort((a, b) => b[1] - a[1]).map(([k, v]) => ({ label: PLATFORM_LABEL[k] ?? k, value: v }))} />
           </div>
         </Card>
-        <Card title="Deploy menurut status">
-          <div className="p-5">
+        <Card className="cv-auto" title="Deploy menurut status">
+          <div className="p-6">
             <BarList
               items={Object.entries(stats.deployStatuses)
                 .sort((a, b) => b[1] - a[1])
-                .map(([k, v]) => ({ label: STATUS_LABEL[k] ?? k, value: v, color: k === "failed" ? "#ef4444" : k === "ready" ? "#10b981" : "#64748b" }))}
+                .map(([k, v]) => ({ label: STATUS_LABEL[k] ?? k, value: v, color: k === "failed" ? "var(--bad-dot)" : k === "ready" ? "var(--ok-dot)" : "var(--text-faint)" }))}
             />
           </div>
         </Card>
       </div>
 
-      <p className="mt-4 text-[12px] text-text-faint">
+      <p className="text-[12px] text-text-muted">
         Catatan: grafik login, pendaftar, link, dan abuse dihitung sejak panel admin ini aktif. Grafik deploy dibaca dari riwayat yang disimpan dashboard tiap pengguna, jadi sudah memuat data lama.
       </p>
+    </div>
+  );
+}
+
+function InfraStat({ label, value, sub }: { label: string; value: string; sub?: string }) {
+  return (
+    <div className="px-6 py-4">
+      <dt className="text-[12.5px] text-text-muted">{label}</dt>
+      <dd className="mt-1 text-[22px] font-bold tracking-tight tabular-nums">{value}</dd>
+      {sub && <p className="text-[12px] text-text-muted">{sub}</p>}
     </div>
   );
 }

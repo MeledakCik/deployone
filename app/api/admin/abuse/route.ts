@@ -69,6 +69,8 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
   const all = await loadReports();
   const counts = { open: 0, actioned: 0, dismissed: 0 };
   for (const r of all) counts[r.status ?? "open"]++;
+  // ?countOnly=1 → hanya hitungan (dipakai badge menu admin; murah, tanpa pengecekan link satu per satu)
+  if (req.nextUrl.searchParams.get("countOnly") === "1") return ok({ counts });
   const shown = (filter === "all" ? all : all.filter((r) => (r.status ?? "open") === filter)).slice(0, 100);
 
   // Apakah link yang dilaporkan MASIH hidup? (laporan bisa masuk lalu link kedaluwarsa sendiri.)
@@ -102,7 +104,7 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
   const note = typeof body.note === "string" ? body.note.replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, 200) : "";
 
   const found = must(await db().from("abuse_reports").select("*").eq("id", id).maybeSingle<ReportRow>(), "baca laporan");
-  if (!found) return fail("Laporan tidak ditemukan.", 404, "not_found");
+  if (!found) return fail("Laporan tidak ditemukan (mungkin sudah kedaluwarsa).", 404, "not_found");
   const report = fromRow(found);
 
   let status: Status;
@@ -115,7 +117,7 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
     for (const other of await loadReports()) {
       if (other.slug === report.slug && other.id !== id && (other.status ?? "open") === "open") {
         must(
-          await db().from("abuse_reports").update(toPatch({ ...other, status, resolvedAt: Date.now(), resolvedBy: admin, note: "Link sudah di-takedown" })).eq("id", other.id),
+          await db().from("abuse_reports").update(toPatch({ ...other, status, resolvedAt: Date.now(), resolvedBy: admin, note: "Link sudah dimatikan" })).eq("id", other.id),
           "update laporan terkait"
         );
       }
