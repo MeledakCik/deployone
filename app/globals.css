@@ -469,7 +469,8 @@ body {
   --kuli-cloud-o: 0.85;
 }
 /* Landing selalu gelap, apa pun tema pengguna */
-.obsidian .kuli-root {
+.obsidian .kuli-root,
+.kuli-on-dark .kuli-root {
   --kuli-sky-a: #0b0d1f;
   --kuli-sky-b: #2b1f63;
   --kuli-ground: #1b1730;
@@ -478,7 +479,12 @@ body {
   --kuli-cloud-o: 0.09;
 }
 /* Token dashboard dikunci gelap di landing supaya panel demo (Card/Btn) terbaca */
-.obsidian {
+.kuli-on-dark {
+  --text: #f8fafc;
+  --line-strong: rgba(255, 255, 255, 0.14);
+}
+.obsidian,
+.kuli-on-dark {
   --card-hover: rgba(255, 255, 255, 0.07);
   --surface-solid: #12151e;
   --surface-solid-2: #1a1d29;

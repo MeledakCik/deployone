@@ -4,12 +4,12 @@ import * as React from "react";
 
 /**
  * Preferensi tampilan per-perangkat (disimpan di localStorage).
- * - deployAnimation: animasi saat loading deploy ("default" = spinner lama, "spider" = spider crawler AI)
+ * - deployAnimation: animasi saat loading deploy ("default" = spinner lama, "spider" = spider crawler AI, "kuli" = kuli proyek)
  * - showDebug: tampilkan log proses debug saat deploy
  *
  * Tema dark/light tetap dikelola next-themes (lihat theme-provider.tsx).
  */
-export type DeployAnimation = "default" | "spider";
+export type DeployAnimation = "default" | "spider" | "kuli";
 
 export interface DeployPreferences {
   deployAnimation: DeployAnimation;
@@ -27,7 +27,7 @@ export const DEFAULT_DEPLOY_PREFS: DeployPreferences = {
 function sanitize(raw: unknown): DeployPreferences {
   const o = (raw && typeof raw === "object" ? raw : {}) as Partial<DeployPreferences>;
   return {
-    deployAnimation: o.deployAnimation === "spider" ? "spider" : "default",
+    deployAnimation: o.deployAnimation === "spider" || o.deployAnimation === "kuli" ? o.deployAnimation : "default",
     showDebug: o.showDebug === true,
   };
 }

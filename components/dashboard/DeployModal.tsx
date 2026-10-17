@@ -18,6 +18,7 @@ import { useDialogA11y } from "@/components/ui/useDialogA11y";
 import { PLATFORM_NAME } from "@/lib/deploy-guides";
 import { useDeployPreferences } from "@/lib/preferences";
 import { SpiderCrawler } from "@/components/dashboard/SpiderCrawler";
+import { KuliProyek, kuliStageFromDeploy } from "@/components/dashboard/KuliProyek";
 import { DeployDebugLog, useDeployLog } from "@/components/dashboard/DeployDebugLog";
 import type { ErrorGuide } from "@/types";
 
@@ -206,6 +207,10 @@ export function DeployModal() {
               >
                 {prefs.deployAnimation === "spider" ? (
                   <SpiderCrawler stepIndex={stepIndex} className="w-full" />
+                ) : prefs.deployAnimation === "kuli" ? (
+                  <div className="kuli-on-dark mx-auto max-w-[420px] text-left">
+                    <KuliProyek stage={kuliStageFromDeploy(status, stepIndex)} compact />
+                  </div>
                 ) : (
                   /* spinner (default) */
                   <div className="relative w-16 h-16 mx-auto">
@@ -282,9 +287,15 @@ export function DeployModal() {
                 className="py-4 text-center"
                 style={{ animation: "dcFadeIn .4s ease" }}
               >
-                <div className="w-14 h-14 mx-auto rounded-full bg-emerald-400/15 border border-emerald-400/20 flex items-center justify-center">
-                  <Check className="w-7 h-7 text-emerald-300" strokeWidth={3} />
-                </div>
+                {prefs.deployAnimation === "kuli" ? (
+                  <div className="kuli-on-dark mx-auto max-w-[420px] text-left">
+                    <KuliProyek stage="live" compact />
+                  </div>
+                ) : (
+                  <div className="w-14 h-14 mx-auto rounded-full bg-emerald-400/15 border border-emerald-400/20 flex items-center justify-center">
+                    <Check className="w-7 h-7 text-emerald-300" strokeWidth={3} />
+                  </div>
+                )}
 
                 <div className="mt-5 text-[18px] font-semibold">
                   Deploy dimulai! 🚀
@@ -372,6 +383,11 @@ export function DeployModal() {
             )}
 
             {/* ---------- ERROR ---------- */}
+            {isError && prefs.deployAnimation === "kuli" && (
+              <div className="kuli-on-dark mx-auto mb-5 max-w-[420px] text-left">
+                <KuliProyek stage="gagal" compact />
+              </div>
+            )}
             {isError && (
               <ErrorPanel
                 guide={errorGuide}

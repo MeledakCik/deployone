@@ -71,6 +71,17 @@ const LINES: Record<KuliStage, Line[]> = {
   ],
 };
 
+/**
+ * Pemetaan status deploy asli (DeployModal) ke tahap Kuli Proyek.
+ * stepIndex 0-1 (hubungkan GitHub, unduh source) = cek, 2 (install) = upload, 3+ = build.
+ */
+export function kuliStageFromDeploy(status: "idle" | "deploying" | "success" | "error", stepIndex: number): KuliStage {
+  if (status === "success") return "live";
+  if (status === "error") return "gagal";
+  if (status === "idle") return "idle";
+  return stepIndex <= 1 ? "cek" : stepIndex === 2 ? "upload" : "build";
+}
+
 /* ---------- hook kecil (dipakai juga oleh KuliProyekDemo) ---------- */
 
 export function usePageVisible(): boolean {

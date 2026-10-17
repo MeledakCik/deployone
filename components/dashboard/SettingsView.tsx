@@ -3,7 +3,7 @@
 import { notifySessionExpired } from "@/lib/session-expired";
 import * as React from "react";
 import { useTheme } from "next-themes";
-import { Eye, EyeOff, Save, ShieldCheck, ShieldAlert, Loader2, Trash2, Moon, Sun, Bug, Rocket, Network as SpiderIcon } from "lucide-react";
+import { Eye, EyeOff, Save, ShieldCheck, ShieldAlert, Loader2, Trash2, Moon, Sun, Bug, Rocket, HardHat, Network as SpiderIcon } from "lucide-react";
 import { Surface } from "@/components/ui/Surface";
 import { ViewFade } from "@/components/ui/ViewFade";
 import { useCloudStorage } from "@/lib/useCloudStorage";
@@ -206,6 +206,7 @@ function SwitchRow({
 const ANIMATION_OPTIONS: { value: DeployAnimation; label: string; hint: string; icon: React.ReactNode }[] = [
   { value: "default", label: "Default", hint: "Spinner roket seperti sekarang", icon: <Rocket size={16} /> },
   { value: "spider", label: "Spider Crawler AI", hint: "Laba-laba merayap di jaring saraf, satu node per tahap", icon: <SpiderIcon size={16} /> },
+  { value: "kuli", label: "Kuli Proyek", hint: "Kuli dan mandor membangun gedung selagi deploy berjalan", icon: <HardHat size={16} /> },
 ];
 
 function AppearanceSettings() {
