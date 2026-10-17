@@ -119,7 +119,7 @@ interface StatusIncident {
   components?: { name?: string }[];
 }
 
-async function checkPlatformStatus(p: Platform): Promise<DiagCheck | null> {
+export async function checkPlatformStatus(p: Platform): Promise<DiagCheck | null> {
   const page = STATUS_PAGES[p];
   if (!page) return null;
   const id = `status-${p}`;

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import type { ApiError, ApiOk, ErrorGuide } from "@/types";
+import { recordServerError } from "@/app/api/_lib/error-log";
 
 export function ok<T>(data: T, init?: number): NextResponse<ApiOk<T>> {
   return NextResponse.json({ ok: true, data }, { status: init ?? 200 });
@@ -32,6 +33,8 @@ export function withErrorHandling<A extends unknown[]>(
         throw err;
       }
       console.error("[api] unhandled error", err);
+      // Dicatat ke log ringan (KV) supaya muncul di menu Audit sistem di panel admin.
+      await recordServerError(args[0], err);
       // Detail error cuma di log server — jangan bocor ke client.
       return fail("Terjadi kesalahan di server. Coba lagi sebentar lagi.", 500);
     }
