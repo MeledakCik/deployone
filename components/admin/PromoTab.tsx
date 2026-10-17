@@ -84,7 +84,7 @@ export function PromoTab({ toast }: { toast: (m: string) => void }) {
             features: feats,
             cta: ctaLabel.trim() && ctaUrl.trim() ? { label: ctaLabel, url: ctaUrl } : null,
           },
-      { footerNote: "Kamu menerima email ini karena punya akun di Depup.", unsubUrl: "#", logoUrl: `${origin}/logo.png`, siteUrl: origin }
+      { footerNote: "Kamu menerima email ini karena punya akun di Depup.", unsubUrl: "#", siteUrl: origin }
     ).html;
   }, [badge, headline, body, features, preheader, ctaLabel, ctaUrl]);
 

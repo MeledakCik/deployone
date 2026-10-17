@@ -196,7 +196,6 @@ export function buildPromoMail(to: string, subject: string, content: MailContent
   const { html, text } = renderRich(content, {
     footerNote: "Kamu menerima email ini karena punya akun di Depup.",
     unsubUrl: link,
-    logoUrl: `${appUrl()}/logo.png`,
     siteUrl: appUrl(),
   });
   return {

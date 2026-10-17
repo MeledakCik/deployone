@@ -1,7 +1,7 @@
 /**
  * Template email — MURNI (tanpa import node/KV) supaya dipakai server (pengiriman) dan browser (pratinjau admin).
  * Semua tabel + inline CSS + fallback warna solid, supaya tampil di Gmail/Outlook/Apple Mail.
- * Sengaja hampir tanpa gambar (hanya logo kecil): email penuh gambar lebih sering masuk Spam.
+ * Sengaja TANPA gambar sama sekali (logo digambar dengan HTML): gambar sering diblokir klien email, dan email penuh gambar lebih sering masuk Spam.
  */
 
 export function escapeHtml(s: string): string {
@@ -41,7 +41,6 @@ export interface MailContent {
 export interface RenderOpts {
   footerNote: string;
   unsubUrl?: string;
-  logoUrl?: string;
   siteUrl?: string;
 }
 
@@ -118,9 +117,8 @@ export function renderRich(c: MailContent, o: RenderOpts): { html: string; text:
   const pre = c.preheader
     ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;font-size:1px;line-height:1px;">${escapeHtml(c.preheader)}</div>`
     : "";
-  const logo = o.logoUrl
-    ? `<img src="${escapeHtml(o.logoUrl)}" width="32" height="32" alt="" style="display:inline-block;vertical-align:middle;border-radius:50%;border:0;margin-right:10px;">`
-    : "";
+  // Logo digambar dengan HTML (bukan <img>) supaya tetap muncul saat Gmail/Outlook memblokir gambar.
+  const logo = `<span style="display:inline-block;width:32px;height:32px;line-height:32px;text-align:center;border-radius:50%;background-color:#ffffff;color:#6d28d9;font-family:${FONT};font-size:20px;font-weight:900;vertical-align:middle;margin-right:10px;">&uarr;</span>`;
   const badge = c.badge?.trim()
     ? `<p style="margin:26px 0 0;"><span style="display:inline-block;font-family:${FONT};background-color:#ffffff;color:#6d28d9;font-size:12px;font-weight:700;letter-spacing:.5px;padding:6px 14px;border-radius:999px;">${escapeHtml(c.badge.trim().slice(0, 30))}</span></p>`
     : "";
