@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Mail, Send, ShieldCheck } from "lucide-react";
+import { Mail, Send, ShieldCheck, Sparkles } from "lucide-react";
 import { adminFetch, useAdminData } from "./api";
 import { Badge, Btn, Card, Empty, ErrorBox, KpiCard, Loading, PageHead, fmtDateTime } from "./ui";
 
@@ -41,8 +41,30 @@ export function PromoTab({ toast }: { toast: (m: string) => void }) {
   const [testTo, setTestTo] = React.useState("");
   const [busy, setBusy] = React.useState<"test" | "send" | null>(null);
   const [confirming, setConfirming] = React.useState(false);
+  const [topic, setTopic] = React.useState("");
+  const [tone, setTone] = React.useState<"santai" | "profesional" | "singkat">("santai");
+  const [generating, setGenerating] = React.useState(false);
 
   const draft = { subject, preheader, body, ctaLabel, ctaUrl };
+
+  async function generate() {
+    setGenerating(true);
+    try {
+      const r = await adminFetch<{ subject: string; preheader: string; body: string; ctaLabel: string }>("/api/admin/promo/generate", { method: "POST", body: { topic, tone } });
+      setSubject(r.subject);
+      setPreheader(r.preheader);
+      setBody(r.body);
+      if (r.ctaLabel) {
+        setCtaLabel(r.ctaLabel);
+        setCtaUrl((u) => u.trim() || `${window.location.origin}/dashboard`);
+      }
+      toast("Template dibuat. Baca & edit dulu, lalu kirim tes sebelum kirim ke semua.");
+    } catch (e) {
+      toast(e instanceof Error ? e.message : "Gagal membuat template.");
+    } finally {
+      setGenerating(false);
+    }
+  }
 
   async function sendTest() {
     setBusy("test");
@@ -96,6 +118,31 @@ export function PromoTab({ toast }: { toast: (m: string) => void }) {
         <KpiCard label="Berhenti langganan" value={data.audience.unsubscribed} />
         <KpiCard label="Diblokir" value={data.audience.blocked} />
       </div>
+
+      <Card title="Buat dengan AI">
+        <div className="space-y-3 p-5">
+          <p className="text-[12.5px] text-text-muted">Ketik topiknya saja, AI menyusun subjek, pratinjau, isi, dan teks tombol. Hasilnya mengisi form di bawah dan tetap bisa kamu edit.</p>
+          <textarea
+            value={topic}
+            onChange={(e) => setTopic(e.target.value.slice(0, 600))}
+            rows={2}
+            aria-label="Topik email"
+            placeholder="Mis. Link Instan sekarang bisa menampung situs sampai 10 MB, ajak user mencoba upload situs statis"
+            className="input-solid w-full resize-none px-4 py-2.5 text-[13px]"
+          />
+          <div className="flex flex-wrap items-center gap-2">
+            <select value={tone} onChange={(e) => setTone(e.target.value as typeof tone)} aria-label="Gaya bahasa" className="input-solid px-3 py-2 text-[13px]">
+              <option value="santai">Gaya santai</option>
+              <option value="profesional">Gaya profesional</option>
+              <option value="singkat">Singkat saja</option>
+            </select>
+            <Btn variant="primary" busy={generating} disabled={topic.trim().length < 5} onClick={() => void generate()}>
+              <Sparkles size={13} /> Buat template
+            </Btn>
+            <span className="text-[11.5px] text-text-faint">Mengganti isi form di bawah. Fakta seperti harga/tanggal tetap periksa sendiri.</span>
+          </div>
+        </div>
+      </Card>
 
       <Card title="Tulis email">
         <div className="space-y-3 p-5">
