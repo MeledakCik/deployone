@@ -157,6 +157,7 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   maximumScale: 5,
+  viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#7B50FF" },
     { media: "(prefers-color-scheme: dark)", color: "#120B2E" },
@@ -213,7 +214,7 @@ export default function RootLayout({
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className="antialiased min-h-screen w-full">
+      <body className="antialiased min-h-[100dvh] w-full overflow-x-clip">
         <ThemeProvider>
           <AuthProvider>
             <ToastProvider>{children}</ToastProvider>

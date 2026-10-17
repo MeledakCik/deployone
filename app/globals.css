@@ -616,6 +616,7 @@ textarea {
   /* Chat bantuan ala iOS: tombol kecil "membuka" jadi panel (clip-path tumbuh dari posisi tombol) */
   .morph {
     --fab-off: var(--edge, 16px);
+    --fab-off-b: calc(var(--edge, 16px) + env(safe-area-inset-bottom));
     --panel-r: 0px;
     --fab-w: 58px;
     --fab-h: 48px;
@@ -624,6 +625,7 @@ textarea {
   @media (min-width: 640px) {
     .morph {
       --fab-off: 0px;
+      --fab-off-b: 0px;
       --panel-r: 24px;
     }
   }
@@ -640,7 +642,7 @@ textarea {
   @keyframes morph-open {
     from {
       clip-path: inset(
-        calc(100% - var(--fab-h) - var(--fab-off)) var(--fab-off) var(--fab-off)
+        calc(100% - var(--fab-h) - var(--fab-off-b)) var(--fab-off) var(--fab-off-b)
           calc(100% - var(--fab-w) - var(--fab-off)) round calc(var(--fab-h) / 2)
       );
     }
@@ -654,7 +656,7 @@ textarea {
     }
     to {
       clip-path: inset(
-        calc(100% - var(--fab-h) - var(--fab-off)) var(--fab-off) var(--fab-off)
+        calc(100% - var(--fab-h) - var(--fab-off-b)) var(--fab-off) var(--fab-off-b)
           calc(100% - var(--fab-w) - var(--fab-off)) round calc(var(--fab-h) / 2)
       );
     }
@@ -669,7 +671,7 @@ textarea {
   .morph-fab {
     position: absolute;
     right: var(--fab-off);
-    bottom: var(--fab-off);
+    bottom: var(--fab-off-b);
     width: var(--fab-w);
     height: var(--fab-h);
     z-index: 20;
@@ -1361,5 +1363,68 @@ textarea {
   .kuli-root *::after {
     animation: none !important;
     transition: none !important;
+  }
+}
+
+/* =========================================================
+   Perbaikan mobile & desktop (sengaja di luar @layer supaya menang atas utilitas Tailwind)
+   ========================================================= */
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+button,
+a,
+[role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* iOS menyalin latar `fixed` secara boros dan sering patah-patah saat scroll; pakai scroll biasa di layar sentuh/kecil */
+@media (max-width: 767px), (pointer: coarse) {
+  body {
+    background-attachment: scroll;
+  }
+}
+
+/* iOS Safari memperbesar halaman otomatis saat input berfokus bila font < 16px */
+@media (max-width: 767px) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="file"]),
+  select,
+  textarea {
+    font-size: 16px;
+  }
+}
+
+/* Area aman (notch, status bar PWA, home indicator) */
+.app-frame {
+  padding-top: max(var(--edge), env(safe-area-inset-top));
+  padding-right: max(var(--edge), env(safe-area-inset-right));
+  padding-bottom: max(var(--edge), env(safe-area-inset-bottom));
+  padding-left: max(var(--edge), env(safe-area-inset-left));
+}
+.fab {
+  bottom: calc(var(--edge) + env(safe-area-inset-bottom));
+}
+@media (max-width: 767px) {
+  .sidebar:not(.sidebar-topbar) {
+    padding-top: max(1rem, env(safe-area-inset-top));
+    padding-bottom: max(1rem, env(safe-area-inset-bottom));
+  }
+}
+
+/* Sidebar desktop pada layar pendek (laptop kecil): menu boleh di-scroll, footer tidak terpotong */
+@media (min-width: 768px) and (max-height: 640px) {
+  .sidebar:not(.sidebar-topbar) {
+    padding-top: 12px;
+    padding-bottom: 12px;
+  }
+}
+
+/* Layar sangat sempit (<360px): rapatkan judul & gutter supaya tidak ada scroll samping */
+@media (max-width: 359px) {
+  .page-title {
+    font-size: 24px;
   }
 }

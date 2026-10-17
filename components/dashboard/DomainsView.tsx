@@ -203,6 +203,66 @@ export function DomainsView() {
     return groups;
   }, [safeDomains]);
 
+  const renderActions = (d: DomainItem, justify: string) => (
+    <div className={`flex flex-wrap items-center gap-2 ${justify}`}>
+      {d.dns && d.status !== "Active" && (
+        <button
+          type="button"
+          onClick={() => handleCheckStatus(d.id)}
+          disabled={checkingId === d.id}
+          aria-label={`Periksa status ${d.domain}`}
+          className="pill inline-flex items-center gap-1.5 px-3 py-1 text-[12px] max-md:min-h-[40px] font-medium hover:brightness-110 disabled:opacity-60"
+        >
+          <RefreshCw size={12} className={checkingId === d.id ? "animate-spin" : undefined} />
+          Periksa status
+        </button>
+      )}
+      <button
+        type="button"
+        onClick={() => removeDomain(d.id)}
+        aria-label={`Hapus ${d.domain}`}
+        className="pill inline-flex items-center gap-1.5 px-3 py-1 text-[12px] max-md:min-h-[40px] font-medium text-bad-fg hover:brightness-110"
+      >
+        <Trash2 size={12} /> Hapus
+      </button>
+    </div>
+  );
+
+  const renderDnsDetails = (d: DomainItem, remoteLabel: string | null) => (
+    <div className="space-y-2 rounded-2xl bg-[var(--surface-solid-2)] p-3.5">
+      <p className="text-[12px] text-text-muted">
+        {d.status === "Active"
+          ? "Sudah aktif. Ini record yang dipakai kalau kamu perlu periksa ulang di DNS provider:"
+          : `Domain sudah ditambahkan ke ${remoteLabel ?? "platform"} — tinggal pasang record ini di DNS provider (Cloudflare, Niagahoster, Domainesia, dll):`}
+      </p>
+      {d.dns && (
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          <DnsField label="Type" value={d.dns.type} />
+          <DnsField label="Name" value={d.dns.name} />
+          <DnsField label="Value" value={d.dns.value} />
+        </div>
+      )}
+      {d.verificationDns && (
+        <>
+          <p className="text-[12px] text-text-faint pt-1">
+            Railway juga butuh record TXT ini untuk verifikasi kepemilikan domain:
+          </p>
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+            <DnsField label="Type" value={d.verificationDns.type} />
+            <DnsField label="Name" value={d.verificationDns.name} />
+            <DnsField label="Value" value={d.verificationDns.value} />
+          </div>
+        </>
+      )}
+      {d.status !== "Active" && (
+        <p className="text-[12px] text-text-faint">
+          Propagasi DNS bisa memerlukan waktu beberapa menit sampai jam. Setelah record di atas
+          terpasang di DNS provider kamu, klik &quot;Periksa status&quot; untuk verifikasi.
+        </p>
+      )}
+    </div>
+  );
+
   return (
     <ViewFade>
       <div className="space-y-6">
@@ -242,6 +302,40 @@ export function DomainsView() {
           </Surface>
         ) : (
           <Surface className="overflow-hidden">
+            {/* Mobile: kartu per domain, tanpa scroll samping */}
+            <div className="md:hidden">
+              {groupedDomains.map((group, groupIndex) => (
+                <section key={group.project}>
+                  <h3
+                    className={`bg-[var(--row-hover)] px-4 py-2 text-[12px] font-semibold uppercase tracking-wide text-text-faint ${groupIndex > 0 ? "border-t" : ""}`}
+                    style={{ borderColor: "var(--surface-line)" }}
+                  >
+                    {group.project}
+                    {projectPlatforms.get(group.project) && (
+                      <span className="ml-2 font-normal normal-case text-text-faint/80">({projectPlatforms.get(group.project)})</span>
+                    )}
+                  </h3>
+                  <ul>
+                    {group.items.map((d) => (
+                      <li key={d.id} className="space-y-3 border-t px-4 py-4 first:border-0" style={{ borderColor: "var(--surface-line)" }}>
+                        <div className="flex items-start justify-between gap-3">
+                          <p className="mono min-w-0 break-all text-[13px]">{d.domain}</p>
+                          <span className="chip shrink-0">
+                            <span className={`h-1.5 w-1.5 rounded-full ${d.status === "Active" ? "bg-ok" : "bg-warn"}`} aria-hidden="true" />
+                            {d.status}
+                          </span>
+                        </div>
+                        {(d.dns || d.verificationDns) && renderDnsDetails(d, remoteLabelFor(d))}
+                        {renderActions(d, "")}
+                      </li>
+                    ))}
+                  </ul>
+                </section>
+              ))}
+            </div>
+
+            {/* Desktop: tabel */}
+            <div className="hidden overflow-x-auto md:block">
             <table className="w-full text-left">
               <thead>
                 <tr className="text-[12px] uppercase tracking-wide text-text-faint">
@@ -292,65 +386,13 @@ export function DomainsView() {
                               </span>
                             </td>
                             <td className="px-6 py-4 text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                {d.dns && d.status !== "Active" && (
-                                  <button
-                                    type="button"
-                                    onClick={() => handleCheckStatus(d.id)}
-                                    disabled={checkingId === d.id}
-                                    aria-label={`Periksa status ${d.domain}`}
-                                    className="pill inline-flex items-center gap-1.5 px-3 py-1 text-[12px] font-medium hover:brightness-110 disabled:opacity-60"
-                                  >
-                                    <RefreshCw size={12} className={checkingId === d.id ? "animate-spin" : undefined} />
-                                    Periksa status
-                                  </button>
-                                )}
-                                <button
-                                  type="button"
-                                  onClick={() => removeDomain(d.id)}
-                                  aria-label={`Hapus ${d.domain}`}
-                                  className="pill inline-flex items-center gap-1.5 px-3 py-1 text-[12px] font-medium text-bad-fg hover:brightness-110"
-                                >
-                                  <Trash2 size={12} /> Hapus
-                                </button>
-                              </div>
+                              {renderActions(d, "justify-end")}
                             </td>
                           </tr>
                           {(d.dns || d.verificationDns) && (
                             <tr className="border-b last:border-0" style={{ borderColor: "var(--surface-line)" }}>
                               <td colSpan={4} className="px-6 pb-4">
-                                <div className="space-y-2 rounded-2xl bg-[var(--surface-solid-2)] p-3.5">
-                                  <p className="text-[12px] text-text-muted">
-                                    {d.status === "Active"
-                                      ? "Sudah aktif. Ini record yang dipakai kalau kamu perlu periksa ulang di DNS provider:"
-                                      : `Domain sudah ditambahkan ke ${remoteLabel ?? "platform"} — tinggal pasang record ini di DNS provider (Cloudflare, Niagahoster, Domainesia, dll):`}
-                                  </p>
-                                  {d.dns && (
-                                    <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                                      <DnsField label="Type" value={d.dns.type} />
-                                      <DnsField label="Name" value={d.dns.name} />
-                                      <DnsField label="Value" value={d.dns.value} />
-                                    </div>
-                                  )}
-                                  {d.verificationDns && (
-                                    <>
-                                      <p className="text-[12px] text-text-faint pt-1">
-                                        Railway juga butuh record TXT ini untuk verifikasi kepemilikan domain:
-                                      </p>
-                                      <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
-                                        <DnsField label="Type" value={d.verificationDns.type} />
-                                        <DnsField label="Name" value={d.verificationDns.name} />
-                                        <DnsField label="Value" value={d.verificationDns.value} />
-                                      </div>
-                                    </>
-                                  )}
-                                  {d.status !== "Active" && (
-                                    <p className="text-[12px] text-text-faint">
-                                      Propagasi DNS bisa memerlukan waktu beberapa menit sampai jam. Setelah record di atas
-                                      terpasang di DNS provider kamu, klik &quot;Periksa status&quot; untuk verifikasi.
-                                    </p>
-                                  )}
-                                </div>
+                                {renderDnsDetails(d, remoteLabel)}
                               </td>
                             </tr>
                           )}
@@ -361,6 +403,7 @@ export function DomainsView() {
                 ))}
               </tbody>
             </table>
+            </div>
           </Surface>
         )}
       </div>

@@ -796,10 +796,10 @@ export function DeployFormView() {
               tabIndex={-1}
               className={cn(
                 "relative w-full bg-[var(--dc-surface)] shadow-[var(--dc-shadow-modal)] overflow-hidden flex flex-col outline-none",
-                "max-w-full rounded-t-[24px] max-h-[92vh]",
-                "sm:max-w-[520px] sm:rounded-[28px] sm:max-h-[90vh]",
+                "max-w-full rounded-t-[24px] max-h-[92dvh]",
+                "sm:max-w-[520px] sm:rounded-[28px] sm:max-h-[90dvh]",
               )}
-              style={{ animation: "dcSlideUp .3s ease" }}
+              style={{ animation: "dcSlideUp .3s ease", paddingBottom: "env(safe-area-inset-bottom)" }}
             >
               {/* mobile grab handle */}
               <div className="sm:hidden pt-2.5 pb-1 flex justify-center shrink-0">

@@ -12,7 +12,7 @@ import { Footer } from "@/components/landing/Footer";
 export default function LandingPage() {
   return (
     // data-theme="light": landing selalu terang, tidak mengikuti tema dashboard.
-    <main data-theme="light" className="lp relative min-h-screen overflow-x-hidden antialiased">
+    <main data-theme="light" className="lp relative min-h-[100dvh] overflow-x-hidden antialiased">
       <React.Suspense fallback={null}>
         <Navbar />
       </React.Suspense>

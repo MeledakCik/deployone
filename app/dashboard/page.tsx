@@ -58,7 +58,7 @@ export default function DashboardPage() {
 
   if (!ready || !user) {
     return (
-      <div className="flex min-h-screen items-center justify-center text-[13px] text-text-muted">
+      <div className="flex min-h-[100dvh] items-center justify-center text-[13px] text-text-muted">
         Memuat dashboard…
       </div>
     );

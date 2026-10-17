@@ -602,7 +602,7 @@ export function ProjectsView() {
               const isReady = project.status === "ready";
               const isChecking = checkingKey === `${project.name}::${project.platform}`;
               return (
-                <Surface key={`${project.name}::${project.platform}`} className="p-5 transition-transform hover:-translate-y-0.5">
+                <Surface key={`${project.name}::${project.platform}`} className="p-4 transition-transform hover:-translate-y-0.5 sm:p-5">
                   <div className="flex items-start justify-between gap-2">
                     <h3 className="min-w-0 truncate text-[17px] font-semibold tracking-[-0.01em]">{project.name}</h3>
                     <span className="chip shrink-0">
@@ -626,14 +626,14 @@ export function ProjectsView() {
                       href={deployDomainToUrl(project.domain, project.platform)}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex h-9 items-center justify-center gap-1.5 rounded-full bg-violet-500 px-3 text-[12px] font-semibold text-white transition hover:brightness-110 active:scale-[0.98]"
+                      className="inline-flex h-9 max-md:h-11 items-center justify-center gap-1.5 rounded-full bg-violet-500 px-3 text-[12px] font-semibold text-white transition hover:brightness-110 active:scale-[0.98]"
                     >
                       <ExternalLink size={13} /> Visit
                     </a>
                     <button
                       type="button"
                       onClick={() => redeploy(project.name)}
-                      className="pill inline-flex h-9 items-center justify-center gap-1.5 px-3 text-[12px] font-semibold hover:brightness-110"
+                      className="pill inline-flex h-9 max-md:h-11 items-center justify-center gap-1.5 px-3 text-[12px] font-semibold hover:brightness-110"
                     >
                       <RotateCw size={13} /> Redeploy
                     </button>
@@ -644,7 +644,7 @@ export function ProjectsView() {
                       type="button"
                       onClick={() => void handleCheck(project.name, project.platform)}
                       disabled={isChecking}
-                      className="pill mt-2 inline-flex h-9 w-full items-center justify-center gap-1.5 px-3 text-[12px] font-semibold hover:brightness-110 disabled:opacity-50"
+                      className="pill mt-2 inline-flex h-9 max-md:h-11 w-full items-center justify-center gap-1.5 px-3 text-[12px] font-semibold hover:brightness-110 disabled:opacity-50"
                     >
                       <RefreshCw size={13} className={isChecking ? "animate-spin" : ""} />
                       {isChecking ? "Memeriksa..." : "Periksa Status"}
@@ -654,7 +654,7 @@ export function ProjectsView() {
                   <button
                     type="button"
                     onClick={() => setDeleteTarget(project)}
-                    className="mt-2 inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-full bg-[var(--bad-solid)] px-3 text-[12px] font-semibold text-white transition hover:brightness-110 active:scale-[0.98]"
+                    className="mt-2 inline-flex h-9 max-md:h-11 w-full items-center justify-center gap-1.5 rounded-full bg-[var(--bad-solid)] px-3 text-[12px] font-semibold text-white transition hover:brightness-110 active:scale-[0.98]"
                   >
                     <Trash2 size={13} /> Hapus project
                   </button>
