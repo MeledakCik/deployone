@@ -24,9 +24,10 @@ export interface MailFeature {
   desc: string;
 }
 
-export type TemplateId = "gradient" | "gelap" | "minimal" | "hangat" | "pop";
+export type TemplateId = "depup" | "gradient" | "gelap" | "minimal" | "hangat" | "pop";
 
 export const TEMPLATES: { id: TemplateId; label: string; desc: string; swatch: [string, string] }[] = [
+  { id: "depup", label: "Depup", desc: "Gaya resmi Depup: Midnight, ungu, aksen lime", swatch: ["#1e1150", "#c6f432"] },
   { id: "gradient", label: "Ungu Gradient", desc: "Banner gradient, kartu poin", swatch: ["#7c3aed", "#0891b2"] },
   { id: "gelap", label: "Midnight", desc: "Mode gelap, aksen neon", swatch: ["#11111b", "#22d3ee"] },
   { id: "minimal", label: "Bersih", desc: "Putih minimalis, tipografi besar", swatch: ["#ffffff", "#111111"] },
@@ -39,7 +40,7 @@ export function isTemplateId(v: unknown): v is TemplateId {
 }
 
 export interface MailContent {
-  /** Gaya tampilan email promosi (default: gradient). */
+  /** Gaya tampilan email promosi (default: depup). */
   template?: TemplateId;
   /** Isi pesan; baris kosong = paragraf baru. */
   body: string;
@@ -165,6 +166,16 @@ interface Theme {
 }
 
 const THEMES: Record<TemplateId, Theme> = {
+  depup: {
+    page: "#ede8ff", card: "#ffffff", radius: 28, hero: "banner", heroBg: "#1e1150",
+    heroImage: "linear-gradient(150deg,#1e1150 0%,#2b1b6b 60%,#4a2fb8 100%)", heroPad: "30px 34px 38px", align: "left",
+    accentBar: { image: "linear-gradient(90deg,#c6f432 0%,#c6f432 34%,#7b50ff 34%,#7b50ff 100%)", fallback: "#c6f432" },
+    logoBg: "#c6f432", logoFg: "#1e1150", brand: "#ffffff", badge: "pill", badgeBg: "#c6f432", badgeFg: "#1e1150",
+    headColor: "#ffffff", headSize: 32, body: "#120b2e", feat: "card", featBg: "#f4f1ff", featBorder: "#e7e0ff",
+    numBg: "#7b50ff", numFg: "#ffffff", titleC: "#1e1150", descC: "#4a4464", btnBg: "#c6f432",
+    btnFg: "#1e1150", btnRadius: 999,
+    footBg: "#1e1150", footBorder: "#1e1150", footText: "#b2aec4", accent: "#7b50ff", muted: "#8e88a8",
+  },
   gradient: {
     page: "#ede9fe", card: "#ffffff", radius: 20, hero: "banner", heroBg: "#6d28d9",
     heroImage: "linear-gradient(135deg,#7c3aed 0%,#4f46e5 55%,#0891b2 100%)", heroPad: "28px 32px 34px", align: "left",
@@ -208,9 +219,9 @@ const THEMES: Record<TemplateId, Theme> = {
   },
 };
 
-/** Template promosi: 5 gaya (lihat TEMPLATES). Tanpa gambar; logo digambar dengan HTML. */
+/** Template promosi: 6 gaya (lihat TEMPLATES). Tanpa gambar; logo digambar dengan HTML. */
 export function renderRich(c: MailContent, o: RenderOpts): { html: string; text: string } {
-  const t = THEMES[isTemplateId(c.template) ? c.template : "gradient"];
+  const t = THEMES[isTemplateId(c.template) ? c.template : "depup"];
   const cta = cleanCta(c);
   const feats = cleanFeatures(c);
   const site = (o.siteUrl ?? "").replace(/\/+$/, "");

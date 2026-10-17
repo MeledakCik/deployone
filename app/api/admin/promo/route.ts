@@ -51,7 +51,7 @@ function parseDraft(b: Record<string, unknown>): { subject: string; content: Mai
     if (!ctaLabel || !url) return "Tombol butuh label dan URL http(s) yang valid (atau kosongkan keduanya).";
     cta = { label: ctaLabel, url };
   }
-  return { subject, content: { body, preheader, cta, badge, headline, features, template: isTemplateId(b.template) ? b.template : "gradient" } };
+  return { subject, content: { body, preheader, cta, badge, headline, features, template: isTemplateId(b.template) ? b.template : "depup" } };
 }
 
 /**
