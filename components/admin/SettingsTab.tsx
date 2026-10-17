@@ -18,6 +18,7 @@ interface Data {
     baseDomain: string | null;
     siteLimits: { maxMb: number; perUser: number };
     redis: { ok: boolean; keys: number | null };
+    supabase: { ok: boolean };
     env: { name: string; label: string; ok: boolean }[];
   };
 }

@@ -2,6 +2,7 @@ import { kv } from "@vercel/kv";
 import { parseKv, tunnelBaseDomain, kBytes, type TunnelMeta } from "@/app/api/_lib/tunnel";
 import { siteUrl, type SiteMeta } from "@/app/api/_lib/sites";
 import { readDaily, scanKeys, type StatField } from "@/app/api/_lib/admin";
+import { db, must } from "@/app/api/_lib/supabase";
 
 /* ---------- link aktif (situs statis + tunnel) ---------- */
 
@@ -138,9 +139,11 @@ export async function getStats(opts: { refresh?: boolean; host?: string | null }
     if (cached && Date.now() - cached.generatedAt < CACHE_TTL * 1000) return cached;
   }
 
-  const allUserKeys = await scanKeys("user:*", MAX_USERS + 1);
-  const usersTruncated = allUserKeys.length > MAX_USERS;
-  const userKeys = allUserKeys.slice(0, MAX_USERS);
+  // Riwayat deploy semua user dibaca dari Supabase (dulu: SCAN + MGET seluruh blob user di Redis).
+  const countRes = await db().from("user_data").select("email", { count: "exact", head: true });
+  must(countRes as never, "hitung user_data");
+  const totalUsers = countRes.count ?? 0;
+  const usersTruncated = totalUsers > MAX_USERS;
 
   const daily = await readDaily(DAYS);
   const days = daily.map((d) => d.day);
@@ -156,13 +159,13 @@ export async function getStats(opts: { refresh?: boolean; host?: string | null }
   const deployStatuses: Record<string, number> = {};
   const users: UserSummary[] = [];
   let totalDeploys = 0;
-  for (let i = 0; i < userKeys.length; i += 50) {
-    const part = userKeys.slice(i, i + 50);
-    const rows = await kv.mget<unknown[]>(...part);
-    rows.forEach((raw, j) => {
-      const data = parseKv<{ history?: HistoryLike[] }>(raw);
-      const email = part[j].slice("user:".length);
-      const hist = Array.isArray(data?.history) ? data!.history! : [];
+  for (let from = 0; from < Math.min(totalUsers, MAX_USERS); from += 200) {
+    const to = Math.min(from + 199, MAX_USERS - 1);
+    const pageRes = await db().from("user_data").select("email,history").order("email").range(from, to);
+    const rows = (must(pageRes, "baca user_data") ?? []) as { email: string; history: unknown }[];
+    rows.forEach((row) => {
+      const email = row.email;
+      const hist = Array.isArray(row.history) ? (row.history as HistoryLike[]) : [];
       let last = 0;
       for (const h of hist) {
         totalDeploys++;
@@ -186,28 +189,28 @@ export async function getStats(opts: { refresh?: boolean; host?: string | null }
   for (const l of links) if (l.owner) ownerCount.set(l.owner, (ownerCount.get(l.owner) ?? 0) + 1);
   for (const u of users) u.sites = ownerCount.get(u.email) ?? 0;
 
-  const [blockedCount, abuseIds, redisKeys] = await Promise.all([
+  const [blockedCount, abuseTotalRes, abuseOpenRes, redisKeys] = await Promise.all([
     kv.scard("admin:blocked"),
-    kv.lrange<string>("abuse:reports", 0, 199),
+    db().from("abuse_reports").select("id", { count: "exact", head: true }),
+    db().from("abuse_reports").select("id", { count: "exact", head: true }).eq("status", "open"),
     kv.dbsize().catch(() => null),
   ]);
-  let abuseOpen = 0;
-  if (abuseIds?.length) {
-    const reps = await mgetChunked<{ status?: string }>(abuseIds.map((id) => `abuse:report:${id}`));
-    for (const r of reps) if (r && (!r.status || r.status === "open")) abuseOpen++;
-  }
+  must(abuseTotalRes as never, "hitung abuse_reports");
+  must(abuseOpenRes as never, "hitung abuse open");
+  const abuseOpen = abuseOpenRes.count ?? 0;
+  const abuseTotal = abuseTotalRes.count ?? 0;
 
   const stats: AdminStats = {
     generatedAt: Date.now(),
     totals: {
-      users: Math.max(allUserKeys.length > MAX_USERS ? MAX_USERS : allUserKeys.length, 0),
+      users: totalUsers,
       deploys: totalDeploys,
       activeSites: links.filter((l) => l.kind === "site" && l.status === "active").length,
       activeTunnels: links.filter((l) => l.kind === "tunnel").length,
       linkBytes: links.reduce((n, l) => n + l.bytes, 0),
       blocked: Number(blockedCount) || 0,
       abuseOpen,
-      abuseTotal: abuseIds?.length ?? 0,
+      abuseTotal,
       redisKeys: typeof redisKeys === "number" ? redisKeys : null,
     },
     days,

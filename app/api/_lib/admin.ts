@@ -2,7 +2,7 @@ import { kv } from "@vercel/kv";
 import type { NextRequest } from "next/server";
 import { getSessionEmail } from "@/app/api/_lib/session";
 import { isAdminEmail } from "@/app/api/_lib/admin-config";
-import { parseKv } from "@/app/api/_lib/tunnel";
+import { db, must } from "@/app/api/_lib/supabase";
 
 export { isAdminEmail, adminEmails } from "@/app/api/_lib/admin-config";
 
@@ -56,12 +56,13 @@ function normalizeSettings(raw: unknown): AdminSettings {
   };
 }
 
-/** FAIL-OPEN: kalau KV bermasalah, pakai default (semua menyala) supaya situs tidak ikut mati. */
+/** FAIL-OPEN: kalau database bermasalah, pakai default (semua menyala) supaya situs tidak ikut mati. */
 export async function getSettings(opts?: { fresh?: boolean }): Promise<AdminSettings> {
   const now = Date.now();
   if (!opts?.fresh && settingsCache && settingsCache.until > now) return settingsCache.value;
   try {
-    const value = normalizeSettings(parseKv(await kv.get(SETTINGS_KEY)));
+    const res = await db().from("admin_settings").select("value").eq("key", SETTINGS_KEY).maybeSingle<{ value: unknown }>();
+    const value = normalizeSettings(must(res, "baca settings")?.value);
     settingsCache = { value, until: now + SETTINGS_CACHE_MS };
     return value;
   } catch (e) {
@@ -82,14 +83,12 @@ export async function saveSettings(patch: unknown): Promise<AdminSettings> {
       ? { announcement: { ...current.announcement, ...(p.announcement as object) } }
       : {}),
   });
-  await kv.set(SETTINGS_KEY, JSON.stringify(merged));
+  must(await db().from("admin_settings").upsert({ key: SETTINGS_KEY, value: merged }, { onConflict: "key" }), "simpan settings");
   settingsCache = { value: merged, until: Date.now() + SETTINGS_CACHE_MS };
   return merged;
 }
 
 /* ---------- log aktivitas admin ---------- */
-
-const AUDIT_KEY = "admin:audit";
 
 export interface AuditEntry {
   at: number;
@@ -101,16 +100,19 @@ export interface AuditEntry {
 export async function audit(by: string, action: string, detail: string): Promise<void> {
   try {
     const entry: AuditEntry = { at: Date.now(), by, action, detail: detail.slice(0, 300) };
-    await kv.lpush(AUDIT_KEY, JSON.stringify(entry));
-    await kv.ltrim(AUDIT_KEY, 0, 299);
+    must(await db().from("audit_log").insert(entry), "catat audit");
   } catch (e) {
     console.error("[admin] gagal mencatat audit", (e as Error)?.message);
   }
 }
 
 export async function listAudit(limit = 100): Promise<AuditEntry[]> {
-  const raw = (await kv.lrange<unknown>(AUDIT_KEY, 0, Math.min(limit, 300) - 1)) ?? [];
-  return raw.map((r) => parseKv<AuditEntry>(r)).filter((x): x is AuditEntry => !!x);
+  const res = await db()
+    .from("audit_log")
+    .select("at,by,action,detail")
+    .order("at", { ascending: false })
+    .limit(Math.min(limit, 300));
+  return (must(res, "baca audit") ?? []) as AuditEntry[];
 }
 
 /* ---------- penghitung harian (untuk grafik) ---------- */
@@ -121,14 +123,10 @@ export function dayKey(d: Date = new Date()): string {
   return d.toISOString().slice(0, 10); // UTC
 }
 
-const kDaily = (day: string) => `admin:daily:${day}`;
-
-/** Best-effort: gagal tidak boleh mengganggu aksi utama. */
+/** Best-effort: gagal tidak boleh mengganggu aksi utama. Atomic lewat fungsi SQL bump_stat. */
 export async function recordStat(field: StatField): Promise<void> {
   try {
-    const key = kDaily(dayKey());
-    const n = await kv.hincrby(key, field, 1);
-    if (n === 1) await kv.expire(key, 60 * 60 * 24 * 100);
+    must(await db().rpc("bump_stat", { p_day: dayKey(), p_field: field }), "recordStat");
   } catch (e) {
     console.error("[admin] recordStat gagal", (e as Error)?.message);
   }
@@ -137,12 +135,17 @@ export async function recordStat(field: StatField): Promise<void> {
 export async function readDaily(days: number): Promise<{ day: string; values: Record<StatField, number> }[]> {
   const list: string[] = [];
   for (let i = days - 1; i >= 0; i--) list.push(dayKey(new Date(Date.now() - i * 86_400_000)));
-  const pipe = kv.pipeline();
-  for (const d of list) pipe.hgetall(kDaily(d));
-  const rows = (await pipe.exec()) as (Record<string, unknown> | null)[];
-  return list.map((day, i) => {
-    const r = rows[i] ?? {};
-    const n = (k: string) => Number((r as Record<string, unknown>)[k]) || 0;
+  const res = await db().from("daily_stats").select("day,field,count").gte("day", list[0]);
+  const rows = (must(res, "baca daily_stats") ?? []) as { day: string; field: string; count: number }[];
+  const byDay = new Map<string, Record<string, number>>();
+  for (const r of rows) {
+    const m = byDay.get(r.day) ?? {};
+    m[r.field] = Number(r.count) || 0;
+    byDay.set(r.day, m);
+  }
+  return list.map((day) => {
+    const r = byDay.get(day) ?? {};
+    const n = (k: string) => r[k] || 0;
     return {
       day,
       values: {
@@ -168,15 +171,19 @@ export interface UserRecord {
   logins: number;
 }
 
-export const kUserRec = (email: string) => `admin:user:${email}`;
-const USERS_ZSET = "admin:users";
 const BLOCKED_SET = "admin:blocked";
 
 /** Dipanggil saat login berhasil. Mengembalikan true kalau ini kali pertama kami melihat akun ini. */
 export async function recordLogin(profile: { email: string; name: string; picture: string | null }): Promise<boolean> {
   const email = profile.email.trim().toLowerCase();
   const now = Date.now();
-  const prev = parseKv<UserRecord>(await kv.get(kUserRec(email)));
+  const prevRes = await db()
+    .from("app_users")
+    .select("first_seen,logins")
+    .eq("email", email)
+    .maybeSingle<{ first_seen: number; logins: number }>();
+  const prevRow = must(prevRes, "baca app_users");
+  const prev = prevRow ? { first: Number(prevRow.first_seen), logins: prevRow.logins } : null;
   const rec: UserRecord = {
     email,
     name: profile.name,
@@ -185,8 +192,13 @@ export async function recordLogin(profile: { email: string; name: string; pictur
     last: now,
     logins: (prev?.logins ?? 0) + 1,
   };
-  await kv.set(kUserRec(email), JSON.stringify(rec));
-  await kv.zadd(USERS_ZSET, { score: now, member: email });
+  must(
+    await db().from("app_users").upsert(
+      { email, name: rec.name, picture: rec.picture, first_seen: rec.first, last_seen: rec.last, logins: rec.logins },
+      { onConflict: "email" }
+    ),
+    "catat login"
+  );
   await recordStat("logins");
   if (!prev) await recordStat("signups");
   return !prev;
@@ -195,8 +207,14 @@ export async function recordLogin(profile: { email: string; name: string; pictur
 /** Sudah punya data dashboard (akun lama sebelum panel admin ada)? */
 export async function isKnownUser(email: string): Promise<boolean> {
   const e = email.trim().toLowerCase();
-  const [a, b] = await Promise.all([kv.exists(kUserRec(e)), kv.exists(`user:${e}`)]);
-  return a + b > 0;
+  const [a, b] = await Promise.all([
+    db().from("app_users").select("email", { count: "exact", head: true }).eq("email", e),
+    db().from("user_data").select("email", { count: "exact", head: true }).eq("email", e),
+  ]);
+  must(a as never, "cek app_users");
+  must(b as never, "cek user_data");
+  if ((a.count ?? 0) + (b.count ?? 0) > 0) return true;
+  return (await kv.exists(`user:${e}`)) > 0; // akun lama yang belum dimigrasi dari Redis
 }
 
 export async function isBlocked(email: string): Promise<boolean> {

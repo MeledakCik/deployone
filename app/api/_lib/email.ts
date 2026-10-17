@@ -16,13 +16,12 @@
  * Tidak ada yang bisa MENJAMIN inbox — penempatan akhirnya ditentukan Gmail/Yahoo, tapi ini praktik terbaiknya.
  */
 import crypto from "crypto";
-import { kv } from "@vercel/kv";
+import { db, must } from "@/app/api/_lib/supabase";
 import { renderRich, renderSimple, type MailContent } from "@/lib/email-template";
 
 const RESEND_URL = "https://api.resend.com";
 const DEFAULT_FROM = "Depup <info@depup.web.id>";
 const DEFAULT_REPLY_TO = "depupdev@gmail.com";
-const UNSUB_SET = "email:unsub";
 
 export function emailConfigured(): boolean {
   return !!process.env.RESEND_API_KEY?.trim();
@@ -73,24 +72,33 @@ export function unsubUrl(email: string): string {
 
 export async function isUnsubscribed(email: string): Promise<boolean> {
   try {
-    return (await kv.sismember(UNSUB_SET, email.trim().toLowerCase())) === 1;
+    const res = await db()
+      .from("email_unsubs")
+      .select("email", { count: "exact", head: true })
+      .eq("email", email.trim().toLowerCase());
+    must(res as never, "cek unsubscribe");
+    return (res.count ?? 0) > 0;
   } catch {
     return false;
   }
 }
 
+/** Sengaja TIDAK fail-open: kalau daftar unsubscribe gagal dibaca, kampanye harus berhenti (bukan mengirim ke yang sudah berhenti). */
 export async function listUnsubscribed(): Promise<Set<string>> {
-  try {
-    return new Set(((await kv.smembers(UNSUB_SET)) as string[]) ?? []);
-  } catch {
-    return new Set();
+  const out = new Set<string>();
+  for (let from = 0; ; from += 1000) {
+    const res = await db().from("email_unsubs").select("email").order("email").range(from, from + 999);
+    const rows = (must(res, "baca email_unsubs") ?? []) as { email: string }[];
+    rows.forEach((r) => out.add(r.email));
+    if (rows.length < 1000) break;
   }
+  return out;
 }
 
 export async function setUnsubscribed(email: string, value: boolean): Promise<void> {
   const e = email.trim().toLowerCase();
-  if (value) await kv.sadd(UNSUB_SET, e);
-  else await kv.srem(UNSUB_SET, e);
+  if (value) must(await db().from("email_unsubs").upsert({ email: e }, { onConflict: "email" }), "simpan unsubscribe");
+  else must(await db().from("email_unsubs").delete().eq("email", e), "hapus unsubscribe");
 }
 
 /* ---------- pengiriman ---------- */

@@ -1,14 +1,15 @@
 /**
  * Penyimpanan laporan masalah dari chat bantuan.
  *
- * - Disimpan di Vercel KV: `support:report:<id>` (90 hari) + daftar id terbaru di `support:reports`.
+ * - Disimpan di Supabase (tabel `support_reports`). Dedupe laporan otomatis tetap di Redis (TTL 30 menit).
  * - Notifikasi ke developer: Telegram (env TELEGRAM_BOT_TOKEN + TELEGRAM_CHAT_ID) dan/atau webhook
  *   Discord/Slack (env SUPPORT_WEBHOOK_URL). Semuanya opsional.
  * - Developer membaca lewat GET /api/support/report (hanya email di env ADMIN_EMAILS).
  *
- * Semua operasi KV/webhook bersifat best-effort: gagal → dicatat di log, tidak membuat chat error.
+ * Semua operasi database/webhook bersifat best-effort: gagal → dicatat di log, tidak membuat chat error.
  */
 import { kv } from "@vercel/kv";
+import { db, must } from "@/app/api/_lib/supabase";
 import type { DiagnosticsResult } from "@/app/api/_lib/support-diagnostics";
 import { adminEmails } from "@/app/api/_lib/admin-config";
 import { appUrl, buildTransactionalMail, emailConfigured, sendMail } from "@/app/api/_lib/email";
@@ -28,9 +29,21 @@ export interface SupportReport {
   replies?: { at: number; by: string; text: string; emailed: boolean }[];
 }
 
-const REPORT_TTL_SECONDS = 60 * 60 * 24 * 90;
-const LIST_KEY = "support:reports";
-const LIST_MAX = 500;
+interface ReportRow {
+  id: string; email: string; created_at: string; source: SupportReport["source"]; view: string | null;
+  summary: string; transcript: SupportReport["transcript"]; diagnostics: DiagnosticsResult | null;
+  status: "open" | "resolved"; replies: NonNullable<SupportReport["replies"]>;
+}
+
+const fromRow = (r: ReportRow): SupportReport => ({
+  id: r.id, email: r.email, createdAt: r.created_at, source: r.source, view: r.view, summary: r.summary,
+  transcript: r.transcript ?? [], diagnostics: r.diagnostics, status: r.status, replies: r.replies ?? [],
+});
+
+const toRow = (r: SupportReport): ReportRow => ({
+  id: r.id, email: r.email, created_at: r.createdAt, source: r.source, view: r.view, summary: r.summary,
+  transcript: r.transcript, diagnostics: r.diagnostics, status: r.status ?? "open", replies: r.replies ?? [],
+});
 
 function newId(): string {
   return `SR-${Date.now().toString(36).toUpperCase()}${Math.random().toString(36).slice(2, 5).toUpperCase()}`;
@@ -174,9 +187,7 @@ export async function fileSupportReport(
       if (!fresh) return null;
     }
     const report: SupportReport = { ...input, id: newId(), createdAt: new Date().toISOString(), status: "open", replies: [] };
-    await kv.set(`support:report:${report.id}`, report, { ex: REPORT_TTL_SECONDS });
-    await kv.lpush(LIST_KEY, report.id);
-    await kv.ltrim(LIST_KEY, 0, LIST_MAX - 1);
+    must(await db().from("support_reports").insert(toRow(report)), "simpan laporan bantuan");
     // Ditunggu (maks. ±5 detik) — fungsi serverless bisa dihentikan begitu respons dikirim,
     // sehingga notifikasi yang tidak ditunggu berisiko tidak pernah terkirim.
     await notifyDeveloper(report);
@@ -188,18 +199,24 @@ export async function fileSupportReport(
 }
 
 export async function listSupportReports(limit: number): Promise<SupportReport[]> {
-  const ids = (await kv.lrange<string>(LIST_KEY, 0, Math.max(0, Math.min(limit, 100) - 1))) ?? [];
-  const items = await Promise.all(ids.map((id) => kv.get<SupportReport>(`support:report:${id}`)));
-  return items.filter((x): x is SupportReport => !!x);
+  const res = await db()
+    .from("support_reports")
+    .select("*")
+    .order("created_at", { ascending: false })
+    .limit(Math.max(1, Math.min(limit, 100)));
+  return ((must(res, "daftar laporan bantuan") ?? []) as ReportRow[]).map(fromRow);
 }
 
 export async function getSupportReport(id: string): Promise<SupportReport | null> {
   if (!/^SR-[A-Z0-9]{4,20}$/.test(id)) return null;
-  return (await kv.get<SupportReport>(`support:report:${id}`)) ?? null;
+  const res = await db().from("support_reports").select("*").eq("id", id).maybeSingle<ReportRow>();
+  const row = must(res, "baca laporan bantuan");
+  return row ? fromRow(row) : null;
 }
 
 async function saveSupportReport(r: SupportReport): Promise<void> {
-  await kv.set(`support:report:${r.id}`, r, { ex: REPORT_TTL_SECONDS });
+  const { status, replies } = toRow(r);
+  must(await db().from("support_reports").update({ status, replies }).eq("id", r.id), "update laporan bantuan");
 }
 
 export async function setSupportStatus(id: string, status: "open" | "resolved"): Promise<SupportReport | null> {

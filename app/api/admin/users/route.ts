@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { kv } from "@vercel/kv";
+import { db, must } from "@/app/api/_lib/supabase";
 import { fail, ok, withErrorHandling } from "@/app/api/_lib/response";
 import {
   LINK_BAN_SECONDS,
@@ -7,7 +8,6 @@ import {
   audit,
   isAdminEmail,
   kLinkBan,
-  kUserRec,
   listBlocked,
   scanKeys,
   setBlocked,
@@ -15,7 +15,6 @@ import {
   type UserRecord,
 } from "@/app/api/_lib/admin";
 import { getStats } from "@/app/api/_lib/admin-data";
-import { parseKv } from "@/app/api/_lib/tunnel";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -28,14 +27,19 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
   const q = (req.nextUrl.searchParams.get("q") ?? "").trim().toLowerCase().slice(0, 100);
   const stats = await getStats({ refresh: req.nextUrl.searchParams.get("refresh") === "1", host: req.headers.get("host") });
 
-  const indexed = ((await kv.zrange("admin:users", 0, 1499, { rev: true })) as string[]) ?? [];
-  const emails = Array.from(new Set([...stats.users.map((u) => u.email), ...indexed]));
-  const recRows = emails.length ? await kv.mget<unknown[]>(...emails.map(kUserRec)) : [];
+  const recRes = await db()
+    .from("app_users")
+    .select("email,name,picture,first_seen,last_seen,logins")
+    .order("last_seen", { ascending: false })
+    .limit(1500);
+  const recRows = (must(recRes, "baca app_users") ?? []) as {
+    email: string; name: string; picture: string | null; first_seen: number; last_seen: number; logins: number;
+  }[];
   const recs = new Map<string, UserRecord>();
-  recRows.forEach((r, i) => {
-    const rec = parseKv<UserRecord>(r);
-    if (rec) recs.set(emails[i], rec);
-  });
+  for (const r of recRows) {
+    recs.set(r.email, { email: r.email, name: r.name, picture: r.picture, first: Number(r.first_seen), last: Number(r.last_seen), logins: r.logins });
+  }
+  const emails = Array.from(new Set([...stats.users.map((u) => u.email), ...recRows.map((r) => r.email)]));
   const summaries = new Map(stats.users.map((u) => [u.email, u]));
 
   const [blockedList, banKeys] = await Promise.all([listBlocked(), scanKeys("site:ban:*", 500)]);

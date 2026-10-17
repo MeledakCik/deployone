@@ -136,7 +136,8 @@ Lihat `.env.example`.
 | `GOOGLE_CLIENT_ID` | ya | Google Cloud Console → Credentials → OAuth client ID |
 | `GOOGLE_CLIENT_SECRET` | ya | Secret dari client ID di atas |
 | `AUTH_SECRET` | ya | String acak ≥ 16 karakter. Dipakai menandatangani session **dan** menurunkan kunci enkripsi token tersimpan — mengganti nilainya membuat session lama tidak valid dan token tersimpan tidak bisa didekripsi |
-| `KV_REST_API_URL`, `KV_REST_API_TOKEN` | ya (production) | Terisi otomatis saat database KV di-connect ke project |
+| `KV_REST_API_URL`, `KV_REST_API_TOKEN` | ya (production) | Redis untuk data sementara & panas: rate-limit, relay tunnel, chunk Link Instan, lock, cache. Terisi otomatis saat KV di-connect ke project |
+| `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` | ya (production) | Postgres untuk data yang awet (lihat bagian "Pembagian Redis vs Supabase"). Jalankan `supabase/schema.sql` dulu. Key `service_role` hanya untuk server |
 | `GITHUB_TOKEN` | tidak | Menaikkan rate limit GitHub untuk validasi repo publik |
 | `GROQ_API_KEY`, `GROQ_MODEL` | tidak | Chat bantuan AI (tanpa key, widget tampil tapi menyatakan belum aktif) |
 | `TELEGRAM_BOT_TOKEN`, `TELEGRAM_CHAT_ID` | tidak | Notifikasi laporan bantuan ke Telegram developer (cara membuat bot ada di bagian Chat CS) |
@@ -150,9 +151,27 @@ Lihat `.env.example`.
 Redirect URI yang didaftarkan di Google Cloud Console:
 `https://<domain-kamu>/api/auth/google/callback`.
 
-> **Tanpa KV, data dashboard tidak bisa disimpan** (`/api/user-data` mengembalikan error),
-> termasuk saat `next dev`. Rate limiting juga nonaktif tanpa KV (fail-open); gerbang session
-> tetap aktif.
+> **Tanpa Supabase, data dashboard tidak bisa disimpan** (`/api/user-data` mengembalikan error),
+> termasuk saat `next dev`. Tanpa KV, rate limiting nonaktif (fail-open), Link Instan/Gaib tidak jalan;
+> gerbang session tetap aktif.
+
+### Pembagian Redis vs Supabase
+
+| Supabase (Postgres) — awet, bertumbuh | Redis (KV) — sementara, panas |
+|---|---|
+| `user_data`: history, domains, env vars & token (terenkripsi AES-256-GCM) | rate-limit, lock, dedupe laporan |
+| `app_users`: direktori user (login, terakhir terlihat) | relay tunnel Link Gaib (queue/response) |
+| `abuse_reports`, `support_reports` | meta + chunk Link Instan (TTL = masa aktif link) |
+| `campaigns`, `email_unsubs` | daftar blokir user (dicek middleware tiap request) & ban link |
+| `admin_settings`, `audit_log`, `daily_stats` | cache statistik admin (5 menit) |
+
+Semua tabel memakai RLS tanpa policy: hanya `service_role` (server) yang bisa baca/tulis. Kode akses ada di
+`app/api/_lib/supabase.ts`; skema di `supabase/schema.sql`.
+
+**Migrasi dari Redis:** `getUserData` otomatis menyalin `user:<email>` dari Redis ke Supabase saat user itu pertama
+dibaca. Untuk sisanya (direktori user, laporan, kampanye, unsubscribe, statistik):
+`node --env-file=.env scripts/migrate-redis-to-supabase.mjs --dry` lalu tanpa `--dry`; setelah yakin,
+tambahkan `--delete-old` untuk melepas memori Redis. Laporan abuse/bantuan tidak lagi kedaluwarsa otomatis 90 hari.
 
 ## Link Gaib (tunnel)
 

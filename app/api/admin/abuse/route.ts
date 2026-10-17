@@ -1,20 +1,17 @@
 import type { NextRequest } from "next/server";
-import { kv } from "@vercel/kv";
 import { fail, ok, withErrorHandling } from "@/app/api/_lib/response";
 import { adminFromReq, audit } from "@/app/api/_lib/admin";
 import { dropStatsCache, linkUrl } from "@/app/api/_lib/admin-data";
 import { performTakedown } from "@/app/api/_lib/takedown";
 import { loadSite } from "@/app/api/_lib/sites";
-import { loadMeta, parseKv } from "@/app/api/_lib/tunnel";
+import { loadMeta } from "@/app/api/_lib/tunnel";
+import { db, must } from "@/app/api/_lib/supabase";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 export const maxDuration = 30;
 
-const LIST_KEY = "abuse:reports";
-const REPORT_TTL_SECONDS = 60 * 60 * 24 * 90;
-const kReport = (id: string) => `abuse:report:${id}`;
 
 type Status = "open" | "actioned" | "dismissed";
 
@@ -32,11 +29,35 @@ interface Report {
   note?: string;
 }
 
+interface ReportRow {
+  id: string; slug: string; kind: "site" | "tunnel"; owner: string | null; reason: string; contact: string | null;
+  created_at: string; status: Status; resolved_at: number | null; resolved_by: string | null; note: string | null;
+}
+
+const fromRow = (r: ReportRow): Report => ({
+  id: r.id,
+  slug: r.slug,
+  kind: r.kind,
+  owner: r.owner,
+  reason: r.reason,
+  contact: r.contact,
+  createdAt: r.created_at,
+  status: r.status,
+  resolvedAt: r.resolved_at ?? undefined,
+  resolvedBy: r.resolved_by ?? undefined,
+  note: r.note ?? undefined,
+});
+
+const toPatch = (r: Report) => ({
+  status: r.status ?? "open",
+  resolved_at: r.resolvedAt ?? null,
+  resolved_by: r.resolvedBy ?? null,
+  note: r.note ?? null,
+});
+
 async function loadReports(): Promise<Report[]> {
-  const ids = (await kv.lrange<string>(LIST_KEY, 0, 199)) ?? [];
-  if (ids.length === 0) return [];
-  const rows = await kv.mget<unknown[]>(...ids.map(kReport));
-  return rows.map((r) => parseKv<Report>(r)).filter((r): r is Report => !!r && typeof r.slug === "string");
+  const res = await db().from("abuse_reports").select("*").order("created_at", { ascending: false }).limit(200);
+  return ((must(res, "baca abuse_reports") ?? []) as ReportRow[]).map(fromRow);
 }
 
 /** GET /api/admin/abuse[?status=open|actioned|dismissed|all] */
@@ -80,8 +101,9 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
   }
   const note = typeof body.note === "string" ? body.note.replace(/[\u0000-\u001f\u007f]/g, " ").trim().slice(0, 200) : "";
 
-  const report = parseKv<Report>(await kv.get(kReport(id)));
-  if (!report) return fail("Laporan tidak ditemukan (mungkin sudah kedaluwarsa).", 404, "not_found");
+  const found = must(await db().from("abuse_reports").select("*").eq("id", id).maybeSingle<ReportRow>(), "baca laporan");
+  if (!found) return fail("Laporan tidak ditemukan.", 404, "not_found");
+  const report = fromRow(found);
 
   let status: Status;
   let detail = "";
@@ -92,7 +114,10 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
     // Laporan lain untuk slug yang sama otomatis ikut selesai.
     for (const other of await loadReports()) {
       if (other.slug === report.slug && other.id !== id && (other.status ?? "open") === "open") {
-        await kv.set(kReport(other.id), { ...other, status, resolvedAt: Date.now(), resolvedBy: admin, note: "Link sudah di-takedown" }, { ex: REPORT_TTL_SECONDS });
+        must(
+          await db().from("abuse_reports").update(toPatch({ ...other, status, resolvedAt: Date.now(), resolvedBy: admin, note: "Link sudah di-takedown" })).eq("id", other.id),
+          "update laporan terkait"
+        );
       }
     }
     await dropStatsCache();
@@ -105,7 +130,7 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
   }
 
   const updated: Report = { ...report, status, resolvedAt: status === "open" ? undefined : Date.now(), resolvedBy: status === "open" ? undefined : admin, note: note || undefined };
-  await kv.set(kReport(id), updated, { ex: REPORT_TTL_SECONDS });
+  must(await db().from("abuse_reports").update(toPatch(updated)).eq("id", id), "update laporan");
   await audit(admin, `abuse.${String(action)}`, `${id} → ${detail}${note ? ` — ${note}` : ""}`);
   return ok({ id, status });
 });

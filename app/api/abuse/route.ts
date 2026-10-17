@@ -7,13 +7,11 @@ import { loadSite } from "@/app/api/_lib/sites";
 import { loadMeta } from "@/app/api/_lib/tunnel";
 import { notifyText } from "@/app/api/_lib/support-reports";
 import { recordStat } from "@/app/api/_lib/admin";
+import { db, must } from "@/app/api/_lib/supabase";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
-
-const REPORT_TTL_SECONDS = 60 * 60 * 24 * 90;
-const LIST_KEY = "abuse:reports";
 
 /**
  * POST /api/abuse — PUBLIK (tanpa login; lihat isPublicPath di middleware.ts), dibatasi 5 per 10 menit per IP.
@@ -63,9 +61,19 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
       status: "open" as const,
     };
     try {
-      await kv.set(`abuse:report:${id}`, report, { ex: REPORT_TTL_SECONDS });
-      await kv.lpush(LIST_KEY, id);
-      await kv.ltrim(LIST_KEY, 0, 199);
+      must(
+        await db().from("abuse_reports").insert({
+          id: report.id,
+          slug: report.slug,
+          kind: report.kind,
+          owner: report.owner,
+          reason: report.reason,
+          contact: report.contact,
+          created_at: report.createdAt,
+          status: "open",
+        }),
+        "simpan laporan abuse"
+      );
       await recordStat("abuse");
     } catch (e) {
       console.error("[abuse] gagal menyimpan", (e as Error)?.message);

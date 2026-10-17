@@ -5,6 +5,7 @@ import { adminEmails, adminFromReq, audit, getSettings, saveSettings } from "@/a
 import { testNotify } from "@/app/api/_lib/support-reports";
 import { tunnelBaseDomain } from "@/app/api/_lib/tunnel";
 import { MAX_ACTIVE_SITES_PER_USER, MAX_SITE_BYTES } from "@/app/api/_lib/sites";
+import { db, supabaseConfigured } from "@/app/api/_lib/supabase";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -22,16 +23,27 @@ async function systemStatus() {
   } catch {
     /* KV tidak terhubung */
   }
+  let supabaseOk = false;
+  if (supabaseConfigured()) {
+    try {
+      const { error } = await db().from("admin_settings").select("key", { head: true, count: "exact" });
+      supabaseOk = !error;
+    } catch {
+      /* Supabase tidak terhubung */
+    }
+  }
   return {
     admins: adminEmails(),
     baseDomain: tunnelBaseDomain(),
     siteLimits: { maxMb: Math.round(MAX_SITE_BYTES / 1024 / 1024), perUser: MAX_ACTIVE_SITES_PER_USER },
     redis: { ok: kvOk, keys },
+    supabase: { ok: supabaseOk },
     // Hanya true/false — nilai env TIDAK PERNAH dikirim ke browser.
     env: [
       { name: "GOOGLE_CLIENT_ID / SECRET", label: "Login Google", ok: has("GOOGLE_CLIENT_ID") && has("GOOGLE_CLIENT_SECRET") },
       { name: "AUTH_SECRET", label: "Kunci session & enkripsi", ok: (process.env.AUTH_SECRET?.length ?? 0) >= 16 },
       { name: "KV_REST_API_URL / TOKEN", label: "Database Redis (KV)", ok: has("KV_REST_API_URL") && has("KV_REST_API_TOKEN") },
+      { name: "SUPABASE_URL / SERVICE_ROLE_KEY", label: "Database Supabase (data user & laporan)", ok: supabaseOk },
       { name: "TUNNEL_BASE_DOMAIN", label: "Subdomain Link Instan/Gaib", ok: has("TUNNEL_BASE_DOMAIN") },
       { name: "TELEGRAM_BOT_TOKEN / CHAT_ID", label: "Notifikasi Telegram", ok: has("TELEGRAM_BOT_TOKEN") && has("TELEGRAM_CHAT_ID") },
       { name: "RESEND_API_KEY", label: "Email (Resend)", ok: has("RESEND_API_KEY") },
