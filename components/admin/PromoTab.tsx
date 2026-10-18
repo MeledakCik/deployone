@@ -172,7 +172,7 @@ export function PromoTab({ toast }: { toast: (m: string) => void }) {
         <KpiCard label="Diblokir" value={data.audience.blocked} />
       </div>
 
-      <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(380px,440px)]">
+      <div className="grid grid-cols-[minmax(0,1fr)] items-start gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(380px,440px)]">
         <div className="min-w-0 space-y-5">
       <Card title="Buat dengan AI">
         <div className="space-y-3 p-6">
@@ -363,8 +363,26 @@ function PreviewPanel({
   const mobile = device === "mobile";
   const subjectLen = subject.trim().length;
 
+  // Email dirender pada lebar "logis" (ponsel 360px, desktop minimal 360px) lalu diperkecil
+  // dengan transform bila ruangnya lebih sempit, supaya isinya tidak terpotong di layar kecil.
+  const stageRef = React.useRef<HTMLDivElement>(null);
+  const [avail, setAvail] = React.useState(0);
+  React.useEffect(() => {
+    const el = stageRef.current;
+    if (!el) return;
+    const update = () => setAvail(el.clientWidth);
+    update();
+    const ro = new ResizeObserver(update);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+  const frameH = mobile ? 560 : 640;
+  const logicalW = mobile ? 360 : Math.max(avail || 360, 360);
+  const scale = avail > 0 ? Math.min(1, avail / logicalW) : 1;
+  const scaled = scale < 1;
+
   return (
-    <aside className="xl:sticky xl:top-4" aria-label="Pratinjau email">
+    <aside className="min-w-0 xl:sticky xl:top-4" aria-label="Pratinjau email">
       <div className="overflow-hidden rounded-card bg-[#1e1150] text-white shadow-[0_30px_70px_-35px_rgba(30,17,80,0.85)]">
         {/* Header: judul, status, dan pemilih perangkat */}
         <div className="flex items-center gap-3 px-5 pb-3 pt-5">
@@ -430,7 +448,7 @@ function PreviewPanel({
           <div
             className={
               "mx-auto overflow-hidden bg-white transition-[max-width,border-radius] duration-300 " +
-              (mobile ? "max-w-[300px] rounded-[30px] border-[6px] border-[#0d0722]" : "max-w-full rounded-xl border border-white/10")
+              (mobile ? "w-full max-w-[372px] rounded-[30px] border-[6px] border-[#0d0722]" : "w-full max-w-full rounded-xl border border-white/10")
             }
           >
             {mobile ? (
@@ -445,12 +463,19 @@ function PreviewPanel({
                 <span className="ml-2 truncate rounded-full bg-white px-3 py-0.5 text-[10.5px] text-[#5a39c0]">{sender.addr} → kamu</span>
               </div>
             )}
-            <iframe
-              title="Pratinjau email"
-              sandbox=""
-              srcDoc={html}
-              className={"block w-full border-0 bg-white " + (mobile ? "h-[560px]" : "h-[640px]")}
-            />
+            <div ref={stageRef} className="relative w-full overflow-hidden bg-white" style={{ height: frameH }}>
+              <iframe
+                title="Pratinjau email"
+                sandbox=""
+                srcDoc={html}
+                className="absolute left-0 top-0 block max-w-none border-0 bg-white"
+                style={
+                  scaled
+                    ? { width: logicalW, height: frameH / scale, transform: `scale(${scale})`, transformOrigin: "top left" }
+                    : { width: "100%", height: frameH }
+                }
+              />
+            </div>
           </div>
           <p className="mt-3 text-[11.5px] leading-relaxed text-[#9a94b0]">
             Tampilan asli bisa sedikit beda di tiap aplikasi email (Gmail, Outlook, dll). Selalu kirim tes sebelum kirim massal.
