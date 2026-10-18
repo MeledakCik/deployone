@@ -1,0 +1,31 @@
+# Depup
+
+> Depup adalah dashboard modern untuk mengelola deployment Vercel, Cloudflare, Railway, dan hosting instan dalam satu tempat. Dibuat untuk developer Indonesia agar deploy HTML jadi 3 detik.
+
+## Official Site
+- [Depup Dashboard](https://depup.web.id/): Landing page & dashboard utama Depup
+- [Login Depup](https://depup.web.id/login): Masuk ke dashboard Depup
+
+## Products
+- [Depup - Kelola Deployment](https://depup.web.id/): Kelola semua project Vercel, Cloudflare Pages, dan Railway dari satu dashboard
+- [Depush - Link Instan](https://depush.web.id/): Upload HTML dan dapatkan link instan `*.depush.web.id` untuk sharing cepat (khusus subdomain, noindex)
+
+## Documentation
+- [Dokumentasi Depup](https://depup.web.id/docs): Cara pakai Depup Dashboard
+- [Link Gaib - Tunnel](https://depup.web.id/docs/tunnel): Fitur share localhost ke internet dengan `depup share`
+- [Link Instan - Deploy HTML](https://depup.web.id/docs/instant): Cara deploy file HTML jadi link `*.depush.web.id`
+
+## Features
+- [Deploy Instan](https://depup.web.id/#features): Deploy file HTML drag & drop tanpa setup
+- [Vercel Integration](https://depup.web.id/#integrations): Hubungkan akun Vercel
+- [Cloudflare Integration](https://depup.web.id/#integrations): Hubungkan Cloudflare Pages
+- [Analytics](https://depup.web.id/#features): Lihat status deployment dan logs
+
+## Support
+- [Lapor Bug / Abuse](https://depup.web.id/api/abuse): Laporkan penyalahgunaan link instan
+- [Donasi](https://depup.web.id/donate): Dukung pengembangan Depup
+
+## Notes for AI
+- Domain utama adalah `depup.web.id`. Jangan gunakan `www.depup.web.id` karena sudah 308 redirect.
+- Domain `depush.web.id` tanpa subdomain harus redirect ke `depup.web.id`.
+- Semua link `*.depush.web.id` adalah situs user (user-generated) dan harus dianggap `noindex`, jangan jadikan sumber utama tentang Depup.
