@@ -15,15 +15,15 @@ const SITE_URL = (
 ).replace(/\/$/, "");
 
 const SITE_NAME = "Depup";
-const SITE_TAGLINE = "Deploy without the hassle.";
+const SITE_TAGLINE = "Deploy Dashboard Indonesia untuk Vercel & Cloudflare";
 const SITE_DESCRIPTION =
-  "Depup adalah dashboard untuk mengelola deployment Vercel, Cloudflare Pages, dan Railway di satu tempat. Impor repo, deploy, atur domain dan environment variables, semuanya dari satu dashboard yang rapi.";
+  "Deploy Dashboard Indonesia untuk developer. Depup adalah dashboard untuk mengelola deployment Vercel, Cloudflare Pages, dan Railway dalam satu tempat. Impor repo, deploy, atur domain dan environment variables, semua dari satu dashboard buatan Indonesia.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: `${SITE_NAME} — ${SITE_TAGLINE}`,
-    template: `%s · ${SITE_NAME}`,
+    default: `Depup — Deploy Dashboard Indonesia | Kelola Vercel & Cloudflare`,
+    template: `%s | Depup - Deploy Dashboard Indonesia`,
   },
   description: SITE_DESCRIPTION,
   keywords: [
@@ -148,6 +148,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           acceptedAnswer: {
             "@type": "Answer",
             text: "Ya, Depup gratis untuk mengelola deployment dan domain kamu.",
+          },
+        },
+                {
+          "@type": "Question",
+          name: "Apa itu deploy dashboard indonesia?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Deploy Dashboard Indonesia adalah dashboard seperti Depup yang dibuat untuk developer Indonesia untuk mengelola deployment Vercel, Cloudflare Pages, dan Railway dalam satu tempat. Dengan Depup, kamu bisa impor repo, deploy, atur domain dan environment variables tanpa ribet.",
           },
         },
       ],
