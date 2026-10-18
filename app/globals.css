@@ -1490,3 +1490,86 @@ a,
     height: 6px;
   }
 }
+
+/* ---- FAQ & demo deploy di landing (nama berawalan "faq-" / "dd-") ---- */
+.faq-panel {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.faq-panel[data-open="true"] {
+  grid-template-rows: 1fr;
+}
+.faq-panel > div {
+  overflow: hidden;
+  visibility: hidden;
+  transition: visibility 0s 0.3s;
+}
+.faq-panel[data-open="true"] > div {
+  visibility: visible;
+  transition-delay: 0s;
+}
+.faq-plus {
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.faq-plus[data-open="true"] {
+  transform: rotate(135deg);
+}
+
+.dd-in {
+  animation: dd-in-kf 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.dd-pop {
+  animation: dd-pop-kf 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+.dd-caret {
+  animation: dd-blink 1s steps(2, start) infinite;
+}
+.dd-press {
+  animation: dd-press-kf 0.6s ease both;
+}
+.dd-bar {
+  transition: width 0.1s linear;
+}
+.dd-spark {
+  opacity: 0;
+  animation: dd-spark-kf 0.9s 0.15s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+@keyframes dd-in-kf {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes dd-pop-kf {
+  from { opacity: 0; transform: scale(0.4); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes dd-blink {
+  to { visibility: hidden; }
+}
+@keyframes dd-press-kf {
+  0%, 100% { transform: scale(1); }
+  45% { transform: scale(0.93); }
+}
+@keyframes dd-spark-kf {
+  0% { opacity: 1; transform: rotate(var(--a)) translateY(0) scale(1); }
+  100% { opacity: 0; transform: rotate(var(--a)) translateY(-84px) scale(0.4); }
+}
+/* Reduced motion: tanpa gerak, tahapnya tetap tampil sebagai pose statis */
+@media (prefers-reduced-motion: reduce) {
+  .faq-panel,
+  .faq-panel > div,
+  .faq-plus,
+  .dd-bar {
+    transition: none !important;
+  }
+  .dd-in,
+  .dd-pop,
+  .dd-caret,
+  .dd-press,
+  .dd-spark {
+    animation: none !important;
+  }
+  .dd-spark {
+    display: none;
+  }
+}

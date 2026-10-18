@@ -13,7 +13,9 @@ import { DashboardLink } from "./DashboardLink";
 const NAV_LINKS = [
   { href: "#fitur", label: "Fitur" },
   { href: "#cara-kerja", label: "Cara kerja" },
+  { href: "#demo", label: "Demo" },
   { href: "#support", label: "Repo yang didukung" },
+  { href: "#faq", label: "FAQ" },
 ];
 
 export function Navbar() {
@@ -66,7 +68,7 @@ export function Navbar() {
               <a
                 key={l.href}
                 href={l.href}
-                className="rounded-full px-4 py-2 text-[13px] font-medium text-text-muted transition-colors hover:bg-[var(--surface-solid)] hover:text-text"
+                className={`rounded-full px-4 py-2 text-[13px] font-medium text-text-muted transition-colors hover:bg-[var(--surface-solid)] hover:text-text ${l.href === "#demo" ? "hidden lg:inline-block" : ""}`}
               >
                 {l.label}
               </a>

@@ -4,8 +4,10 @@ import { Hero } from "@/components/landing/Hero";
 import { SocialProof } from "@/components/landing/SocialProof";
 import { FeaturesGrid } from "@/components/landing/FeaturesGrid";
 import { HowItWorks } from "@/components/landing/HowItWorks";
+import { DeployDemo } from "@/components/landing/DeployDemo";
 import { KuliSection } from "@/components/landing/KuliSection";
 import { SupportMatrix } from "@/components/landing/SupportMatrix";
+import { FAQ } from "@/components/landing/FAQ";
 import { FinalCTA } from "@/components/landing/FinalCTA";
 import { Footer } from "@/components/landing/Footer";
 
@@ -23,8 +25,10 @@ export default function LandingPage() {
         <SocialProof />
         <FeaturesGrid />
         <HowItWorks />
+        <DeployDemo />
         <KuliSection />
         <SupportMatrix />
+        <FAQ />
       </div>
 
       <FinalCTA />
