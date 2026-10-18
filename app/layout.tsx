@@ -7,36 +7,17 @@ import { ThemeProvider } from "@/components/ui/theme-provider";
 import { AuthProvider } from "@/lib/auth-context";
 import { ToastProvider } from "@/components/ui/Toast";
 
-const SITE_URL =
-  (
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    process.env.NEXT_PUBLIC_APP_URL ??
-    "https://depup.app"
-  ).replace(/\/$/, "");
+// OTOMATIS GANTI DOMAIN - sekarang web.id, nanti app
+const SITE_URL = (
+  process.env.NEXT_PUBLIC_SITE_URL ??
+  process.env.NEXT_PUBLIC_APP_URL ??
+  "https://depup.web.id"
+).replace(/\/$/, "");
 
 const SITE_NAME = "Depup";
 const SITE_TAGLINE = "Deploy without the hassle.";
-
 const SITE_DESCRIPTION =
-  "Depup adalah dashboard untuk mengelola deployment Vercel, Cloudflare Pages, dan Railway di satu tempat. Impor repo, deploy, atur domain dan environment variables, semuanya dari satu dashboard yang rapi, tanpa perlu membuka banyak tab.";
-
-const SITE_KEYWORDS = [
-  "depup",
-  "deploy dashboard",
-  "vercel dashboard",
-  "cloudflare pages",
-  "deploy vercel",
-  "deploy cloudflare",
-  "vercel alternative dashboard",
-  "cloudflare alternative dashboard",
-  "deployment management",
-  "one click deploy",
-  "dashboard deploy",
-  "kelola deployment",
-  "deploy otomatis",
-  "next.js deploy",
-  "vercel + cloudflare",
-];
+  "Depup adalah dashboard untuk mengelola deployment Vercel, Cloudflare Pages, dan Railway di satu tempat. Impor repo, deploy, atur domain dan environment variables, semuanya dari satu dashboard yang rapi.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -45,45 +26,29 @@ export const metadata: Metadata = {
     template: `%s · ${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,
-  keywords: SITE_KEYWORDS,
+  keywords: [
+    "depup",
+    "depup dashboard",
+    "vercel dashboard",
+    "cloudflare pages dashboard",
+    "kelola deployment",
+    "deploy dashboard indonesia",
+  ],
   applicationName: SITE_NAME,
-  generator: "Next.js",
-  authors: [{ name: "depup", url: SITE_URL }],
-  creator: "depup",
-  publisher: "Depup",
+  authors: [{ name: SITE_NAME, url: SITE_URL }],
+  creator: SITE_NAME,
+  publisher: SITE_NAME,
   category: "Developer Tools",
-  referrer: "origin-when-cross-origin",
-  formatDetection: {
-    email: false,
-    address: false,
-    telephone: false,
-  },
-
   alternates: {
     canonical: "/",
     languages: {
       "id-ID": "/",
-      "en-US": "/",
+      "en-US": "/en",
     },
   },
-
   icons: {
-    icon: [
-      { url: "/logo.png", type: "image/png", sizes: "any" },
-      { url: "/logo.png", type: "image/png", sizes: "32x32" },
-      { url: "/logo.png", type: "image/png", sizes: "16x16" },
-      { url: "/favicon.ico", sizes: "any" },
-    ],
-    shortcut: ["/logo.png"],
-    apple: [
-      { url: "/logo.png", sizes: "180x180", type: "image/png" },
-    ],
-    other: [
-      {
-        rel: "mask-icon",
-        url: "/logo.png",
-      },
-    ],
+    icon: [{ url: "/logo.png", type: "image/png" }],
+    apple: [{ url: "/logo.png", sizes: "180x180" }],
   },
   manifest: "/manifest.webmanifest",
   openGraph: {
@@ -96,125 +61,105 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
     images: [
       {
-        url: "/logo.png",
+        url: "/og-image.png", // WAJIB BIKIN FILE INI 1200x630
         width: 1200,
         height: 630,
-        alt: `${SITE_NAME} — Deploy dashboard untuk Vercel, Cloudflare, Railway`,
-        type: "image/svg+xml",
-      },
-      {
-        url: "/logo.png",
-        width: 512,
-        height: 512,
-        alt: `${SITE_NAME} logo`,
-        type: "image/png",
+        alt: `${SITE_NAME} — Dashboard Deploy Vercel & Cloudflare`,
       },
     ],
   },
-
   twitter: {
     card: "summary_large_image",
     title: `${SITE_NAME} — ${SITE_TAGLINE}`,
     description: SITE_DESCRIPTION,
-    site: "@depup",
-    creator: "@depup",
-    images: ["/logo.png"],
+    images: ["/og-image.png"],
   },
-
   robots: {
     index: true,
     follow: true,
-    nocache: false,
     googleBot: {
       index: true,
       follow: true,
-      noimageindex: false,
-      "max-video-preview": -1,
       "max-image-preview": "large",
       "max-snippet": -1,
     },
   },
-
-  verification: {
-    // google: "xxxxxx",
-    // yandex: "xxxxxx",
-    // other: { "msvalidate.01": "xxxxxx" },
-  },
-
-
-  appleWebApp: {
-    capable: true,
-    title: SITE_NAME,
-    statusBarStyle: "black-translucent",
-  },
-  other: {
-    "msapplication-TileColor": "#7B50FF",
-    "theme-color": "#7B50FF",
-  },
 };
 
 export const viewport: Viewport = {
-  width: "device-width",
-  initialScale: 1,
-  maximumScale: 5,
-  viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#7B50FF" },
     { media: "(prefers-color-scheme: dark)", color: "#120B2E" },
   ],
-  colorScheme: "dark light",
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
-  const jsonLd = {
-    "@context": "https://schema.org",
-    "@type": "SoftwareApplication",
-    name: SITE_NAME,
-    applicationCategory: "DeveloperApplication",
-    operatingSystem: "Web",
-    description: SITE_DESCRIPTION,
-    url: SITE_URL,
-    image: `${SITE_URL}/logo.png`,
-    logo: `${SITE_URL}/logo.png`,
-    offers: {
-      "@type": "Offer",
-      price: "0",
-      priceCurrency: "USD",
-    },
-    author: {
-      "@type": "Person",
-      name: "depup",
+export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const jsonLd = [
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      name: SITE_NAME,
+      applicationCategory: "DeveloperApplication",
+      operatingSystem: "Web",
+      description: SITE_DESCRIPTION,
       url: SITE_URL,
+      image: `${SITE_URL}/og-image.png`,
+      offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+      featureList: [
+        "Deploy ke Vercel dalam satu klik",
+        "Deploy ke Cloudflare Pages",
+        "Kelola domain kustom",
+        "Environment variables terpusat",
+      ],
     },
-    featureList: [
-      "Deploy ke Vercel dalam satu klik",
-      "Deploy ke Cloudflare Pages",
-      "Kelola domain kustom",
-      "Environment variables",
-      "Redeploy otomatis saat secret berubah",
-      "Impor project yang sudah ada",
-    ],
-  };
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      name: "Depup",
+      url: SITE_URL,
+      logo: `${SITE_URL}/logo.png`,
+    },
+    {
+      "@context": "https://schema.org",
+      "@type": "FAQPage",
+      mainEntity: [
+        {
+          "@type": "Question",
+          name: "Apa itu Depup?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Depup adalah dashboard deploy untuk mengelola project Vercel, Cloudflare Pages, dan Railway dalam satu tempat, tanpa perlu membuka banyak tab.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "Apakah Depup sama dengan depup di Rust / NPM?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Tidak. Depup di crates.io atau @depup/axios adalah tools auto-update dependency. Depup.app / Depup.web.id adalah dashboard untuk deployment.",
+          },
+        },
+        {
+          "@type": "Question",
+          name: "Apakah Depup gratis?",
+          acceptedAnswer: {
+            "@type": "Answer",
+            text: "Ya, Depup gratis untuk mengelola deployment dan domain kamu.",
+          },
+        },
+      ],
+    },
+  ];
 
   return (
     <html lang="id" suppressHydrationWarning>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link
-          rel="preconnect"
-          href="https://fonts.gstatic.com"
-          crossOrigin="anonymous"
-        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className="antialiased min-h-[100dvh] w-full overflow-x-clip">
+      <body className="antialiased min-h-[100vh] w-full overflow-x-clip">
         <ThemeProvider>
           <AuthProvider>
             <ToastProvider>{children}</ToastProvider>
