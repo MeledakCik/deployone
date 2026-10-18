@@ -30,7 +30,7 @@ const SESSION_COOKIE = "depup_session";
 /**
  * Hanya endpoint auth yang boleh diakses tanpa login (login Google,
  * callback, logout, dan cek session). Semua route /api/* lainnya — proxy
- * Vercel/Cloudflare/Railway, deploy, github, user-data — WAJIB session valid,
+ * Vercel/Cloudflare/Railway, deploy, 【entity-github¦canonical_name=github】, user-data — WAJIB session valid,
  * supaya server ini tidak bisa dipakai orang luar sebagai proxy gratis.
  */
 function isPublicPath(pathname: string): boolean {
@@ -186,6 +186,32 @@ async function isBlockedEdge(email: string): Promise<boolean> {
  */
 export async function middleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
+  const host = req.headers.get("host") || "";
+
+  // ============ TAMBAHAN FIX SEO & DEPUSH LOGIC ============
+
+  // 1. www.depup.web.id -> depup.web.id (fix GSC www mu)
+  if (host === "www.depup.web.id" || host === "www.depup.app") {
+    const newHost = host.replace(/^www\./, "");
+    const url = req.nextUrl.clone();
+    url.host = newHost;
+    url.protocol = "https:";
+    return NextResponse.redirect(url, 308);
+  }
+
+  // 2. depush.web.id TANPA subdomain = harusnya gak ada web, redirect ke depup
+  // Sesuai maumu: depush.web.id kalau dibuka langsung -> kosong
+  if (host === "depush.web.id") {
+    const url = req.nextUrl.clone();
+    url.host = "depup.web.id";
+    url.protocol = "https:";
+    url.pathname = "/";
+    return NextResponse.redirect(url, 308);
+  }
+
+  // 3. *.depush.web.id (link instan) = kasih noindex biar gak ngerusak SEO depup & gak muncul di Ringkasan AI
+  const isDepushSubdomain = host.endsWith(".depush.web.id");
+  // ===========================================================
 
   // --- Link Gaib: https://<slug>.<TUNNEL_BASE_DOMAIN>/... -> /t/<slug>/... ---
   const hostSlug = slugFromHost(req.headers.get("host"));
@@ -193,7 +219,12 @@ export async function middleware(req: NextRequest) {
     const headers = new Headers(req.headers);
     headers.set("x-depup-target", pathname + search);
     const rewritten = new URL(`/t/${hostSlug}${pathname === "/" ? "" : pathname}`, req.url);
-    return NextResponse.rewrite(rewritten, { request: { headers } });
+    // Kalau ini subdomain depush, tetap lanjut tapi nanti dikasih noindex di response
+    const res = NextResponse.rewrite(rewritten, { request: { headers } });
+    if (isDepushSubdomain) {
+      res.headers.set("X-Robots-Tag", "noindex, nofollow");
+    }
+    return res;
   }
 
   // --- Link Gaib mode path: https://<host depup>/t/<slug>/... ---
@@ -201,7 +232,11 @@ export async function middleware(req: NextRequest) {
   if (tm && SLUG_RE.test(tm[1])) {
     const headers = new Headers(req.headers);
     headers.set("x-depup-target", (tm[2] ?? "/") + search); // selalu ditimpa -> tidak bisa dipalsukan klien
-    return NextResponse.next({ request: { headers } });
+    const res = NextResponse.next({ request: { headers } });
+    if (isDepushSubdomain) {
+      res.headers.set("X-Robots-Tag", "noindex, nofollow");
+    }
+    return res;
   }
 
   // --- Panel admin: gerbang di edge supaya status HTTP-nya benar (307 ke login / 404), bukan 200 ber-stream. ---
@@ -217,11 +252,19 @@ export async function middleware(req: NextRequest) {
     const res = NextResponse.next();
     res.headers.set("Cache-Control", "no-store");
     res.headers.set("X-Robots-Tag", "noindex, nofollow");
+    if (isDepushSubdomain) res.headers.append("X-Robots-Tag", "noindex, nofollow");
     return res;
   }
 
-  // Selain /api/*, middleware ini tidak melakukan apa-apa.
-  if (pathname !== "/api" && !pathname.startsWith("/api/")) return NextResponse.next();
+  // Selain /api/*, middleware ini tidak melakukan apa-apa — KECUALI untuk depush subdomain kasih noindex
+  if (pathname !== "/api" && !pathname.startsWith("/api/")) {
+    if (isDepushSubdomain) {
+      const res = NextResponse.next();
+      res.headers.set("X-Robots-Tag", "noindex, nofollow");
+      return res;
+    }
+    return NextResponse.next();
+  }
 
   // Anti-CSRF: situs yang di-host Link Instan hidup di subdomain yang "same-site" dengan dashboard,
   // jadi cookie SameSite=Lax tetap terkirim dari sana. Tolak request yang mengubah data kalau
@@ -267,11 +310,19 @@ export async function middleware(req: NextRequest) {
     );
   }
 
-  if (skipRateLimit(pathname)) return NextResponse.next();
+  if (skipRateLimit(pathname)) {
+    const res = NextResponse.next();
+    if (isDepushSubdomain) res.headers.set("X-Robots-Tag", "noindex, nofollow");
+    return res;
+  }
 
   // Cek session dipanggil di setiap load halaman dan hanya memverifikasi HMAC cookie (tanpa Redis).
   // Untuk user yang sudah terverifikasi, rate limit-nya cuma membuang 1 command Redis per load.
-  if (email && req.method === "GET" && pathname === "/api/auth/session") return NextResponse.next();
+  if (email && req.method === "GET" && pathname === "/api/auth/session") {
+    const res = NextResponse.next();
+    if (isDepushSubdomain) res.headers.set("X-Robots-Tag", "noindex, nofollow");
+    return res;
+  }
 
   const { bucket, limit, windowSeconds } = bucketFor(pathname);
   const identifier = email ? `u:${email}` : `ip:${clientIp(req)}`;
@@ -295,5 +346,8 @@ export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
   res.headers.set("X-RateLimit-Limit", String(result.limit));
   res.headers.set("X-RateLimit-Remaining", String(result.remaining));
+  if (isDepushSubdomain) {
+    res.headers.set("X-Robots-Tag", "noindex, nofollow");
+  }
   return res;
 }
