@@ -41,7 +41,6 @@ export const metadata: Metadata = {
   category: "Developer Tools",
   alternates: {
     canonical: "/",
-    // Halaman /en belum ada (404), jadi hreflang en-US dihapus supaya tidak menyesatkan mesin pencari.
     languages: {
       "id-ID": "/",
     },
@@ -65,7 +64,7 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
     images: [
       {
-        url: "/og-image.png", // public/og-image.png (1200x630)
+        url: "/og-image.png?v=2",
         secureUrl: "/og-image.png",
         width: 1200,
         height: 630,
