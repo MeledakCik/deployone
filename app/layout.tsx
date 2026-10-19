@@ -17,34 +17,34 @@ const SITE_URL = (
 const SITE_NAME = "Depup";
 const SITE_TAGLINE = "Deploy Dashboard Indonesia untuk Vercel & Cloudflare";
 const SITE_DESCRIPTION =
-  "Deploy Dashboard Indonesia untuk developer. Depup adalah dashboard untuk mengelola deployment Vercel, Cloudflare Pages, dan Railway dalam satu tempat. Impor repo, deploy, atur domain dan environment variables, semua dari satu dashboard buatan Indonesia.";
+  "Depup (depup.web.id) adalah dashboard deploy buatan Indonesia untuk mengelola Vercel, Cloudflare Pages, dan Railway dalam satu tempat. Tempel link GitHub, deploy, atur domain dan environment variables, plus Link Instan untuk menjadikan file HTML sebagai link publik dalam hitungan detik.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: `Depup — Deploy Dashboard Indonesia | Kelola Vercel & Cloudflare`,
+    default: `Depup — Deploy Dashboard Indonesia | Vercel, Cloudflare Pages & Railway`,
     template: `%s | Depup - Deploy Dashboard Indonesia`,
   },
   description: SITE_DESCRIPTION,
   keywords: [
     "depup",
+    "depup.web.id",
     "depup dashboard",
-    "vercel dashboard",
-    "cloudflare pages dashboard",
-    "kelola deployment",
+    "depup deploy",
+    "depup indonesia",
     "deploy dashboard indonesia",
+    "deploy vercel cloudflare railway",
+    "link instan html",
+    "hosting html gratis",
+    "kelola deployment",
   ],
   applicationName: SITE_NAME,
   authors: [{ name: SITE_NAME, url: SITE_URL }],
   creator: SITE_NAME,
   publisher: SITE_NAME,
   category: "Developer Tools",
-  alternates: {
-    canonical: "/",
-    languages: {
-      "id-ID": "/",
-    },
-  },
+  // Canonical SENGAJA tidak diset di sini: nilai di layout diwariskan ke semua halaman anak,
+  // sehingga tiap halaman dianggap duplikat beranda. Canonical diatur per halaman (lihat app/page.tsx).
   icons: {
     icon: [
       { url: "/logo.png", type: "image/png" },
@@ -58,7 +58,6 @@ export const metadata: Metadata = {
     type: "website",
     locale: "id_ID",
     alternateLocale: ["en_US"],
-    url: SITE_URL,
     siteName: SITE_NAME,
     title: `${SITE_NAME} — ${SITE_TAGLINE}`,
     description: SITE_DESCRIPTION,
@@ -108,52 +107,50 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   const jsonLd = [
     {
       "@context": "https://schema.org",
-      "@type": "SoftwareApplication",
+      "@type": "WebSite",
+      "@id": `${SITE_URL}/#website`,
       name: SITE_NAME,
-      applicationCategory: "DeveloperApplication",
-      operatingSystem: "Web",
-      description: SITE_DESCRIPTION,
+      alternateName: ["Depup Indonesia", "Depup Deploy Dashboard", "depup.web.id"],
       url: SITE_URL,
-      image: "/og-image.png",
-      offers: { "@type": "Offer", price: "0", priceCurrency: "IDR" },
-      featureList: [
-        "Deploy ke Vercel dalam satu klik",
-        "Deploy ke Cloudflare Pages",
-        "Deploy ke Railway",
-        "Deploy HTML 3 detik jadi *.depush.web.id",
-        "Kelola domain kustom",
-        "Environment variables terpusat",
-      ],
+      inLanguage: "id-ID",
+      description: SITE_DESCRIPTION,
+      publisher: { "@id": `${SITE_URL}/#organization` },
     },
     {
       "@context": "https://schema.org",
       "@type": "Organization",
-      name: "Depup",
+      "@id": `${SITE_URL}/#organization`,
+      name: SITE_NAME,
+      alternateName: "Depup Indonesia",
       url: SITE_URL,
       logo: `${SITE_URL}/logo.png`,
     },
     {
       "@context": "https://schema.org",
-      "@type": "FAQPage",
-      mainEntity: [
-        {
-          "@type": "Question",
-          name: "Apa itu Depup?",
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: "Depup adalah dashboard deploy untuk mengelola project Vercel, Cloudflare Pages, dan Railway dalam satu tempat.",
-          },
-        },
-        {
-          "@type": "Question",
-          name: "Apakah Depup gratis?",
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: "Ya, Depup 100% gratis untuk developer Indonesia.",
-          },
-        },
+      "@type": "SoftwareApplication",
+      "@id": `${SITE_URL}/#app`,
+      name: SITE_NAME,
+      alternateName: "Depup Deploy Dashboard",
+      applicationCategory: "DeveloperApplication",
+      operatingSystem: "Web",
+      inLanguage: "id-ID",
+      description: SITE_DESCRIPTION,
+      url: SITE_URL,
+      image: `${SITE_URL}/og-image.png`,
+      publisher: { "@id": `${SITE_URL}/#organization` },
+      offers: { "@type": "Offer", price: "0", priceCurrency: "IDR" },
+      featureList: [
+        "Deploy ke Vercel dalam satu klik",
+        "Deploy ke Cloudflare Pages",
+        "Deploy ke Railway",
+        "Link Instan: upload HTML/CSS/JS jadi link publik sementara",
+        "Link Gaib: bagikan localhost ke internet",
+        "Kelola domain kustom",
+        "Environment variables terpusat",
       ],
     },
+    // FAQPage sengaja TIDAK di sini: sudah dirender dari isi FAQ yang tampil di halaman (components/landing/FAQ.tsx).
+    // Dua FAQPage dengan jawaban berbeda = data terstruktur bentrok.
   ];
   return (
     <html lang="id" suppressHydrationWarning>

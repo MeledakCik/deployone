@@ -1,4 +1,5 @@
 import * as React from "react";
+import type { Metadata } from "next";
 import { Navbar } from "@/components/landing/Navbar";
 import { Hero } from "@/components/landing/Hero";
 import { SocialProof } from "@/components/landing/SocialProof";
@@ -10,6 +11,11 @@ import { SupportMatrix } from "@/components/landing/SupportMatrix";
 import { FAQ } from "@/components/landing/FAQ";
 import { FinalCTA } from "@/components/landing/FinalCTA";
 import { Footer } from "@/components/landing/Footer";
+
+export const metadata: Metadata = {
+  alternates: { canonical: "/", languages: { "id-ID": "/" } },
+  openGraph: { url: "/" },
+};
 
 export default function LandingPage() {
   return (

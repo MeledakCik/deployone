@@ -16,13 +16,14 @@ export function Hero() {
         </a>
 
         <h1 className="max-w-4xl text-[clamp(2rem,8.4vw,4.75rem)] font-bold leading-[1.04] tracking-[-0.03em] text-text">
+          <span className="sr-only">Depup: dashboard deploy Indonesia. </span>
           Deploy without the
           <br />
           hassle.
         </h1>
 
         <p className="mx-auto mb-10 mt-6 max-w-2xl text-[16px] leading-relaxed text-text-muted sm:text-[18px]">
-          Tempel link GitHub, biarkan Depup memeriksa isi repo-nya, lalu deploy ke{" "}
+          <b className="font-semibold text-text">Depup</b> adalah dashboard deploy buatan Indonesia. Tempel link GitHub, biarkan Depup memeriksa isi repo-nya, lalu deploy ke{" "}
           <b className="font-semibold text-text">Vercel</b>, <b className="font-semibold text-text">Cloudflare Pages</b>, atau{" "}
           <b className="font-semibold text-text">Railway</b> dari satu dashboard. Kalau repo tidak cocok, kamu langsung tahu alasannya
           sebelum waktumu terbuang.

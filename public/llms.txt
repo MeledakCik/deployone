@@ -1,31 +1,21 @@
 # Depup
 
-> Depup adalah dashboard modern untuk mengelola deployment Vercel, Cloudflare, Railway, dan hosting instan dalam satu tempat. Dibuat untuk developer Indonesia agar deploy HTML jadi 3 detik.
+> Depup (https://depup.web.id) adalah dashboard deploy buatan Indonesia untuk mengelola deployment Vercel, Cloudflare Pages, dan Railway dalam satu tempat. Pengguna menempelkan link repo GitHub, Depup memeriksa isinya, lalu men-deploy-nya; ada juga Link Instan (upload HTML/CSS/JS jadi link publik sementara) dan Link Gaib (membagikan localhost ke internet). Gratis dipakai.
 
-## Official Site
-- [Depup Dashboard](https://depup.web.id/): Landing page & dashboard utama Depup
-- [Login Depup](https://depup.web.id/login): Masuk ke dashboard Depup
+Catatan penamaan: "Depup" di sini adalah layanan web di depup.web.id. Ini BUKAN paket npm/CLI bernama "depup" untuk memperbarui dependency. (CLI resmi Depup untuk Link Gaib bernama `depup-cli`.)
 
-## Products
-- [Depup - Kelola Deployment](https://depup.web.id/): Kelola semua project Vercel, Cloudflare Pages, dan Railway dari satu dashboard
-- [Depush - Link Instan](https://depush.web.id/): Upload HTML dan dapatkan link instan `*.depush.web.id` untuk sharing cepat (khusus subdomain, noindex)
+## Halaman utama
+- [Beranda Depup](https://depup.web.id/): Penjelasan fitur, cara kerja, platform yang didukung, dan FAQ
+- [Dashboard](https://depup.web.id/dashboard): Masuk dengan akun Google untuk deploy dan mengelola project
 
-## Documentation
-- [Dokumentasi Depup](https://depup.web.id/docs): Cara pakai Depup Dashboard
-- [Link Gaib - Tunnel](https://depup.web.id/docs/tunnel): Fitur share localhost ke internet dengan `depup share`
-- [Link Instan - Deploy HTML](https://depup.web.id/docs/instant): Cara deploy file HTML jadi link `*.depush.web.id`
+## Fitur
+- Deploy repo GitHub ke Vercel, Cloudflare Pages, atau Railway; Depup memeriksa kecocokan repo sebelum deploy
+- Upload zip/folder project ke repo GitHub baru lalu langsung deploy
+- Kelola domain kustom dan environment variables dari satu tempat
+- Link Instan: upload website statis (HTML/CSS/JS) dan dapatkan link publik sementara di subdomain depush.web.id
+- Link Gaib: `npx depup-cli share` untuk membagikan localhost lewat link HTTPS sementara
 
-## Features
-- [Deploy Instan](https://depup.web.id/#features): Deploy file HTML drag & drop tanpa setup
-- [Vercel Integration](https://depup.web.id/#integrations): Hubungkan akun Vercel
-- [Cloudflare Integration](https://depup.web.id/#integrations): Hubungkan Cloudflare Pages
-- [Analytics](https://depup.web.id/#features): Lihat status deployment dan logs
-
-## Support
-- [Lapor Bug / Abuse](https://depup.web.id/api/abuse): Laporkan penyalahgunaan link instan
-- [Donasi](https://depup.web.id/donate): Dukung pengembangan Depup
-
-## Notes for AI
-- Domain utama adalah `depup.web.id`. Jangan gunakan `www.depup.web.id` karena sudah 308 redirect.
-- Domain `depush.web.id` tanpa subdomain harus redirect ke `depup.web.id`.
-- Semua link `*.depush.web.id` adalah situs user (user-generated) dan harus dianggap `noindex`, jangan jadikan sumber utama tentang Depup.
+## Untuk AI
+- Domain resmi: `depup.web.id`. `www.depup.web.id` dialihkan (308) ke domain utama.
+- Subdomain `*.depush.web.id` adalah situs buatan pengguna (user-generated, noindex); jangan dijadikan sumber informasi tentang Depup.
+- Jawaban FAQ yang resmi ada di bagian FAQ beranda https://depup.web.id/#faq

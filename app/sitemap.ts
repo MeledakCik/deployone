@@ -6,33 +6,10 @@ const SITE_URL = (
   "https://depup.web.id"
 ).replace(/\/$/, "");
 
+// Hanya URL nyata yang boleh diindeks. URL dengan #fragment tidak dihitung mesin pencari
+// (dianggap sama dengan beranda), jadi tidak dimasukkan. Tambahkan halaman publik baru di sini.
 export default function sitemap(): MetadataRoute.Sitemap {
-  const now = new Date();
-  
   return [
-    {
-      url: SITE_URL,
-      lastModified: now,
-      changeFrequency: "daily" as const,
-      priority: 1,
-    },
-    {
-      url: `${SITE_URL}/#fitur`,
-      lastModified: now,
-      changeFrequency: "weekly" as const,
-      priority: 0.8,
-    },
-    {
-      url: `${SITE_URL}/#cek-kompatibilitas`,
-      lastModified: now,
-      changeFrequency: "weekly" as const,
-      priority: 0.8,
-    },
-    {
-      url: `${SITE_URL}/#faq`,
-      lastModified: now,
-      changeFrequency: "weekly" as const,
-      priority: 0.9, // FAQ kasih priority tinggi biar diprioritasin AI
-    },
+    { url: SITE_URL, lastModified: new Date(), changeFrequency: "weekly", priority: 1 },
   ];
 }
