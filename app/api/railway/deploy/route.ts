@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { ok, fail, withErrorHandling } from "@/app/api/_lib/response";
 import { validateGithubRepo, GithubApiError } from "@/app/api/_lib/github";
 import { guardCompat } from "@/app/api/_lib/compat-guard";
+import { autofixRepoForRailway } from "@/app/api/_lib/repo-autofix";
 import { createRailwayDeployment, getRailwayProject, RailwayApiError } from "@/app/api/_lib/railway";
 import {
   requireString,
@@ -10,6 +11,7 @@ import {
   BadRequestError,
 } from "@/app/api/_lib/validators";
 import { parseEnvText } from "@/app/api/_lib/env-text";
+import { railwayRootDirectory } from "@/lib/deploy-guides";
 import type { CreateRailwayDeployRequest } from "@/types";
 
 export const runtime = "nodejs";
@@ -19,7 +21,10 @@ export const runtime = "nodejs";
  *   1. Re-validate the GitHub repo server-side (never trust the client).
  *      Jenis repo dicek dulu: package.json tidak wajib — Railway bisa membangun
  *      HTML statis, Dockerfile, dan banyak stack lain via Railpack.
- *   2. Create (or reuse) a Railway project + service wired to that repo and
+ *   2. Lengkapi file yang kurang (Staticfile, script "start", Procfile, ...)
+ *      dan commit ke repo SEBELUM service dibuat, supaya build pertama sudah
+ *      memakainya. Tidak fatal kalau gagal menulis — deploy tetap lanjut.
+ *   3. Create (or reuse) a Railway project + service wired to that repo and
  *      trigger a real deployment via the Railway GraphQL API.
  */
 export const POST = withErrorHandling(async (req: NextRequest) => {
@@ -66,6 +71,9 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
     throw e;
   }
 
+  // Token Railway sudah terbukti valid — sekarang aman mengubah repo.
+  const autofix = await autofixRepoForRailway(validation, githubPat);
+
   try {
     const deployment = await createRailwayDeployment({
       projectName,
@@ -75,8 +83,10 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
       railwayToken,
       startCommand: optionalString(body.startCommand),
       env: parseEnvText(body.envText),
+      // Project ada di subfolder (root repo kosong) → jadikan folder itu Root Directory.
+      rootDirectory: railwayRootDirectory(validation.project),
     });
-    return ok(deployment, 201);
+    return ok({ ...deployment, autofix }, 201);
   } catch (e) {
     if (e instanceof RailwayApiError) {
       const status = e.code === "invalid_token" ? 401 : e.code === "not_found" ? 404 : 502;

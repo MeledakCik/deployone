@@ -2,7 +2,9 @@ import type { GithubValidation } from "@/types";
 import { evaluateAllPlatforms } from "@/lib/deploy-guides";
 import {
   classifyProject,
+  NESTED_BACKEND_CANDIDATES,
   NESTED_CANDIDATES,
+  NESTED_MARKER_FILES,
   STATIC_SUBDIR_CANDIDATES,
   type RepoEntry,
 } from "@/app/api/_lib/project-detect";
@@ -178,7 +180,7 @@ function extractEnvFileKeys(source: string): string[] {
   return [...found];
 }
 
-async function fetchRepoFileText(
+export async function fetchRepoFileText(
   owner: string,
   repo: string,
   path: string,
@@ -211,13 +213,16 @@ async function detectEnvVars(
   owner: string,
   repo: string,
   defaultBranch: string,
-  githubPat?: string
+  githubPat?: string,
+  /** Subfolder tempat project berada (kalau project tidak di root repo). */
+  baseDir = ""
 ): Promise<string[]> {
   const found = new Set<string>();
+  const at = (name: string) => (baseDir ? `${baseDir}/${name}` : name);
 
   const envFileCandidates = [".env.example", ".env.sample", ".env.template"];
   for (const path of envFileCandidates) {
-    const text = await fetchRepoFileText(owner, repo, path, defaultBranch, githubPat);
+    const text = await fetchRepoFileText(owner, repo, at(path), defaultBranch, githubPat);
     if (text) {
       extractEnvFileKeys(text).forEach((k) => found.add(k));
       break; // one env-example file is enough — they're usually kept in sync
@@ -226,7 +231,7 @@ async function detectEnvVars(
 
   const configCandidates = ["next.config.js", "next.config.mjs", "next.config.ts"];
   for (const path of configCandidates) {
-    const text = await fetchRepoFileText(owner, repo, path, defaultBranch, githubPat);
+    const text = await fetchRepoFileText(owner, repo, at(path), defaultBranch, githubPat);
     if (text) {
       extractProcessEnvRefs(text).forEach((k) => found.add(k));
       break; // repos only have one active next.config.*
@@ -256,7 +261,7 @@ function describeGithubFailure(res: Response, hadToken: boolean): GithubApiError
 }
 
 /** Daftar file/folder di sebuah path repo. `null` = path tidak ada / tidak bisa dibaca. */
-async function listRepoDir(
+export async function listRepoDir(
   owner: string,
   repo: string,
   path: string,
@@ -284,6 +289,17 @@ async function listRepoDir(
 // tidak menghabiskan kuota GitHub 3x lipat.
 const VALIDATION_CACHE_TTL_MS = 45_000;
 const validationCache = new Map<string, { at: number; value: GithubValidation }>();
+
+/**
+ * Buang hasil cache untuk satu repo — dipanggil setelah Depup menambahkan file
+ * ke repo, supaya pengecekan berikutnya membaca isi repo yang sudah baru.
+ */
+export function invalidateValidationCache(owner: string, repo: string): void {
+  const prefix = `${owner}/${repo}`.toLowerCase() + "::";
+  for (const key of [...validationCache.keys()]) {
+    if (key.startsWith(prefix)) validationCache.delete(key);
+  }
+}
 
 /**
  * Validates a GitHub repo: existence, public/private visibility, default
@@ -360,7 +376,8 @@ export async function validateGithubRepo(
   // (public/, docs/, frontend/, ...) sebelum menyerah.
   if (project.type === "unknown" || (project.type === "static" && project.staticDir === null)) {
     const dirNames = new Set(entries.filter((e) => e.type === "dir").map((e) => e.name));
-    const candidates = [...new Set([...STATIC_SUBDIR_CANDIDATES, ...NESTED_CANDIDATES])].filter((d) =>
+    const allNested = [...NESTED_CANDIDATES, ...NESTED_BACKEND_CANDIDATES];
+    const candidates = [...new Set([...STATIC_SUBDIR_CANDIDATES, ...allNested])].filter((d) =>
       dirNames.has(d)
     );
     const listings = await Promise.all(
@@ -371,13 +388,43 @@ export async function validateGithubRepo(
     );
     const hasFile = (l: RepoEntry[] | null, name: string) =>
       !!l?.some((e) => e.type === "file" && e.name.toLowerCase() === name);
+    const looksLikeProject = (l: RepoEntry[] | null) =>
+      NESTED_MARKER_FILES.some((marker) => hasFile(l, marker));
     const staticSubdir =
       listings.find((x) => STATIC_SUBDIR_CANDIDATES.includes(x.dir) && hasFile(x.list, "index.html"))?.dir ?? null;
-    const nestedProjectDir =
-      listings.find(
-        (x) => NESTED_CANDIDATES.includes(x.dir) && (hasFile(x.list, "package.json") || hasFile(x.list, "index.html"))
-      )?.dir ?? null;
+    const nestedHit = listings.find((x) => allNested.includes(x.dir) && looksLikeProject(x.list));
+    const nestedProjectDir = nestedHit?.dir ?? null;
     project = classifyProject({ entries, pkg, pkgBroken, staticSubdir, nestedProjectDir });
+
+    // Root kosong tapi ada project di subfolder → kenali jenis project di dalamnya, supaya
+    // Railway bisa memakai folder itu sebagai Root Directory (bukan diblokir).
+    if (project.type === "unknown" && nestedProjectDir && nestedHit?.list) {
+      const nestedEntries: RepoEntry[] = nestedHit.list;
+      let nestedPkg: Record<string, unknown> | null = null;
+      let nestedPkgBroken = false;
+      if (nestedEntries.some((e) => e.type === "file" && e.name === "package.json")) {
+        const raw = await fetchRepoFileText(owner, repo, `${nestedProjectDir}/package.json`, defaultBranch, githubPat);
+        try {
+          if (raw === null) throw new Error("empty");
+          nestedPkg = JSON.parse(raw) as Record<string, unknown>;
+        } catch {
+          nestedPkgBroken = true;
+        }
+      }
+      const nestedProfile = classifyProject({
+        entries: nestedEntries,
+        pkg: nestedPkg,
+        pkgBroken: nestedPkgBroken,
+        staticSubdir: null,
+        nestedProjectDir: null,
+      });
+      project = { ...project, nestedProfile };
+      if (nestedProfile.type !== "unknown" && nestedProfile.type !== "empty" && !nestedProfile.invalidPackageJson) {
+        warnings.push(
+          `Project ada di folder "${nestedProjectDir}/" (${nestedProfile.label}). Kalau deploy ke Railway, Depup otomatis mengatur Root Directory ke folder itu.`
+        );
+      }
+    }
   }
 
   /* ---- 4. Catatan khusus Node.js ---- */
@@ -395,9 +442,23 @@ export async function validateGithubRepo(
     if (vulnWarning) warnings.push(vulnWarning);
   }
 
+  if (project.type === "python" && entries.some((e) => e.type === "file" && e.name === "manage.py")) {
+    warnings.push(
+      'Django terdeteksi. Pastikan ALLOWED_HOSTS di settings.py mengizinkan domain Railway (mis. ".up.railway.app") dan CSRF_TRUSTED_ORIGINS memuat "https://*.up.railway.app" — kalau tidak, halaman akan error 400/403 setelah deploy.'
+    );
+  }
+
   /* ---- 5. Env var yang mungkin dibutuhkan (tidak relevan untuk HTML statis) ---- */
-  const needsEnvScan = project.type !== "static" && project.type !== "empty" && project.type !== "unknown";
-  const detectedEnvVars = needsEnvScan ? await detectEnvVars(owner, repo, defaultBranch, githubPat) : [];
+  const nestedForEnv =
+    project.type === "unknown" && project.nestedProfile && project.nestedProjectDir
+      ? project.nestedProfile
+      : null;
+  const envScanProfile = nestedForEnv ?? project;
+  const needsEnvScan =
+    envScanProfile.type !== "static" && envScanProfile.type !== "empty" && envScanProfile.type !== "unknown";
+  const detectedEnvVars = needsEnvScan
+    ? await detectEnvVars(owner, repo, defaultBranch, githubPat, nestedForEnv ? project.nestedProjectDir ?? "" : "")
+    : [];
   if (detectedEnvVars.length > 0) {
     warnings.push(
       `Repo ini kemungkinan butuh env var: ${detectedEnvVars.join(", ")}. Isi di step Environment Variables sebelum deploy.`

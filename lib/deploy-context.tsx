@@ -35,6 +35,7 @@ import type {
   RailwayProjectSummary,
   RailwayUserInfo,
   CreateRailwayDeployResult,
+  RailwayAutofixPreview,
   RedeployResult,
   SettingsTokens,
   VercelDomainResult,
@@ -202,6 +203,11 @@ interface DeployContextValue {
     validation: GithubValidation | null;
     /** Penjelasan ramah kalau pengecekan repo gagal. */
     errorGuide: ErrorGuide | null;
+  };
+  /** Pratinjau file yang akan ditambahkan Depup otomatis saat deploy ke Railway (hanya terisi kalau platform = Railway). */
+  railwayPreview: {
+    status: "idle" | "loading" | "ok";
+    preview: RailwayAutofixPreview | null;
   };
   /** Ulangi pengecekan repo (mis. setelah rate limit / jaringan putus). */
   recheckRepo: () => void;
@@ -468,6 +474,38 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     lastCheckedRepoRef.current = null;
     setRepoCheckNonce((n) => n + 1);
   }, []);
+
+  /* ---------- pratinjau: file apa yang akan ditambahkan Depup di deploy Railway ---------- */
+  const [railwayPreview, setRailwayPreview] = React.useState<{
+    status: "idle" | "loading" | "ok";
+    preview: RailwayAutofixPreview | null;
+  }>({ status: "idle", preview: null });
+
+  React.useEffect(() => {
+    const raw = form.githubUrl?.trim();
+    if (form.platform !== "railway" || repoEnvCheck.status !== "ok" || !repoEnvCheck.validation || !raw) {
+      setRailwayPreview({ status: "idle", preview: null });
+      return;
+    }
+    let cancelled = false;
+    setRailwayPreview({ status: "loading", preview: null });
+    (async () => {
+      try {
+        const preview = await callApi<RailwayAutofixPreview>("/api/railway/preview", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ githubUrl: raw, githubPat: form.githubPat }),
+        });
+        if (!cancelled) setRailwayPreview({ status: "ok", preview });
+      } catch {
+        // Pratinjau hanya informasi tambahan — kalau gagal, deploy tetap bisa jalan.
+        if (!cancelled) setRailwayPreview({ status: "idle", preview: null });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [form.platform, form.githubUrl, form.githubPat, repoEnvCheck.status, repoEnvCheck.validation]);
 
   const [domains, setDomains] = useCloudStorage<DomainItem[]>(
     "domains",
@@ -1158,7 +1196,26 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         return;
       }
       recordDeployEnv(created.name || projectName, "railway", data.envText);
-      setDeployState((prev) => ({ ...prev, stepIndex: 2, barWidth: 40 }));
+
+      // Depup otomatis melengkapi file yang kurang (Staticfile, script "start", Procfile, dst.)
+      // sebelum build — beri tahu user apa yang berubah di repo-nya, atau kenapa tidak bisa.
+      const autofix = created.autofix;
+      const autofixNames = autofix?.files.map((f) => f.path).join(", ") ?? "";
+      if (autofix?.status === "committed" && autofix.files.length > 0) {
+        showToast(`Depup melengkapi repo-mu otomatis: ${autofixNames}`);
+      } else if (autofix && autofix.status !== "none" && autofix.message) {
+        showToast(autofix.message);
+      }
+      setDeployState((prev) => ({
+        ...prev,
+        stepIndex: 2,
+        barWidth: 40,
+        ...(autofix?.status === "committed" && autofix.files.length > 0
+          ? {
+              subtitle: `Repo ${validation.fullName} dilengkapi otomatis (${autofixNames}) — membangun di Railway…`,
+            }
+          : {}),
+      }));
 
       intervalRef.current = setInterval(async () => {
         let status: RailwayDeployStatusResult;
@@ -2905,6 +2962,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     setFormField,
     platformTokenLabel,
     repoEnvCheck,
+    railwayPreview,
     recheckRepo,
     retryDeploy,
     githubPat: settingsTokens.githubPat ?? "",

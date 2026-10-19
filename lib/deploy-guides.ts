@@ -27,6 +27,23 @@ const PLATFORM_LINKS: Record<Platform, GuideLink> = {
   railway: { label: "Buka Railway (New Project)", url: "https://railway.com/new" },
 };
 
+/**
+ * Kalau root repo kosong dari project tapi sebuah subfolder berisi project yang dikenali,
+ * Railway bisa memakai subfolder itu sebagai Root Directory. Mengembalikan nama folder-nya,
+ * atau null kalau tidak berlaku.
+ */
+export function railwayRootDirectory(p: ProjectProfile): string | null {
+  const np = p.nestedProfile;
+  if (p.type !== "unknown" || !p.nestedProjectDir || !np) return null;
+  if (np.type === "unknown" || np.type === "empty" || np.invalidPackageJson) return null;
+  return p.nestedProjectDir;
+}
+
+/** Profil yang sebenarnya akan dibangun Railway (isi Root Directory kalau ada, kalau tidak root repo). */
+export function railwayEffectiveProfile(p: ProjectProfile): ProjectProfile {
+  return railwayRootDirectory(p) ? (p.nestedProfile as ProjectProfile) : p;
+}
+
 /** Ringkasan satu baris tentang project yang terdeteksi, untuk pesan ke user. */
 export function describeProject(p: ProjectProfile): string {
   return p.label;
@@ -177,6 +194,17 @@ export function evaluateCompat(
   }
 
   if (profile.type === "unknown") {
+    // Railway bisa membangun project di subfolder lewat Root Directory — tidak perlu diblokir.
+    const rootDir = railwayRootDirectory(profile);
+    if (platform === "railway" && rootDir && profile.nestedProfile) {
+      return {
+        level: "ok",
+        summary: `${profile.nestedProfile.label} di folder \"${rootDir}\" — Railway akan memakai folder itu sebagai Root Directory.`,
+        notes: [
+          `Di root repo tidak ada file project, jadi Depup mengatur Root Directory service Railway ke \"/${rootDir}\" secara otomatis.`,
+        ],
+      };
+    }
     if (nested) {
       return blocked(
         platform,

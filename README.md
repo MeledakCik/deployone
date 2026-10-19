@@ -44,6 +44,32 @@ Form deploy bertahap. Sebelum deploy dimulai, Depup mengecek isi repo-mu (HTML b
 Python, dan lainnya) dan memberi tahu apakah cocok dengan platform pilihanmu. Kalau tidak cocok, kamu langsung
 diberi saran platform lain, sebelum ada yang terbuang.
 
+#### Pelengkap file otomatis (khusus Railway)
+Repo yang "hampir benar" sering gagal di Railway hanya karena ada file kecil yang kurang. Sebelum membuat service,
+Depup mengecek repo-mu dan **menambahkan file yang kurang dalam satu commit**:
+
+| Kondisi repo | Yang ditambahkan |
+|---|---|
+| HTML statis, `index.html` ada di folder `docs/` / `dist/` / dll | `Staticfile` yang mengarah ke folder itu |
+| HTML statis, `index.html` di root **dan** ada folder `public/` | `Staticfile` (`root: .`) — tanpa ini Railway hanya menyajikan `public/` dan halaman utama 404 |
+| Ada file `.html` tapi tidak ada `index.html` | `index.html` (pengalihan ke halaman utama, atau daftar semua halaman) |
+| Node.js tanpa script `start` (Express/Fastify/Hono/Koa, Next.js, Nuxt 3, NestJS) | script `start` di `package.json` |
+| FastAPI / Flask / Starlette / Litestar / Quart / Streamlit tanpa `Procfile` (atau app-nya bukan di `main.py`) | `Procfile` (port `$PORT`) + `uvicorn` / `gunicorn` di `requirements.txt` kalau belum ada. Project `pyproject.toml` saja hanya dibuatkan `Procfile` bila server-nya sudah terdaftar |
+| Django tanpa `gunicorn` | `gunicorn` di `requirements.txt` (Depup juga mengingatkan soal `ALLOWED_HOSTS` / `CSRF_TRUSTED_ORIGINS`) |
+| Ada `Dockerfile` tapi tidak ada `.dockerignore` | `.dockerignore` (mencegah `.env` & `.git` masuk image) |
+
+**Project di subfolder** (mis. root repo hanya berisi `README.md`, project-nya di `frontend/` atau `backend/`): tidak
+lagi diblokir di Railway. Depup mengenali isi folder itu, mengatur **Root Directory** service Railway ke folder tersebut,
+dan melengkapi file yang kurang di dalam folder itu. (Vercel dan Cloudflare belum mendukung ini.)
+
+**Pratinjau sebelum deploy:** di langkah GitHub URL, kartu hasil pengecekan repo menampilkan daftar file yang akan
+ditambahkan beserta alasannya — jadi kamu tahu sebelum menekan Deploy, dan diberi tahu kalau token-mu belum bisa menulis.
+
+Aturan mainnya: file buatanmu **tidak pernah ditimpa**. Kalau repo sudah punya `Dockerfile`, `Procfile`, `railway.json`,
+dst., Depup tidak mengubah apa pun selain `.dockerignore`. Perlu **GitHub Token dengan izin menulis** (`repo`); kalau
+tidak ada / tidak punya izin / branch dilindungi, deploy tetap jalan dan Depup memberi tahu file apa yang kurang.
+Framework frontend (Vite, CRA, Vue, Angular, dst.) memang tidak disentuh karena Railway sudah menyajikannya sendiri.
+
 ### Upload
 Cara tercepat kalau project-mu masih ada di komputer.
 

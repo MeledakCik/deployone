@@ -183,5 +183,25 @@ export function classifyProject(input: ClassifyInput): ProjectProfile {
 /** Subfolder yang umum dipakai untuk menyimpan project di repo bertingkat / monorepo. */
 export const NESTED_CANDIDATES = ["frontend", "client", "web", "app", "site", "website", "www", "ui"];
 
+/** Subfolder yang umum dipakai untuk backend di repo bertingkat. */
+export const NESTED_BACKEND_CANDIDATES = ["backend", "server", "api"];
+
+/** File penanda bahwa sebuah subfolder berisi project (bukan sekadar folder biasa). */
+export const NESTED_MARKER_FILES = [
+  "package.json",
+  "index.html",
+  "dockerfile",
+  "requirements.txt",
+  "pyproject.toml",
+  "pipfile",
+  "go.mod",
+  "composer.json",
+  "gemfile",
+  "pom.xml",
+  "build.gradle",
+  "build.gradle.kts",
+  "cargo.toml",
+];
+
 /** Folder yang umum berisi hasil statis. */
 export const STATIC_SUBDIR_CANDIDATES = ["public", "docs", "dist", "build", "www", "site", "static"];

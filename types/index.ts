@@ -224,6 +224,12 @@ export interface ProjectProfile {
   nestedProjectDir: string | null;
   /** Nama file/folder di root repo (dibatasi), untuk debugging & ditampilkan ke user. */
   rootEntries: string[];
+  /**
+   * Hasil deteksi isi `nestedProjectDir` (jenis project di dalam subfolder). Hanya terisi
+   * kalau root repo tidak berisi project apa pun tetapi sebuah subfolder berisi.
+   * Railway bisa memakai folder itu sebagai Root Directory.
+   */
+  nestedProfile?: ProjectProfile | null;
 }
 
 export interface PlatformCompat {
@@ -468,8 +474,43 @@ export interface CreateRailwayDeployRequest {
   envText?: string;
 }
 
+/** Satu file yang ditambahkan / diubah Depup agar repo bisa dibangun Railway. */
+export interface RailwayAutofixFile {
+  path: string;
+  action: "create" | "update";
+  /** Alasan dalam bahasa awam, siap ditampilkan ke user. */
+  reason: string;
+}
+
+/**
+ * Hasil pengecekan "file yang kurang" sebelum deploy ke Railway.
+ *  - none: repo sudah lengkap, tidak ada yang diubah
+ *  - committed: file ditambahkan ke repo (satu commit) sebelum deploy
+ *  - needs_token / no_permission / failed: ada yang kurang tapi tidak bisa ditulis — deploy tetap lanjut
+ */
+export interface RailwayAutofix {
+  status: "none" | "committed" | "needs_token" | "no_permission" | "failed";
+  files: RailwayAutofixFile[];
+  commitSha?: string;
+  message?: string;
+}
+
+/**
+ * Pratinjau (tanpa mengubah apa pun) file yang akan ditambahkan Depup saat deploy ke Railway.
+ * Dipakai kartu cek repo di layar Deploy.
+ */
+export interface RailwayAutofixPreview {
+  files: RailwayAutofixFile[];
+  /** Folder yang akan dipakai sebagai Root Directory di Railway (project di subfolder), atau null. */
+  rootDirectory: string | null;
+  /** Apakah GitHub Token yang diisi bisa menulis ke repo ini. false = file di atas tidak akan bisa ditambahkan. */
+  canWrite: boolean;
+}
+
 /** Result of POST /api/railway/deploy */
 export interface CreateRailwayDeployResult {
+  /** File yang ditambahkan otomatis ke repo sebelum deploy (kalau ada yang kurang). */
+  autofix?: RailwayAutofix;
   deploymentId: string;
   projectId: string;
   /** The project's actual name on Railway — may differ from the requested projectName when an existing project (matched by repo) was reused. Use this for history, not the input name. */

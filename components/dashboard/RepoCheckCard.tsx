@@ -13,7 +13,7 @@ import type { Platform } from "@/types";
  * (2) cocok dengan platform yang dipilih? (3) kalau tidak, harus bagaimana?
  */
 export function RepoCheckCard({ platform }: { platform: Platform }) {
-  const { form, repoEnvCheck, recheckRepo, setFormField } = useDeploy();
+  const { form, repoEnvCheck, recheckRepo, setFormField, railwayPreview } = useDeploy();
   const { status, validation, errorGuide } = repoEnvCheck;
   const url = form.githubUrl?.trim() ?? "";
 
@@ -116,13 +116,49 @@ export function RepoCheckCard({ platform }: { platform: Platform }) {
         </div>
       </div>
 
-      {level === "warn" && compat.notes.length > 0 && (
+      {level !== "blocked" && compat.notes.length > 0 && (
         <ul className="mt-2 ml-5 list-disc space-y-1 text-[var(--dc-text-muted)]">
           {compat.notes.map((n, i) => (
             <li key={i}>{n}</li>
           ))}
         </ul>
       )}
+
+      {platform === "railway" && level !== "blocked" && railwayPreview.status === "loading" && (
+        <div className="mt-2 flex items-center gap-1.5 opacity-80">
+          <Loader2 className="w-3 h-3 shrink-0 animate-spin" />
+          Mengecek file yang mungkin kurang…
+        </div>
+      )}
+
+      {platform === "railway" &&
+        level !== "blocked" &&
+        railwayPreview.status === "ok" &&
+        railwayPreview.preview &&
+        railwayPreview.preview.files.length > 0 && (
+          <div className="mt-2.5 rounded-lg bg-[var(--dc-pill)] p-2.5 text-[var(--dc-text)]">
+            <div className="font-semibold">
+              {railwayPreview.preview.canWrite
+                ? `Depup akan menambahkan ${railwayPreview.preview.files.length} file otomatis saat deploy`
+                : `Repo ini kekurangan ${railwayPreview.preview.files.length} file agar bisa jalan di Railway`}
+            </div>
+            <ul className="mt-1.5 space-y-1.5">
+              {railwayPreview.preview.files.map((f) => (
+                <li key={f.path} className="flex items-start gap-1.5">
+                  <span className="font-mono shrink-0 rounded bg-[var(--dc-hover)] px-1.5 py-0.5 text-[11px]">
+                    {f.action === "create" ? "+" : "~"} {f.path}
+                  </span>
+                  <span className="text-[var(--dc-text-muted)]">{f.reason}</span>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-2 text-[var(--dc-text-muted)]">
+              {railwayPreview.preview.canWrite
+                ? "Semuanya dikirim dalam satu commit ke branch utama repo-mu. File buatanmu tidak ditimpa."
+                : "Isi GitHub Token dengan izin menulis (“repo”) supaya Depup bisa menambahkannya otomatis — atau tambahkan file di atas sendiri sebelum deploy."}
+            </div>
+          </div>
+        )}
 
       {level === "blocked" && guide && (
         <div className="mt-2">

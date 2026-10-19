@@ -668,6 +668,11 @@ interface CreateDeploymentParams {
   railwayToken: string;
   startCommand?: string;
   env?: Record<string, string>;
+  /**
+   * Subfolder repo yang berisi project (mis. "frontend"). Diatur sebagai Root Directory
+   * service, supaya Railway membangun folder itu — bukan root repo yang kosong.
+   */
+  rootDirectory?: string | null;
 }
 
 export interface RailwayDeploymentResult {
@@ -701,7 +706,7 @@ export interface RailwayDeploymentResult {
 export async function createRailwayDeployment(
   params: CreateDeploymentParams
 ): Promise<RailwayDeploymentResult> {
-  const { projectName, owner, repo, ref, railwayToken, startCommand, env } = params;
+  const { projectName, owner, repo, ref, railwayToken, startCommand, env, rootDirectory } = params;
 
   // Match by exact project name first (normal redeploy case), then fall
   // back to matching by the linked GitHub repo — so deploying the same repo
@@ -772,12 +777,19 @@ export async function createRailwayDeployment(
     );
   }
 
-  if (startCommand && startCommand.trim()) {
+  // Pengaturan instance service: start command dan/atau Root Directory (project di subfolder).
+  // rootDirectory hanya ada di ServiceInstanceUpdateInput (bukan serviceCreate), jadi diatur di sini,
+  // sebelum deployment di bawah dipicu.
+  const instanceInput: Record<string, string> = {};
+  if (startCommand && startCommand.trim()) instanceInput.startCommand = startCommand.trim();
+  const cleanRoot = rootDirectory?.trim().replace(/^\/+|\/+$/g, "");
+  if (cleanRoot) instanceInput.rootDirectory = `/${cleanRoot}`;
+  if (Object.keys(instanceInput).length > 0) {
     await railwayGraphQL(
       `mutation serviceInstanceUpdate($serviceId: String!, $environmentId: String!, $input: ServiceInstanceUpdateInput!) {
         serviceInstanceUpdate(serviceId: $serviceId, environmentId: $environmentId, input: $input)
       }`,
-      { serviceId: service.id, environmentId, input: { startCommand: startCommand.trim() } },
+      { serviceId: service.id, environmentId, input: instanceInput },
       railwayToken
     );
   }
