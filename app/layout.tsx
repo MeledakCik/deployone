@@ -47,8 +47,12 @@ export const metadata: Metadata = {
     },
   },
   icons: {
-    icon: [{ url: "/logo.png", type: "image/png" }],
-    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
+    icon: [
+      { url: "/logo.png", type: "image/png" },
+      { url: "/favicon.ico", sizes: "any" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+    shortcut: "/favicon.ico",
   },
   manifest: "/manifest.webmanifest",
   openGraph: {
@@ -62,9 +66,11 @@ export const metadata: Metadata = {
     images: [
       {
         url: "/og-image.png", // public/og-image.png (1200x630)
+        secureUrl: "/og-image.png",
         width: 1200,
         height: 630,
-        alt: `${SITE_NAME} — Dashboard Deploy Vercel & Cloudflare`,
+        alt: `${SITE_NAME} — Dashboard Deploy Vercel, Cloudflare & Railway`,
+        type: "image/png",
       },
     ],
   },
@@ -92,7 +98,6 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  // Wajib agar env(safe-area-inset-*) bernilai benar di iPhone berponi / Android gestur.
   viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#7B50FF" },
@@ -110,11 +115,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       operatingSystem: "Web",
       description: SITE_DESCRIPTION,
       url: SITE_URL,
-      image: `${SITE_URL}/og-image.png`,
-      offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+      image: "/og-image.png",
+      offers: { "@type": "Offer", price: "0", priceCurrency: "IDR" },
       featureList: [
         "Deploy ke Vercel dalam satu klik",
         "Deploy ke Cloudflare Pages",
+        "Deploy ke Railway",
+        "Deploy HTML 3 detik jadi *.depush.web.id",
         "Kelola domain kustom",
         "Environment variables terpusat",
       ],
@@ -135,15 +142,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           name: "Apa itu Depup?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "Depup adalah dashboard deploy untuk mengelola project Vercel, Cloudflare Pages, dan Railway dalam satu tempat, tanpa perlu membuka banyak tab.",
-          },
-        },
-        {
-          "@type": "Question",
-          name: "Apakah Depup sama dengan depup di Rust / NPM?",
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: "Tidak. Depup di crates.io atau @depup/axios adalah tools auto-update dependency. Depup.app / Depup.web.id adalah dashboard untuk deployment.",
+            text: "Depup adalah dashboard deploy untuk mengelola project Vercel, Cloudflare Pages, dan Railway dalam satu tempat.",
           },
         },
         {
@@ -151,21 +150,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           name: "Apakah Depup gratis?",
           acceptedAnswer: {
             "@type": "Answer",
-            text: "Ya, Depup gratis untuk mengelola deployment dan domain kamu.",
-          },
-        },
-                {
-          "@type": "Question",
-          name: "Apa itu deploy dashboard indonesia?",
-          acceptedAnswer: {
-            "@type": "Answer",
-            text: "Deploy Dashboard Indonesia adalah dashboard seperti Depup yang dibuat untuk developer Indonesia untuk mengelola deployment Vercel, Cloudflare Pages, dan Railway dalam satu tempat. Dengan Depup, kamu bisa impor repo, deploy, atur domain dan environment variables tanpa ribet.",
+            text: "Ya, Depup 100% gratis untuk developer Indonesia.",
           },
         },
       ],
     },
   ];
-
   return (
     <html lang="id" suppressHydrationWarning>
       <head>
