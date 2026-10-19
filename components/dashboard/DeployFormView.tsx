@@ -62,10 +62,10 @@ function domainSuffixFor(p: Platform): string {
 /* ---------------- Shared classes ---------------- */
 
 const inputCls =
-  "w-full h-11 sm:h-[46px] rounded-xl sm:rounded-[12px] bg-[var(--dc-input)] border border-transparent px-3.5 sm:px-4 text-[13.5px] sm:text-[14px] text-[var(--dc-text)] placeholder:text-[var(--dc-text-faint)] focus:outline-none focus:ring-[3px] focus:ring-violet-200 dark:focus:ring-violet-800 focus:bg-[var(--dc-input-focus)] transition-colors";
+  "w-full h-11 sm:h-[46px] rounded-[14px] bg-[var(--dc-input)] border border-transparent px-3.5 sm:px-4 text-[13.5px] sm:text-[14px] text-[var(--dc-text)] placeholder:text-[var(--dc-text-faint)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)] focus:bg-[var(--dc-input-focus)] transition-colors";
 
 const textareaCls =
-  "w-full rounded-xl sm:rounded-[12px] bg-[var(--dc-input)] border border-transparent px-3.5 sm:px-4 py-2.5 sm:py-3 text-[12.5px] sm:text-[13px] text-[var(--dc-text)] placeholder:text-[var(--dc-text-faint)] focus:outline-none focus:ring-[3px] focus:ring-violet-200 dark:focus:ring-violet-800 focus:bg-[var(--dc-input-focus)] transition-colors resize-none font-mono";
+  "w-full rounded-[14px] bg-[var(--dc-input)] border border-transparent px-3.5 sm:px-4 py-2.5 sm:py-3 text-[12.5px] sm:text-[13px] text-[var(--dc-text)] placeholder:text-[var(--dc-text-faint)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)] focus:bg-[var(--dc-input-focus)] transition-colors resize-none font-mono";
 
 const labelCls =
   "block text-[12px] sm:text-[12px] tracking-wide uppercase text-[var(--dc-text-faint)] font-medium";

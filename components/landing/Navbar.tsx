@@ -7,6 +7,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ArrowUpRight, Menu, X } from "@/components/ui/icons";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/components/ui/Toast";
+import { lockBodyScroll } from "@/lib/scroll-lock";
 import { GoogleLoginModal, GoogleMark } from "./GoogleLoginModal";
 import { DashboardLink } from "./DashboardLink";
 
@@ -25,6 +26,7 @@ export function Navbar() {
   const searchParams = useSearchParams();
   const [loginOpen, setLoginOpen] = React.useState(false);
   const [menuOpen, setMenuOpen] = React.useState(false);
+  const headerRef = React.useRef<HTMLElement>(null);
 
   React.useEffect(() => {
     const error = searchParams.get("login_error");
@@ -37,23 +39,31 @@ export function Navbar() {
 
   const loggedIn = ready && !!user;
 
-  // Menu mobile: tutup dengan Esc dan otomatis saat layar melebar ke desktop.
+  // Menu mobile: tutup dengan Esc, klik/sentuh di luar header, dan otomatis saat layar melebar ke desktop.
+  // Scroll halaman dikunci selama menu terbuka supaya latar tidak ikut bergeser di belakang menu.
   React.useEffect(() => {
     if (!menuOpen) return;
+    const unlock = lockBodyScroll();
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && setMenuOpen(false);
-    const mq = window.matchMedia("(min-width: 768px)");
+    const onPointer = (e: PointerEvent) => {
+      if (headerRef.current && !headerRef.current.contains(e.target as Node)) setMenuOpen(false);
+    };
+    const mq = window.matchMedia("(min-width: 1024px)");
     const onMq = () => mq.matches && setMenuOpen(false);
     document.addEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onPointer);
     mq.addEventListener("change", onMq);
     return () => {
+      unlock();
       document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onPointer);
       mq.removeEventListener("change", onMq);
     };
   }, [menuOpen]);
 
   return (
     <>
-      <header className="fixed inset-x-0 top-3 z-50 px-3 sm:top-4 sm:px-6">
+      <header ref={headerRef} className="lp-header fixed inset-x-0 z-50">
         <div className="lp-nav mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 rounded-full pl-2.5 pr-2 sm:h-16 sm:pl-3">
           <Link href="/" className="flex items-center gap-2.5" aria-label="Depup, beranda">
             <Image src="/logo.png" alt="" width={36} height={36} priority className="h-9 w-9" />
@@ -61,21 +71,21 @@ export function Navbar() {
           </Link>
 
           <nav
-            className="hidden items-center gap-1 rounded-full bg-[var(--pill-bg)] p-1 md:flex"
+            className="hidden items-center gap-1 rounded-full bg-[var(--pill-bg)] p-1 lg:flex"
             aria-label="Utama"
           >
             {NAV_LINKS.map((l) => (
               <a
                 key={l.href}
                 href={l.href}
-                className={`rounded-full px-4 py-2 text-[13px] font-medium text-text-muted transition-colors hover:bg-[var(--surface-solid)] hover:text-text ${l.href === "#demo" ? "hidden lg:inline-block" : ""}`}
+                className="rounded-full px-4 py-2 text-[13px] font-medium text-text-muted transition-colors hover:bg-[var(--surface-solid)] hover:text-text"
               >
                 {l.label}
               </a>
             ))}
           </nav>
 
-          <div className="hidden items-center gap-2 md:flex">
+          <div className="hidden items-center gap-2 lg:flex">
             {loggedIn ? (
               <DashboardLink
                 href="/dashboard"
@@ -105,7 +115,7 @@ export function Navbar() {
 
           <button
             type="button"
-            className="pill grid h-10 w-10 place-items-center md:hidden"
+            className="pill grid h-10 w-10 place-items-center lg:hidden"
             onClick={() => setMenuOpen((v) => !v)}
             aria-label={menuOpen ? "Tutup menu" : "Buka menu"}
             aria-expanded={menuOpen}
@@ -115,7 +125,7 @@ export function Navbar() {
         </div>
 
         {menuOpen && (
-          <div className="lp-nav mx-auto mt-2 flex max-h-[calc(100dvh-5.5rem)] max-w-6xl flex-col gap-1 overflow-y-auto overscroll-contain rounded-[28px] p-3 md:hidden">
+          <div className="lp-nav mx-auto mt-2 flex max-h-[calc(100dvh-5.5rem)] max-w-6xl flex-col gap-1 overflow-y-auto overscroll-contain rounded-[28px] p-3 lg:hidden">
             {NAV_LINKS.map((l) => (
               <a
                 key={l.href}

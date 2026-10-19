@@ -52,7 +52,7 @@ export function Footer() {
         </nav>
       </div>
       <div className="border-t" style={{ borderColor: "var(--sidebar-line)" }}>
-        <div className="mx-auto max-w-6xl px-5 py-4 text-[12px] sm:px-8">© {new Date().getFullYear()} Depup</div>
+        <div className="lp-footer-bottom mx-auto max-w-6xl px-5 pt-4 text-[12px] sm:px-8">© {new Date().getFullYear()} Depup</div>
       </div>
     </footer>
   );

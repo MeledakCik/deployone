@@ -107,7 +107,7 @@ export function DeployModal() {
           aria-modal="true"
           aria-label={title || "Proses deploy"}
           tabIndex={-1}
-          className="relative w-full max-w-[520px] rounded-[32px] border border-[var(--line)] bg-[var(--dm-surface)] shadow-[var(--dm-shadow)] overflow-hidden flex flex-col max-h-[90dvh] outline-none"
+          className="relative w-full max-w-[520px] rounded-[28px] bg-[var(--dm-surface)] shadow-[var(--dm-shadow)] overflow-hidden flex flex-col max-h-[90dvh] outline-none"
           style={{ animation: "dcModalIn .3s ease" }}
         >
 

@@ -147,8 +147,8 @@ export function AppSidebar({
       {open && <div className="anim-fade fixed inset-0 z-40 bg-midnight/60 md:hidden" onClick={() => setOpen(false)} aria-hidden />}
 
       <aside
-        className={`sidebar fixed inset-y-0 left-0 z-50 flex h-[100dvh] w-72 max-w-[82%] shrink-0 flex-col overscroll-contain p-4 transition-transform duration-300 ease-out max-md:rounded-l-none md:sticky md:top-[var(--edge)] md:z-auto md:h-[calc(100dvh-var(--edge)*2)] md:w-64 md:max-w-none md:translate-x-0 ${
-          open ? "translate-x-0" : "-translate-x-full"
+        className={`sidebar fixed inset-y-0 left-0 z-50 flex h-[100dvh] w-72 max-w-[82%] shrink-0 flex-col overscroll-contain p-4 transition-transform duration-300 ease-out max-md:rounded-l-none md:sticky md:top-[var(--edge)] md:z-auto md:h-[calc(100dvh-var(--edge)*2)] md:w-64 md:max-w-none md:translate-x-0 max-md:transition-[transform,visibility] ${
+          open ? "translate-x-0" : "-translate-x-full max-md:invisible"
         }`}
       >
         <div className="mb-4 flex items-center justify-between px-1.5 py-2">

@@ -18,10 +18,10 @@ function Icon({ children, dark }: { children: React.ReactNode; dark?: boolean })
 
 /** Cuplikan kecil di dasar kartu: putih solid, radius 16. */
 function Mini({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <div className={`rounded-2xl bg-[var(--surface-solid)] p-3.5 font-mono text-[12px] ${className}`}>{children}</div>;
+  return <div className={`rounded-2xl bg-[var(--surface-solid)] p-3.5 font-mono text-[12px] break-words ${className}`}>{children}</div>;
 }
 
-const CARD = "flex flex-col justify-between rounded-card p-6";
+const CARD = "flex flex-col justify-between rounded-card p-6 sm:p-7";
 const H3 = "mb-2 text-[20px] font-bold tracking-[-0.025em]";
 const P = "mb-5 text-[13.5px] leading-relaxed text-text-muted";
 
@@ -33,9 +33,9 @@ export function FeaturesGrid() {
         <p className="lp-lead">Domain, environment variables, dan riwayat deploy dari tiga platform, tanpa pindah tab.</p>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
         {/* Besar: satu dashboard, tiga platform */}
-        <div className="relative isolate flex flex-col justify-between overflow-hidden rounded-card bg-midnight p-7 md:col-span-2">
+        <div className="relative isolate flex flex-col justify-between overflow-hidden rounded-card bg-midnight p-6 sm:p-7 md:col-span-2">
           <svg
             aria-hidden="true"
             viewBox="0 0 200 90"
@@ -83,10 +83,8 @@ export function FeaturesGrid() {
             <Icon>
               <ScanSearch size={22} />
             </Icon>
-            <h3 className="mb-3 text-[24px] font-bold tracking-[-0.03em]">Periksa repo dulu</h3>
-            <p className="mb-6 text-[14.5px] leading-relaxed text-text-muted">
-              Depup membaca isi repo dan memberi tahu platform mana yang cocok sebelum deploy dimulai.
-            </p>
+            <h3 className={H3}>Periksa repo dulu</h3>
+            <p className={P}>Depup membaca isi repo dan memberi tahu platform mana yang cocok sebelum deploy dimulai.</p>
           </div>
           <Mini className="flex flex-col gap-1.5 leading-[18px] text-text-muted">
             <div className="mb-1 flex items-center gap-1.5 pb-1">
@@ -108,12 +106,12 @@ export function FeaturesGrid() {
         <div className={`${CARD} bg-tone-peri`}>
           <div>
             <Icon>
-              <Globe size={21} />
+              <Globe size={22} />
             </Icon>
             <h3 className={H3}>Domain sendiri</h3>
             <p className={P}>Tambahkan domain dan dapatkan record DNS persis yang perlu dipasang di registrar.</p>
           </div>
-          <Mini className="flex items-center justify-between">
+          <Mini className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
             <span>tokokopi.id</span>
             <Badge tone="good">DNS siap</Badge>
           </Mini>
@@ -122,17 +120,17 @@ export function FeaturesGrid() {
         <div className={`${CARD} bg-tone-mint`}>
           <div>
             <Icon>
-              <KeyRound size={21} />
+              <KeyRound size={22} />
             </Icon>
             <h3 className={H3}>Environment variables</h3>
             <p className={P}>Simpan per project, lalu kirim ke platform tujuan. Variabel yang dibutuhkan repo terdeteksi otomatis.</p>
           </div>
           <Mini className="flex flex-col gap-1 text-text-muted">
-            <div className="flex justify-between">
+            <div className="flex justify-between gap-3">
               <span>DATABASE_URL</span>
               <span className="text-ok-fg">••••••••••</span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between gap-3">
               <span>NEXT_PUBLIC_API</span>
               <span className="text-lav-text">https://api…</span>
             </div>
@@ -142,12 +140,12 @@ export function FeaturesGrid() {
         <div className={`${CARD} bg-tone-lilac`}>
           <div>
             <Icon>
-              <RefreshCw size={21} />
+              <RefreshCw size={22} />
             </Icon>
             <h3 className={H3}>Redeploy otomatis</h3>
             <p className={P}>Ubah secret, project langsung dideploy ulang supaya nilai barunya terpakai.</p>
           </div>
-          <Mini className="flex items-center justify-between text-text-muted">
+          <Mini className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-text-muted">
             <span>API_KEY diperbarui</span>
             <span className="font-semibold text-ok-fg">
               redeploy <InlineIcon name="check" />
@@ -158,12 +156,12 @@ export function FeaturesGrid() {
         <div className={`${CARD} bg-tone-lilac`}>
           <div>
             <Icon>
-              <LayoutGrid size={21} />
+              <LayoutGrid size={22} />
             </Icon>
             <h3 className={H3}>Satu daftar project</h3>
             <p className={P}>Semua project dan statusnya terlihat sekilas. Impor project yang sudah ada kapan saja.</p>
           </div>
-          <Mini className="flex items-center justify-between text-text-muted">
+          <Mini className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-text-muted">
             <span>Vercel · Cloudflare · Railway</span>
             <span className="font-semibold text-text">1 daftar</span>
           </Mini>
@@ -172,7 +170,7 @@ export function FeaturesGrid() {
         <div className={`${CARD} bg-tone-peri`}>
           <div>
             <Icon>
-              <History size={21} />
+              <History size={22} />
             </Icon>
             <h3 className={H3}>Riwayat deploy</h3>
             <p className={P}>Lihat deploy terakhir, hasilnya, dan buka lagi dengan satu klik.</p>
@@ -195,14 +193,14 @@ export function FeaturesGrid() {
         <div className={`${CARD} bg-tone-lilac`}>
           <div>
             <Icon>
-              <ShieldCheck size={21} />
+              <ShieldCheck size={22} />
             </Icon>
             <h3 className={H3}>Token tetap milikmu</h3>
             <p className={P}>
               Token platform hanya dikirim saat dipakai. Kamu masuk dengan akun Google, dan repo private cukup dilengkapi GitHub Token.
             </p>
           </div>
-          <Mini className="flex items-center justify-between text-text-muted">
+          <Mini className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-text-muted">
             <span>Token Vercel</span>
             <span className="font-semibold text-ok-fg">saat deploy saja</span>
           </Mini>

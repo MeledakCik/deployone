@@ -41,14 +41,14 @@ export const metadata: Metadata = {
   category: "Developer Tools",
   alternates: {
     canonical: "/",
+    // Halaman /en belum ada (404), jadi hreflang en-US dihapus supaya tidak menyesatkan mesin pencari.
     languages: {
       "id-ID": "/",
-      "en-US": "/en",
     },
   },
   icons: {
     icon: [{ url: "/logo.png", type: "image/png" }],
-    apple: [{ url: "/logo.png", sizes: "180x180" }],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180" }],
   },
   manifest: "/manifest.webmanifest",
   openGraph: {
@@ -61,7 +61,7 @@ export const metadata: Metadata = {
     description: SITE_DESCRIPTION,
     images: [
       {
-        url: "/og-image.png", // WAJIB BIKIN FILE INI 1200x630
+        url: "/og-image.png", // public/og-image.png (1200x630)
         width: 1200,
         height: 630,
         alt: `${SITE_NAME} — Dashboard Deploy Vercel & Cloudflare`,
@@ -90,6 +90,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  // Wajib agar env(safe-area-inset-*) bernilai benar di iPhone berponi / Android gestur.
+  viewportFit: "cover",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#7B50FF" },
     { media: "(prefers-color-scheme: dark)", color: "#120B2E" },
@@ -170,7 +174,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
       </head>
-      <body className="antialiased min-h-[100vh] w-full overflow-x-clip">
+      <body className="antialiased min-h-[100dvh] w-full overflow-x-clip">
         <ThemeProvider>
           <AuthProvider>
             <ToastProvider>{children}</ToastProvider>

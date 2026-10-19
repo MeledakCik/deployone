@@ -27,8 +27,40 @@ export function SupportMatrix() {
         </p>
       </div>
 
-      <div className="surface-solid overflow-x-auto bg-[var(--frame)]">
-        <table className="w-full min-w-[720px] text-left text-[14px]">
+      {/* Mobile: kartu bertumpuk (tanpa scroll samping). Tablet ke atas: tabel. */}
+      <ul className="flex flex-col gap-3 md:hidden">
+        {ROWS.map((r) => (
+          <li key={r.type} className="surface-solid p-5">
+            <h3 className="text-[15px] font-semibold">{r.type}</h3>
+            <p className="mt-1 text-[12.5px] leading-relaxed text-text-muted">{r.examples}</p>
+            <dl className="mt-4 flex flex-col gap-2.5">
+              {(
+                [
+                  ["Vercel", r.v],
+                  ["Cloudflare Pages", r.c],
+                  ["Railway", r.r],
+                ] as [string, Level][]
+              ).map(([name, l]) => {
+                const { text, tone, Icon } = META[l];
+                return (
+                  <div key={name} className="flex items-center justify-between gap-3">
+                    <dt className="text-[13px] font-medium text-text-muted">{name}</dt>
+                    <dd>
+                      <Badge tone={tone}>
+                        <Icon size={13} strokeWidth={l === "ok" ? 3 : 2} aria-hidden="true" />
+                        {text}
+                      </Badge>
+                    </dd>
+                  </div>
+                );
+              })}
+            </dl>
+          </li>
+        ))}
+      </ul>
+
+      <div className="surface-solid hidden overflow-x-auto bg-[var(--frame)] md:block">
+        <table className="w-full min-w-[640px] text-left text-[14px]">
           <thead>
             <tr className="text-[13px] text-text-muted">
               <th scope="col" className="px-6 py-4 font-medium">Isi repo</th>

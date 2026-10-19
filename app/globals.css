@@ -364,21 +364,9 @@ textarea {
   .btn-primary:active {
     transform: scale(0.98);
   }
-  /* Alias lama dari .btn-lime — dipakai landing. Untuk kode baru pakai .btn-lime */
-  .btn-lav {
-    background: var(--lime);
-    color: var(--lime-text);
-    border-radius: 9999px;
-    font-weight: 600;
-    transition: background-color 180ms ease, transform 180ms ease;
-  }
-  .btn-lav:hover {
-    background: var(--lime-hover);
-  }
-  .btn-lav:active {
-    transform: scale(0.98);
-  }
-  /* Tombol aksen lime (Midnight di atas Lime, kontras 13:1) */
+  /* Tombol aksen lime (Midnight di atas Lime, kontras 13:1).
+     `.btn-lav` = alias lama yang dulu tampil sedikit beda (tanpa angkat saat hover); kini identik. */
+  .btn-lav,
   .btn-lime {
     background: var(--lime);
     color: var(--lime-text);
@@ -386,10 +374,12 @@ textarea {
     font-weight: 600;
     transition: background-color 180ms ease, transform 200ms var(--ease-out);
   }
+  .btn-lav:hover,
   .btn-lime:hover {
     background: var(--lime-hover);
     transform: translateY(-1px);
   }
+  .btn-lav:active,
   .btn-lime:active {
     transform: scale(0.98);
   }
@@ -498,7 +488,7 @@ textarea {
     display: inline-block;
   }
   .glow-dot {
-    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok-dot) 22%, transparent);
     animation: glow 2s ease-in-out infinite;
   }
   .card-hover-row:hover {
@@ -1572,4 +1562,73 @@ a,
   .dd-spark {
     display: none;
   }
+}
+
+/* =========================================================
+   Perbaikan responsif lanjutan (di luar @layer supaya menang atas utilitas Tailwind)
+   ========================================================= */
+
+/* Anchor di landing meluncur halus (hanya landing, supaya pindah halaman Next tidak ikut animasi) */
+@media (prefers-reduced-motion: no-preference) {
+  html:has(.lp) {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Landing: navbar melayang menghormati poni/status bar & tepi layar saat landscape */
+.lp {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+.lp-header {
+  top: max(12px, env(safe-area-inset-top));
+  padding-left: max(12px, env(safe-area-inset-left));
+  padding-right: max(12px, env(safe-area-inset-right));
+}
+@media (min-width: 640px) {
+  .lp-header {
+    top: max(16px, env(safe-area-inset-top));
+    padding-left: max(24px, env(safe-area-inset-left));
+    padding-right: max(24px, env(safe-area-inset-right));
+  }
+}
+.lp-footer-bottom {
+  padding-bottom: calc(1rem + env(safe-area-inset-bottom));
+}
+
+/* Top bar dashboard (mobile) menempel di bawah status bar, bukan di bawahnya */
+.sidebar-topbar {
+  top: max(0.5rem, env(safe-area-inset-top));
+}
+
+/* Toast: tidak menempel ke tepi / home indicator, dan tidak menutupi tombol Bantuan di dashboard */
+#toast {
+  right: max(16px, env(safe-area-inset-right));
+  bottom: calc(16px + env(safe-area-inset-bottom));
+}
+@media (min-width: 640px) {
+  #toast {
+    right: max(24px, env(safe-area-inset-right));
+    bottom: calc(24px + env(safe-area-inset-bottom));
+  }
+}
+html:has(.app-canvas) #toast {
+  bottom: calc(var(--edge) + 64px + env(safe-area-inset-bottom));
+}
+
+/* Layar sentuh: efek hover "angkat" membuat tombol nyangkut setelah ditap */
+@media (hover: none) {
+  .btn-primary:hover,
+  .btn-lime:hover,
+  .btn-lav:hover,
+  .fab:hover,
+  .stat-card-glass:hover {
+    transform: none;
+  }
+}
+
+/* Teks panjang (URL, nama repo, token) tidak boleh menembus kartu */
+.surface-solid,
+.glass {
+  overflow-wrap: break-word;
 }

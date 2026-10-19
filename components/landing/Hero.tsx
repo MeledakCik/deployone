@@ -8,14 +8,14 @@ export function Hero() {
       <section className="relative mx-auto flex max-w-6xl flex-col items-center px-4 pb-14 pt-32 text-center sm:px-8 sm:pt-44">
         <a
           href="#support"
-          className="press group mb-8 inline-flex items-center gap-2.5 rounded-full bg-[var(--surface-solid)] py-1.5 pl-3.5 pr-2.5 text-text shadow-[0_10px_30px_-18px_rgba(54,28,120,0.6)] transition-colors hover:bg-[var(--surface-solid-2)]"
+          className="press group mb-8 inline-flex max-w-full items-center gap-2.5 rounded-full bg-[var(--surface-solid)] py-1.5 pl-3.5 pr-2.5 text-text shadow-[0_10px_30px_-18px_rgba(54,28,120,0.6)] transition-colors hover:bg-[var(--surface-solid-2)]"
         >
-          <span className="live-dot" aria-hidden="true" />
-          <span className="text-[12.5px] font-semibold">Mendukung Vercel, Cloudflare Pages, dan Railway</span>
-          <ChevronRight size={14} className="text-text-faint transition-transform group-hover:translate-x-0.5" />
+          <span className="live-dot shrink-0" aria-hidden="true" />
+          <span className="min-w-0 text-left text-[12.5px] font-semibold leading-snug">Mendukung Vercel, Cloudflare Pages, dan Railway</span>
+          <ChevronRight size={14} className="shrink-0 text-text-faint transition-transform group-hover:translate-x-0.5" />
         </a>
 
-        <h1 className="max-w-4xl text-[36px] font-bold leading-[1.04] tracking-[-0.03em] text-text min-[400px]:text-[44px] sm:text-[76px]">
+        <h1 className="max-w-4xl text-[clamp(2rem,8.4vw,4.75rem)] font-bold leading-[1.04] tracking-[-0.03em] text-text">
           Deploy without the
           <br />
           hassle.

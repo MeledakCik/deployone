@@ -219,9 +219,9 @@ export function HeroMockup() {
                         <span className="truncate font-mono text-[13px] font-semibold">{d.name}</span>
                         <Badge>{d.platform}</Badge>
                       </div>
-                      <div className="col-span-7 flex items-center gap-1.5 text-text-muted md:col-span-3">
+                      <div className="col-span-7 flex min-w-0 flex-wrap items-center gap-x-1.5 text-text-muted md:col-span-3">
                         {d.ref === "main" ? <GitCommitHorizontal size={15} aria-hidden="true" /> : <GitBranch size={15} aria-hidden="true" />}
-                        <span className="font-mono text-[12.5px]">{d.ref}</span>
+                        <span className="min-w-0 break-all font-mono text-[12.5px]">{d.ref}</span>
                         <span className="text-[12.5px]">· {d.when}</span>
                       </div>
                       <div className="col-span-5 md:col-span-3">
