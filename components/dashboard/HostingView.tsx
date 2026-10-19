@@ -33,6 +33,7 @@ import {
   deleteSite,
   fetchSites,
   prepareSite,
+  checkSiteLinks,
   publishSite,
   type PreparedSite,
   type ProjectReport,
@@ -124,6 +125,10 @@ export function HostingView() {
       }
       if (config && site.files.length > config.maxFiles) {
         throw new SiteError(`Terlalu banyak file (${site.files.length}). Maksimal ${config.maxFiles}.`);
+      }
+      const extra = checkSiteLinks(res.files, site);
+      if (extra.length > 0) {
+        setReport((r) => (r ? { ...r, status: r.status === "ok" ? "warn" : r.status, notes: [...r.notes, ...extra] } : r));
       }
       setPrepared(site);
       setName((n) => n || guessName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "").slice(0, 20));

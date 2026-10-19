@@ -1,5 +1,6 @@
 import { rateLimit } from "@/app/api/_lib/rate-limit";
 import { readSiteFile, type SiteFile, type SiteMeta } from "@/app/api/_lib/sites";
+import { withDirBase } from "@/app/api/_lib/site-html";
 
 /** Menyajikan satu request GET/HEAD dari situs statis "Link Instan". */
 
@@ -33,9 +34,10 @@ function textPage(status: number, title: string, msg: string): Response {
   );
 }
 
-async function send(meta: SiteMeta, file: SiteFile, status: number, method: string): Promise<Response> {
-  const buf = await readSiteFile(meta, file);
+async function send(meta: SiteMeta, file: SiteFile, status: number, method: string, dirBase?: string): Promise<Response> {
+  let buf = await readSiteFile(meta, file);
   if (!buf) return textPage(500, "Isi situs tidak lengkap", "Pemilik perlu meng-upload ulang situs ini.");
+  if (dirBase && file.t.startsWith("text/html")) buf = Buffer.from(withDirBase(buf.toString("utf8"), dirBase), "utf8");
   const headers = {
     ...BASE_HEADERS,
     "cache-control": cacheControlFor(meta),
@@ -70,14 +72,20 @@ export async function serveSite(req: Request, meta: SiteMeta, target: string): P
   const rel = decoded.replace(/^\/+/, "");
 
   let hit: SiteFile | undefined;
+  let dirBase: string | undefined;
   if (rel === "" || rel.endsWith("/")) {
     hit = map.get(rel + "index.html");
   } else {
     // /about -> about.html atau about/index.html. Tidak di-redirect ke "/about/" karena Next.js
     // sendiri menormalkan trailing slash (akan jadi loop); sama seperti "cleanUrls" di Vercel.
-    hit = map.get(rel) ?? map.get(rel + ".html") ?? map.get(rel + "/index.html");
+    hit = map.get(rel) ?? map.get(rel + ".html");
+    if (!hit) {
+      // /dashboard -> dashboard/index.html: href relatif di dalamnya harus dihitung dari "/dashboard/".
+      hit = map.get(rel + "/index.html");
+      if (hit) dirBase = rel;
+    }
   }
-  if (hit) return send(meta, hit, 200, method);
+  if (hit) return send(meta, hit, 200, method, dirBase);
 
   const last = rel.split("/").pop() ?? "";
   const looksLikeAsset = last.includes(".");

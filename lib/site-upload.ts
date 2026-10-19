@@ -240,6 +240,112 @@ export function analyzeProject(c: Pick<CollectResult, "files" | "skipped" | "env
   return { label: label ?? "HTML statis", status: blocked ? "blocked" : notes.some((n) => n.level === "warn") ? "warn" : "ok", notes, needsServer };
 }
 
+/* ------------------------------------------------------------------ */
+/*  Pemeriksaan link sebelum publish                                   */
+/* ------------------------------------------------------------------ */
+
+const SKIP_DROPPED = /^(package(-lock)?\.json|yarn\.lock|pnpm-lock\.yaml|readme(\.md)?|license(\.md)?|\.gitignore|tsconfig.*\.json|.*\.config\.[cm]?[jt]s|\.env.*)$/i;
+
+/**
+ * Cek yang murah dan jalan di browser: (1) folder/file di luar root situs yang akan terbuang,
+ * (2) href/src di file HTML yang menunjuk file yang tidak ada — terutama kalau hanya beda huruf
+ * besar/kecil (server membedakannya, Windows/macOS tidak).
+ */
+export function checkSiteLinks(all: UploadFile[], site: PreparedSite): ReportNote[] {
+  const notes: ReportNote[] = [];
+
+  // 1) Terbuang karena root dipindah ke dist/public/dll.
+  if (site.rootDir) {
+    const prefix = site.rootDir + "/";
+    const dropped = new Map<string, number>();
+    for (const f of all) {
+      if (f.path.startsWith(prefix)) continue;
+      const top = f.path.includes("/") ? f.path.split("/")[0] + "/" : f.path;
+      if (SKIP_DROPPED.test(top.replace(/\/$/, ""))) continue;
+      if (!/\.(html?|css|m?js|json|png|jpe?g|gif|svg|webp|ico|woff2?|ttf|mp4|webm|mp3|pdf)$/i.test(f.path)) continue;
+      dropped.set(top, (dropped.get(top) ?? 0) + 1);
+    }
+    if (dropped.size > 0) {
+      const list = Array.from(dropped, ([k, n]) => (k.endsWith("/") ? `${k} (${n} file)` : k)).slice(0, 6).join(", ");
+      notes.push({
+        level: "warn",
+        text: `Hanya isi folder ${site.rootDir}/ yang dipublikasikan karena index.html tidak ada di root. Ini TIDAK ikut: ${list}${dropped.size > 6 ? ", …" : ""}. Kalau butuh semuanya, taruh index.html di root zip.`,
+      });
+    }
+  }
+
+  // 2) Link rusak / beda huruf.
+  const exact = new Set(site.files.map((f) => f.path));
+  const lower = new Map<string, string>();
+  for (const f of site.files) lower.set(f.path.toLowerCase(), f.path);
+  const exists = (path: string, ci: boolean): string | null => {
+    const forms = path === "" ? ["index.html"] : path.endsWith("/") ? [path + "index.html"] : [path, path + ".html", path + "/index.html"];
+    for (const x of forms) {
+      if (!ci && exact.has(x)) return x;
+      if (ci) {
+        const hit = lower.get(x.toLowerCase());
+        if (hit) return hit;
+      }
+    }
+    return null;
+  };
+
+  const caseIssues: string[] = [];
+  const missing: string[] = [];
+  const seen = new Set<string>();
+  for (const f of site.files) {
+    if (!/\.html?$/i.test(f.path) || f.data.byteLength > 1_000_000) continue;
+    const html = dec.decode(f.data).replace(/<!--[\s\S]*?-->/g, "");
+    const dir = f.path.includes("/") ? f.path.slice(0, f.path.lastIndexOf("/") + 1) : "";
+    const re = /\b(?:href|src|action|poster)\s*=\s*["']([^"']+)["']/gi;
+    let m: RegExpExecArray | null;
+    while ((m = re.exec(html))) {
+      const raw = m[1].trim();
+      if (!raw || raw.startsWith("#") || raw.startsWith("//") || /^[a-z][a-z0-9+.-]*:/i.test(raw) || /[{}<>$]/.test(raw)) continue;
+      let ref = raw.split("#")[0].split("?")[0];
+      try {
+        ref = decodeURI(ref);
+      } catch {
+        /* biarkan apa adanya */
+      }
+      const segs = (ref.startsWith("/") ? ref.slice(1) : dir + ref).split("/");
+      const out: string[] = [];
+      let escaped = false;
+      for (const sg of segs) {
+        if (sg === "." || sg === "") continue;
+        if (sg === "..") {
+          if (out.length === 0) escaped = true;
+          else out.pop();
+          continue;
+        }
+        out.push(sg);
+      }
+      if (escaped) continue;
+      const target = out.join("/") + (ref.endsWith("/") && out.length > 0 ? "/" : "");
+      const key = f.path + "→" + target;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      if (exists(target, false)) continue;
+      const hit = exists(target, true);
+      if (hit) caseIssues.push(`${f.path}: "${raw}" ≠ ${hit}`);
+      else missing.push(`${f.path} → ${raw}`);
+    }
+  }
+  if (caseIssues.length > 0) {
+    notes.push({
+      level: "warn",
+      text: `${caseIssues.length} link beda huruf besar/kecil dengan nama filenya, jadi akan 404 di sini (di Windows/macOS terlihat normal). Contoh: ${caseIssues.slice(0, 3).join("; ")}.`,
+    });
+  }
+  if (missing.length > 0) {
+    notes.push({
+      level: "warn",
+      text: `${missing.length} link/gambar menunjuk file yang tidak ada di zip. Contoh: ${missing.slice(0, 3).join("; ")}.`,
+    });
+  }
+  return notes;
+}
+
 async function api<T>(url: string, init?: RequestInit): Promise<T> {
   let res: Response;
   try {
