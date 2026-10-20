@@ -6,6 +6,7 @@
  * Alur lengkap + alasan keamanannya: app/api/_lib/app-handoff.ts
  */
 import { Capacitor } from "@capacitor/core";
+import { parseAuthDeepLink, type AuthDeepLink } from "@/lib/auth-deeplink";
 
 const VERIFIER_KEY = "depup:app-verifier";
 const HANDLED_KEY = "depup:app-auth-handled";
@@ -65,13 +66,11 @@ export type NativeAuthResult = { status: "ok" } | { status: "error"; message: st
 
 /** Proses URL depup://auth?... yang masuk ke app. */
 export async function handleAuthUrl(rawUrl: string): Promise<NativeAuthResult> {
-  let u: URL;
-  try {
-    u = new URL(rawUrl);
-  } catch {
+  const link = parseAuthDeepLink(rawUrl);
+  if (!link) {
+    if (/^depup:/i.test(rawUrl)) console.warn("[depup] deep link depup:// tidak dikenali, diabaikan");
     return { status: "ignored" };
   }
-  if (u.protocol !== "depup:" || u.hostname !== "auth") return { status: "ignored" };
 
   // getLaunchUrl() mengembalikan URL yang sama setiap WebView dimuat ulang; jangan proses dua kali.
   if (sessionStorage.getItem(HANDLED_KEY) === rawUrl) return { status: "ignored" };
@@ -86,20 +85,20 @@ export async function handleAuthUrl(rawUrl: string): Promise<NativeAuthResult> {
 
   exchanging = true;
   try {
-    return await finishAuth(u);
+    return await finishAuth(link);
   } finally {
     exchanging = false;
   }
 }
 
-async function finishAuth(u: URL): Promise<NativeAuthResult> {
-  const error = u.searchParams.get("error");
+async function finishAuth(link: AuthDeepLink): Promise<NativeAuthResult> {
+  const error = link.error;
   if (error) {
     localStorage.removeItem(VERIFIER_KEY);
     return { status: "error", message: error };
   }
 
-  const token = u.searchParams.get("token");
+  const token = link.token;
   const verifier = localStorage.getItem(VERIFIER_KEY);
   if (!token || !verifier) {
     return { status: "error", message: "Sesi login tidak ditemukan. Coba masuk lagi." };

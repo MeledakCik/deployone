@@ -7,6 +7,7 @@ import {
   appDeepLink, appReturnHtml, HANDOFF_TTL_SECONDS,
 } from "../app/api/_lib/app-handoff.ts";
 import { verifySession, signSession } from "../app/api/_lib/session.ts";
+import { parseAuthDeepLink } from "../lib/auth-deeplink.ts";
 
 process.env.AUTH_SECRET = process.env.AUTH_SECRET || "test-secret-test-secret-123456";
 
@@ -75,4 +76,28 @@ test("halaman perantara: deep link di-escape (tidak bisa XSS)", () => {
   const html = appReturnHtml(link, true);
   assert.ok(!html.includes("<script>alert(1)"));
   assert.ok(html.includes("depup://auth"));
+});
+
+test("parser deep link: bentuk yang valid", () => {
+  assert.deepEqual(parseAuthDeepLink("depup://auth?token=abc.def"), { token: "abc.def", error: undefined });
+  assert.deepEqual(parseAuthDeepLink("depup://auth/?token=abc"), { token: "abc", error: undefined });
+  assert.deepEqual(parseAuthDeepLink("DEPUP://AUTH?error=tes%20deep%20link"), { token: undefined, error: "tes deep link" });
+  assert.deepEqual(parseAuthDeepLink("depup://auth?token=x#frag"), { token: "x", error: undefined });
+});
+
+test("parser deep link: token asli dari log emulator (base64url, mengandung . - _)", () => {
+  const t = "eyJlbWFpbCI6InRlc3QiLCJ0eXAiOiJhcHAtaGFuZG9mZiJ9.pXtW8WZCKCg_qd9xtWEPWkv6PMTtRh64ck-UGJLrnJk";
+  assert.equal(parseAuthDeepLink(`depup://auth?token=${t}`)?.token, t);
+});
+
+test("parser deep link: URL lain ditolak", () => {
+  for (const u of ["https://depup.web.id/m", "depup://other?token=x", "depup://authx?token=x", "", "javascript:alert(1)"]) {
+    assert.equal(parseAuthDeepLink(u), null, u);
+  }
+});
+
+test("round-trip: appDeepLink dari server -> parser klien", () => {
+  const token = signHandoff({ email: "a@b.com", name: "A", picture: null }, "x".repeat(43));
+  assert.equal(parseAuthDeepLink(appDeepLink({ token }))?.token, token);
+  assert.equal(parseAuthDeepLink(appDeepLink({ error: "Akun ini dinonaktifkan oleh admin Depup." }))?.error, "Akun ini dinonaktifkan oleh admin Depup.");
 });
