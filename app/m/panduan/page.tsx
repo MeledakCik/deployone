@@ -8,8 +8,20 @@ const GUIDES = [
   {
     Icon: KeyRound,
     title: "Ambil token Vercel",
-    steps: ["Buka halaman Tokens di Vercel.", "Buat token baru (Scope: akun kamu).", "Salin lalu tempel di Akun → Pengaturan & token."],
+    steps: ["Buka halaman Tokens di Vercel.", "Buat token baru (Scope: akun kamu).", "Salin lalu tempel di Pengaturan."],
     link: { href: "https://vercel.com/account/tokens", label: "Buka vercel.com/account/tokens" },
+  },
+  {
+    Icon: KeyRound,
+    title: "Ambil token Railway",
+    steps: ["Buka Account → Tokens di Railway.", "Buat Account token baru (bukan project token).", "Tempel di Pengaturan, lalu pilih Railway di tab Deploy."],
+    link: { href: "https://railway.com/account/tokens", label: "Buka railway.com/account/tokens" },
+  },
+  {
+    Icon: KeyRound,
+    title: "Ambil token Cloudflare",
+    steps: ["Buka My Profile → API Tokens di Cloudflare.", "Buat token dengan izin Cloudflare Pages: Edit.", "Tempel di Pengaturan dan pilih akun Cloudflare-mu di sana."],
+    link: { href: "https://dash.cloudflare.com/profile/api-tokens", label: "Buka dash.cloudflare.com/profile/api-tokens" },
   },
   {
     Icon: Github,
@@ -26,8 +38,8 @@ const GUIDES = [
   {
     Icon: Zap,
     title: "Link Instan tanpa repo",
-    steps: ["Buka Link Instan di dashboard.", "Upload zip atau folder situs statis.", "Dapat link publik sementara dalam hitungan detik."],
-    link: { href: "/dashboard?view=hosting", label: "Buka Link Instan", internal: true },
+    steps: ["Buka Link Instan di app.", "Upload zip atau folder situs statis.", "Dapat link publik sementara dalam hitungan detik."],
+    link: { href: "/m/link-instan", label: "Buka Link Instan", internal: true },
   },
 ] as const;
 
@@ -67,8 +79,8 @@ export default function MobileGuide() {
         </article>
       ))}
 
-      <Link href="/dashboard?view=docs" className="flex items-center justify-between rounded-[16px] bg-[#EEF1FF] px-4 py-3.5 text-[14px] font-bold text-[#4338CA] active:scale-[0.99]">
-        Dokumentasi lengkap di dashboard <ChevronRight className="h-5 w-5" />
+      <Link href="/m/docs" className="flex items-center justify-between rounded-[16px] bg-[#EEF1FF] px-4 py-3.5 text-[14px] font-bold text-[#4338CA] active:scale-[0.99]">
+        Dokumentasi lengkap <ChevronRight className="h-5 w-5" />
       </Link>
     </div>
   );

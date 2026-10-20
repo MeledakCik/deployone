@@ -2,9 +2,13 @@
 import * as React from "react";
 import Link from "next/link";
 import "@fontsource-variable/plus-jakarta-sans";
-import { Home, FolderOpen, Rocket, BookOpen, UserRound } from "lucide-react";
-import { usePathname } from "next/navigation";
+import { Home, FolderOpen, Rocket, BookOpen, UserRound, ChevronLeft } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { DeployProvider, useDeploy } from "@/lib/deploy-context";
+import { ConfirmProvider } from "@/components/ui/confirm";
+import { DeployModal } from "@/components/dashboard/DeployModal";
 import { useAuth } from "@/lib/auth-context";
+import type { AuthUser } from "@/types";
 import { GoogleMark } from "@/components/landing/GoogleLoginModal";
 const TABS = [
   { href: "/m", label: "Beranda", Icon: Home },
@@ -21,6 +25,29 @@ const TITLES: Record<string, string> = {
   "/m/panduan": "Panduan",
   "/m/akun": "Akun",
   "/m/riwayat": "Riwayat Deploy",
+  "/m/kelola": "Kelola Project",
+  "/m/upload": "Upload Zip",
+  "/m/link-instan": "Link Instan",
+  "/m/ai": "AI Web Builder",
+  "/m/domain": "Domain",
+  "/m/env": "Environment",
+  "/m/pengaturan": "Pengaturan",
+  "/m/donasi": "Donasi",
+  "/m/docs": "Dokumentasi",
+};
+
+/** Halaman web dashboard yang di app ditampilkan sebagai sub-halaman /m/*. */
+const VIEW_ROUTE: Record<string, string> = {
+  deploy: "/m/deploy",
+  projects: "/m/kelola",
+  domains: "/m/domain",
+  env: "/m/env",
+  docs: "/m/docs",
+  settings: "/m/pengaturan",
+  donate: "/m/donasi",
+  upload: "/m/upload",
+  hosting: "/m/link-instan",
+  ai: "/m/ai",
 };
 export default function MobileLayout({ children }: { children: React.ReactNode }) {
   const { user, ready, login, loggingIn, loginError } = useAuth();
@@ -125,10 +152,34 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
       </div>
     );
   }
+  return (
+    <DeployProvider>
+      <ConfirmProvider>
+        <MobileShell user={user}>{children}</MobileShell>
+        <DeployModal />
+      </ConfirmProvider>
+    </DeployProvider>
+  );
+}
+
+function MobileShell({ user, children }: { user: AuthUser; children: React.ReactNode }) {
+  const pathname = usePathname();
+  const router = useRouter();
+  const { view, setView } = useDeploy();
+
+  // Komponen web memanggil setView("settings") dkk. Di app, itu diubah jadi pindah halaman /m/*.
+  React.useEffect(() => {
+    if (view === "dashboard") return;
+    const to = VIEW_ROUTE[view];
+    setView("dashboard");
+    if (to) router.push(to);
+  }, [view, setView, router]);
+
   const title = TITLES[pathname] ?? "Depup";
+  const isSub = !TABS.some((t) => t.href === pathname) && pathname !== "/m/riwayat";
   const initial = (user.name || user.email || "D").trim().charAt(0).toUpperCase();
   return (
-    <div className="flex h-[100dvh] flex-col overflow-hidden bg-[#F9F9FF] font-[family-name:'Plus_Jakarta_Sans_Variable','Plus_Jakarta_Sans',sans-serif] text-[#141B2B]">
+    <div data-theme="light" className="flex h-[100dvh] flex-col overflow-hidden bg-[#F9F9FF] font-[family-name:'Plus_Jakarta_Sans_Variable','Plus_Jakarta_Sans',sans-serif] text-[#141B2B]">
       <style>{`html, body { overflow: hidden; overscroll-behavior: none; scrollbar-gutter: auto; background: #F9F9FF; }`}</style>
       {/* Top bar */}
       <header
@@ -137,7 +188,18 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
       >
         <div className="flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-2.5">
-            <img src="/logo.png" alt="" width={36} height={36} className="h-9 w-9 rounded-[11px] shadow-[0_6px_14px_-6px_rgba(124,58,237,0.6)]" />
+            {isSub ? (
+              <button
+                type="button"
+                onClick={() => router.back()}
+                aria-label="Kembali"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-[#F1EEFF] text-[#6D28D9] active:scale-90"
+              >
+                <ChevronLeft className="h-5 w-5" />
+              </button>
+            ) : (
+              <img src="/logo.png" alt="" width={36} height={36} className="h-9 w-9 rounded-[11px] shadow-[0_6px_14px_-6px_rgba(124,58,237,0.6)]" />
+            )}
             <div className="flex flex-col leading-none">
               <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#7B7487]">Depup Cloud</span>
               <h1 className="mt-1 text-[17px] font-extrabold tracking-[-0.02em]">{title}</h1>

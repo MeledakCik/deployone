@@ -2,19 +2,20 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Search, FolderOpen, RefreshCw, Download, Copy, Check, Settings2, Clock } from "lucide-react";
+import { Search, FolderOpen, RefreshCw, RotateCw, Download, Copy, Check, Settings2, Clock } from "lucide-react";
 import { useUserData } from "@/lib/m-data";
+import { useDeploy } from "@/lib/deploy-context";
 import {
   CARD, Chip, EmptyState, HERO_GRADIENT, MiniButton, OpenLink, PLATFORM_LABEL, PlatformTile, SkeletonList,
   StatusPill, hostOf, hrefOf, prettyDate, uniqueProjects, useCopy,
 } from "@/components/m/ui";
 
 export default function MobileProjects() {
-  const { history, loading, reload } = useUserData();
+  const { history, loading, reload, syncing } = useUserData();
+  const { redeploy } = useDeploy();
   const { copied, copy } = useCopy();
   const [q, setQ] = React.useState("");
   const [plat, setPlat] = React.useState("all");
-  const [syncing, setSyncing] = React.useState(false);
 
   const projects = uniqueProjects(history);
   const platforms = Array.from(new Set(projects.map((p) => p.platform)));
@@ -23,11 +24,7 @@ export default function MobileProjects() {
   );
   const online = projects.filter((p) => p.status === "ready").length;
 
-  async function sync() {
-    setSyncing(true);
-    await reload();
-    setSyncing(false);
-  }
+  const sync = () => void reload();
 
   return (
     <div className="space-y-4 pt-2">
@@ -59,11 +56,11 @@ export default function MobileProjects() {
           {loading ? "Memuat…" : `${online} dari ${projects.length} project online`}
         </p>
         <div className="relative mt-4 flex gap-2">
-          <Link href="/dashboard?view=projects" className="flex h-10 items-center gap-1.5 rounded-full bg-white px-4 text-[13px] font-extrabold text-[#6D28D9] active:scale-95">
+          <Link href="/m/kelola" className="flex h-10 items-center gap-1.5 rounded-full bg-white px-4 text-[13px] font-extrabold text-[#6D28D9] active:scale-95">
             <Download className="h-4 w-4" /> Import
           </Link>
           <button onClick={sync} disabled={syncing} className="flex h-10 items-center gap-1.5 rounded-full bg-white/20 px-4 text-[13px] font-extrabold text-white backdrop-blur-sm active:scale-95 disabled:opacity-60">
-            <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} /> Muat ulang
+            <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} /> Sinkronkan
           </button>
         </div>
       </section>
@@ -98,7 +95,7 @@ export default function MobileProjects() {
               <p className="mt-2.5 flex items-center gap-1.5 text-[11.5px] text-[#64748B]">
                 <Clock className="h-3.5 w-3.5" /> Deploy terakhir {prettyDate(p.date)}
               </p>
-              <div className="mt-3 flex gap-2">
+              <div className="mt-3 flex flex-wrap gap-2">
                 {p.domain && (
                   <MiniButton primary href={hrefOf(p.domain)}>Buka situs</MiniButton>
                 )}
@@ -108,7 +105,10 @@ export default function MobileProjects() {
                     {copied === p.id ? "Tersalin" : "Salin"}
                   </MiniButton>
                 )}
-                <Link href="/dashboard?view=projects" className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-full bg-[#F5F3FF] px-3.5 text-[12.5px] font-bold text-[#6D28D9] ring-1 ring-[#DDD6FE] active:scale-95">
+                <MiniButton onClick={() => redeploy(p.name)}>
+                  <RotateCw className="h-3.5 w-3.5" /> Deploy ulang
+                </MiniButton>
+                <Link href="/m/kelola" className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-full bg-[#F5F3FF] px-3.5 text-[12.5px] font-bold text-[#6D28D9] ring-1 ring-[#DDD6FE] active:scale-95">
                   <Settings2 className="h-3.5 w-3.5" /> Kelola
                 </Link>
               </div>

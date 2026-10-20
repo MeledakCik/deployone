@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { ChevronRight, KeyRound, LayoutDashboard, Coffee, LogOut, ShieldCheck, History, CheckCircle2, Circle } from "lucide-react";
+import { ChevronRight, KeyRound, LayoutDashboard, Coffee, LogOut, ShieldCheck, History, CheckCircle2, Circle, Globe, Variable } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useUserData } from "@/lib/m-data";
 import { CARD, HERO_GRADIENT, uniqueProjects } from "@/components/m/ui";
@@ -19,14 +19,15 @@ export default function MobileAccount() {
     { name: "GitHub", ok: !!tokens.githubPat },
     { name: "Cloudflare", ok: !!tokens.cloudflareToken },
     { name: "Railway", ok: !!tokens.railwayToken },
-    { name: "Render", ok: !!tokens.renderToken },
   ];
 
   const rows = [
-    { href: "/dashboard?view=settings", label: "Pengaturan & token", hint: "Isi token Vercel, GitHub, Cloudflare, Railway", Icon: KeyRound },
+    { href: "/m/pengaturan", label: "Pengaturan & token", hint: "Token Vercel, GitHub, Cloudflare, Railway", Icon: KeyRound },
     { href: "/m/riwayat", label: "Riwayat deploy", hint: "Semua deploy tercatat permanen", Icon: History },
-    { href: "/dashboard", label: "Buka dashboard lengkap", hint: "Domain, env, Link Instan, AI Builder", Icon: LayoutDashboard },
-    { href: "/dashboard?view=donate", label: "Dukung Depup", hint: "Traktir kopi lewat Saweria", Icon: Coffee },
+    { href: "/m/kelola", label: "Kelola project", hint: "Sinkron, import, hapus project", Icon: LayoutDashboard },
+    { href: "/m/domain", label: "Domain", hint: "Hubungkan domain ke project", Icon: Globe },
+    { href: "/m/env", label: "Environment", hint: "Env variable per project", Icon: Variable },
+    { href: "/m/donasi", label: "Dukung Depup", hint: "Traktir kopi lewat Saweria", Icon: Coffee },
     ...(user.isAdmin ? [{ href: "/admin", label: "Panel admin", hint: "Khusus admin Depup", Icon: ShieldCheck }] : []),
   ];
 

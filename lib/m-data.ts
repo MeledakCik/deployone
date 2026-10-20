@@ -1,48 +1,25 @@
 "use client";
 
-import * as React from "react";
-import type { HistoryItem } from "@/types";
+import { useDeploy } from "@/lib/deploy-context";
 
-type MTokens = { vercelToken?: string; githubPat?: string; cloudflareToken?: string; railwayToken?: string; renderToken?: string };
-type UserDataRes = {
-  ok: boolean;
-  data?: { history: HistoryItem[]; settingsTokens: MTokens };
-};
-
-/** Ambil data user dari API web yang sama (/api/user-data). Server tetap satu. */
+/**
+ * Data untuk shell app (/m). Sumbernya sama persis dengan dashboard web
+ * (DeployProvider), jadi riwayat, token, dan sinkronisasi selalu identik.
+ */
 export function useUserData() {
-  const [history, setHistory] = React.useState<HistoryItem[]>([]);
-  const [tokens, setTokens] = React.useState<MTokens>({});
-  const [loading, setLoading] = React.useState(true);
-
-  const reload = React.useCallback(async () => {
-    try {
-      const res = await fetch("/api/user-data", { cache: "no-store" });
-      const body = (await res.json()) as UserDataRes;
-      if (body.ok && body.data) {
-        setHistory(body.data.history);
-        setTokens(body.data.settingsTokens ?? {});
-      }
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  React.useEffect(() => {
-    void reload();
-  }, [reload]);
-
-  return { history, tokens, loading, reload };
-}
-
-/** Tambah satu item ke riwayat (API-nya merge per-field, aman dari data web). */
-export async function addHistory(item: HistoryItem) {
-  const res = await fetch("/api/user-data", { cache: "no-store" });
-  const body = (await res.json()) as UserDataRes;
-  const old = body.ok && body.data ? body.data.history : [];
-  await fetch("/api/user-data", {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ history: [item, ...old] }),
-  });
+  const d = useDeploy();
+  return {
+    history: d.history,
+    tokens: {
+      vercelToken: d.vercelToken || undefined,
+      railwayToken: d.railwayToken || undefined,
+      cloudflareToken: d.cloudflareToken || undefined,
+      cloudflareAccountId: d.cloudflareAccountId || undefined,
+      githubPat: d.githubPat || undefined,
+    },
+    loading: !d.historyReady,
+    /** Sinkronkan status semua project dengan platform aslinya. */
+    reload: d.syncAllProjects,
+    syncing: d.syncingProjects,
+  };
 }

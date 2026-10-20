@@ -133,10 +133,12 @@ export function hrefOf(domain: string) {
 }
 
 const BULAN = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
-export function prettyDate(iso: string) {
-  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
-  if (!m) return iso;
-  return `${Number(m[3])} ${BULAN[Number(m[2]) - 1]} ${m[1]}`;
+const BULAN_EN: Record<string, string> = { may: "Mei", aug: "Agu", oct: "Okt", dec: "Des" };
+/** Menerima "2026-10-13" (ISO) maupun "13 Oct 2026" (format riwayat web). */
+export function prettyDate(raw: string) {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(raw);
+  if (m) return `${Number(m[3])} ${BULAN[Number(m[2]) - 1]} ${m[1]}`;
+  return raw.replace(/[A-Za-z]{3,}/g, (w) => BULAN_EN[w.slice(0, 3).toLowerCase()] ?? w.slice(0, 3));
 }
 
 /** Satu project = satu nama+platform (entri terbaru). Entri "deleted" disembunyikan. */

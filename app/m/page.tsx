@@ -14,13 +14,13 @@ type Filter = "all" | "ready" | "failed";
 
 const ACTIONS = [
   { href: "/m/deploy", label: "Deploy", Icon: Rocket, grad: "from-[#6366F1] to-[#7C3AED]" },
-  { href: "/dashboard?view=upload", label: "Upload Zip", Icon: CloudUpload, grad: "from-[#06B6D4] to-[#3B82F6]" },
-  { href: "/dashboard?view=hosting", label: "Link Instan", Icon: Zap, grad: "from-[#10B981] to-[#14B8A6]" },
-  { href: "/dashboard?view=ai", label: "AI Builder", Icon: Sparkles, grad: "from-[#8B5CF6] to-[#D946EF]", badge: "BARU" },
-  { href: "/dashboard?view=domains", label: "Domain", Icon: Globe, grad: "from-[#3B82F6] to-[#6366F1]" },
-  { href: "/dashboard?view=env", label: "Env Secret", Icon: KeyRound, grad: "from-[#A78BFA] to-[#8B5CF6]" },
+  { href: "/m/upload", label: "Upload Zip", Icon: CloudUpload, grad: "from-[#06B6D4] to-[#3B82F6]" },
+  { href: "/m/link-instan", label: "Link Instan", Icon: Zap, grad: "from-[#10B981] to-[#14B8A6]" },
+  { href: "/m/ai", label: "AI Builder", Icon: Sparkles, grad: "from-[#8B5CF6] to-[#D946EF]", badge: "BARU" },
+  { href: "/m/domain", label: "Domain", Icon: Globe, grad: "from-[#3B82F6] to-[#6366F1]" },
+  { href: "/m/env", label: "Env Secret", Icon: KeyRound, grad: "from-[#A78BFA] to-[#8B5CF6]" },
   { href: "/m/panduan", label: "Panduan", Icon: BookOpen, grad: "from-[#059669] to-[#10B981]" },
-  { href: "/dashboard?view=donate", label: "Donasi", Icon: Coffee, grad: "from-[#F59E0B] to-[#F97316]" },
+  { href: "/m/donasi", label: "Donasi", Icon: Coffee, grad: "from-[#F59E0B] to-[#F97316]" },
 ] as const;
 
 function greeting() {
