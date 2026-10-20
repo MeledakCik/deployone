@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Depup</string>
+    <string name="title_activity_main">Depup</string>
+    <string name="package_name">id.depup.app</string>
+    <string name="custom_url_scheme">id.depup.app</string>
+</resources>
