@@ -40,6 +40,25 @@ export async function startNativeLogin(): Promise<void> {
   await Browser.open({ url });
 }
 
+/**
+ * Ubah error teknis Capacitor jadi pesan yang menunjuk penyebab & langkah perbaikannya.
+ * Error aslinya tetap dicetak ke console (lihat lewat chrome://inspect).
+ */
+export function describeLoginError(e: unknown): string {
+  console.error("[depup] gagal membuka login Google", e);
+  const msg = e instanceof Error ? e.message : typeof e === "string" ? e : JSON.stringify(e ?? "");
+  if (/not implemented|unimplemented|not available|plugin.*not/i.test(msg)) {
+    return "Plugin Browser belum ada di APK ini. Jalankan `npx cap sync android`, lalu build & install ulang APK.";
+  }
+  if (/no activity|resolve|not found|ActivityNotFound/i.test(msg)) {
+    return "Tidak ada browser di perangkat ini. Pakai emulator yang ada Google Play, atau pasang Chrome.";
+  }
+  if (/subtle|undefined/i.test(msg)) {
+    return "Perangkat tidak mendukung enkripsi yang dibutuhkan login. Perbarui Android System WebView.";
+  }
+  return `Tidak bisa membuka login Google (${msg.slice(0, 120) || "error tidak diketahui"}).`;
+}
+
 export type NativeAuthResult = { status: "ok" } | { status: "error"; message: string } | { status: "ignored" };
 
 /** Proses URL depup://auth?... yang masuk ke app. */

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import type { AuthUser } from "@/types";
-import { isNativeApp, listenForNativeAuth, startNativeLogin } from "@/lib/native-auth";
+import { describeLoginError, isNativeApp, listenForNativeAuth, startNativeLogin } from "@/lib/native-auth";
 
 interface AuthContextValue {
   user: AuthUser | null;
@@ -71,9 +71,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (isNativeApp()) {
       setLoginError(null);
       setLoggingIn(true);
-      startNativeLogin().catch(() => {
+      startNativeLogin().catch((e) => {
         setLoggingIn(false);
-        setLoginError("Tidak bisa membuka halaman login Google. Pastikan Chrome terpasang, lalu coba lagi.");
+        setLoginError(describeLoginError(e));
       });
       return;
     }
