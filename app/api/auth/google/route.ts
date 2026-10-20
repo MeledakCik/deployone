@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { OAUTH_NEXT_COOKIE, OAUTH_STATE_COOKIE } from "@/app/api/_lib/session";
+import { OAUTH_APP_COOKIE, isValidChallenge } from "@/app/api/_lib/app-handoff";
 
 export const runtime = "nodejs";
 
@@ -12,6 +13,13 @@ export const runtime = "nodejs";
  */
 export async function GET(req: NextRequest) {
   const clientId = process.env.GOOGLE_CLIENT_ID;
+
+  // Mode app mobile: dibuka dari Chrome Custom Tab, hasilnya dikembalikan lewat deep link.
+  const appMode = req.nextUrl.searchParams.get("app") === "1";
+  const challenge = req.nextUrl.searchParams.get("challenge");
+  if (appMode && !isValidChallenge(challenge)) {
+    return NextResponse.json({ ok: false, error: "Parameter challenge tidak valid." }, { status: 400 });
+  }
 
   if (!clientId) {
     const url = new URL("/", req.url);
@@ -41,6 +49,11 @@ export async function GET(req: NextRequest) {
     path: "/",
     maxAge: 600,
   });
+  if (appMode && challenge) {
+    res.cookies.set(OAUTH_APP_COOKIE, challenge, { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 600 });
+  } else {
+    res.cookies.delete(OAUTH_APP_COOKIE);
+  }
   // Login dari halaman admin: ingat tujuannya. Whitelist ketat supaya tidak jadi open redirect.
   if (req.nextUrl.searchParams.get("next") === "/admin") {
     res.cookies.set(OAUTH_NEXT_COOKIE, "/admin", { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 600 });

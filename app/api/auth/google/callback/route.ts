@@ -4,6 +4,13 @@ import { timingSafeEqual } from "crypto";
 import { signSession, SESSION_COOKIE, OAUTH_STATE_COOKIE, OAUTH_NEXT_COOKIE } from "@/app/api/_lib/session";
 import { getSettings, isBlocked, isKnownUser, recordLogin } from "@/app/api/_lib/admin";
 import { isAdminEmail } from "@/app/api/_lib/admin-config";
+import {
+  OAUTH_APP_COOKIE,
+  appDeepLink,
+  appReturnHtml,
+  isValidChallenge,
+  signHandoff,
+} from "@/app/api/_lib/app-handoff";
 
 export const runtime = "nodejs";
 
@@ -25,7 +32,23 @@ export async function GET(req: NextRequest) {
   const state = req.nextUrl.searchParams.get("state");
   const savedState = req.cookies.get(OAUTH_STATE_COOKIE)?.value;
 
+  // Login dimulai dari app mobile? (cookie ini hanya diset oleh /api/auth/google?app=1)
+  const appChallenge = req.cookies.get(OAUTH_APP_COOKIE)?.value;
+  const appMode = isValidChallenge(appChallenge);
+
+  function appReturn(params: { token?: string; error?: string }) {
+    const res = new NextResponse(appReturnHtml(appDeepLink(params), !!params.error), {
+      status: 200,
+      headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store" },
+    });
+    res.cookies.delete(OAUTH_STATE_COOKIE);
+    res.cookies.delete(OAUTH_NEXT_COOKIE);
+    res.cookies.delete(OAUTH_APP_COOKIE);
+    return res;
+  }
+
   function fail(message: string) {
+    if (appMode) return appReturn({ error: message });
     const url = new URL("/", req.url);
     url.searchParams.set("login_error", message);
     const res = NextResponse.redirect(url);
@@ -103,6 +126,19 @@ export async function GET(req: NextRequest) {
     await recordLogin({ email: loginEmail, name: profile.name ?? profile.email, picture: profile.picture ?? null });
   } catch (e) {
     console.error("[auth] gagal mencatat login", (e as Error)?.message);
+  }
+
+  if (appMode) {
+    try {
+      return appReturn({
+        token: signHandoff(
+          { email: profile.email, name: profile.name ?? profile.email, picture: profile.picture ?? null },
+          appChallenge
+        ),
+      });
+    } catch (e) {
+      return fail(e instanceof Error ? e.message : "Gagal membuat token login.");
+    }
   }
 
   let sessionToken: string;

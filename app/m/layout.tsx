@@ -13,7 +13,7 @@ const TABS = [
 
 /** Cangkang mobile: login, tab bawah, area aman (notch). Server & API = web yang sama. */
 export default function MobileLayout({ children }: { children: React.ReactNode }) {
-  const { user, ready, login } = useAuth();
+  const { user, ready, login, loggingIn, loginError } = useAuth();
   const pathname = usePathname();
 
   if (!ready) {
@@ -25,9 +25,18 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
       <div className="flex min-h-[100dvh] flex-col items-center justify-center gap-4 p-6 text-center">
         <h1 className="text-2xl font-semibold">Depup</h1>
         <p className="text-sm opacity-70">Deploy tanpa ribet, dari HP.</p>
-        <button onClick={login} className="w-full max-w-xs rounded-xl bg-violet-600 px-4 py-3 font-medium text-white">
-          Masuk dengan Google
+        <button
+          onClick={login}
+          disabled={loggingIn}
+          className="w-full max-w-xs rounded-xl bg-violet-600 px-4 py-3 font-medium text-white disabled:opacity-60"
+        >
+          {loggingIn ? "Menunggu login Google…" : "Masuk dengan Google"}
         </button>
+        {loginError && (
+          <p role="alert" className="max-w-xs text-sm text-red-500">
+            {loginError}
+          </p>
+        )}
       </div>
     );
   }

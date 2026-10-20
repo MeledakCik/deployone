@@ -70,6 +70,7 @@ function skipRateLimit(pathname: string): boolean {
  */
 const CUSTOM_LIMITS: Record<string, { limit: number; windowSeconds: number }> = {
   "auth/google": { limit: 20, windowSeconds: 60 },
+  "auth/app-exchange": { limit: 20, windowSeconds: 60 },
   "auth/session": { limit: 120, windowSeconds: 60 },
   "github/validate": { limit: 20, windowSeconds: 60 },
   "github/whoami": { limit: 20, windowSeconds: 60 },
