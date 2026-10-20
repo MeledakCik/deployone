@@ -3,15 +3,16 @@
 import * as React from "react";
 import type { HistoryItem } from "@/types";
 
+type MTokens = { vercelToken?: string; githubPat?: string; cloudflareToken?: string; railwayToken?: string; renderToken?: string };
 type UserDataRes = {
   ok: boolean;
-  data?: { history: HistoryItem[]; settingsTokens: { vercelToken?: string; githubPat?: string } };
+  data?: { history: HistoryItem[]; settingsTokens: MTokens };
 };
 
 /** Ambil data user dari API web yang sama (/api/user-data). Server tetap satu. */
 export function useUserData() {
   const [history, setHistory] = React.useState<HistoryItem[]>([]);
-  const [tokens, setTokens] = React.useState<{ vercelToken?: string; githubPat?: string }>({});
+  const [tokens, setTokens] = React.useState<MTokens>({});
   const [loading, setLoading] = React.useState(true);
 
   const reload = React.useCallback(async () => {

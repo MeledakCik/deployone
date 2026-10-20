@@ -1,30 +1,43 @@
 "use client";
 import * as React from "react";
 import Link from "next/link";
+import "@fontsource-variable/plus-jakarta-sans";
+import { Home, FolderOpen, Rocket, BookOpen, UserRound } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { GoogleMark } from "@/components/landing/GoogleLoginModal";
 const TABS = [
-  { href: "/m", label: "Projects" },
-  { href: "/m/deploy", label: "Deploy" },
-  { href: "/m/riwayat", label: "Riwayat" },
-];
+  { href: "/m", label: "Beranda", Icon: Home },
+  { href: "/m/proyek", label: "Proyek", Icon: FolderOpen },
+  { href: "/m/deploy", label: "Deploy", Icon: Rocket, fab: true },
+  { href: "/m/panduan", label: "Panduan", Icon: BookOpen },
+  { href: "/m/akun", label: "Akun", Icon: UserRound },
+] as const;
+
+const TITLES: Record<string, string> = {
+  "/m": "Beranda",
+  "/m/proyek": "Proyek",
+  "/m/deploy": "Deploy",
+  "/m/panduan": "Panduan",
+  "/m/akun": "Akun",
+  "/m/riwayat": "Riwayat Deploy",
+};
 export default function MobileLayout({ children }: { children: React.ReactNode }) {
   const { user, ready, login, loggingIn, loginError } = useAuth();
   const pathname = usePathname();
   if (!ready) {
     return (
-      <div className="flex h-[100dvh] items-center justify-center bg-[#9E8CFF]">
+      <div className="flex h-[100dvh] items-center justify-center bg-[#7C3AED]">
         <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
       </div>
     );
   }
   if (!user) {
     return (
-      <div className="relative flex h-[100dvh] w-screen flex-col overflow-hidden overscroll-none bg-[#A78BFA] text-[#1E143F]">
+      <div className="relative flex h-[100dvh] w-screen flex-col overflow-hidden overscroll-none bg-[#7C3AED] text-[#1E143F]">
         {/* BG */}
         <div className="pointer-events-none absolute inset-0">
-          <div className="absolute inset-0 bg-gradient-to-b from-[#C9BBFF] via-[#A78BFA] to-[#8B78E6]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#8B5CF6] via-[#7C3AED] to-[#5B3FD6]" />
           <div className="absolute -top-24 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-white/20 blur-[80px]" />
         </div>
         {/* WRAPPER - ini kunci no scroll */}
@@ -46,10 +59,10 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
                 height={72}
                 className="mx-auto h-[clamp(56px,18vw,72px)] w-[clamp(56px,18vw,72px)] rounded-[clamp(18px,4.5vw,22px)] shadow-[0_12px_32px_-8px_rgba(76,40,184,0.5),0_0_0_1px_rgba(255,255,255,0.2)_inset]"
               />
-              <h1 className="mt-[clamp(12px,3vh,20px)] text-center text-[clamp(26px,7vw,30px)] font-bold leading-none tracking-[-0.03em] text-[#1A1033]">
+              <h1 className="mt-[clamp(12px,3vh,20px)] text-center text-[clamp(26px,7vw,30px)] font-bold leading-none tracking-[-0.03em] text-white">
                 Depup
               </h1>
-              <p className="mt-2 text-center text-[clamp(13px,3.8vw,15px)] leading-[1.4] text-[#1A1033]/70">
+              <p className="mt-2 text-center text-[clamp(13px,3.8vw,15px)] leading-[1.4] text-white/85">
                 Deploy tanpa ribet, dari HP.
               </p>
               <div className="mt-[clamp(12px,2.5vh,20px)] flex items-center justify-center gap-2">
@@ -95,7 +108,7 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
                   </>
                 )}
               </button>
-              <p className="mx-auto mt-3 text-balance text-center text-[10.5px] leading-[1.4] text-[#1A1033]/55">
+              <p className="mx-auto mt-3 text-balance text-center text-[10.5px] leading-[1.4] text-white/75">
                 Kamu akan diarahkan ke halaman masuk Google yang asli, lalu otomatis kembali ke Depup.
               </p>
             </div>
@@ -103,7 +116,7 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
         </div>
         <style>{`
           @keyframes fadeIn { from { opacity:0; transform: translateY(6px) } to { opacity:1; transform: translateY(0) } }
-          html, body { overscroll-behavior: none; overflow: hidden; }
+          html, body { overscroll-behavior: none; overflow: hidden; scrollbar-gutter: auto; }
           /* HP super pendek (iPhone SE) - kecilin lagi */
           @media (max-height: 600px) {
             .min-h-\[8px\] { min-height: 2px !important; }
@@ -112,17 +125,64 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
       </div>
     );
   }
+  const title = TITLES[pathname] ?? "Depup";
+  const initial = (user.name || user.email || "D").trim().charAt(0).toUpperCase();
   return (
-    <div className="flex h-[100dvh] flex-col overflow-hidden bg-[#F8F7FF]">
-      <main className="flex-1 overflow-y-auto p-4 pb-[88px] overscroll-contain">{children}</main>
-      <nav className="fixed inset-x-0 bottom-0 z-50 shrink-0 border-t border-black/[0.06] bg-white/80 backdrop-blur-xl" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
-        <div className="mx-auto grid max-w-md grid-cols-3">
+    <div className="flex h-[100dvh] flex-col overflow-hidden bg-[#F9F9FF] font-[family-name:'Plus_Jakarta_Sans_Variable','Plus_Jakarta_Sans',sans-serif] text-[#141B2B]">
+      <style>{`html, body { overflow: hidden; overscroll-behavior: none; scrollbar-gutter: auto; background: #F9F9FF; }`}</style>
+      {/* Top bar */}
+      <header
+        className="z-40 shrink-0 bg-[#F9F9FF]/90 backdrop-blur-xl"
+        style={{ paddingTop: "env(safe-area-inset-top)" }}
+      >
+        <div className="flex h-16 items-center justify-between px-4">
+          <div className="flex items-center gap-2.5">
+            <img src="/logo.png" alt="" width={36} height={36} className="h-9 w-9 rounded-[11px] shadow-[0_6px_14px_-6px_rgba(124,58,237,0.6)]" />
+            <div className="flex flex-col leading-none">
+              <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#7B7487]">Depup Cloud</span>
+              <h1 className="mt-1 text-[17px] font-extrabold tracking-[-0.02em]">{title}</h1>
+            </div>
+          </div>
+          <Link
+            href="/m/akun"
+            aria-label="Akun"
+            className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#7C3AED] to-[#6366F1] text-[14px] font-bold text-white ring-2 ring-white shadow-[0_4px_12px_-2px_rgba(124,58,237,0.5)] active:scale-90"
+          >
+            {user.picture ? <img src={user.picture} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" /> : initial}
+          </Link>
+        </div>
+      </header>
+
+      <main className="flex-1 overflow-y-auto overscroll-contain px-4 pb-[120px] pt-1">
+        <div className="mx-auto w-full max-w-[540px]">{children}</div>
+      </main>
+
+      {/* Bottom nav ala super-app: tombol Deploy menonjol di tengah */}
+      <nav
+        className="fixed inset-x-0 bottom-0 z-50 border-t border-[#EDE9FE] bg-white/95 shadow-[0_-10px_25px_-5px_rgba(17,24,39,0.08)] backdrop-blur-md"
+        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        aria-label="Navigasi utama"
+      >
+        <div className="mx-auto grid h-[64px] max-w-[540px] grid-cols-5">
           {TABS.map((t) => {
-            const active = pathname === t.href;
+            const active = t.href === "/m" ? pathname === "/m" || pathname === "/m/riwayat" : pathname.startsWith(t.href);
+            if ("fab" in t) {
+              return (
+                <Link key={t.href} href={t.href} aria-current={active ? "page" : undefined} className="relative flex flex-col items-center justify-end pb-2 active:scale-95">
+                  <span
+                    className={`absolute -top-6 flex h-[58px] w-[58px] items-center justify-center rounded-full bg-gradient-to-br from-[#7C3AED] to-[#6366F1] text-white ring-4 ring-[#F9F9FF] shadow-[0_8px_16px_-2px_rgba(124,58,237,0.5)] transition ${active ? "scale-105" : ""}`}
+                  >
+                    <t.Icon className="h-6 w-6" strokeWidth={2.2} />
+                  </span>
+                  <span className={`text-[11px] ${active ? "font-extrabold text-[#7C3AED]" : "font-semibold text-[#64748B]"}`}>{t.label}</span>
+                </Link>
+              );
+            }
             return (
-              <Link key={t.href} href={t.href} className={`relative flex flex-col items-center justify-center gap-1 py-3.5 text-[11px] font-medium transition ${active ? "text-[#6D28D9]" : "text-black/40"}`}>
-                {active && <span className="absolute top-0 h-[2.5px] w-8 rounded-full bg-[#6D28D9]" />}
-                <span className={`${active ? "font-semibold" : ""}`}>{t.label}</span>
+              <Link key={t.href} href={t.href} aria-current={active ? "page" : undefined} className="flex flex-col items-center justify-center gap-1 active:scale-95">
+                <t.Icon className={`h-[22px] w-[22px] transition ${active ? "text-[#7C3AED]" : "text-[#94A3B8]"}`} strokeWidth={active ? 2.4 : 2} />
+                <span className={`text-[11px] ${active ? "font-extrabold text-[#7C3AED]" : "font-semibold text-[#64748B]"}`}>{t.label}</span>
+                <span className={`h-1 w-1 rounded-full transition ${active ? "bg-[#7C3AED] shadow-[0_0_6px_#7C3AED]" : "bg-transparent"}`} />
               </Link>
             );
           })}
