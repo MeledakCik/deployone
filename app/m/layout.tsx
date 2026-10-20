@@ -1,128 +1,108 @@
 "use client";
-
 import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
 import { GoogleMark } from "@/components/landing/GoogleLoginModal";
-
 const TABS = [
   { href: "/m", label: "Projects" },
   { href: "/m/deploy", label: "Deploy" },
   { href: "/m/riwayat", label: "Riwayat" },
 ];
-
-/** Cangkang mobile: login, tab bawah, area aman (notch). Server & API = web yang sama. */
 export default function MobileLayout({ children }: { children: React.ReactNode }) {
   const { user, ready, login, loggingIn, loginError } = useAuth();
   const pathname = usePathname();
-
   if (!ready) {
-    return <div className="flex min-h-[100dvh] items-center justify-center text-sm opacity-60">Memuat…</div>;
-  }
-
-  if (!user) {
     return (
-      <div
-        className="relative flex min-h-[100dvh] flex-col overflow-hidden px-6"
-        style={{
-          paddingTop: "max(env(safe-area-inset-top), 24px)",
-          paddingBottom: "max(env(safe-area-inset-bottom), 24px)",
-        }}
-      >
-        {/* Hiasan latar: dua lingkaran lembut, murni dekoratif */}
-        <div aria-hidden className="pointer-events-none absolute -right-24 -top-24 h-72 w-72 rounded-full bg-white/30 blur-3xl" />
-        <div aria-hidden className="pointer-events-none absolute -bottom-28 -left-24 h-72 w-72 rounded-full bg-[#c6f432]/25 blur-3xl" />
-
-        <div className="anim-fade relative flex flex-1 flex-col items-center justify-center text-center">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/logo.png"
-            alt="Depup"
-            width={88}
-            height={88}
-            className="h-[88px] w-[88px] rounded-[26px] shadow-[0_24px_50px_-18px_rgba(56,35,129,0.65)]"
-          />
-          <h1 className="mt-6 text-[34px] font-bold leading-none tracking-[-0.04em] text-[var(--text)]">Depup</h1>
-          <p className="mt-3 max-w-[18rem] text-[15px] leading-relaxed text-[var(--text-muted)]">
-            Deploy tanpa ribet, dari HP.
-          </p>
-
-          <ul className="mt-7 flex flex-wrap items-center justify-center gap-2 text-[12.5px] font-medium text-[var(--text)]">
-            {["Vercel", "Cloudflare", "Railway"].map((n) => (
-              <li key={n} className="rounded-full bg-white/60 px-3 py-1.5 backdrop-blur">
-                {n}
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div className="anim-fade relative mx-auto w-full max-w-sm pb-2">
-          {loginError && (
-            <div
-              role="alert"
-              className="mb-4 flex items-start gap-3 rounded-2xl bg-white p-4 text-left shadow-[0_16px_34px_-20px_rgba(90,57,192,0.45)]"
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden className="mt-0.5 shrink-0 text-red-500">
-                <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="2" />
-                <path d="M12 7v6m0 3.5v.01" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-              </svg>
-              <div className="min-w-0">
-                <p className="text-[13.5px] font-semibold text-[#120b2e]">Login belum berhasil</p>
-                <p className="mt-0.5 break-words text-[12.5px] leading-snug text-[#120b2e]/70">{loginError}</p>
-              </div>
-            </div>
-          )}
-
-          <button
-            type="button"
-            onClick={login}
-            disabled={loggingIn}
-            className="flex w-full items-center justify-center gap-3 rounded-2xl bg-white px-5 py-4 text-[15px] font-semibold text-[#120b2e] shadow-[0_18px_36px_-18px_rgba(56,35,129,0.7)] transition active:scale-[0.98] disabled:opacity-70"
-          >
-            {loggingIn ? (
-              <>
-                <svg className="h-5 w-5 animate-spin text-[#7b50ff]" viewBox="0 0 24 24" fill="none" aria-hidden>
-                  <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="3" opacity="0.25" />
-                  <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
-                </svg>
-                <span>Menunggu login Google…</span>
-              </>
-            ) : (
-              <>
-                <GoogleMark size={20} />
-                <span>Lanjutkan dengan Google</span>
-              </>
-            )}
-          </button>
-
-          <p className="mt-4 text-center text-[12px] leading-relaxed text-[var(--text-muted)]">
-            Kamu akan diarahkan ke halaman masuk Google yang asli, lalu otomatis kembali ke Depup.
-          </p>
-        </div>
+      <div className="flex min-h-[100dvh] items-center justify-center bg-[#9E8CFF]">
+        <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
       </div>
     );
   }
-
-  return (
-    <div className="flex min-h-[100dvh] flex-col" style={{ paddingTop: "env(safe-area-inset-top)" }}>
-      <main className="flex-1 p-4 pb-24">{children}</main>
-      <nav
-        className="fixed inset-x-0 bottom-0 grid grid-cols-3 border-t border-black/10 bg-white dark:border-white/10 dark:bg-neutral-950"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-      >
-        {TABS.map((t) => {
-          const active = pathname === t.href;
-          return (
-            <Link
-              key={t.href}
-              href={t.href}
-              className={`py-3 text-center text-sm ${active ? "font-semibold text-violet-600" : "opacity-60"}`}
+  if (!user) {
+    return (
+      <div className="relative flex min-h-[100dvh] flex-col bg-[#A78BFA] px-5 text-[#1E143F]">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute inset-0 bg-gradient-to-b from-[#C9BBFF] via-[#A78BFA] to-[#8B78E6]" />
+          <div className="absolute -top-24 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-white/20 blur-[80px]" />
+        </div>
+        <div className="relative z-10 flex flex-1 flex-col items-center justify-center pb-20">
+          <div className="animate-[fadeIn_0.6s_ease-out]">
+            <img
+              src="/logo.png"
+              alt="Depup"
+              width={72}
+              height={72}
+              className="mx-auto h-[72px] w-[72px] rounded-[22px] shadow-[0_12px_32px_-8px_rgba(76,40,184,0.5),0_0_0_1px_rgba(255,255,255,0.2)_inset]"
+            />
+            <h1 className="mt-5 text-center text-[30px] font-bold leading-none tracking-[-0.03em] text-[#1A1033]">Depup</h1>
+            <p className="mt-2.5 text-center text-[15px] leading-[1.4] text-[#1A1033]/70">
+              Deploy tanpa ribet, dari HP.
+            </p>
+            <div className="mt-5 flex items-center justify-center gap-2">
+              {[
+                { label: "Vercel", dot: "bg-black" },
+                { label: "Cloudflare", dot: "bg-orange-400" },
+                { label: "Railway", dot: "bg-zinc-700" },
+              ].map((b) => (
+                <div key={b.label} className="flex items-center gap-1.5 rounded-full bg-white/65 px-3 py-1.5 text-[11px] font-medium tracking-wide text-[#1A1033]/80 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.1)] backdrop-blur-md ring-1 ring-white/30">
+                  <span className={`h-1.5 w-1.5 rounded-full ${b.dot}`} />
+                  {b.label}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+        <div className="relative z-10 w-full pb-[max(env(safe-area-inset-bottom),16px)]">
+          <div className="mx-auto w-full max-w-[340px] animate-[fadeIn_0.6s_ease-out_0.15s_both]">
+            {loginError && (
+              <div className="mb-3 rounded-[16px] bg-white/90 px-4 py-3 text-left shadow-lg ring-1 ring-black/5 backdrop-blur">
+                <p className="text-[13px] font-semibold">Login gagal</p>
+                <p className="mt-0.5 text-[12px] leading-snug opacity-70">{loginError}</p>
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={login}
+              disabled={loggingIn}
+              className="flex h-[52px] w-full items-center justify-center gap-2.5 rounded-[16px] bg-white text-[14.5px] font-semibold text-[#1A1033] shadow-[0_8px_20px_-8px_rgba(44,19,126,0.4),0_0_0_1px_rgba(0,0,0,0.04)] transition-all active:scale-[0.98] active:shadow-none disabled:opacity-60"
             >
-              {t.label}
-            </Link>
-          );
-        })}
+              {loggingIn ? (
+                <>
+                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#1A1033]/20 border-t-[#1A1033]" />
+                  Menghubungkan...
+                </>
+              ) : (
+                <>
+                  <GoogleMark size={18} />
+                  Lanjutkan dengan Google
+                </>
+              )}
+            </button>
+            <p className="mx-auto mt-3.5 max-w-[300px] text-center text-[11.5px] leading-[1.5] text-[#1A1033]/60">
+              Kamu akan diarahkan ke halaman masuk Google yang asli, lalu otomatis kembali ke Depup.
+            </p>
+          </div>
+        </div>
+        <style>{`@keyframes fadeIn { from { opacity:0; transform: translateY(8px) } to { opacity:1; transform: translateY(0) } }`}</style>
+      </div>
+    );
+  }
+  return (
+    <div className="flex min-h-[100dvh] flex-col bg-[#F8F7FF]">
+      <main className="flex-1 p-4 pb-[88px]">{children}</main>
+      <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-black/[0.06] bg-white/80 backdrop-blur-xl supports-[backdrop-filter]:bg-white/70" style={{ paddingBottom: "env(safe-area-inset-bottom)" }}>
+        <div className="mx-auto grid max-w-md grid-cols-3">
+          {TABS.map((t) => {
+            const active = pathname === t.href;
+            return (
+              <Link key={t.href} href={t.href} className={`relative flex flex-col items-center justify-center gap-1 py-3.5 text-[11px] font-medium transition ${active ? "text-[#6D28D9]" : "text-black/40"}`}>
+                {active && <span className="absolute top-0 h-[2.5px] w-8 rounded-full bg-[#6D28D9]" />}
+                <span className={`${active ? "font-semibold" : ""}`}>{t.label}</span>
+              </Link>
+            );
+          })}
+        </div>
       </nav>
     </div>
   );
