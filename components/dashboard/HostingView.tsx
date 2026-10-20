@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 import { ViewFade } from "@/components/ui/ViewFade";
 import { useToast } from "@/components/ui/Toast";
+import { useConfirm } from "@/components/ui/confirm";
 import { cn } from "@/lib/utils";
 import { useDeploy } from "@/lib/deploy-context";
 import {
@@ -68,6 +69,7 @@ type Stage = "idle" | "reading" | "ready" | "publishing";
 
 export function HostingView() {
   const { showToast } = useToast();
+  const confirm = useConfirm();
   const { setView } = useDeploy();
   const zipRef = React.useRef<HTMLInputElement>(null);
   const folderRef = React.useRef<HTMLInputElement>(null);
@@ -200,7 +202,14 @@ export function HostingView() {
   }
 
   async function remove(id: string) {
-    if (!window.confirm("Hapus link ini sekarang? Orang yang membukanya akan melihat 404.")) return;
+    const site = config?.sites.find((x) => x.id === id);
+    const { ok } = await confirm({
+      title: "Hapus link ini?",
+      description: site ? `${site.name} akan langsung dihapus.` : "Link akan langsung dihapus.",
+      impact: ["Orang yang membuka link ini akan melihat halaman 404.", "File yang diunggah ikut terhapus dan tidak bisa dikembalikan."],
+      confirmLabel: "Ya, hapus",
+    });
+    if (!ok) return;
     try {
       await deleteSite(id);
       showToast("Link dihapus");

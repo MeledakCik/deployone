@@ -11,6 +11,7 @@ import { DashboardHomeView } from "@/components/dashboard/DashboardHomeView";
 import { DeployFormView } from "@/components/dashboard/DeployFormView";
 import { UploadView } from "@/components/dashboard/UploadView";
 import { HostingView } from "@/components/dashboard/HostingView";
+import { AiSiteView } from "@/components/dashboard/AiSiteView";
 import { ProjectsView } from "@/components/dashboard/ProjectsView";
 import { DomainsView } from "@/components/dashboard/DomainsView";
 import { EnvironmentView } from "@/components/dashboard/EnvironmentView";
@@ -77,6 +78,7 @@ export default function DashboardPage() {
             {view === "deploy" && <DeployFormView />}
             {view === "upload" && <UploadView />}
             {view === "hosting" && <HostingView />}
+            {view === "ai" && <AiSiteView />}
             {view === "projects" && <ProjectsView />}
             {view === "domains" && <DomainsView />}
             {view === "env" && <EnvironmentView />}

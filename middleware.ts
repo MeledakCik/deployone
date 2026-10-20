@@ -79,6 +79,9 @@ const CUSTOM_LIMITS: Record<string, { limit: number; windowSeconds: number }> = 
   // Memanggil Saweria pihak ketiga; jaga supaya tidak dipakai spam.
   "donate/create": { limit: 6, windowSeconds: 60 },
   "donate/status": { limit: 30, windowSeconds: 60 },
+  // Tiap generate = 1 panggilan Groq; batasi per pengguna.
+  "ai/site": { limit: 6, windowSeconds: 60 },
+  "ai/key": { limit: 10, windowSeconds: 60 },
   // Pembuatan tunnel juga dibatasi per jam di route-nya sendiri.
   "tunnel/create": { limit: 20, windowSeconds: 60 },
   // Laporan abuse (publik): maks 5 per 10 menit per IP.

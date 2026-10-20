@@ -1,0 +1,27 @@
+{
+  "type": "umkm",
+  "brand": { "name": "Bakso Pak Slamet", "slogan": "Kuah 12 jam, urat asli", "palette_id": "bakso" },
+  "hero": {
+    "layout": "split-bold",
+    "headline": "Bakso urat 150gr. Kuahnya direbus 12 jam.",
+    "sub": "Daging sapi giling sendiri tiap subuh. Tanpa pengawet, tanpa boraks.",
+    "cta": "Pesan via WA",
+    "badge": "Buka Hari Ini • 10-21 WIB"
+  },
+  "hover_effect": "lift",
+  "products": [
+    { "name": "Bakso Urat Jumbo", "price": "Rp 22.000", "tag": "Best Seller", "size": "large", "icon": "beef", "desc": "Urat 150gr, daging sapi asli, kuah kaldu 12 jam, mie kuning." },
+    { "name": "Bakso Pedas Level 3", "price": "Rp 20.000", "tag": "", "size": "small", "icon": "flame", "desc": "Sambal cabai rawit giling, 6 butir bakso halus." },
+    { "name": "Bakso Telur", "price": "Rp 18.000", "tag": "", "size": "small", "icon": "soup", "desc": "Telur puyuh utuh di dalam, bihun, seledri." },
+    { "name": "Mie Ayam Bakso", "price": "Rp 17.000", "tag": "", "size": "small", "icon": "utensils", "desc": "Mie ayam cincang, 3 bakso kecil, pangsit goreng." },
+    { "name": "Es Teh Manis", "price": "Rp 5.000", "tag": "", "size": "small", "icon": "cup-soda", "desc": "Teh tubruk, gula asli, es batu kristal." }
+  ],
+  "bento_features": [
+    { "title": "Kuah 12 jam", "desc": "Tulang sumsum direbus dari jam 4 pagi, tanpa kaldu bubuk.", "icon": "clock-3", "col_span": 2 },
+    { "title": "Daging giling subuh", "desc": "Sapi segar dari pasar, digiling dan dibentuk sendiri tiap hari.", "icon": "beef", "col_span": 1 },
+    { "title": "Sambal level 1-5", "desc": "Cabai rawit giling harian, pedasnya bisa kamu atur.", "icon": "flame", "col_span": 1 },
+    { "title": "Bumbu segar", "desc": "Bawang goreng dan seledri disiapkan per porsi, tidak disimpan semalam.", "icon": "leaf", "col_span": 2 }
+  ],
+  "testimonial": { "text": "", "name": "" },
+  "contact": { "wa": "6281234567890", "address": "Jl. Veteran No. 12, Banjar", "hours": "10.00-21.00 WIB" }
+}

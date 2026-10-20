@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { LayoutDashboard, FolderKanban, Rocket, UploadCloud, Link2, Globe2, KeyRound, BookOpen, Settings2, Heart, LogOut, ShieldCheck } from "@/components/ui/icons";
+import { LayoutDashboard, FolderKanban, Rocket, UploadCloud, Link2, Sparkles, Globe2, KeyRound, BookOpen, Settings2, Heart, LogOut, ShieldCheck } from "@/components/ui/icons";
 import { useAuth } from "@/lib/auth-context";
 import { useDeploy } from "@/lib/deploy-context";
 import { AppSidebar, SIDEBAR_LINK_CLASS, type NavGroup } from "@/components/ui/AppSidebar";
@@ -31,6 +31,7 @@ export function Sidebar() {
           { id: "deploy", label: "Deploy", icon: Rocket },
           { id: "upload", label: "Upload", icon: UploadCloud },
           { id: "hosting", label: "Link Instan", icon: Link2 },
+          { id: "ai", label: "AI Web Builder", icon: Sparkles },
         ],
       },
       {

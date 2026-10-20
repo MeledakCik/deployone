@@ -42,7 +42,8 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
     history: Array.isArray(data.history) ? data.history : [],
     domains: Array.isArray(data.domains) ? data.domains : [],
     envVars: Array.isArray(data.envVars) ? data.envVars : [],
-    settingsTokens: data.settingsTokens ?? {},
+    // groqApiKey sengaja TIDAK dikirim ke browser (hanya server yang memakainya, lewat /api/ai/*).
+    settingsTokens: (({ groqApiKey: _omit, ...rest }) => rest)(data.settingsTokens ?? {}),
   });
 });
 

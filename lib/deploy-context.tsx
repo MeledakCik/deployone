@@ -335,6 +335,7 @@ const DASHBOARD_VIEWS: readonly DashboardView[] = [
   "donate",
   "upload",
   "hosting",
+  "ai",
 ];
 
 function isDashboardView(v: string | null): v is DashboardView {

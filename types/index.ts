@@ -90,6 +90,8 @@ export interface SettingsTokens {
   githubPat: string;
   /** Railway account/workspace API token (from railway.com/account/tokens). */
   railwayToken: string;
+  /** Token Groq milik user (fitur AI Web Builder). Hanya dipakai di server; tidak pernah dikirim balik ke browser. */
+  groqApiKey?: string;
 }
 
 export type DashboardView =
@@ -102,7 +104,8 @@ export type DashboardView =
   | "settings"
   | "donate"
   | "upload"
-  | "hosting";
+  | "hosting"
+  | "ai";
 
 /* ---------------------------------------------------------------------- */
 /*  Backend API contracts (app/api/**)                                    */
