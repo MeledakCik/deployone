@@ -33,6 +33,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = React.useState(false);
   const [loggingIn, setLoggingIn] = React.useState(false);
   const [loginError, setLoginError] = React.useState<string | null>(null);
+  const loggingInRef = React.useRef(false);
+  loggingInRef.current = loggingIn;
 
   const refresh = React.useCallback(async () => {
     try {
@@ -63,7 +65,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setLoginError(r.message);
         }
       },
-      () => setLoggingIn(false)
+      () => {
+        // Kembali ke app tanpa deep link: jangan biarkan spinner menggantung.
+        if (!loggingInRef.current) return;
+        setLoggingIn(false);
+        setLoginError(
+          "Login belum selesai. Kalau kamu sudah memilih akun, tekan tombol \"Buka aplikasi Depup\" di halaman browser, atau coba lagi."
+        );
+      }
     );
   }, [refresh]);
 

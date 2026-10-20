@@ -9,6 +9,8 @@ import { Capacitor } from "@capacitor/core";
 
 const VERIFIER_KEY = "depup:app-verifier";
 const HANDLED_KEY = "depup:app-auth-handled";
+/** true selama token sedang ditukar ke server (supaya spinner tidak di-reset di tengah proses). */
+let exchanging = false;
 
 export function isNativeApp(): boolean {
   try {
@@ -82,6 +84,15 @@ export async function handleAuthUrl(rawUrl: string): Promise<NativeAuthResult> {
     /* tidak masalah */
   }
 
+  exchanging = true;
+  try {
+    return await finishAuth(u);
+  } finally {
+    exchanging = false;
+  }
+}
+
+async function finishAuth(u: URL): Promise<NativeAuthResult> {
   const error = u.searchParams.get("error");
   if (error) {
     localStorage.removeItem(VERIFIER_KEY);
@@ -94,12 +105,15 @@ export async function handleAuthUrl(rawUrl: string): Promise<NativeAuthResult> {
     return { status: "error", message: "Sesi login tidak ditemukan. Coba masuk lagi." };
   }
 
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), 15000);
   try {
     const res = await fetch("/api/auth/app-exchange", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ token, verifier }),
       cache: "no-store",
+      signal: ctrl.signal,
     });
     const body = await res.json().catch(() => null);
     localStorage.removeItem(VERIFIER_KEY);
@@ -107,46 +121,72 @@ export async function handleAuthUrl(rawUrl: string): Promise<NativeAuthResult> {
       return { status: "error", message: body?.error ?? "Gagal menyelesaikan login. Coba lagi." };
     }
     return { status: "ok" };
-  } catch {
-    return { status: "error", message: "Tidak bisa terhubung ke server. Periksa koneksi internet." };
+  } catch (e) {
+    console.error("[depup] app-exchange gagal", e);
+    const aborted = e instanceof DOMException && e.name === "AbortError";
+    return {
+      status: "error",
+      message: aborted
+        ? "Server tidak merespons. Coba masuk lagi."
+        : "Tidak bisa terhubung ke server. Periksa koneksi internet.",
+    };
+  } finally {
+    clearTimeout(timer);
   }
 }
 
 /**
  * Pasang pendengar deep link. Mengembalikan fungsi pembersih.
- * Menangani dua kasus: app masih hidup (appUrlOpen) dan app dimatikan Android
- * selagi user login di browser (getLaunchUrl saat start).
+ * Menangani: app masih hidup (appUrlOpen), app dimatikan Android selagi user di browser
+ * (getLaunchUrl), dan user kembali ke app TANPA deep link (onReturnedWithoutResult).
  */
 export function listenForNativeAuth(
   onResult: (r: NativeAuthResult) => void,
-  onBrowserClosed: () => void
+  onReturnedWithoutResult: () => void
 ): () => void {
   let disposed = false;
+  let lastResultAt = 0;
   const handles: Array<{ remove: () => Promise<void> }> = [];
+
+  const deliver = (r: NativeAuthResult) => {
+    if (r.status === "ignored") return;
+    lastResultAt = Date.now();
+    onResult(r);
+  };
+
+  // Beri waktu 2,5 dtk: deep link biasanya datang hampir bersamaan dengan app kembali ke depan.
+  const returned = () => {
+    setTimeout(() => {
+      if (disposed || exchanging || Date.now() - lastResultAt < 2500) return;
+      onReturnedWithoutResult();
+    }, 2500);
+  };
 
   void (async () => {
     const { App } = await import("@capacitor/app");
     const { Browser } = await import("@capacitor/browser");
 
-    const h1 = await App.addListener("appUrlOpen", async ({ url }) => {
-      const r = await handleAuthUrl(url);
-      if (r.status !== "ignored") onResult(r);
+    const h1 = await App.addListener("appUrlOpen", async ({ url }) => deliver(await handleAuthUrl(url)));
+    const h2 = await Browser.addListener("browserFinished", returned);
+    const h3 = await App.addListener("appStateChange", ({ isActive }) => {
+      if (isActive) returned();
     });
-    const h2 = await Browser.addListener("browserFinished", () => onBrowserClosed());
     if (disposed) {
-      void h1.remove();
-      void h2.remove();
+      [h1, h2, h3].forEach((h) => void h.remove());
       return;
     }
-    handles.push(h1, h2);
+    handles.push(h1, h2, h3);
 
     const launch = await App.getLaunchUrl();
-    if (launch?.url && !disposed) {
-      const r = await handleAuthUrl(launch.url);
-      if (r.status !== "ignored") onResult(r);
+    if (launch?.url && !disposed) deliver(await handleAuthUrl(launch.url));
+  })().catch((e) => {
+    console.error("[depup] gagal memasang pendengar login native", e);
+    if (!disposed) {
+      onResult({
+        status: "error",
+        message: "Plugin App/Browser tidak aktif di APK ini. Jalankan `npx cap sync android` lalu install ulang APK.",
+      });
     }
-  })().catch(() => {
-    /* plugin belum terpasang di build native ini — login tetap bisa dicoba, tapi tidak akan kembali ke app */
   });
 
   return () => {
