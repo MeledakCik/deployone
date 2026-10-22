@@ -89,10 +89,9 @@ export const metadata: Metadata = {
     },
   },
   verification: {
-    google: "bF_v2fLxUc8QiMHG5G_XeS0dyamaz5QReZDpXahcYhU",
+    google: "9309OOKq3o9sncxEEKygjhDjXETZ64oiJbyElumX6h8",
   },
 };
-
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
