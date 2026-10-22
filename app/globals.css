@@ -219,6 +219,14 @@ html {
   scrollbar-gutter: stable;
 }
 
+/* Dropdown Radix (Select, Dialog, dll.) mengunci scroll body dan menambah margin-right seukuran
+   scrollbar supaya halaman tidak bergeser. Karena html sudah memakai scrollbar-gutter: stable,
+   ruang itu sudah dijaga, jadi kompensasi bawaan malah membuat layout geser saat dropdown dibuka. */
+html body[data-scroll-locked] {
+  margin-right: 0 !important;
+  padding-right: 0 !important;
+}
+
 body {
   font-family: "Inter Tight Variable", "Inter Tight", "Inter Variable", "Inter", Helvetica, Arial, sans-serif;
   font-feature-settings: "cv11", "ss03";
