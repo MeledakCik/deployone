@@ -79,7 +79,7 @@ export function PromoTab({ toast }: { toast: (m: string) => void }) {
               { title: "Poin pertama", desc: "Penjelasan singkat satu kalimat." },
               { title: "Poin kedua", desc: "Maksimal tiga poin per email." },
             ],
-            cta: { label: "Buka dashboard", url: origin || "https://depup.web.id" },
+            cta: { label: "Buka dashboard", url: origin || "https://depup.cloud" },
           }
         : {
             template,
@@ -256,7 +256,7 @@ export function PromoTab({ toast }: { toast: (m: string) => void }) {
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
             <input value={ctaLabel} onChange={(e) => setCtaLabel(e.target.value.slice(0, 60))} placeholder="Teks tombol (opsional), mis. Coba sekarang" aria-label="Teks tombol" className="input-solid px-4 py-2.5 text-[13px]" />
-            <input value={ctaUrl} onChange={(e) => setCtaUrl(e.target.value)} placeholder="https://depup.web.id/dashboard" aria-label="URL tombol" className="input-solid px-4 py-2.5 text-[13px]" />
+            <input value={ctaUrl} onChange={(e) => setCtaUrl(e.target.value)} placeholder="https://depup.cloud/dashboard" aria-label="URL tombol" className="input-solid px-4 py-2.5 text-[13px]" />
           </div>
           <p className="flex items-start gap-1.5 text-[12px] text-text-muted">
             <ShieldCheck size={13} className="mt-0.5 shrink-0" />

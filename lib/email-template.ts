@@ -262,7 +262,7 @@ export function renderRich(c: MailContent, o: RenderOpts): { html: string; text:
   const cta = cleanCta(c);
   const feats = cleanFeatures(c);
   const site = (o.siteUrl ?? "").replace(/\/+$/, "");
-  const siteLabel = site.replace(/^https?:\/\//, "") || "depup.web.id";
+  const siteLabel = site.replace(/^https?:\/\//, "") || "depup.cloud";
   const center = t.align === "center";
   const pre = c.preheader
     ? `<div style="display:none;max-height:0;overflow:hidden;opacity:0;font-size:1px;line-height:1px;">${escapeHtml(c.preheader)}</div>`

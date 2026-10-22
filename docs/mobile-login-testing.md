@@ -1,7 +1,7 @@
 # Login Google di app mobile — cara pasang & tes
 
 ## Kenapa sebelumnya gagal
-App Android memuat `https://depup.web.id/m` di **WebView**. Tombol "Masuk dengan Google" melakukan
+App Android memuat `https://depup.cloud/m` di **WebView**. Tombol "Masuk dengan Google" melakukan
 `window.location.href = "/api/auth/google"` di dalam WebView itu, dan Google menolak OAuth di WebView
 (`Error 403: disallowed_useragent`). Kalaupun lolos, cookie sesi dari browser tidak dibagi ke WebView.
 
@@ -19,7 +19,7 @@ App Android memuat `https://depup.web.id/m` di **WebView**. Tombol "Masuk dengan
 npm install                 # menarik @capacitor/app & @capacitor/browser
 npx cap sync android        # mendaftarkan plugin ke proyek native
 ```
-1. **Deploy web dulu** ke produksi (app memuat UI dari `depup.web.id`, jadi kode web baru harus sudah live).
+1. **Deploy web dulu** ke produksi (app memuat UI dari `depup.cloud`, jadi kode web baru harus sudah live).
 2. Build ulang APK (perubahan `AndroidManifest.xml` + plugin baru butuh APK baru): Android Studio → Run, atau
    `cd android && ./gradlew assembleDebug`.
 

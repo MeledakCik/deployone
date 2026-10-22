@@ -194,8 +194,8 @@ export async function middleware(req: NextRequest) {
 
   // ============ TAMBAHAN FIX SEO & DEPUSH LOGIC ============
 
-  // 1. www.depup.web.id -> depup.web.id (fix GSC www mu)
-  if (host === "www.depup.web.id" || host === "www.depup.app") {
+  // 1. www.depup.cloud -> depup.cloud (fix GSC www mu)
+  if (host === "www.depup.cloud" || host === "www.depup.app") {
     const newHost = host.replace(/^www\./, "");
     const url = req.nextUrl.clone();
     url.host = newHost;
@@ -203,18 +203,18 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(url, 308);
   }
 
-  // 2. depush.web.id TANPA subdomain = harusnya gak ada web, redirect ke depup
-  // Sesuai maumu: depush.web.id kalau dibuka langsung -> kosong
-  if (host === "depush.web.id") {
+  // 2. depup.web.id TANPA subdomain = harusnya gak ada web, redirect ke depup
+  // Sesuai maumu: depup.web.id kalau dibuka langsung -> kosong
+  if (host === "depup.web.id") {
     const url = req.nextUrl.clone();
-    url.host = "depup.web.id";
+    url.host = "depup.cloud";
     url.protocol = "https:";
     url.pathname = "/";
     return NextResponse.redirect(url, 308);
   }
 
-  // 3. *.depush.web.id (link instan) = kasih noindex biar gak ngerusak SEO depup & gak muncul di Ringkasan AI
-  const isDepushSubdomain = host.endsWith(".depush.web.id");
+  // 3. *.depup.web.id (link instan) = kasih noindex biar gak ngerusak SEO depup & gak muncul di Ringkasan AI
+  const isDepushSubdomain = host.endsWith(".depup.web.id");
   // ===========================================================
 
   // --- Link Gaib: https://<slug>.<TUNNEL_BASE_DOMAIN>/... -> /t/<slug>/... ---

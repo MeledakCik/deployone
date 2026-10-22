@@ -3,7 +3,7 @@
  *
  * ENV:
  *   RESEND_API_KEY   wajib. Ambil di resend.com/api-keys — JANGAN ditaruh di kode / repo.
- *   EMAIL_FROM       opsional. Default: "Depup <info@depup.web.id>" (domain depup.web.id sudah verified di Resend).
+ *   EMAIL_FROM       opsional. Default: "Depup <info@depup.cloud>" (domain depup.cloud sudah verified di Resend).
  *   EMAIL_REPLY_TO   opsional. Alamat yang menerima balasan user. Default: depupdev@gmail.com.
  *
  * Supaya email lebih mungkin masuk Inbox / tab Promosi / Updates (bukan Spam):
@@ -20,7 +20,7 @@ import { db, must } from "@/app/api/_lib/supabase";
 import { renderRich, renderSimple, type MailContent } from "@/lib/email-template";
 
 const RESEND_URL = "https://api.resend.com";
-const DEFAULT_FROM = "Depup <info@depup.web.id>";
+const DEFAULT_FROM = "Depup <info@depup.cloud>";
 const DEFAULT_REPLY_TO = "depupdev@gmail.com";
 
 export function emailConfigured(): boolean {
@@ -36,7 +36,7 @@ function replyTo(): string {
 }
 
 export function appUrl(): string {
-  return (process.env.NEXT_PUBLIC_APP_URL ?? "").trim().replace(/\/+$/, "") || "https://depup.web.id";
+  return (process.env.NEXT_PUBLIC_APP_URL ?? "").trim().replace(/\/+$/, "") || "https://depup.cloud";
 }
 
 /* ---------- template (murni, dipakai juga untuk pratinjau di browser) ---------- */
@@ -220,6 +220,6 @@ export function buildPromoMail(to: string, subject: string, content: MailContent
 
 /** Email transaksional (balasan support, notifikasi admin): tanpa gaya promosi, tidak bisa di-unsubscribe. */
 export function buildTransactionalMail(to: string, subject: string, content: MailContent, replyToAddr?: string): OutgoingMail {
-  const { html, text } = renderSimple(content, { footerNote: "Email ini dikirim otomatis oleh Depup (depup.web.id) terkait akun/laporanmu." });
+  const { html, text } = renderSimple(content, { footerNote: "Email ini dikirim otomatis oleh Depup (depup.cloud) terkait akun/laporanmu." });
   return { to, subject, html, text, replyTo: replyToAddr };
 }

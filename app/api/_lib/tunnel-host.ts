@@ -15,7 +15,7 @@ export function tunnelEnabled(): boolean {
   return process.env.TUNNEL_ENABLED !== "false";
 }
 
-/** Domain dasar tunnel, mis. "depup.web.id". null = mode path (/t/<slug>). */
+/** Domain dasar tunnel, mis. "depup.cloud". null = mode path (/t/<slug>). */
 export function tunnelBaseDomain(): string | null {
   const raw = (process.env.TUNNEL_BASE_DOMAIN ?? "")
     .trim()
@@ -27,7 +27,7 @@ export function tunnelBaseDomain(): string | null {
 }
 
 /**
- * "cantik-kopi-x7k2m.depup.web.id" -> "cantik-kopi-x7k2m".
+ * "cantik-kopi-x7k2m.depup.cloud" -> "cantik-kopi-x7k2m".
  * Mengembalikan null untuk host biasa (apex, www, host Vercel, localhost).
  */
 export function slugFromHost(hostHeader: string | null): string | null {

@@ -6,7 +6,7 @@ const config = {
   appName: "Depup",
   webDir: "public", // wajib ada, tapi tidak dipakai karena server.url di bawah
   server: {
-    url: "https://depup.web.id/m",
+    url: "https://depup.cloud/m",
     cleartext: false,
   },
 };

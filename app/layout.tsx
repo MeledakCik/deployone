@@ -11,13 +11,13 @@ import { ToastProvider } from "@/components/ui/Toast";
 const SITE_URL = (
   process.env.NEXT_PUBLIC_SITE_URL ??
   process.env.NEXT_PUBLIC_APP_URL ??
-  "https://depup.web.id"
+  "https://depup.cloud"
 ).replace(/\/$/, "");
 
 const SITE_NAME = "Depup";
 const SITE_TAGLINE = "Deploy Dashboard Indonesia untuk Vercel & Cloudflare";
 const SITE_DESCRIPTION =
-  "Depup (depup.web.id) adalah dashboard deploy buatan Indonesia untuk mengelola Vercel, Cloudflare Pages, dan Railway dalam satu tempat. Tempel link GitHub, deploy, atur domain dan environment variables, plus Link Instan untuk menjadikan file HTML sebagai link publik dalam hitungan detik.";
+  "Depup (depup.cloud) adalah dashboard deploy buatan Indonesia untuk mengelola Vercel, Cloudflare Pages, dan Railway dalam satu tempat. Tempel link GitHub, deploy, atur domain dan environment variables, plus Link Instan untuk menjadikan file HTML sebagai link publik dalam hitungan detik.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
   description: SITE_DESCRIPTION,
   keywords: [
     "depup",
-    "depup.web.id",
+    "depup.cloud",
     "depup dashboard",
     "depup deploy",
     "depup indonesia",
@@ -110,7 +110,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       "@type": "WebSite",
       "@id": `${SITE_URL}/#website`,
       name: SITE_NAME,
-      alternateName: ["Depup Indonesia", "Depup Deploy Dashboard", "depup.web.id"],
+      alternateName: ["Depup Indonesia", "Depup Deploy Dashboard", "depup.cloud"],
       url: SITE_URL,
       inLanguage: "id-ID",
       description: SITE_DESCRIPTION,

@@ -91,7 +91,7 @@ test("parser deep link: token asli dari log emulator (base64url, mengandung . - 
 });
 
 test("parser deep link: URL lain ditolak", () => {
-  for (const u of ["https://depup.web.id/m", "depup://other?token=x", "depup://authx?token=x", "", "javascript:alert(1)"]) {
+  for (const u of ["https://depup.cloud/m", "depup://other?token=x", "depup://authx?token=x", "", "javascript:alert(1)"]) {
     assert.equal(parseAuthDeepLink(u), null, u);
   }
 });

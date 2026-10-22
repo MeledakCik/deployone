@@ -3,7 +3,7 @@ import type { MetadataRoute } from "next";
 const SITE_URL = (
   process.env.NEXT_PUBLIC_SITE_URL ??
   process.env.NEXT_PUBLIC_APP_URL ??
-  "https://depup.web.id"
+  "https://depup.cloud"
 ).replace(/\/$/, "");
 
 // Hanya URL nyata yang boleh diindeks. URL dengan #fragment tidak dihitung mesin pencari
