@@ -12,8 +12,8 @@
 import { LUCIDE, isIconName, svgIcon } from "@/lib/lucide-icons";
 import { SHOP_RUNTIME_JS } from "@/lib/ai-site-runtime";
 
-export type TemplateId = "bersih" | "gelap" | "hangat" | "tegas" | "segar" | "elegan" | "pastel" | "neon" | "bakso" | "kue" | "barber" | "tech";
-export type SiteKind = "umkm" | "jasa" | "portofolio" | "event" | "profil";
+export type TemplateId = "bersih" | "gelap" | "hangat" | "tegas" | "segar" | "elegan" | "pastel" | "neon" | "bakso" | "kue" | "barber" | "tech" | "majalah" | "jurnal";
+export type SiteKind = "umkm" | "jasa" | "portofolio" | "event" | "profil" | "artikel";
 /** center/left/split = lawas; split-bold (60/40 + tumpukan kartu), asymmetric (1 kartu besar + 2 kecil), editorial (headline raksasa) = baru. */
 export type HeroLayout = "center" | "left" | "split" | "split-bold" | "asymmetric" | "editorial";
 export type FeatLayout = "grid" | "bento" | "list" | "editorial";
@@ -32,6 +32,21 @@ export interface SiteStep {
   title: string;
   text: string;
 }
+
+export interface SiteArticle {
+  id: string;
+  title: string;
+  excerpt: string;
+  category: string;
+  author: string;
+  /** Perkiraan menit baca. */
+  readMin: number;
+  /** Paragraf; paragraf berawalan "## " dirender sebagai subjudul. */
+  body: string[];
+}
+
+/** Gambar unggahan pengguna (data URL), kunci: logo | hero | item:<id> | article:<id>. */
+export type SiteImages = Record<string, string>;
 
 export interface SiteItem {
   id: string;
@@ -65,6 +80,8 @@ export interface SiteContent {
   features: SiteFeature[];
   itemsTitle: string;
   items: SiteItem[];
+  /** Hanya untuk jenis "artikel". */
+  articles?: SiteArticle[];
   stepsTitle: string;
   steps: SiteStep[];
   aboutTitle: string;
@@ -94,13 +111,27 @@ export const KIND_LABEL: Record<SiteKind, string> = {
   portofolio: "Portofolio / personal",
   event: "Event / promo",
   profil: "Profil organisasi / komunitas",
+  artikel: "Artikel / blog (daftar artikel + halaman baca)",
 };
+
+export const KIND_OPTIONS: { id: SiteKind; name: string }[] = [
+  { id: "umkm", name: "Toko / UMKM" },
+  { id: "jasa", name: "Jasa / layanan" },
+  { id: "portofolio", name: "Portofolio" },
+  { id: "event", name: "Event / promo" },
+  { id: "profil", name: "Profil organisasi" },
+  { id: "artikel", name: "Artikel / blog" },
+];
+
+export const MAX_PALETTE = 6;
 
 export const TEMPLATES: { id: TemplateId; name: string; desc: string; swatch: [string, string]; accent: string }[] = [
   { id: "bakso", name: "Kuliner Hangat", desc: "Krem & terakota, kartu membulat. Warung, bakso, kuliner", swatch: ["#FFFBF5", "#C2410C"], accent: "#C2410C" },
   { id: "kue", name: "Kue & Dessert", desc: "Persik lembut, pink tua, huruf serif. Bakery, dessert", swatch: ["#FFF7ED", "#BE185D"], accent: "#BE185D" },
   { id: "barber", name: "Barber Gelap", desc: "Hitam pekat & kuning, kartu kaca. Barber, studio, otomotif", swatch: ["#0A0A0A", "#EAB308"], accent: "#EAB308" },
   { id: "tech", name: "Tech Rapi", desc: "Putih kebiruan, navy tegas. Jasa digital, konsultan, startup", swatch: ["#F8FAFC", "#0F172A"], accent: "#0F172A" },
+  { id: "majalah", name: "Majalah Artikel", desc: "Putih gading, huruf serif, merah editorial. Blog, berita, panduan", swatch: ["#FBFAF7", "#B91C1C"], accent: "#B91C1C" },
+  { id: "jurnal", name: "Jurnal Gelap", desc: "Gelap nyaman dibaca, aksen amber. Blog pribadi, esai, catatan", swatch: ["#0F1115", "#F59E0B"], accent: "#F59E0B" },
   { id: "bersih", name: "Bersih", desc: "Terang & rapi, cocok untuk jasa dan profil usaha", swatch: ["#f7f9fd", "#2563eb"], accent: "#2563eb" },
   { id: "gelap", name: "Gelap", desc: "Modern, cocok untuk produk digital dan startup", swatch: ["#070a13", "#7c5cff"], accent: "#7c5cff" },
   { id: "hangat", name: "Hangat", desc: "Ramah berhuruf serif, cocok untuk kuliner dan toko", swatch: ["#fffaf2", "#ea580c"], accent: "#ea580c" },
@@ -127,7 +158,7 @@ export const FEAT_LAYOUTS: { id: FeatLayout; name: string }[] = [
   { id: "editorial", name: "Editorial 01" },
 ];
 
-const KINDS: SiteKind[] = ["umkm", "jasa", "portofolio", "event", "profil"];
+const KINDS: SiteKind[] = ["umkm", "jasa", "portofolio", "event", "profil", "artikel"];
 
 export function isTemplateId(v: unknown): v is TemplateId {
   return typeof v === "string" && TEMPLATES.some((t) => t.id === v);
@@ -187,6 +218,7 @@ const DEFAULT_TEMPLATE: Record<SiteKind, TemplateId[]> = {
   portofolio: ["gelap", "neon", "elegan"],
   event: ["tegas", "pastel", "neon"],
   profil: ["bersih", "segar", "elegan"],
+  artikel: ["majalah", "jurnal", "elegan"],
 };
 
 /** Palet kurasi per jenis usaha, dipakai bila palette_id dari AI tidak dikenal. */
@@ -196,6 +228,7 @@ const PALETTE_BY_KIND: Record<SiteKind, TemplateId[]> = {
   portofolio: ["tech", "barber"],
   event: ["barber", "bakso"],
   profil: ["tech", "kue"],
+  artikel: ["majalah", "jurnal"],
 };
 
 const rec = (v: unknown): Record<string, unknown> => (v && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {});
@@ -249,7 +282,7 @@ function parsePrice(v: unknown): number {
   return Math.round(n * (unit === "jt" || unit === "juta" ? 1_000_000 : 1000));
 }
 
-export function normalizeContent(raw: unknown): SiteContent | null {
+export function normalizeContent(raw: unknown, forceKind?: SiteKind): SiteContent | null {
   if (!raw || typeof raw !== "object") return null;
   const { flat: r, isNew } = adaptNew(raw as Record<string, unknown>);
 
@@ -276,7 +309,38 @@ export function normalizeContent(raw: unknown): SiteContent | null {
       if (title) features.push({ icon: iconName(o.icon, FEATURE_FALLBACK_ICONS[features.length % 6]), title, text: str(o.desc, 160) || str(r.subheadline, 160) || title });
     }
   }
-  if (!brand || !headline || features.length < 2) return null;
+  const kind: SiteKind = forceKind && KINDS.includes(forceKind) ? forceKind : KINDS.includes(r.kind as SiteKind) ? (r.kind as SiteKind) : "profil";
+
+  const articles: SiteArticle[] = [];
+  const aSeed = hash(brand || "x").toString(36);
+  if (Array.isArray(r.articles)) {
+    for (const ar of r.articles.slice(0, 6)) {
+      if (!ar || typeof ar !== "object") continue;
+      const o = ar as Record<string, unknown>;
+      const title = str(o.title, 90);
+      const rawBody: unknown[] = Array.isArray(o.body) ? o.body : typeof o.body === "string" ? o.body.split(/\n+/) : [];
+      const body = rawBody.map((x) => str(x, 700)).filter(Boolean).slice(0, 8);
+      const excerpt = str(o.excerpt ?? o.desc, 200) || (body[0] ?? "").slice(0, 180);
+      if (!title || (!body.length && !excerpt)) continue;
+      const words = (body.join(" ") || excerpt).split(/\s+/).length;
+      const rm = Math.round(Number(o.read_min ?? o.readMin));
+      articles.push({
+        id: `a${aSeed}${articles.length}`,
+        title,
+        excerpt,
+        category: str(o.category, 24),
+        author: str(o.author, 40),
+        readMin: Number.isFinite(rm) && rm > 0 ? Math.min(rm, 60) : Math.max(1, Math.round(words / 200)),
+        body: body.length ? body : [excerpt],
+      });
+    }
+  }
+
+  if (!brand || !headline) return null;
+  if (kind === "artikel") {
+    if (articles.length < 2) return null;
+    if (features.length < 2) features.length = 0;
+  } else if (features.length < 2) return null;
   // Bento format baru: bila AI tak memberi kartu lebar, kartu pertama dibuat 2 kolom supaya tidak sama rata.
   if (isNew && features.length >= 3 && !features.some((f) => f.span === 2)) features[0].span = 2;
 
@@ -290,8 +354,6 @@ export function normalizeContent(raw: unknown): SiteContent | null {
       if (title && text) steps.push({ title, text });
     }
   }
-
-  const kind: SiteKind = KINDS.includes(r.kind as SiteKind) ? (r.kind as SiteKind) : "profil";
 
   const items: SiteItem[] = [];
   const seed = hash(brand).toString(36);
@@ -348,10 +410,11 @@ export function normalizeContent(raw: unknown): SiteContent | null {
     badge: str(r.badge, 40),
     headline,
     subheadline: str(r.subheadline, 220),
-    ctaLabel: str(r.ctaLabel, 28) || "Hubungi Kami",
+    ctaLabel: str(r.ctaLabel, 28) || (kind === "artikel" ? "Baca Artikel" : "Hubungi Kami"),
     features,
-    itemsTitle: str(r.itemsTitle, 40) || (kind === "umkm" ? "Produk Kami" : kind === "portofolio" ? "Karya Pilihan" : kind === "event" ? "Rangkaian Acara" : "Layanan"),
+    itemsTitle: str(r.itemsTitle, 40) || (kind === "umkm" ? "Produk Kami" : kind === "portofolio" ? "Karya Pilihan" : kind === "event" ? "Rangkaian Acara" : kind === "artikel" ? "Artikel Terbaru" : "Layanan"),
     items,
+    articles,
     stepsTitle: str(r.stepsTitle, 40) || "Cara Pesan",
     steps: steps.length >= 2 ? steps : [],
     aboutTitle: str(r.aboutTitle, 50) || "Tentang Kami",
@@ -374,16 +437,16 @@ const PROMPT_ICONS =
 export const SITE_SYSTEM_PROMPT = `Kamu Senior Product Designer + Frontend Engineer untuk Depup AI Web Builder. Tugasmu BUKAN membuat website generik buatan AI. Tugasmu membuat isi website statis kelas agensi. Balas HANYA satu objek JSON valid, tanpa markdown dan tanpa penjelasan. JSON ini dirender ke template premium, jadi kamu memilih komposisi dan menulis isi yang spesifik.
 
 Bentuk JSON:
-{"type":"umkm","brand":{"name":"","slogan":"","palette_id":"bakso"},"hero":{"layout":"split-bold","headline":"","sub":"","cta":"","badge":""},"hover_effect":"lift","products":[{"name":"","price":"","tag":"","size":"large","icon":"beef","desc":""}],"bento_features":[{"title":"","desc":"","icon":"clock-3","col_span":2}],"testimonial":{"text":"","name":""},"contact":{"wa":"","address":"","hours":"","email":""}}
+{"type":"umkm","brand":{"name":"","slogan":"","palette_id":"bakso"},"hero":{"layout":"split-bold","headline":"","sub":"","cta":"","badge":""},"hover_effect":"lift","products":[{"name":"","price":"","tag":"","size":"large","icon":"beef","desc":""}],"bento_features":[{"title":"","desc":"","icon":"clock-3","col_span":2}],"articles":[{"title":"","excerpt":"","category":"","author":"","read_min":4,"body":["","",""]}],"testimonial":{"text":"","name":""},"contact":{"wa":"","address":"","hours":"","email":""}}
 
 Pilihan nilai:
-- type: umkm (toko/warung/kuliner/produk jualan, ada katalog) | jasa | portofolio | event | profil.
-- palette_id: bakso (kuliner hangat, krem + terakota) | kue (bakery/dessert, persik + pink tua) | barber (gelap pekat + kuning: barber, studio, otomotif, gaming) | tech (putih kebiruan + navy: jasa digital, konsultan, startup). Pilih yang paling dekat dengan karakter usaha. Untuk usaha yang tidak cocok dengan keempatnya boleh pakai: segar (herbal, kesehatan, tani) | elegan (butik, foto, kerajinan) | pastel (kreatif, kids) | tegas (event, promo).
+- type: umkm (toko/warung/kuliner/produk jualan, ada katalog) | jasa | portofolio | event | profil | artikel (blog, majalah, berita, panduan: kumpulan artikel yang bisa dibaca).
+- palette_id: bakso (kuliner hangat, krem + terakota) | kue (bakery/dessert, persik + pink tua) | barber (gelap pekat + kuning: barber, studio, otomotif, gaming) | tech (putih kebiruan + navy: jasa digital, konsultan, startup). Pilih yang paling dekat dengan karakter usaha. Untuk type artikel pakai majalah (terang, serif, merah editorial) atau jurnal (gelap, nyaman dibaca, amber). Untuk usaha yang tidak cocok dengan keempatnya boleh pakai: segar (herbal, kesehatan, tani) | elegan (butik, foto, kerajinan) | pastel (kreatif, kids) | tegas (event, promo).
 - hero.layout: split-bold (teks besar di kiri, tumpukan kartu di kanan, 60/40) | asymmetric (1 kartu besar + 2 kecil) | editorial (headline raksasa, tipografi). DILARANG "center". Variasikan, jangan selalu split-bold.
 - hover_effect: lift | tilt.
-- products[].size: "large" atau "small". Buat variasi: tepat 1 produk "large" (best seller, tag "Best Seller" atau sejenisnya), sisanya "small". Jumlah produk untuk umkm: 5 atau 9 (agar grid bento rapi). Untuk jasa/portofolio/event: 3 sampai 5 item (paket layanan, karya, atau acara), 1 di antaranya large. Untuk profil boleh [].
+- products[].size: "large" atau "small". Buat variasi: tepat 1 produk "large" (best seller, tag "Best Seller" atau sejenisnya), sisanya "small". Jumlah produk untuk umkm: 5 atau 9 (agar grid bento rapi). Untuk jasa/portofolio/event: 3 sampai 5 item (paket layanan, karya, atau acara), 1 di antaranya large. Untuk profil boleh []. Untuk artikel: [].
 - products[].price: teks harga, mis. "Rp 15.000" atau "15rb". HANYA bila pengguna menyebut harga; selain itu "".
-- bento_features: 3 sampai 5 item. col_span 2 untuk 1 atau 2 kartu penting, selebihnya 1. Jangan semua sama lebar.
+- bento_features: 3 sampai 5 item (untuk artikel boleh 0 sampai 3). col_span 2 untuk 1 atau 2 kartu penting, selebihnya 1. Jangan semua sama lebar.
 - ikon (products[].icon, bento_features[].icon): satu nama ikon Lucide dari daftar ini saja: ${PROMPT_ICONS} clock-3. Pilih yang spesifik ke maknanya: bakso = beef, pedas = flame, jam = clock-3, segar = leaf, gunting = scissors. JANGAN memakai shopping-bag untuk semuanya. Jangan pernah memakai emoji.
 
 Aturan isi (anti AI look):
@@ -394,6 +457,7 @@ Aturan isi (anti AI look):
 - brand.slogan: maks 5 kata, punchy. hero.headline: maks 10 kata, 2 baris, punya sudut pandang. hero.sub: 1 sampai 2 kalimat pendek. hero.cta: maks 3 kata. hero.badge: fakta dari pengguna, maks 5 kata, mis. "Buka Hari Ini • 10-21 WIB" (hanya jika jam disebut, selain itu fakta lain atau "").
 - bento_features: title maks 4 kata; desc maks 20 kata, berupa fakta, bukan klaim kosong.
 - products[].desc: maks 14 kata, spesifik.
+- articles (WAJIB bila type artikel, selain itu []): 3 sampai 4 artikel dengan topik berbeda. title maks 12 kata, excerpt maks 25 kata, category 1 sampai 2 kata, read_min angka, body 3 sampai 4 paragraf (tiap paragraf 2 sampai 3 kalimat, konkret dan informatif; boleh satu paragraf berawalan "## " sebagai subjudul). author HANYA bila pengguna menyebut nama, selain itu "". Jangan mengarang statistik, kutipan ahli, atau klaim medis/hukum.
 - testimonial: isi HANYA bila pengguna memberikan kutipan pelanggan yang nyata. Selain itu text dan name string kosong. Jangan mengarang testimoni.
 - contact.wa (angka internasional tanpa +), contact.address, contact.hours, contact.email: isi HANYA jika pengguna menyebutkannya; selain itu string kosong. Jangan mengarang kontak.
 - Tolak (isi {"error":"alasan singkat"}) bila permintaan untuk phishing, meniru bank/instansi/merek lain, penipuan, judi, konten dewasa, atau melanggar hukum.`;
@@ -412,6 +476,16 @@ const lum = (hex: string): number => {
   const n = parseInt(hex.slice(1), 16);
   return (((n >> 16) & 255) * 299 + ((n >> 8) & 255) * 587 + (n & 255) * 114) / 1000;
 };
+
+/** Campur warna dengan putih (0..1). */
+function mixWhite(hex: string, k: number): string {
+  const n = parseInt(hex.slice(1), 16);
+  const f = (v: number) => Math.round(v + (255 - v) * k).toString(16).padStart(2, "0");
+  return "#" + f((n >> 16) & 255) + f((n >> 8) & 255) + f(n & 255);
+}
+
+/** Isian tipis dari sebuah warna (latar kotak ikon). */
+const tint = (hex: string, dark: boolean): string => `rgba(${rgb(hex)},${dark ? ".24" : ".30"})`;
 
 /** Pilih teks hitam/putih yang terbaca di atas warna aksen. */
 function onColor(hex: string): string {
@@ -521,13 +595,43 @@ const THEMES: Record<TemplateId, Theme> = {
     display: SANS, body: SANS, mono: SANS, headWeight: 800, upper: false, gradientHead: false, brutal: false, dark: false, deco: "none", pill: "999px",
     acc2: "#38BDF8", ib: "rgba(56,189,248,.20)",
   },
+  majalah: {
+    bg: "#FBFAF7", fg: "#141414", muted: "#5C5852", card: "#FFFFFF", line: "rgba(20,20,20,.12)", navBg: "251,250,247",
+    radius: "8px", shadow: "0 1px 0 rgba(20,20,20,.04)",
+    display: SERIF, body: SANS, mono: SANS, headWeight: 800, upper: false, gradientHead: false, brutal: false, dark: false, deco: "none", pill: "6px",
+    acc2: "#FCA5A5", ib: "rgba(252,165,165,.35)",
+  },
+  jurnal: {
+    bg: "#0F1115", fg: "#ECEBE8", muted: "#9CA0A8", card: "rgba(255,255,255,.04)", line: "rgba(255,255,255,.10)", navBg: "15,17,21",
+    radius: "14px", shadow: "none",
+    display: SERIF, body: SANS, mono: MONO, headWeight: 700, upper: false, gradientHead: false, brutal: false, dark: true, deco: "none", pill: "999px",
+    acc2: "#B45309", ib: "rgba(245,158,11,.16)",
+  },
 };
+
+/** Dua warna bawaan sebuah template: [utama, kedua]. Titik awal editor palet. */
+export function defaultPalette(template: TemplateId): [string, string] {
+  const tpl = TEMPLATES.find((x) => x.id === template)!;
+  const second = THEMES[template].acc2 ?? mixWhite(tpl.accent, 0.5);
+  return [tpl.accent, second];
+}
 
 export interface RenderOpts {
   hero?: HeroLayout;
   feat?: FeatLayout;
   /** false = matikan katalog/keranjang/CRUD walau jenisnya UMKM. */
   shop?: boolean;
+  /** Palet kustom: [utama, kedua, ...tambahan]. Kosong = ikuti template. */
+  palette?: string[];
+  /** Gambar unggahan (data URL). */
+  images?: SiteImages;
+  /** "inline" (default) = data URL tertanam di HTML; "files" = berkas terpisah di assets/img (untuk ZIP). */
+  imageMode?: "inline" | "files";
+}
+
+export interface SiteAsset {
+  path: string;
+  data: Uint8Array;
 }
 
 export interface SiteBundle {
@@ -538,6 +642,8 @@ export interface SiteBundle {
   css: string;
   js: string;
   hasJs: boolean;
+  /** Berkas gambar (hanya terisi bila imageMode = "files"). */
+  assets: SiteAsset[];
 }
 
 const SHOP_ICONS = [
@@ -549,7 +655,7 @@ const RUNTIME_UI_ICONS = ["plus", "minus", "pencil", "trash-2", "x", "check", "d
 
 const fmtRp = (n: number): string => "Rp " + String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 
-function buildCss(t: Theme, a: string, hero: HeroLayout, shop: boolean, hover: HoverEffect): string {
+function buildCss(t: Theme, a: string, hero: HeroLayout, shop: boolean, hover: HoverEffect, extra: string[], article: boolean): string {
   const A = rgb(a);
   const aText = readable(a, t.dark);
   const bd = t.brutal ? "3px solid #0a0a0a" : `1px solid ${t.line}`;
@@ -571,9 +677,9 @@ svg{display:block;flex:none}
 .brand{display:flex;align-items:center;gap:10px;font:${t.headWeight} 18px ${t.display};letter-spacing:-.01em;text-decoration:none;${t.upper ? "text-transform:uppercase;" : ""}margin-right:auto;min-width:0}
 .brand span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .brand i{display:grid;place-items:center;flex:none;width:34px;height:34px;border-radius:${t.brutal ? "4px" : "calc(var(--r) * .6)"};background:var(--a);color:var(--on);font:800 15px ${SANS};font-style:normal;${t.brutal ? "border:2px solid #0a0a0a;" : ""}}
-.links{display:flex;gap:24px;font-size:14.5px;font-weight:500;color:var(--muted)}
+.links{display:flex;gap:24px;flex-wrap:nowrap;white-space:nowrap;min-width:0;font-size:14.5px;font-weight:500;color:var(--muted)}
 .links a{text-decoration:none;transition:color .2s}.links a:hover{color:var(--fg)}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;background:var(--a);color:var(--on);padding:12px 22px;border-radius:var(--pill);font:600 15px ${SANS};text-decoration:none;border:${t.brutal ? "3px solid #0a0a0a" : "1px solid transparent"};box-shadow:${t.brutal ? "4px 4px 0 #0a0a0a" : "none"};transition:background .15s,border-color .15s,opacity .15s;cursor:pointer}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;text-align:center;max-width:100%;background:var(--a);color:var(--on);padding:12px 22px;border-radius:var(--pill);font:600 15px ${SANS};text-decoration:none;border:${t.brutal ? "3px solid #0a0a0a" : "1px solid transparent"};box-shadow:${t.brutal ? "4px 4px 0 #0a0a0a" : "none"};transition:background .15s,border-color .15s,opacity .15s;cursor:pointer}
 .btn:hover{${t.brutal ? "transform:translate(-1px,-1px);box-shadow:5px 5px 0 #0a0a0a;" : "opacity:.9;"}}
 .btn:disabled{opacity:.45;cursor:not-allowed;transform:none;filter:none}
 .btn.ghost{background:${t.dark ? "rgba(255,255,255,.06)" : t.brutal ? "#fff" : "transparent"};color:var(--fg);border:${t.brutal ? "3px solid #0a0a0a" : `1px solid ${t.dark ? "rgba(255,255,255,.18)" : "var(--line)"}`};box-shadow:${t.brutal ? "4px 4px 0 #0a0a0a" : "none"}}
@@ -591,7 +697,7 @@ ${t.deco === "grid" ? `.glow:after{content:"";position:absolute;inset:0;backgrou
 
 .badge{display:inline-block;padding:5px 12px;border-radius:calc(var(--pill) * .6);color:var(--muted);font:600 12.5px ${t.mono};letter-spacing:.02em;border:${t.brutal ? "2px solid #0a0a0a" : `1px solid ${t.dark ? "rgba(255,255,255,.18)" : "var(--line)"}`};margin-bottom:22px}
 
-.hero h1{font-size:clamp(32px,${hero === "split" ? "5.4" : "7"}vw,${hero === "split" ? "60" : "72"}px);line-height:1.06;letter-spacing:${t.display === SERIF ? "-.02em" : "-.035em"};font-weight:${t.headWeight};max-width:${heroLeft ? "780px" : "900px"};margin:0 ${heroLeft ? "0" : "auto"} 22px;${t.upper ? "text-transform:uppercase;" : ""}${grad}padding-bottom:.06em}
+.hero h1{font-size:clamp(32px,${hero === "split" ? "5.4" : "7"}vw,${hero === "split" ? "60" : "72"}px);line-height:1.06;letter-spacing:${t.display === SERIF ? "-.02em" : "-.035em"};font-weight:${t.headWeight};max-width:${heroLeft ? "780px" : "900px"};margin:0 ${heroLeft ? "0" : "auto"} 22px;${t.upper ? "text-transform:uppercase;" : ""}${grad}padding-bottom:.06em;overflow-wrap:break-word}
 .hero p.sub{font-size:clamp(16px,2.2vw,20px);color:var(--muted);max-width:640px;margin:0 ${heroLeft ? "0" : "auto"} 32px}
 .row{display:flex;flex-wrap:wrap;gap:12px;${heroLeft ? "" : "justify-content:center"}}
 .chips{display:none}
@@ -602,15 +708,16 @@ ${t.deco === "grid" ? `.glow:after{content:"";position:absolute;inset:0;backgrou
 .vrow{display:flex;align-items:center;gap:14px;padding:16px 18px;border-bottom:1px solid ${t.dark ? "rgba(255,255,255,.08)" : t.line}}.vrow:last-child{border-bottom:0}
 
 .vrow i{display:grid;place-items:center;flex:none;width:40px;height:40px;color:var(--at)}
-.vrow b{display:block;font:700 15.5px ${SANS};line-height:1.3}
+.vrow>div{min-width:0}
+.vrow b{display:block;overflow-wrap:break-word;font:700 15.5px ${SANS};line-height:1.3}
 .vrow small{display:block;color:var(--muted);font-size:13px;line-height:1.4}
-.vrow em{margin-left:auto;font:700 13px ${t.mono};font-style:normal;color:var(--at);white-space:nowrap}
+.vrow em{flex:none;margin-left:auto;font:700 13px ${t.mono};font-style:normal;color:var(--at);white-space:nowrap}
 
 section{padding:clamp(56px,8vw,112px) 0}
 .eyebrow{display:none}
 h2{font-size:clamp(28px,4.4vw,42px);line-height:1.12;letter-spacing:-.025em;font-weight:${t.headWeight};margin-bottom:32px;${t.upper ? "text-transform:uppercase;" : ""}}
 .grid{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
-.card{background:var(--card);border:${bd};border-radius:var(--r);padding:26px;box-shadow:var(--sh);transition:border-color .15s}
+.card{background:var(--card);border:${bd};border-radius:var(--r);padding:26px;box-shadow:var(--sh);transition:border-color .15s;min-width:0;overflow-wrap:break-word}
 .feat:hover,.prod:hover{border-color:${t.brutal ? "#0a0a0a" : "var(--a)"}}
 .ico{display:flex;align-items:center;justify-content:${t.brutal ? "center" : "flex-start"};width:auto;height:auto;color:var(--at);margin-bottom:14px;${t.brutal ? "width:46px;height:46px;border:2px solid #0a0a0a;background:var(--a);color:var(--on);" : ""}}
 .card h3{font-size:19px;font-weight:${t.headWeight === 900 ? 900 : 700};letter-spacing:-.01em;margin-bottom:8px}
@@ -633,9 +740,9 @@ h2{font-size:clamp(28px,4.4vw,42px);line-height:1.12;letter-spacing:-.025em;font
 .prod{position:relative;display:flex;flex-direction:column;gap:14px;padding:22px}
 .pico{display:flex;align-items:center;justify-content:${t.brutal ? "center" : "flex-start"};width:auto;height:auto;color:var(--at);${t.brutal ? "width:52px;height:52px;border:2px solid #0a0a0a;background:var(--a);color:var(--on);" : ""}}
 .pico svg{width:24px;height:24px}
-.pimg img{width:100%;height:170px;object-fit:cover;border-radius:calc(var(--r) * .6);display:block}
+.pimg{margin:0}.pimg img{width:100%;height:170px;object-fit:cover;border-radius:calc(var(--r) * .6);display:block}
 .pbody{flex:1}.pbody h3{font-size:18px;margin:6px 0 6px}.pbody p{font-size:14.5px}
-.ptag{display:inline-block;font:600 11.5px ${t.mono};letter-spacing:.04em;color:var(--muted);border:1px solid ${t.dark ? "rgba(255,255,255,.16)" : t.line};padding:2px 8px;border-radius:calc(var(--pill) * .5)}
+.ptag{display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font:600 11.5px ${t.mono};letter-spacing:.04em;color:var(--muted);border:1px solid ${t.dark ? "rgba(255,255,255,.16)" : t.line};padding:2px 8px;border-radius:calc(var(--pill) * .5)}
 .pfoot{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px}
 .pprice{font:800 17px ${SANS};color:var(--fg);white-space:nowrap}
 .shop-tools{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin:-8px 0 24px}
@@ -665,32 +772,40 @@ h2{font-size:clamp(28px,4.4vw,42px);line-height:1.12;letter-spacing:-.025em;font
 .band .btn.ghost{background:transparent;color:inherit;border:2px solid ${t.brutal ? "#fde68a" : "rgba(255,255,255,.65)"};box-shadow:none}
 footer{padding:34px 0 44px;border-top:${bd};color:var(--muted);font-size:13.5px}
 footer .wrap{display:flex;flex-wrap:wrap;gap:8px 20px;justify-content:space-between}
-${extraCss(t, bd, hover)}
+${extraCss(t, bd, hover, extra)}
+${article ? articleCss(t, bd) : ""}
 ${shop ? shopCss(t, bd) : ""}
 
 
 @media(max-width:900px){.hsplit{grid-template-columns:1fr;gap:36px}.vrow:nth-child(n){margin:0}.flist{grid-template-columns:1fr;gap:24px}.flist .head{position:static}.bento{grid-template-columns:repeat(2,1fr)}.bento .feat,.bento.b4 .feat,.bento.b5 .feat:nth-child(-n+2),.bento.b2 .feat{grid-column:span 1}.bento .feat:first-child{grid-column:span 2}}
-@media(max-width:820px){.links{display:none}.split{grid-template-columns:1fr}}
+@media(max-width:980px){.links{display:none}}
+@media(max-width:820px){.split{grid-template-columns:1fr}}
 @media(max-width:520px){.wrap{padding:0 18px}.nav .wrap{height:62px;gap:12px}.nav .btn{padding:9px 16px}.card{padding:24px}.bento{grid-template-columns:1fr}.bento .feat:first-child{grid-column:span 1}.frow{grid-template-columns:1fr}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}`;
 }
 
-function extraCss(t: Theme, bd: string, hover: HoverEffect): string {
+function extraCss(t: Theme, bd: string, hover: HoverEffect, extra: string[]): string {
   const dk = t.dark;
   const lift = dk ? "0 18px 40px rgba(0,0,0,.45)" : "0 18px 40px rgba(0,0,0,.10)";
   const move = hover === "tilt" ? "transform:perspective(900px) rotateX(2.5deg) rotateY(-3.5deg) translateY(-4px)" : "transform:translateY(-6px)";
   const noise = t.noise
     ? `.card,.scard,.acard{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}`
     : "";
+  const spots = ["8% 100%", "50% -10%", "100% 90%", "0% 0%"];
+  const layers: string[] = [];
+  if (t.acc2) layers.push(`radial-gradient(55% 70% at 88% 0%,rgba(${rgb(t.acc2)},${dk ? ".14" : ".38"}),transparent 70%)`);
+  extra.slice(0, 4).forEach((c, i) => layers.push(`radial-gradient(42% 55% at ${spots[i]},rgba(${rgb(c)},${dk ? ".12" : ".26"}),transparent 70%)`));
+  const glow = layers.length ? `.glow{background:${layers.join(",")}}` : "";
   const look = t.brutal
     ? ""
     : `.ico,.pico,.vrow i,.ci i,.acard i,.tqh .ico{display:grid;place-items:center;flex:none;width:40px;height:40px;border-radius:50%;background:var(--ib);color:var(--at)}
 .ico svg,.pico svg,.vrow i svg,.ci svg,.acard i svg,.tqh .ico svg{width:20px;height:20px}
-.feat,.prod,.scard,.acard{transition:transform .3s ease,box-shadow .3s ease,border-color .3s ease}
-.feat:hover,.prod:hover,.scard:hover,.acard:hover{${move};box-shadow:${lift}}
+.feat,.prod,.scard,.acard,.post{transition:transform .3s ease,box-shadow .3s ease,border-color .3s ease}
+.feat:hover,.prod:hover,.scard:hover,.acard:hover,.post:hover{${move};box-shadow:${lift}}
+.feat[style] .ico,.prod[style] .pico{background:var(--tb);color:var(--tt)}
 ${noise}
 ${t.glass ? ".card,.scard,.acard{-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px)}" : ""}
-${t.acc2 ? `.glow{background:radial-gradient(55% 70% at 88% 0%,rgba(${rgb(t.acc2)},${dk ? ".14" : ".38"}),transparent 70%)}` : ""}`;
+${glow}`;
   return `${look}
 .items{grid-auto-flow:dense}
 .ptags{display:flex;flex-wrap:wrap;gap:6px}
@@ -702,13 +817,14 @@ ${t.acc2 ? `.glow{background:radial-gradient(55% 70% at 88% 0%,rgba(${rgb(t.acc2
 .prod.large .pprice{font-size:24px}
 .bento.bx{grid-template-columns:repeat(3,1fr);grid-auto-flow:dense}
 .bento.bx .feat{grid-column:span 1}.bento.bx .feat.s2{grid-column:span 2}
+.hsplit>*{min-width:0}
 .hbold{grid-template-columns:1.5fr 1fr;gap:clamp(32px,5vw,80px)}
 .hero.h-split-bold h1{font-size:clamp(36px,5vw,68px);line-height:1;letter-spacing:-.045em;max-width:none}
 .stack{display:grid;gap:14px}
 .scard{border:${bd};border-radius:var(--r);box-shadow:var(--sh);background:var(--card);padding:18px 20px}
-.scard:nth-child(1){transform:rotate(-1.4deg) translateX(-5%)}
-.scard:nth-child(2){transform:rotate(1.2deg) translateX(7%)}
-.scard:nth-child(3){transform:rotate(-.6deg) translateX(-1%)}
+.scard:nth-child(1){transform:rotate(-.8deg)}
+.scard:nth-child(2){transform:rotate(.6deg)}
+.scard:nth-child(3){transform:rotate(-.3deg)}
 .hasym{grid-template-columns:1.15fr 1fr;gap:clamp(32px,5vw,72px)}
 .hero.h-asymmetric h1{font-size:clamp(36px,5.2vw,70px);line-height:1.02;letter-spacing:-.04em;max-width:none}
 .agrid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
@@ -720,7 +836,7 @@ ${t.acc2 ? `.glow{background:radial-gradient(55% 70% at 88% 0%,rgba(${rgb(t.acc2
 .acard.big b{font:${t.headWeight} clamp(22px,2.8vw,32px)/1.1 ${t.display};letter-spacing:-.02em}
 .acard.big small{color:inherit;opacity:.85;font-size:15px}
 .acard .ap{font:800 18px ${SANS};color:var(--at)}.acard.big .ap{color:inherit;font-size:24px}
-.hero.h-editorial h1{font-size:clamp(42px,9.4vw,128px);line-height:.95;letter-spacing:-.05em;max-width:none;margin:0 0 clamp(28px,5vw,56px)}
+.hero.h-editorial h1{font-size:clamp(34px,8vw,112px);line-height:.95;letter-spacing:-.05em;max-width:none;margin:0 0 clamp(28px,5vw,56px)}
 .hed-top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px 20px;padding-bottom:18px;border-bottom:${bd};margin-bottom:clamp(28px,5vw,64px)}
 .hed-top .badge{margin:0}
 .slo{font:600 13px ${t.mono};letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
@@ -742,7 +858,64 @@ ${t.acc2 ? `.glow{background:radial-gradient(55% 70% at 88% 0%,rgba(${rgb(t.acc2
 @media(max-width:900px){.bento.bx{grid-template-columns:repeat(2,1fr)}.hbold,.hasym{grid-template-columns:1fr}.scard:nth-child(n){transform:none}.hed-bot{grid-template-columns:1fr}.hed-bot .row{justify-content:flex-start}}
 @media(max-width:700px){.fe{grid-template-columns:44px 1fr;gap:6px 14px}.fe p{grid-column:2}.tq{grid-template-columns:1fr;gap:18px}}
 @media(max-width:640px){.prod.large{grid-column:span 1;grid-row:auto}}
+.himg{border-radius:var(--r);overflow:hidden;border:${bd};box-shadow:var(--sh);background:var(--card)}
+.himg img{display:block;width:100%;height:100%;aspect-ratio:16/10;object-fit:cover}
+.hero>.wrap>.himg{margin-top:clamp(32px,5vw,56px)}
+.visual .himg{border:0;border-radius:0;box-shadow:none}
+.stack .himg img{aspect-ratio:16/9}
+.agrid .himg{grid-column:span 2}.agrid .himg img{aspect-ratio:16/8}
+.brand i.logo{background:transparent;width:auto;max-width:110px;border:0}
+.brand i.logo img{display:block;height:34px;width:auto;max-width:110px;object-fit:contain}
+.prod.large .pimg img{height:clamp(200px,24vw,300px)}
 @media(max-width:520px){.bento.bx{grid-template-columns:1fr}.bento.bx .feat.s2{grid-column:span 1}.agrid{grid-template-columns:1fr}.acard.big{grid-column:span 1}}`;
+}
+
+function articleCss(t: Theme, bd: string): string {
+  return `.posts{display:grid;gap:18px;grid-template-columns:repeat(6,minmax(0,1fr))}
+.post{position:relative;display:flex;flex-direction:column;padding:0;overflow:hidden;grid-column:span 2}
+.card.post{padding:0}
+.post.s3{grid-column:span 3}.post.s6{grid-column:span 6}
+.acov{overflow:hidden;background:var(--a-soft)}
+.post .acov{aspect-ratio:16/10}
+.acov img{display:block;width:100%;height:100%;object-fit:cover}
+.acov.ph{display:grid;place-items:center;background:linear-gradient(135deg,var(--a-soft),var(--ib));color:var(--at)}
+.acov.ph i{display:grid;place-items:center;width:56px;height:56px;border-radius:50%;background:var(--card);font-style:normal}
+.acov.ph svg{width:26px;height:26px}
+.pcont{display:flex;flex-direction:column;gap:10px;padding:22px;flex:1;min-width:0}
+.post h3{font-size:clamp(18px,2vw,21px);line-height:1.25;margin:0}
+.post h3 a{text-decoration:none}
+.post h3 a:after{content:"";position:absolute;inset:0;z-index:1}
+.post p{font-size:15px}
+.pmeta{margin-top:auto;padding-top:6px;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:6px 12px;color:var(--muted);font-size:13px}
+.more{display:inline-flex;align-items:center;gap:4px;color:var(--at);font-weight:700}
+.more svg{width:16px;height:16px;transition:transform .2s}.post:hover .more svg{transform:translateX(3px)}
+.post.top{grid-column:1/-1;flex-direction:row}
+.post.s6{flex-direction:row}.post.s6 .acov{flex:0 0 40%;aspect-ratio:auto;min-height:220px}
+.post.top .acov{flex:0 0 52%;aspect-ratio:auto;min-height:300px}
+.post.top .pcont{justify-content:center;padding:clamp(24px,4vw,44px)}
+.post.top h3{font-size:clamp(24px,3.2vw,38px);letter-spacing:-.025em;line-height:1.12}
+.post.top p{font-size:17px}
+.reader{display:none;position:fixed;inset:0;z-index:60;overflow-y:auto;background:var(--bg);color:var(--fg);overscroll-behavior:contain}
+.reader:target{display:block}
+html:has(.reader:target){overflow:hidden}
+.rbar{position:sticky;top:0;z-index:2;background:rgb(${t.navBg});border-bottom:${bd}}
+.rw{display:flex;align-items:center;justify-content:space-between;gap:16px;height:60px}
+.rbrand{font:${t.headWeight} 15px ${t.display};min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--muted)}
+.rbody{max-width:760px;margin:0 auto;padding:clamp(28px,6vw,64px) 24px 96px}
+.rhead{display:grid;gap:14px;justify-items:start;margin-bottom:28px}
+.rhead h1{font-size:clamp(30px,5.4vw,50px);line-height:1.08;letter-spacing:-.03em;font-weight:${t.headWeight};overflow-wrap:break-word}
+.rmeta{margin:0;color:var(--muted);font-size:14.5px}
+.rcov{border-radius:var(--r);margin:0 0 32px;aspect-ratio:16/9}
+.prose{font:19px/1.85 ${SERIF}}
+.prose p{margin:0 0 1.3em}
+.prose h3{font:${t.headWeight} clamp(21px,3vw,26px)/1.25 ${t.display};margin:1.8em 0 .6em;letter-spacing:-.015em}
+.rnav{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:56px}
+.rnav a{text-decoration:none;display:grid;gap:4px;padding:16px 18px;min-width:0}
+.rnav small{color:var(--muted);font-size:12px;letter-spacing:.06em;text-transform:uppercase}
+.rnav b{font:700 15px/1.35 ${SANS};overflow-wrap:break-word}
+.rnav a:nth-child(2){text-align:right}
+@media(max-width:900px){.posts{grid-template-columns:repeat(2,minmax(0,1fr))}.post,.post.s3{grid-column:auto}.post.s6,.post.top{grid-column:1/-1}.post.s6{flex-direction:column}.post.s6 .acov{flex:none;aspect-ratio:16/10;min-height:0}.post.top{flex-direction:column}.post.top .acov{flex:none;aspect-ratio:16/10;min-height:0}}
+@media(max-width:600px){.posts{grid-template-columns:1fr}.post.s6,.post.top{grid-column:auto}.rnav{grid-template-columns:1fr}.rnav a:nth-child(2){text-align:left}.rbody{padding-left:18px;padding-right:18px}.prose{font-size:17.5px}}`;
 }
 
 function shopCss(t: Theme, bd: string): string {
@@ -752,7 +925,8 @@ function shopCss(t: Theme, bd: string): string {
 .alabel{display:inline-flex;align-items:center;gap:8px;font:700 13px ${SANS};margin-right:auto}
 .adminbar .btn{background:var(--on);color:var(--a);box-shadow:none;border-color:transparent}
 .adminbar .btn.ghost{background:transparent;color:var(--on);border:1px solid rgba(255,255,255,.55)}
-.padm{position:absolute;top:12px;right:12px;display:flex;gap:6px}
+.padm{position:absolute;top:12px;right:12px;display:flex;gap:6px;z-index:2}
+.wb-admin .prod{padding-top:60px}
 .ib{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;border:${bd};background:var(--card);color:var(--fg);cursor:pointer}
 .ib:hover{border-color:var(--a)}.ib.bad{color:#dc2626}
 .ib svg{width:16px;height:16px}
@@ -794,70 +968,131 @@ const ico = (name: string, size = 24): string => svgIcon(name, size);
 /** Aman disisipkan di dalam <script type="application/json">. */
 const jsonForScript = (v: unknown): string => JSON.stringify(v).replace(/</g, "\\u003c").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
 
+const okDataUrl = (u: string): boolean => /^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(u);
+
+function decodeDataUrl(u: string): { ext: string; data: Uint8Array } | null {
+  const m = /^data:image\/(png|jpeg|webp|gif);base64,([A-Za-z0-9+/=]+)$/.exec(u);
+  if (!m) return null;
+  const bin = atob(m[2]);
+  const out = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+  return { ext: m[1] === "jpeg" ? "jpg" : m[1], data: out };
+}
+
 export function buildSite(content: SiteContent, template: TemplateId, accent?: string, opts: RenderOpts = {}): SiteBundle {
-  const t = THEMES[template];
-  const a = isHexColor(accent) ? accent : isHexColor(content.accent) && content.accent ? content.accent : TEMPLATES.find((x) => x.id === template)!.accent;
+  const base = THEMES[template];
+  const custom = (opts.palette ?? []).filter(isHexColor).map((x) => x.toLowerCase()).slice(0, MAX_PALETTE);
+  const a =
+    custom[0] ??
+    (isHexColor(accent) ? accent : isHexColor(content.accent) && content.accent ? content.accent : TEMPLATES.find((x) => x.id === template)!.accent);
+  // Palet kustom: warna ke-2 menggantikan aksen kedua template; warna ke-3 dst. menjadi warna tambahan (ikon bergantian + sorot hero).
+  const t: Theme = custom.length >= 2 ? { ...base, acc2: custom[1], ib: tint(custom[1], base.dark) } : base;
+  const extra = custom.slice(2);
+  const cyc = custom.length >= 3 ? custom.slice(1) : [];
+  const toneStyle = (i: number): string => {
+    if (!cyc.length || t.brutal) return "";
+    const col = cyc[i % cyc.length];
+    return ` style="--tb:${tint(col, t.dark)};--tt:${readable(col, t.dark)}"`;
+  };
+
   const c = content;
   const heroL = opts.hero ?? c.hero;
   const featL = opts.feat ?? c.feat;
   const shop = hasShop(c) && opts.shop !== false;
-  const hasItems = c.items.length > 0;
+
+  /* ----- gambar unggahan ----- */
+  const files = opts.imageMode === "files";
+  const imgs = opts.images ?? {};
+  const assets: SiteAsset[] = [];
+  const seen = new Map<string, string>();
+  const imgSrc = (key: string): string => {
+    const u = imgs[key];
+    if (!u || !okDataUrl(u)) return "";
+    if (!files) return u;
+    const hit = seen.get(key);
+    if (hit) return hit;
+    const d = decodeDataUrl(u);
+    if (!d) return "";
+    const path = `assets/img/${key.replace(/[^a-z0-9]+/gi, "-").replace(/^-+|-+$/g, "").toLowerCase()}.${d.ext}`;
+    assets.push({ path, data: d.data });
+    seen.set(key, path);
+    return path;
+  };
+  const items: SiteItem[] = c.items.map((i) => ({ ...i, img: imgSrc(`item:${i.id}`) || i.img }));
+  const hasItems = items.length > 0;
+  const arts = c.articles ?? [];
+  const isArticle = c.kind === "artikel" && arts.length > 0;
+  const hasContact = !!(c.address || c.hours || c.whatsapp || c.email);
+  const hasFeatures = c.features.length >= 2;
 
   const wa = c.whatsapp ? `https://wa.me/${c.whatsapp}` : "";
   const mail = c.email ? `mailto:${esc(c.email)}` : "";
-  const firstId = shop ? "katalog" : "fitur";
-  const ctaHref = wa || mail || `#${firstId}`;
-  const brandMark = c.brandIcon ? ico(c.brandIcon, 20) : esc(Array.from(c.brand)[0]?.toUpperCase() ?? "•");
+  const firstId = isArticle ? "artikel" : shop ? "katalog" : "fitur";
+  const ctaHref = isArticle ? "#artikel" : wa || mail || `#${firstId}`;
+  const logo = imgSrc("logo");
+  const brandMark = logo ? `<img src="${esc(logo)}" alt="">` : c.brandIcon ? ico(c.brandIcon, 20) : esc(Array.from(c.brand)[0]?.toUpperCase() ?? "•");
 
   const nav = [
+    isArticle ? `<a href="#artikel">${esc(c.itemsTitle)}</a>` : "",
     hasItems && shop ? `<a href="#katalog">Katalog</a>` : "",
-    `<a href="#fitur">Keunggulan</a>`,
+    hasFeatures ? `<a href="#fitur">Keunggulan</a>` : "",
     hasItems && !shop ? `<a href="#layanan">${esc(c.itemsTitle)}</a>` : "",
     c.steps.length ? `<a href="#cara">${esc(c.stepsTitle)}</a>` : "",
     c.about ? `<a href="#tentang">${esc(c.aboutTitle)}</a>` : "",
     wa || mail || c.address ? `<a href="#kontak">Kontak</a>` : "",
-  ].join("");
-
-  const chips = "";
+  ]
+    .filter(Boolean)
+    .slice(0, 5)
+    .join("");
 
   /* ----- hero ----- */
-  const heroRows =
-    shop || (hasItems && c.items.some((i) => i.price > 0))
-      ? c.items.slice(0, 3).map((i) => ({ icon: i.icon, title: i.name, text: i.desc, tail: i.price > 0 ? fmtRp(i.price) : "" }))
+  const heroRows = isArticle
+    ? arts.slice(0, 3).map((x) => ({ icon: "book-open", title: x.title, text: x.excerpt, tail: `${x.readMin} mnt` }))
+    : shop || (hasItems && items.some((i) => i.price > 0))
+      ? items.slice(0, 3).map((i) => ({ icon: i.icon, title: i.name, text: i.desc, tail: i.price > 0 ? fmtRp(i.price) : "" }))
       : c.features.slice(0, 3).map((f) => ({ icon: f.icon, title: f.title, text: f.text, tail: "" }));
   const clip = (t0: string, n: number): string => (t0.length > n ? t0.slice(0, n - 2).trimEnd() + "…" : t0);
+  const heroImg = imgSrc("hero");
+  const himg = heroImg ? `<div class="himg"><img src="${esc(heroImg)}" alt="${esc(c.brand)}"></div>` : "";
   const visualRows = heroRows
     .map((r) => `<div class="vrow"><i>${ico(r.icon, 20)}</i><div><b>${esc(r.title)}</b><small>${esc(clip(r.text, 60))}</small></div>${r.tail ? `<em>${esc(r.tail)}</em>` : ""}</div>`)
     .join("");
 
+  const ghost = isArticle
+    ? c.about || hasContact
+      ? { label: "Tentang kami", href: "#tentang" }
+      : null
+    : { label: shop ? "Lihat katalog" : "Lihat keunggulan", href: `#${firstId}` };
   const badgeHtml = c.badge ? `<div class="badge">${esc(c.badge)}</div>` : "<div></div>";
   const subHtml = c.subheadline ? `<p class="sub">${esc(c.subheadline)}</p>` : "<div></div>";
-  const ctaRow = `<div class="row"><a class="btn" href="${ctaHref}">${esc(c.ctaLabel)}</a><a class="btn ghost" href="#${firstId}">${shop ? "Lihat katalog" : "Lihat keunggulan"}</a></div>`;
-  const heroText = `${badgeHtml}<h1>${esc(c.headline)}</h1>${subHtml}${ctaRow}<div class="chips">${chips}</div>`;
+  const ctaRow = `<div class="row"><a class="btn" href="${ctaHref}">${esc(c.ctaLabel)}</a>${ghost ? `<a class="btn ghost" href="${ghost.href}">${ghost.label}</a>` : ""}</div>`;
+  const heroText = `${badgeHtml}<h1>${esc(c.headline)}</h1>${subHtml}${ctaRow}`;
 
-  let heroInner = heroText;
+  let heroInner = heroText + himg;
   if (heroL === "split") {
-    heroInner = `<div class="hsplit"><div>${heroText}</div><div class="visual">${visualRows}</div></div>`;
+    heroInner = `<div class="hsplit"><div>${heroText}</div><div class="visual">${himg}${visualRows}</div></div>`;
   } else if (heroL === "split-bold") {
     const cards = heroRows
       .map((r) => `<div class="scard vrow"><i>${ico(r.icon, 20)}</i><div><b>${esc(r.title)}</b><small>${esc(clip(r.text, 60))}</small></div>${r.tail ? `<em>${esc(r.tail)}</em>` : ""}</div>`)
       .join("");
-    heroInner = `<div class="hsplit hbold"><div>${heroText}</div><div class="stack">${cards}</div></div>`;
+    heroInner = `<div class="hsplit hbold"><div>${heroText}</div><div class="stack">${himg}${cards}</div></div>`;
   } else if (heroL === "asymmetric") {
     const card = (r: (typeof heroRows)[number], cls: string, n: number): string =>
       `<div class="acard ${cls}"><i>${ico(r.icon, 20)}</i><div><b>${esc(r.title)}</b><small>${esc(clip(r.text, n))}</small></div>${r.tail ? `<span class="ap">${esc(r.tail)}</span>` : ""}</div>`;
     const cards = heroRows.map((r, i) => card(r, i === 0 ? "big" : "", i === 0 ? 100 : 48)).join("");
-    heroInner = `<div class="hsplit hasym"><div>${heroText}</div><div class="agrid">${cards}</div></div>`;
+    heroInner = `<div class="hsplit hasym"><div>${heroText}</div><div class="agrid">${himg}${cards}</div></div>`;
   } else if (heroL === "editorial") {
-    heroInner = `<div class="hed"><div class="hed-top"><span class="slo">${esc(c.slogan || c.brand)}</span>${c.badge ? badgeHtml : ""}</div><h1>${esc(c.headline)}</h1><div class="hed-bot">${subHtml}${ctaRow}</div></div>`;
+    heroInner = `<div class="hed"><div class="hed-top"><span class="slo">${esc(c.slogan || c.brand)}</span>${c.badge ? badgeHtml : ""}</div><h1>${esc(c.headline)}</h1><div class="hed-bot">${subHtml}${ctaRow}</div></div>${himg}`;
   }
 
   const hero = `<div class="hero h-${heroL}"><div class="glow"></div><div class="wrap">${heroInner}</div></div>`;
 
   /* ----- katalog / layanan ----- */
   const priceLabel = (i: SiteItem) => (i.price > 0 ? fmtRp(i.price) : "Tanya harga");
-  const itemCard = (i: SiteItem): string =>
-    `<article class="card prod${i.size === "large" ? " large" : ""}"><div class="pico">${ico(i.icon, 20)}</div><div class="pbody">${i.tag || i.category ? `<div class="ptags">${i.tag ? `<span class="ptag hot">${esc(i.tag)}</span>` : ""}${i.category ? `<span class="ptag">${esc(i.category)}</span>` : ""}</div>` : ""}<h3>${esc(i.name)}</h3>${i.desc ? `<p>${esc(i.desc)}</p>` : ""}</div>${
+  const itemCard = (i: SiteItem, n: number): string =>
+    `<article class="card prod${i.size === "large" ? " large" : ""}"${toneStyle(n)}>${
+      i.img ? `<div class="pimg"><img src="${esc(i.img)}" alt="${esc(i.name)}" loading="lazy"></div>` : `<div class="pico">${ico(i.icon, 20)}</div>`
+    }<div class="pbody">${i.tag || i.category ? `<div class="ptags">${i.tag ? `<span class="ptag hot">${esc(i.tag)}</span>` : ""}${i.category ? `<span class="ptag">${esc(i.category)}</span>` : ""}</div>` : ""}<h3>${esc(i.name)}</h3>${i.desc ? `<p>${esc(i.desc)}</p>` : ""}</div>${
       shop
         ? `<div class="pfoot"><strong class="pprice">${esc(priceLabel(i))}</strong><button type="button" class="btn sm add">${ico("plus", 16)}Tambah</button></div>`
         : i.price > 0
@@ -868,26 +1103,54 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
   const catalog = !hasItems
     ? ""
     : shop
-      ? `<section id="katalog"><div class="wrap"><h2>${esc(c.itemsTitle)}</h2><div class="shop-tools"><label class="search">${ico("search", 18)}<input id="wb-q" type="search" placeholder="Cari produk…" aria-label="Cari produk" autocomplete="off"></label><div id="wb-cats" data-wb-dyn></div></div><div id="wb-grid" class="items" data-wb-dyn>${c.items.map(itemCard).join("")}</div></div></section>`
-      : `<section id="layanan"><div class="wrap"><h2>${esc(c.itemsTitle)}</h2><div class="items">${c.items.map(itemCard).join("")}</div></div></section>`;
+      ? `<section id="katalog"><div class="wrap"><h2>${esc(c.itemsTitle)}</h2><div class="shop-tools"><label class="search">${ico("search", 18)}<input id="wb-q" type="search" placeholder="Cari produk…" aria-label="Cari produk" autocomplete="off"></label><div id="wb-cats" data-wb-dyn></div></div><div id="wb-grid" class="items" data-wb-dyn>${items.map(itemCard).join("")}</div></div></section>`
+      : `<section id="layanan"><div class="wrap"><h2>${esc(c.itemsTitle)}</h2><div class="items">${items.map(itemCard).join("")}</div></div></section>`;
+
+  /* ----- artikel: daftar + halaman baca (murni CSS :target, tanpa skrip) ----- */
+  const artMeta = (x: SiteArticle): string => [x.author, `${x.readMin} mnt baca`].filter(Boolean).map(esc).join(" · ");
+  const artCover = (x: SiteArticle): string => {
+    const s0 = imgSrc(`article:${x.id}`);
+    return s0 ? `<div class="acov"><img src="${esc(s0)}" alt="" loading="lazy"></div>` : `<div class="acov ph" aria-hidden="true"><i>${ico("book-open", 26)}</i></div>`;
+  };
+  const rest = arts.length - 1;
+  const tailSpan = (i: number): string => {
+    if (i === 0 || rest <= 0) return "";
+    if (rest % 3 === 1 && i === arts.length - 1) return " s6";
+    if (rest % 3 === 2 && i >= arts.length - 2) return " s3";
+    return "";
+  };
+  const postCard = (x: SiteArticle, i: number): string =>
+    `<article class="card post${i === 0 ? " top" : tailSpan(i)}">${artCover(x)}<div class="pcont">${x.category ? `<div class="ptags"><span class="ptag hot">${esc(x.category)}</span></div>` : ""}<h3><a href="#a-${x.id}">${esc(x.title)}</a></h3><p>${esc(x.excerpt)}</p><div class="pmeta"><span>${artMeta(x)}</span><span class="more">Baca${ico("arrow-right", 16)}</span></div></div></article>`;
+  const articlesSec = isArticle ? `<section id="artikel"><div class="wrap"><h2>${esc(c.itemsTitle)}</h2><div class="posts">${arts.map(postCard).join("")}</div></div></section>` : "";
+  const readers = isArticle
+    ? arts
+        .map((x, i) => {
+          const prev = arts[i - 1];
+          const next = arts[i + 1];
+          const cov = imgSrc(`article:${x.id}`);
+          const body = x.body.map((p) => (p.startsWith("## ") ? `<h3>${esc(p.slice(3))}</h3>` : `<p>${esc(p)}</p>`)).join("");
+          return `<article id="a-${x.id}" class="reader" aria-label="${esc(x.title)}"><div class="rbar"><div class="wrap rw"><a class="btn ghost sm" href="#artikel">${ico("arrow-left", 16)}Semua artikel</a><span class="rbrand">${esc(c.brand)}</span></div></div><div class="rbody"><header class="rhead">${x.category ? `<span class="ptag hot">${esc(x.category)}</span>` : ""}<h1>${esc(x.title)}</h1><p class="rmeta">${artMeta(x)}</p></header>${cov ? `<div class="acov rcov"><img src="${esc(cov)}" alt=""></div>` : ""}<div class="prose">${body}</div><nav class="rnav">${prev ? `<a class="card" href="#a-${prev.id}"><small>Sebelumnya</small><b>${esc(prev.title)}</b></a>` : "<span></span>"}${next ? `<a class="card" href="#a-${next.id}"><small>Berikutnya</small><b>${esc(next.title)}</b></a>` : "<span></span>"}</nav></div></article>`;
+        })
+        .join("\n")
+    : "";
 
   /* ----- fitur ----- */
-  const featCard = (f: SiteFeature, cls = "") => `<article class="card feat ${cls}${f.span === 2 ? " s2" : ""}"><div class="ico">${ico(f.icon, 20)}</div><div><h3>${esc(f.title)}</h3><p>${esc(f.text)}</p></div></article>`;
+  const featCard = (f: SiteFeature, n: number, cls = "") => `<article class="card feat ${cls}${f.span === 2 ? " s2" : ""}"${toneStyle(n + 1)}><div class="ico">${ico(f.icon, 20)}</div><div><h3>${esc(f.title)}</h3><p>${esc(f.text)}</p></div></article>`;
   const featBody =
     featL === "bento"
-      ? `<h2>${esc(c.featuresTitle)}</h2><div class="bento ${c.features.some((f) => f.span === 2) ? "bx" : `b${c.features.length}`}">${c.features.map((f) => featCard(f)).join("")}</div>`
+      ? `<h2>${esc(c.featuresTitle)}</h2><div class="bento ${c.features.some((f) => f.span === 2) ? "bx" : `b${c.features.length}`}">${c.features.map((f, n) => featCard(f, n)).join("")}</div>`
       : featL === "editorial"
         ? `<div class="flist"><div class="head"><h2>${esc(c.featuresTitle)}</h2>${c.slogan ? `<p>${esc(c.slogan)}</p>` : ""}</div><ol class="fedlist">${c.features
             .map((f, i) => `<li class="fe"><span class="fn">${String(i + 1).padStart(2, "0")}</span><h3>${esc(f.title)}</h3><p>${esc(f.text)}</p></li>`)
             .join("")}</ol></div>`
-      : featL === "list"
-        ? `<div class="flist"><div class="head"><h2>${esc(c.featuresTitle)}</h2>${c.subheadline ? `<p>${esc(c.subheadline)}</p>` : ""}</div><div class="frows">${c.features.map((f) => featCard(f, "frow")).join("")}</div></div>`
-        : `<h2>${esc(c.featuresTitle)}</h2><div class="grid">${c.features.map((f) => featCard(f)).join("")}</div>`;
-  const features = `<section id="fitur"><div class="wrap">${featBody}</div></section>`;
+        : featL === "list"
+          ? `<div class="flist"><div class="head"><h2>${esc(c.featuresTitle)}</h2>${c.subheadline ? `<p>${esc(c.subheadline)}</p>` : ""}</div><div class="frows">${c.features.map((f, n) => featCard(f, n, "frow")).join("")}</div></div>`
+          : `<h2>${esc(c.featuresTitle)}</h2><div class="grid">${c.features.map((f, n) => featCard(f, n)).join("")}</div>`;
+  const features = hasFeatures ? `<section id="fitur"><div class="wrap">${featBody}</div></section>` : "";
 
   const steps = c.steps.length
     ? `<section id="cara"><div class="wrap"><h2>${esc(c.stepsTitle)}</h2><ol class="steps">${c.steps
-        .map((s, i) => `<li class="card"><b>${String(i + 1).padStart(2, "0")}</b><h3>${esc(s.title)}</h3><p>${esc(s.text)}</p></li>`)
+        .map((s0, i) => `<li class="card"><b>${String(i + 1).padStart(2, "0")}</b><h3>${esc(s0.title)}</h3><p>${esc(s0.text)}</p></li>`)
         .join("")}</ol></div></section>`
     : "";
 
@@ -913,15 +1176,15 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
 
   const buttons = [
     wa ? `<a class="btn" href="${wa}" rel="noopener">${ico("message-circle", 18)}${esc(/wa|whatsapp/i.test(c.ctaLabel) ? c.ctaLabel : `${c.ctaLabel} via WhatsApp`)}</a>` : "",
-    mail ? `<a class="btn ${wa ? "ghost" : ""}" href="${mail}">${ico("mail", 18)}${wa ? "Kirim Email" : esc(c.ctaLabel)}</a>` : "",
+    mail ? `<a class="btn ${wa ? "ghost" : ""}" href="${mail}">${ico("mail", 18)}${wa || isArticle ? "Kirim Email" : esc(c.ctaLabel)}</a>` : "",
   ].join("");
 
   const band = buttons
     ? `<section id="kontak"><div class="wrap"><div class="band"><div><h2>${esc(c.closing)}</h2>${c.closingText ? `<p>${esc(c.closingText)}</p>` : ""}</div><div class="row">${buttons}</div></div></div></section>`
     : "";
 
-  /* ----- urutan bagian: UMKM = katalog dulu; lainnya = keunggulan dulu ----- */
-  const sections = shop ? [catalog, features, testi, steps, about, band] : [features, catalog, testi, steps, about, band];
+  /* ----- urutan bagian: UMKM = katalog dulu; artikel = daftar artikel dulu; lainnya = keunggulan dulu ----- */
+  const sections = isArticle ? [articlesSec, features, testi, steps, about, band] : shop ? [catalog, features, testi, steps, about, band] : [features, catalog, testi, steps, about, band];
 
   /* ----- keranjang + data untuk skrip ----- */
   const cartBtn = shop ? `<button type="button" id="wb-cartbtn" class="btn ghost cartbtn" aria-label="Buka keranjang">${ico("shopping-cart", 18)}<b id="wb-count" style="display:none">0</b></button>` : "";
@@ -933,7 +1196,7 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
 
   let dataScript = "";
   if (shop) {
-    const used = new Set<string>([...SHOP_ICONS, ...RUNTIME_UI_ICONS, ...c.items.map((i) => i.icon)]);
+    const used = new Set<string>([...SHOP_ICONS, ...RUNTIME_UI_ICONS, ...items.map((i) => i.icon)]);
     const icons: Record<string, string> = {};
     for (const n of used) if (LUCIDE[n]) icons[n] = LUCIDE[n];
     dataScript = `<script type="application/json" id="wb-data">${jsonForScript({
@@ -941,13 +1204,13 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
       key: hash(c.brand).toString(36),
       brand: c.brand,
       wa: c.whatsapp,
-      items: c.items,
+      items,
       pick: SHOP_ICONS,
       icons,
     })}</script>`;
   }
 
-  const css = buildCss(t, a, heroL, shop, c.hover ?? "lift");
+  const css = buildCss(t, a, heroL, shop, c.hover ?? "lift", extra, isArticle);
   const js = shop ? SHOP_RUNTIME_JS : "";
 
   const head = `<meta charset="utf-8">
@@ -956,12 +1219,13 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
 <meta name="description" content="${esc(c.subheadline || c.headline)}">
 <meta name="theme-color" content="${t.bg}">`;
 
-  const body = `<header class="nav"><div class="wrap"><a class="brand" href="#"><i>${brandMark}</i><span>${esc(c.brand)}</span></a><nav class="links">${nav}</nav>${cartBtn}<a class="btn" href="${ctaHref}">${esc(c.ctaLabel)}</a></div></header>
+  const body = `<header class="nav"><div class="wrap"><a class="brand" href="#"><i${logo ? ' class="logo"' : ""}>${brandMark}</i><span>${esc(c.brand)}</span></a><nav class="links">${nav}</nav>${cartBtn}<a class="btn" href="${ctaHref}">${esc(c.ctaLabel)}</a></div></header>
 <main>
 ${hero}
 ${sections.join("\n")}
 </main>
 <footer><div class="wrap"><span>© ${esc(c.brand)}${c.slogan ? ` · ${esc(c.slogan)}` : ""}</span><span>Dibuat dengan Depup AI Web Builder</span></div></footer>
+${readers}
 ${cartUi}
 ${dataScript}`;
 
@@ -991,7 +1255,7 @@ ${js ? `<script src="assets/app.js" defer></script>` : ""}
 </body>
 </html>`;
 
-  return { single, index, css, js, hasJs: !!js };
+  return { single, index, css, js, hasJs: !!js, assets };
 }
 
 /** Satu file HTML mandiri (pratinjau & publish). */

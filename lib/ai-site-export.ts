@@ -6,6 +6,11 @@
  */
 import { buildSite, hasShop, type RenderOpts, type SiteContent, type TemplateId } from "@/lib/ai-site-templates";
 
+/** Isi content.json: teks + pilihan tampilan (tanpa data gambar supaya file tetap kecil). */
+function contentJson(c: SiteContent, template: TemplateId, accent: string | undefined, opts?: RenderOpts): string {
+  return JSON.stringify({ ...c, template, accent: accent ?? c.accent, ...(opts?.palette?.length ? { palette: opts.palette } : {}) }, null, 2);
+}
+
 export function slugify(s: string): string {
   const base = s
     .normalize("NFKD")
@@ -28,7 +33,7 @@ function saveBlob(blob: Blob, filename: string): void {
   setTimeout(() => URL.revokeObjectURL(url), 1500);
 }
 
-function readme(c: SiteContent, shop: boolean): string {
+function readme(c: SiteContent, shop: boolean, hasImages: boolean): string {
   const lines = [
     `${c.brand}`,
     "=".repeat(Math.max(8, c.brand.length)),
@@ -39,6 +44,7 @@ function readme(c: SiteContent, shop: boolean): string {
     "- index.html          halaman utama",
     "- assets/style.css    tampilan",
     shop ? "- assets/app.js       katalog, keranjang, dan mode kelola produk" : "",
+    hasImages ? "- assets/img/         gambar yang kamu unggah" : "",
     "- content.json        isi teks mentah (bisa dipakai ulang)",
     "",
     "CARA PAKAI",
@@ -63,7 +69,7 @@ function readme(c: SiteContent, shop: boolean): string {
 
 export async function downloadZip(c: SiteContent, template: TemplateId, accent: string | undefined, opts: RenderOpts): Promise<void> {
   const { default: JSZip } = await import("jszip");
-  const b = buildSite(c, template, accent, opts);
+  const b = buildSite(c, template, accent, { ...opts, imageMode: "files" });
   const shop = hasShop(c) && opts.shop !== false;
   const zip = new JSZip();
   const root = slugify(c.brand);
@@ -71,8 +77,9 @@ export async function downloadZip(c: SiteContent, template: TemplateId, accent: 
   dir.file("index.html", b.index);
   dir.file("assets/style.css", b.css + "\n");
   if (b.hasJs) dir.file("assets/app.js", b.js + "\n");
-  dir.file("content.json", JSON.stringify({ ...c, template, accent: accent ?? c.accent }, null, 2) + "\n");
-  dir.file("README.txt", readme(c, shop));
+  for (const a of b.assets) dir.file(a.path, a.data);
+  dir.file("content.json", contentJson(c, template, accent, opts) + "\n");
+  dir.file("README.txt", readme(c, shop, b.assets.length > 0));
   const blob = await zip.generateAsync({ type: "blob", compression: "DEFLATE", compressionOptions: { level: 9 } });
   saveBlob(blob, `${root}.zip`);
 }
@@ -82,8 +89,8 @@ export function downloadHtml(c: SiteContent, template: TemplateId, accent: strin
   saveBlob(new Blob([html], { type: "text/html;charset=utf-8" }), `${slugify(c.brand)}.html`);
 }
 
-export function downloadJson(c: SiteContent, template: TemplateId, accent: string | undefined): void {
-  const json = JSON.stringify({ ...c, template, accent: accent ?? c.accent }, null, 2);
+export function downloadJson(c: SiteContent, template: TemplateId, accent: string | undefined, opts?: RenderOpts): void {
+  const json = contentJson(c, template, accent, opts);
   saveBlob(new Blob([json], { type: "application/json" }), `${slugify(c.brand)}-content.json`);
 }
 

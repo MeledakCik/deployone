@@ -5,7 +5,7 @@ import { rateLimit } from "@/app/api/_lib/rate-limit";
 import { redactSecrets } from "@/app/api/_lib/redact";
 import { groqChat, GroqError } from "@/app/api/_lib/groq";
 import { freeAiPerDay, getUserGroqKey } from "@/app/api/_lib/ai-keys";
-import { SITE_SYSTEM_PROMPT, normalizeContent } from "@/lib/ai-site-templates";
+import { SITE_SYSTEM_PROMPT, KIND_OPTIONS, normalizeContent, type SiteKind } from "@/lib/ai-site-templates";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -59,7 +59,7 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
   const email = getSessionEmail(req);
   if (!email) return fail("Sesi login habis. Silakan login lagi.", 401, "unauthorized");
 
-  let body: { prompt?: unknown; variant?: unknown } | null = null;
+  let body: { prompt?: unknown; variant?: unknown; kind?: unknown } | null = null;
   try {
     body = await req.json();
   } catch {
@@ -70,7 +70,10 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
 
   // "Buat ulang": nomor variasi memaksa AI memilih template, tata letak, dan sudut pandang yang berbeda.
   const variant = typeof body?.variant === "number" && Number.isFinite(body.variant) ? Math.max(0, Math.min(99, Math.floor(body.variant))) : 0;
-  const userMsg = variant > 0 ? `${prompt}\n\n(Variasi #${variant}: pilih template, tata letak hero/feat, warna, dan gaya headline yang BERBEDA dari desain pada umumnya.)` : prompt;
+  // Jenis situs pilihan pengguna (opsional). Kosong = AI yang memilih.
+  const forceKind: SiteKind | undefined = KIND_OPTIONS.find((k) => k.id === body?.kind)?.id;
+  const kindNote = forceKind ? `\n\n(Jenis situs yang diminta pengguna: type "${forceKind}". Wajib memakai type ini${forceKind === "artikel" ? " dan isi articles lengkap beserta body-nya" : ""}.)` : "";
+  const userMsg = (variant > 0 ? `${prompt}\n\n(Variasi #${variant}: pilih template, tata letak hero/feat, warna, dan gaya headline yang BERBEDA dari desain pada umumnya.)` : prompt) + kindNote;
 
   // Token milik user diutamakan. Tanpa itu, pakai token server hanya bila admin memberi jatah harian.
   const ownKey = await getUserGroqKey(email);
@@ -107,7 +110,7 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
       if (json && typeof json === "object" && typeof (json as { error?: unknown }).error === "string") {
         return fail("Permintaan ini tidak bisa dibuatkan website-nya oleh AI. Coba deskripsi usaha/kegiatan yang lain.", 422, "bad_request");
       }
-      content = normalizeContent(json);
+      content = normalizeContent(json, forceKind);
       if (!content) console.error(`[ai/site] isi tidak lengkap (percobaan ${attempt + 1}):`, json ? Object.keys(json as object).join(",") : "bukan JSON", "|", reply.slice(0, 240).replace(/\s+/g, " "));
     }
     if (!content) return fail("AI belum mengembalikan isi yang lengkap. Coba kirim ulang, atau tambahkan detail di deskripsi.", 502, "ai_unavailable");

@@ -35,7 +35,7 @@ function saveCart(){sset(KEY+":cart",JSON.stringify(cart))}
 function uid(){return"p"+Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
 function find(id){for(var i=0;i<items.length;i++)if(items[i].id===id)return items[i];return null}
 function toast(msg){var t=$("#wb-toast");if(!t)return;t.textContent=msg;t.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(function(){t.classList.remove("on")},2400)}
-function okImg(u){return typeof u==="string"&&/^https?:\/\/[^\s"'<>]+$/i.test(u)}
+function okImg(u){return typeof u==="string"&&(/^https?:\/\/[^\s"'<>]+$/i.test(u)||/^assets\/img\/[a-z0-9._-]+$/i.test(u)||/^data:image\/(png|jpeg|webp|gif);base64,[A-Za-z0-9+\/=]+$/.test(u))}
 
 /* ---------- katalog ---------- */
 function cats(){var seen={},out=[];items.forEach(function(i){if(i.category&&!seen[i.category]){seen[i.category]=1;out.push(i.category)}});return out}
@@ -95,13 +95,14 @@ function openForm(id){
  var dl=h("datalist",{id:"wb-catlist"});cats().forEach(function(c){dl.appendChild(h("option",{value:c}))});
  var desc=h("textarea",{rows:"3",maxlength:"140",placeholder:"Deskripsi singkat"});desc.value=v.desc||"";
  var icon=h("select",{});(D.pick||[]).forEach(function(n){var o=h("option",{value:n,text:n});if(n===v.icon)o.selected=true;icon.appendChild(o)});
- var img=h("input",{type:"url",maxlength:"300",value:v.img||"",placeholder:"https://… (opsional)"});
+ var keep=v.img&&!/^https?:/i.test(v.img)?v.img:"";
+ var img=h("input",{type:"url",maxlength:"300",value:keep?"":(v.img||""),placeholder:keep?"Gambar unggahan dipakai (isi URL untuk mengganti)":"https://… (opsional)"});
  var err=h("p",{class:"ferr",role:"alert"});
  var body=h("div",{class:"mform"},[field("Nama",name),h("div",{class:"two"},[field("Harga (Rp)",priceI),field("Kategori",cat)]),dl,field("Deskripsi",desc),h("div",{class:"two"},[field("Ikon",icon),field("URL gambar",img)]),err]);
  var save=h("button",{type:"button",class:"btn",onclick:function(){
   var nm=name.value.trim();if(!nm){err.textContent="Nama produk wajib diisi.";name.focus();return}
   var pr=Math.max(0,Math.min(999999999,Math.round(Number(priceI.value)||0)));
-  var u=img.value.trim();if(u&&!okImg(u)){err.textContent="URL gambar harus diawali http:// atau https://.";img.focus();return}
+  var u=img.value.trim()||keep;if(u&&!okImg(u)){err.textContent="Gambar harus berupa URL http(s) atau gambar bawaan situs.";img.focus();return}
   var rec={id:it?it.id:uid(),name:nm.slice(0,60),desc:desc.value.trim().slice(0,140),price:pr,category:cat.value.trim().slice(0,24),icon:icon.value,img:u,size:it&&it.size?it.size:"small",tag:it&&it.tag?it.tag:""};
   if(it){items[items.indexOf(it)]=rec}else items.push(rec);
   saveItems();closeModal();renderCats();renderGrid();renderCart();toast(it?"Produk diperbarui":"Produk ditambahkan")}},[ic("check"),it?"Simpan":"Tambah"]);
