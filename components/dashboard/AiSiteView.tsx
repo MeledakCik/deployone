@@ -565,7 +565,7 @@ export function AiSiteView() {
       />
 
       {/* Satu kolom: pratinjau paling atas, lalu pengaturan, lalu hasil/ekspor */}
-      <div className="mt-6 min-w-0 max-w-4xl space-y-5">
+      <div className="mt-6 min-w-0 space-y-5">
         <Card
           title="Pratinjau"
           action={
@@ -590,8 +590,8 @@ export function AiSiteView() {
                   sandbox="allow-scripts allow-downloads allow-popups allow-popups-to-escape-sandbox"
                   srcDoc={html}
                   className={cn(
-                    "h-[clamp(420px,64dvh,700px)] rounded-xl bg-white transition-[width]",
-                    device === "mobile" ? "w-[390px] max-w-full" : "w-full",
+                    "rounded-xl bg-white transition-[width]",
+                    device === "mobile" ? "h-[clamp(420px,64dvh,700px)] w-[390px] max-w-full" : "aspect-video w-full",
                   )}
                 />
               </div>
