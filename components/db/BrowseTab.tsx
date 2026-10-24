@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import type { Cell, ColumnInfo, Schema } from "./types";
-import { Btn, Modal, Notice, api, inputCls, renderCell, td, th } from "./ui";
+import { Btn, Modal, Notice, api, inputCls, renderCell, subtle, td, th } from "./ui";
 
 type Page = { columns: string[]; colInfo: ColumnInfo[]; rows: Cell[][]; rids: Cell[]; total: number; page: number; pageSize: number; editable: boolean };
 
@@ -30,18 +30,18 @@ export default function BrowseTab({ id, schema, table, setTable, onChanged }: { 
   useEffect(() => setPage(1), [table]);
 
   const pages = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1;
-  if (!schema.tables.length) return <p className="text-sm text-slate-500">Belum ada tabel.</p>;
+  if (!schema.tables.length) return <p className="rounded-xl border border-dashed border-violet-200 px-4 py-8 text-center text-sm text-slate-500 dark:border-white/15 dark:text-slate-400">Belum ada tabel.</p>;
 
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2">
-        <select className={`${inputCls} !w-auto`} value={table} onChange={(e) => setTable(e.target.value)} aria-label="Pilih tabel">
+        <select className={`${inputCls} !w-auto max-w-full`} value={table} onChange={(e) => setTable(e.target.value)} aria-label="Pilih tabel">
           {schema.tables.map((t) => (
             <option key={t.name}>{t.name}</option>
           ))}
         </select>
-        {data && <span className="text-xs text-slate-500">{data.total} baris</span>}
-        <div className="ml-auto flex gap-2">
+        {data && <span className="rounded-full bg-violet-50 px-2.5 py-1 text-xs font-medium text-violet-700 dark:bg-white/10 dark:text-violet-200">{data.total} baris</span>}
+        <div className="flex w-full gap-2 sm:ml-auto sm:w-auto [&>*]:flex-1 sm:[&>*]:flex-none">
           <Btn onClick={load}>Refresh</Btn>
           <Btn variant="primary" disabled={!data?.editable && !!data} onClick={() => setForm({ values: {} })}>
             + Tambah row
@@ -51,9 +51,9 @@ export default function BrowseTab({ id, schema, table, setTable, onChanged }: { 
       {err && <Notice kind="error">{err}</Notice>}
       {data && !data.editable && <Notice kind="info">View / tabel WITHOUT ROWID: hanya bisa dibaca di sini.</Notice>}
       {data && (
-        <div className="overflow-x-auto rounded-md border border-slate-200 dark:border-slate-800">
+        <div className="max-h-[70vh] overflow-auto rounded-xl border border-violet-100 dark:border-white/10">
           <table className="w-full">
-            <thead className="bg-slate-50 dark:bg-slate-950">
+            <thead className="sticky top-0 bg-violet-50 dark:bg-[#271b57]">
               <tr>
                 {data.editable && <th className={th} />}
                 {data.columns.map((c) => (
@@ -75,7 +75,7 @@ export default function BrowseTab({ id, schema, table, setTable, onChanged }: { 
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+            <tbody className="divide-y divide-violet-50 dark:divide-white/5">
               {data.rows.length === 0 && (
                 <tr>
                   <td className={td} colSpan={data.columns.length + 1}>
@@ -84,7 +84,7 @@ export default function BrowseTab({ id, schema, table, setTable, onChanged }: { 
                 </tr>
               )}
               {data.rows.map((row, i) => (
-                <tr key={i}>
+                <tr key={i} className="transition-colors hover:bg-violet-50/50 dark:hover:bg-white/5">
                   {data.editable && (
                     <td className={`${td} whitespace-nowrap`}>
                       <Btn small onClick={() => setForm({ rid: data.rids[i], values: Object.fromEntries(data.columns.map((c, j) => [c, row[j]])) })}>
@@ -109,7 +109,7 @@ export default function BrowseTab({ id, schema, table, setTable, onChanged }: { 
                     </td>
                   )}
                   {row.map((c, j) => (
-                    <td key={j} className={`${td} max-w-xs`}>
+                    <td key={j} className={`${td} max-w-[16rem] sm:max-w-xs`}>
                       {renderCell(c)}
                     </td>
                   ))}
@@ -120,11 +120,11 @@ export default function BrowseTab({ id, schema, table, setTable, onChanged }: { 
         </div>
       )}
       {data && (
-        <div className="flex items-center justify-between text-sm">
-          <span className="text-slate-500">
+        <div className="flex flex-col gap-2 text-sm sm:flex-row sm:items-center sm:justify-between">
+          <span className={subtle}>
             Halaman {data.page} dari {pages}
           </span>
-          <div className="flex gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:flex">
             <Btn disabled={page <= 1} onClick={() => setPage(page - 1)}>
               ‹ Sebelumnya
             </Btn>
@@ -184,7 +184,7 @@ function RowForm({ id, table, cols, initial, onClose, onSaved }: { id: string; t
         {cols.map((c) => {
           const isBlob = editing && typeof initial.values[c.name] === "object" && initial.values[c.name] !== null;
           return (
-            <div key={c.name} className="grid items-center gap-2 sm:grid-cols-[10rem_1fr_auto]">
+            <div key={c.name} className="grid items-center gap-1.5 sm:grid-cols-[10rem_1fr_auto] sm:gap-2">
               <label htmlFor={`f-${c.name}`} className="text-sm font-medium text-slate-700 dark:text-slate-200">
                 {c.name} <span className="text-xs font-normal text-slate-400">{c.type}{c.pk ? " · PK" : ""}</span>
               </label>
@@ -196,7 +196,7 @@ function RowForm({ id, table, cols, initial, onClose, onSaved }: { id: string; t
           );
         })}
         {err && <Notice kind="error">{err}</Notice>}
-        <div className="flex justify-end gap-2">
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <Btn onClick={onClose}>Batal</Btn>
           <Btn variant="primary" onClick={save} disabled={busy}>
             {busy ? "Menyimpan…" : "Simpan"}

@@ -40,7 +40,7 @@ export default function AdminPanel({ id }: { id: string }) {
 
   return (
     <div className={`${surface} overflow-hidden`}>
-      <div role="tablist" className="flex overflow-x-auto border-b border-slate-200 dark:border-slate-800">
+      <div role="tablist" className="flex snap-x gap-1 overflow-x-auto border-b border-violet-100 bg-violet-50/50 px-2 pt-2 [scrollbar-width:none] dark:border-white/10 dark:bg-white/5 [&::-webkit-scrollbar]:hidden">
         {TABS.map(([k, label]) => (
           <button
             key={k}
@@ -49,17 +49,17 @@ export default function AdminPanel({ id }: { id: string }) {
             type="button"
             onClick={() => setTab(k)}
             className={cx(
-              "whitespace-nowrap px-4 py-2.5 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-indigo-500",
-              tab === k ? "border-b-2 border-indigo-500 text-indigo-600 dark:text-indigo-400" : "text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100"
+              "shrink-0 snap-start whitespace-nowrap rounded-t-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-500",
+              tab === k ? "border-b-2 border-violet-500 bg-white text-violet-700 dark:border-lime-400 dark:bg-[#1e1150] dark:text-lime-300" : "text-slate-600 hover:bg-white/70 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-slate-100"
             )}
           >
             {label}
           </button>
         ))}
       </div>
-      <div className="p-4">
+      <div className="p-3 sm:p-5">
         {err && <Notice kind="error">{err}</Notice>}
-        {!schema && !err && <p className="text-sm text-slate-500">Memuat skema…</p>}
+        {!schema && !err && <div className="space-y-2" aria-busy="true"><div className="h-8 w-40 animate-pulse rounded-lg bg-violet-100/70 dark:bg-white/10" /><div className="h-32 animate-pulse rounded-xl bg-violet-100/70 dark:bg-white/10" /></div>}
         {schema && tab === "tables" && <TablesTab schema={schema} onOpen={(t, to) => { setTable(t); setTab(to); }} onReload={reload} />}
         {schema && tab === "browse" && <BrowseTab id={id} schema={schema} table={table} setTable={setTable} onChanged={reload} />}
         {schema && tab === "structure" && <StructureTab id={id} schema={schema} table={table} setTable={setTable} onChanged={reload} />}

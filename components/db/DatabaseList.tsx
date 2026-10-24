@@ -1,7 +1,7 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import type { KeyInfo, PublicDb } from "./types";
-import { Btn, CopyBtn, Field, Modal, Notice, SecretRow, UsageBar, api, fmtBytes, fmtDate, inputCls, surface, td, th } from "./ui";
+import { Btn, CopyBtn, Field, Modal, Notice, PageHeader, SecretRow, UsageBar, api, fmtBytes, fmtDate, heading, inputCls, linkBtn, subtle, surface, td, th } from "./ui";
 
 type Row = PublicDb & { usageBytes: number | null };
 type ListData = { databases: Row[]; usedBytes: number; quotaBytes: number; maxDatabases: number; usageUnknown: boolean };
@@ -36,76 +36,109 @@ export default function DatabaseList({ onOpen }: { onOpen: (id: string) => void 
 
   return (
     <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Database</h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">Database Turso (SQLite) pribadi dengan panel admin ala phpMyAdmin.</p>
-        </div>
+      <PageHeader title="Database" subtitle="Database Turso (SQLite) pribadi dengan panel admin ala phpMyAdmin.">
         <Btn variant="primary" onClick={() => setCreating(true)} disabled={!data || maxed || full} title={maxed ? "Batas database tercapai" : full ? "Kuota penuh" : undefined}>
           + Create Database
         </Btn>
-      </div>
+      </PageHeader>
 
       {err && <Notice kind="error">{err}</Notice>}
-      {!data && !err && <p className="text-sm text-slate-500">Memuat…</p>}
+      {!data && !err && (
+        <div className="space-y-3" aria-busy="true">
+          <div className="h-24 animate-pulse rounded-2xl bg-violet-100/70 dark:bg-white/10" />
+          <div className="h-40 animate-pulse rounded-2xl bg-violet-100/70 dark:bg-white/10" />
+        </div>
+      )}
 
       {data && (
         <>
-          <section className={`${surface} space-y-2 p-4`}>
-            <div className="flex justify-between text-sm">
-              <span className="font-medium text-slate-800 dark:text-slate-100">Kuota penyimpanan</span>
-              <span className="text-slate-500 dark:text-slate-400">
+          <section className={`${surface} space-y-3 p-4 sm:p-5`}>
+            <div className="flex items-center justify-between gap-3 text-sm">
+              <span className={heading}>Kuota penyimpanan</span>
+              <span className="rounded-full bg-violet-50 px-2.5 py-1 text-xs font-medium text-violet-700 dark:bg-white/10 dark:text-violet-200">
                 {data.databases.length}/{data.maxDatabases} database
               </span>
             </div>
             <UsageBar used={data.usedBytes} quota={data.quotaBytes} />
-            {data.usageUnknown && <p className="text-xs text-slate-500">Sebagian ukuran belum bisa dibaca dari Turso; angka di atas mungkin lebih rendah dari aslinya.</p>}
+            {data.usageUnknown && <p className={subtle}>Sebagian ukuran belum bisa dibaca dari Turso; angka di atas mungkin lebih rendah dari aslinya.</p>}
           </section>
 
-          <section className={`${surface} overflow-x-auto`}>
-            <table className="w-full min-w-[560px]">
-              <thead className="border-b border-slate-200 dark:border-slate-800">
-                <tr>
-                  <th className={th}>Nama</th>
-                  <th className={th}>Ukuran</th>
-                  <th className={th}>Dibuat</th>
-                  <th className={th} />
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {data.databases.length === 0 && (
-                  <tr>
-                    <td className={td} colSpan={4}>
-                      Belum ada database. Klik “Create Database” untuk memulai.
-                    </td>
-                  </tr>
-                )}
+          {data.databases.length === 0 && (
+            <section className={`${surface} px-5 py-10 text-center`}>
+              <p className={heading}>Belum ada database</p>
+              <p className={`${subtle} mt-1`}>Klik “Create Database” untuk memulai.</p>
+            </section>
+          )}
+
+          {data.databases.length > 0 && (
+            <>
+              {/* Mobile: kartu */}
+              <ul className="space-y-3 md:hidden">
                 {data.databases.map((d) => (
-                  <tr key={d.id}>
-                    <td className={`${td} font-medium`}>{d.displayName}</td>
-                    <td className={td}>{fmtBytes(d.usageBytes)}</td>
-                    <td className={td}>{fmtDate(d.createdAt)}</td>
-                    <td className={`${td} text-right`}>
-                      <div className="flex flex-wrap justify-end gap-1.5">
-                        <Btn small variant="primary" onClick={() => onOpen(d.id)}>
-                          Buka
-                        </Btn>
-                        <a href={`/db/${d.id}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center rounded-md border border-slate-300 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
-                          Tab baru
-                        </a>
-                        <Btn small onClick={() => setRename(d)}>
-                          Rename
-                        </Btn>
-                        <Btn small variant="danger" onClick={() => setDel(d)}>
-                          Hapus
-                        </Btn>
+                  <li key={d.id} className={`${surface} space-y-3 p-4`}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="min-w-0">
+                        <p className="truncate text-base font-semibold text-slate-900 dark:text-slate-100">{d.displayName}</p>
+                        <p className={subtle}>Dibuat {fmtDate(d.createdAt)}</p>
                       </div>
-                    </td>
-                  </tr>
+                      <span className="shrink-0 rounded-full bg-violet-50 px-2.5 py-1 text-xs font-medium text-violet-700 dark:bg-white/10 dark:text-violet-200">{fmtBytes(d.usageBytes)}</span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <Btn variant="primary" onClick={() => onOpen(d.id)}>
+                        Buka
+                      </Btn>
+                      <a href={`/db/${d.id}`} target="_blank" rel="noopener noreferrer" className={linkBtn}>
+                        Tab baru
+                      </a>
+                      <Btn onClick={() => setRename(d)}>Rename</Btn>
+                      <Btn variant="danger" onClick={() => setDel(d)}>
+                        Hapus
+                      </Btn>
+                    </div>
+                  </li>
                 ))}
-              </tbody>
-            </table>
-          </section>
+              </ul>
+
+              {/* Desktop: tabel */}
+              <section className={`${surface} hidden overflow-hidden md:block`}>
+                <table className="w-full">
+                  <thead className="border-b border-violet-100 bg-violet-50/60 dark:border-white/10 dark:bg-white/5">
+                    <tr>
+                      <th className={th}>Nama</th>
+                      <th className={th}>Ukuran</th>
+                      <th className={th}>Dibuat</th>
+                      <th className={th} />
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-violet-50 dark:divide-white/5">
+                    {data.databases.map((d) => (
+                      <tr key={d.id} className="transition-colors hover:bg-violet-50/50 dark:hover:bg-white/5">
+                        <td className={`${td} font-medium`}>{d.displayName}</td>
+                        <td className={td}>{fmtBytes(d.usageBytes)}</td>
+                        <td className={td}>{fmtDate(d.createdAt)}</td>
+                        <td className={`${td} text-right`}>
+                          <div className="flex flex-wrap justify-end gap-1.5">
+                            <Btn small variant="primary" onClick={() => onOpen(d.id)}>
+                              Buka
+                            </Btn>
+                            <a href={`/db/${d.id}`} target="_blank" rel="noopener noreferrer" className={`${linkBtn} !rounded-lg !px-2.5 !py-1.5 text-xs`}>
+                              Tab baru
+                            </a>
+                            <Btn small onClick={() => setRename(d)}>
+                              Rename
+                            </Btn>
+                            <Btn small variant="danger" onClick={() => setDel(d)}>
+                              Hapus
+                            </Btn>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </section>
+            </>
+          )}
         </>
       )}
 
@@ -178,7 +211,7 @@ function CreateModal({ onClose, onDone }: { onClose: () => void; onDone: (c: Cre
           <input className={inputCls} value={name} onChange={(e) => setName(e.target.value.toLowerCase())} autoFocus required minLength={3} maxLength={32} pattern="[a-z0-9]+(-[a-z0-9]+)*" />
         </Field>
         {err && <Notice kind="error">{err}</Notice>}
-        <div className="flex justify-end gap-2">
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <Btn onClick={onClose}>Batal</Btn>
           <Btn variant="primary" type="submit" disabled={busy}>
             {busy ? "Membuat…" : "Buat"}
@@ -195,29 +228,29 @@ function CreatedCard({ c, onOpen, onClose }: { c: Created; onOpen: () => void; o
     <Modal title={`Database “${c.database.displayName}” berhasil dibuat`} onClose={onClose} wide>
       <div className="space-y-4">
         <Notice kind="warn">Password dan API key di bawah hanya tampil sekali. Simpan sekarang; nanti hanya bisa di-reset atau dibuat ulang.</Notice>
-        <div className="flex flex-wrap gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:flex">
           <Btn variant="primary" onClick={onOpen}>
             Open
           </Btn>
-          <a href={`/db/${c.database.id}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-800">
+          <a href={`/db/${c.database.id}`} target="_blank" rel="noopener noreferrer" className={linkBtn}>
             Open in new tab
           </a>
         </div>
         <section className="space-y-2">
-          <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Credentials panel admin</h3>
+          <h3 className={heading}>Credentials panel admin</h3>
           <SecretRow label="Username" value={c.credentials.username} />
           <SecretRow label="Password" value={c.credentials.password} />
         </section>
         <section className="space-y-2">
-          <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">REST API</h3>
+          <h3 className={heading}>REST API</h3>
           <SecretRow label="Endpoint (POST)" value={endpoint} />
           {c.apiKeys.map((k) => (
             <SecretRow key={k.id} label={`API key ${k.mode === "ro" ? "read-only" : "read-write"}`} value={k.plain} />
           ))}
-          <p className="text-xs text-slate-500 dark:text-slate-400">Kirim ke Environment project dan kelola/cabut key tersedia di halaman detail database.</p>
+          <p className={subtle}>Kirim ke Environment project dan kelola/cabut key tersedia di halaman detail database.</p>
         </section>
-        <div className="flex justify-end">
-          <Btn onClick={onClose}>Saya sudah menyimpannya</Btn>
+        <div className="flex sm:justify-end">
+          <Btn onClick={onClose} className="w-full sm:w-auto">Saya sudah menyimpannya</Btn>
         </div>
       </div>
     </Modal>
@@ -249,7 +282,7 @@ function RenameModal({ row, onClose, onDone }: { row: Row; onClose: () => void; 
           <input className={inputCls} value={name} onChange={(e) => setName(e.target.value.toLowerCase())} autoFocus required minLength={3} maxLength={32} pattern="[a-z0-9]+(-[a-z0-9]+)*" />
         </Field>
         {err && <Notice kind="error">{err}</Notice>}
-        <div className="flex justify-end gap-2">
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <Btn onClick={onClose}>Batal</Btn>
           <Btn variant="primary" type="submit" disabled={busy}>
             Simpan
@@ -272,7 +305,7 @@ function DeleteModal({ row, onClose, onDone }: { row: Row; onClose: () => void; 
           <input className={inputCls} value={confirm} onChange={(e) => setConfirm(e.target.value)} autoFocus />
         </Field>
         {err && <Notice kind="error">{err}</Notice>}
-        <div className="flex justify-end gap-2">
+        <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           <Btn onClick={onClose}>Batal</Btn>
           <Btn
             variant="danger"

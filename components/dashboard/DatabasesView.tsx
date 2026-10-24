@@ -5,7 +5,7 @@ import AdminPanel from "@/components/db/AdminPanel";
 import DatabaseList from "@/components/db/DatabaseList";
 import DbInfoCards from "@/components/db/DbInfoCards";
 import type { PublicDb } from "@/components/db/types";
-import { Btn, Notice, UsageBar, api } from "@/components/db/ui";
+import { Btn, Notice, UsageBar, api, heading, linkBtn, surface } from "@/components/db/ui";
 
 type Detail = { database: PublicDb; access: "owner" | "dbsession"; usageBytes: number | null; userUsedBytes: number; quotaBytes: number };
 
@@ -47,31 +47,35 @@ function DatabaseDetail({ id, onBack }: { id: string; onBack: () => void }) {
   }, [id]);
 
   return (
-    <div className="space-y-5">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="flex items-center gap-3">
-          <Btn onClick={onBack}>← Semua database</Btn>
-          <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">{d?.database.displayName ?? "Database"}</h1>
+    <div className="space-y-4 sm:space-y-5">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+          <Btn onClick={onBack} aria-label="Kembali ke semua database" className="shrink-0">
+            <span aria-hidden>←</span>
+            <span className="hidden sm:inline">Semua database</span>
+          </Btn>
+          <h1 className="truncate text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 sm:text-2xl">{d?.database.displayName ?? "Database"}</h1>
         </div>
-        <a
-          href={`/db/${id}`}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="inline-flex items-center rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-800"
-        >
-          Open in new tab
+        <a href={`/db/${id}`} target="_blank" rel="noopener noreferrer" className={`${linkBtn} w-full sm:w-auto`}>
+          Open in new tab ↗
         </a>
       </div>
       {err && <Notice kind="error">{err}</Notice>}
       {d && (
         <>
-          <div className="rounded-lg border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-900">
-            <p className="mb-2 text-sm font-medium text-slate-800 dark:text-slate-100">Kuota akun (semua database)</p>
+          <div className={`${surface} p-4 sm:p-5`}>
+            <p className={`${heading} mb-2`}>Kuota akun (semua database)</p>
             <UsageBar used={d.userUsedBytes} quota={d.quotaBytes} />
           </div>
           {d.access === "owner" && <DbInfoCards id={id} username={d.database.username} />}
           <AdminPanel id={id} />
         </>
+      )}
+      {!d && !err && (
+        <div className="space-y-3" aria-busy="true">
+          <div className="h-24 animate-pulse rounded-2xl bg-violet-100/70 dark:bg-white/10" />
+          <div className="h-56 animate-pulse rounded-2xl bg-violet-100/70 dark:bg-white/10" />
+        </div>
       )}
     </div>
   );

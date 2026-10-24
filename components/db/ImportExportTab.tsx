@@ -1,7 +1,7 @@
 "use client";
 import { useRef, useState } from "react";
 import type { Schema } from "./types";
-import { Btn, Field, Notice, api, inputCls } from "./ui";
+import { Btn, Field, Notice, api, heading, inputCls, linkBtn, subtle } from "./ui";
 
 export default function ImportExportTab({ id, schema, onChanged }: { id: string; schema: Schema; onChanged: () => void }) {
   const [csvTable, setCsvTable] = useState(schema.tables[0]?.name ?? "");
@@ -32,16 +32,16 @@ export default function ImportExportTab({ id, schema, onChanged }: { id: string;
     setBusy(false);
   }
 
-  const link = "inline-flex items-center justify-center rounded-md border border-slate-300 bg-white px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:hover:bg-slate-800";
+  const link = `${linkBtn} w-full sm:w-auto`;
   return (
-    <div className="grid gap-6 lg:grid-cols-2">
-      <section className="space-y-3">
-        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Export</h3>
+    <div className="grid gap-4 lg:grid-cols-2 lg:gap-6">
+      <section className="space-y-3 rounded-xl border border-violet-100 p-4 dark:border-white/10">
+        <h3 className={heading}>Export</h3>
         <a className={link} href={`/api/databases/${id}/export?format=sql`}>
           Unduh seluruh database (.sql)
         </a>
-        <div className="flex flex-wrap items-center gap-2">
-          <select className={`${inputCls} !w-auto`} value={expTable} onChange={(e) => setExpTable(e.target.value)} aria-label="Tabel untuk CSV">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <select className={`${inputCls} sm:!w-auto`} value={expTable} onChange={(e) => setExpTable(e.target.value)} aria-label="Tabel untuk CSV">
             {schema.tables.map((t) => (
               <option key={t.name}>{t.name}</option>
             ))}
@@ -50,13 +50,13 @@ export default function ImportExportTab({ id, schema, onChanged }: { id: string;
             Unduh CSV
           </a>
         </div>
-        <p className="text-xs text-slate-500">Maksimal 50.000 baris per ekspor.</p>
+        <p className={subtle}>Maksimal 50.000 baris per ekspor.</p>
       </section>
 
-      <section className="space-y-3">
-        <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Import</h3>
-        <input ref={file} type="file" accept=".sql,.csv" className="block w-full text-sm text-slate-700 dark:text-slate-200" aria-label="File import" />
-        <div className="space-y-2 rounded-md border border-slate-200 p-3 dark:border-slate-800">
+      <section className="space-y-3 rounded-xl border border-violet-100 p-4 dark:border-white/10">
+        <h3 className={heading}>Import</h3>
+        <input ref={file} type="file" accept=".sql,.csv" className="block w-full cursor-pointer rounded-xl border border-dashed border-violet-300 bg-violet-50/50 p-3 text-sm text-slate-700 file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-violet-500 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:bg-violet-50 dark:border-white/20 dark:bg-white/5 dark:text-slate-200" aria-label="File import" />
+        <div className="space-y-2 rounded-xl bg-violet-50/60 p-3 dark:bg-white/5">
           <p className="text-xs font-medium text-slate-600 dark:text-slate-300">Khusus CSV</p>
           <Field label="Tabel tujuan">
             <input className={inputCls} list="tbls" value={csvTable} onChange={(e) => setCsvTable(e.target.value)} />
@@ -74,10 +74,10 @@ export default function ImportExportTab({ id, schema, onChanged }: { id: string;
           </label>
         </div>
         {msg && <Notice kind={msg.kind}>{msg.text}</Notice>}
-        <Btn variant="primary" onClick={doImport} disabled={busy}>
+        <Btn variant="primary" onClick={doImport} disabled={busy} className="w-full sm:w-auto">
           {busy ? "Mengimpor…" : "Import"}
         </Btn>
-        <p className="text-xs text-slate-500">Maks 2MB. Dijalankan dalam satu transaksi: jika ada yang gagal, tidak ada yang tersimpan.</p>
+        <p className={subtle}>Maks 2MB. Dijalankan dalam satu transaksi: jika ada yang gagal, tidak ada yang tersimpan.</p>
       </section>
     </div>
   );

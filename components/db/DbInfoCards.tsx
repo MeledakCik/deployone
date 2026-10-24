@@ -1,12 +1,12 @@
 "use client";
 import { useCallback, useEffect, useState } from "react";
 import type { KeyInfo } from "./types";
-import { Btn, Field, Modal, Notice, SecretRow, api, fmtDate, inputCls, surface } from "./ui";
+import { Btn, Field, Modal, Notice, SecretRow, api, fmtDate, heading, inputCls, subtle, surface } from "./ui";
 
 /** Kartu pengelolaan (pemilik saja): credentials, REST API key, dan kirim ke Environment Vercel. */
 export default function DbInfoCards({ id, username }: { id: string; username: string }) {
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
+    <div className="grid items-start gap-4 lg:grid-cols-2">
       <CredentialsCard id={id} username={username} />
       <ApiCard id={id} />
       <div className="lg:col-span-2">
@@ -21,17 +21,17 @@ function CredentialsCard({ id, username }: { id: string; username: string }) {
   const [confirm, setConfirm] = useState(false);
   const [err, setErr] = useState("");
   return (
-    <section className={`${surface} space-y-3 p-4`}>
-      <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Credentials panel admin</h2>
-      <p className="text-xs text-slate-500 dark:text-slate-400">Dipakai untuk login ke /db/{"<id>"} dari perangkat yang tidak memakai akun Google Depup.</p>
+    <section className={`${surface} min-w-0 space-y-4 p-4 sm:p-5`}>
+      <h2 className={heading}>Credentials panel admin</h2>
+      <p className={subtle}>Dipakai untuk login ke /db/{"<id>"} dari perangkat yang tidak memakai akun Google Depup.</p>
       <SecretRow label="Username" value={username} />
-      {pw ? <SecretRow label="Password baru (tampil sekali)" value={pw} /> : <p className="text-xs text-slate-500">Password tidak bisa dilihat lagi; hanya bisa di-reset.</p>}
+      {pw ? <SecretRow label="Password baru (tampil sekali)" value={pw} /> : <p className={subtle}>Password tidak bisa dilihat lagi; hanya bisa di-reset.</p>}
       {err && <Notice kind="error">{err}</Notice>}
-      <Btn onClick={() => setConfirm(true)}>Reset password</Btn>
+      <Btn onClick={() => setConfirm(true)} className="w-full sm:w-auto">Reset password</Btn>
       {confirm && (
         <Modal title="Reset password?" onClose={() => setConfirm(false)}>
           <p className="mb-4 text-sm text-slate-700 dark:text-slate-300">Password lama tidak berlaku lagi dan semua sesi login database yang aktif akan keluar.</p>
-          <div className="flex justify-end gap-2">
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Btn onClick={() => setConfirm(false)}>Batal</Btn>
             <Btn
               variant="primary"
@@ -75,10 +75,10 @@ function ApiCard({ id }: { id: string }) {
   }, [load]);
 
   return (
-    <section className={`${surface} space-y-3 p-4`}>
-      <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">REST API</h2>
+    <section className={`${surface} min-w-0 space-y-4 p-4 sm:p-5`}>
+      <h2 className={heading}>REST API</h2>
       <SecretRow label="Endpoint (POST)" value={endpoint} />
-      <pre className="overflow-x-auto rounded bg-slate-100 p-2 text-xs text-slate-800 dark:bg-slate-800 dark:text-slate-100">{`curl -X POST ${endpoint} \\
+      <pre className="overflow-x-auto rounded-xl bg-[#1e1150] dark:bg-[#0d0624] dark:ring-1 dark:ring-white/10 p-3 font-mono text-[11px] leading-relaxed text-violet-100 sm:text-xs">{`curl -X POST ${endpoint} \\
   -H "Authorization: Bearer <api_key>" \\
   -H "Content-Type: application/json" \\
   -d '{"sql":"SELECT * FROM users WHERE id = ?","args":[1]}'`}</pre>
@@ -88,14 +88,14 @@ function ApiCard({ id }: { id: string }) {
           <SecretRow label="API key" value={fresh.key} />
         </div>
       )}
-      <ul className="divide-y divide-slate-100 text-sm dark:divide-slate-800">
+      <ul className="divide-y divide-violet-50 rounded-xl border border-violet-100 px-3 text-sm dark:divide-white/5 dark:border-white/10">
         {keys.map((k) => (
-          <li key={k.id} className="flex items-center justify-between gap-2 py-2">
+          <li key={k.id} className="flex items-center justify-between gap-3 py-2.5">
             <div className="min-w-0">
-              <div className="truncate font-medium text-slate-800 dark:text-slate-100">
-                {k.label} <span className="text-xs font-normal text-slate-500">({k.mode === "ro" ? "read-only" : "read-write"})</span>
+              <div className="truncate font-medium text-slate-900 dark:text-slate-100">
+                {k.label} <span className="ml-1 rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-medium text-violet-700 dark:bg-white/10 dark:text-violet-200">({k.mode === "ro" ? "read-only" : "read-write"})</span>
               </div>
-              <div className="text-xs text-slate-500">
+              <div className="truncate text-xs text-slate-500 dark:text-slate-400">
                 {k.prefix}… · {fmtDate(k.createdAt)} {k.revokedAt && "· dicabut"}
               </div>
             </div>
@@ -120,7 +120,7 @@ function ApiCard({ id }: { id: string }) {
         ))}
       </ul>
       <form
-        className="flex flex-wrap items-end gap-2"
+        className="grid items-end gap-2 sm:grid-cols-[1fr_auto_auto]"
         onSubmit={async (e) => {
           e.preventDefault();
           try {
@@ -134,16 +134,16 @@ function ApiCard({ id }: { id: string }) {
           }
         }}
       >
-        <div className="min-w-[8rem] flex-1">
+        <div className="min-w-0">
           <Field label="Label key baru">
             <input className={inputCls} value={label} onChange={(e) => setLabel(e.target.value)} maxLength={40} required />
           </Field>
         </div>
-        <select className={`${inputCls} !w-auto`} value={mode} onChange={(e) => setMode(e.target.value as "ro" | "rw")} aria-label="Jenis key">
+        <select className={`${inputCls} sm:!w-auto`} value={mode} onChange={(e) => setMode(e.target.value as "ro" | "rw")} aria-label="Jenis key">
           <option value="ro">Read-only</option>
           <option value="rw">Read-write</option>
         </select>
-        <Btn variant="primary" type="submit">
+        <Btn variant="primary" type="submit" className="w-full sm:w-auto">
           Buat key
         </Btn>
       </form>
@@ -172,15 +172,15 @@ function EnvCard({ id }: { id: string }) {
 
   const headers = { "x-vercel-token": token };
   return (
-    <section className={`${surface} space-y-3 p-4`}>
-      <h2 className="text-sm font-semibold text-slate-900 dark:text-slate-100">Kirim ke Environment project</h2>
-      <p className="text-xs text-slate-500 dark:text-slate-400">Menyuntik TURSO_DATABASE_URL dan TURSO_AUTH_TOKEN ke project Vercel. Token Vercel hanya dipakai untuk request ini dan tidak disimpan.</p>
+    <section className={`${surface} min-w-0 space-y-4 p-4 sm:p-5`}>
+      <h2 className={heading}>Kirim ke Environment project</h2>
+      <p className={subtle}>Menyuntik TURSO_DATABASE_URL dan TURSO_AUTH_TOKEN ke project Vercel. Token Vercel hanya dipakai untuk request ini dan tidak disimpan.</p>
       <div className="grid gap-3 sm:grid-cols-2">
         <Field label="Token Vercel">
           <input className={inputCls} type="password" value={token} onChange={(e) => setToken(e.target.value)} autoComplete="off" />
         </Field>
         <Field label="Project">
-          <div className="flex gap-2">
+          <div className="flex min-w-0 gap-2">
             <select className={inputCls} value={project} onChange={(e) => setProject(e.target.value)}>
               <option value="">{projects.length ? "Pilih project…" : "Muat project dulu"}</option>
               {projects.map((p) => (
@@ -214,6 +214,7 @@ function EnvCard({ id }: { id: string }) {
       {msg && <Notice kind={msg.kind}>{msg.text}</Notice>}
       <Btn
         variant="primary"
+        className="w-full sm:w-auto"
         disabled={!token || !project || busy}
         onClick={async () => {
           setBusy(true);

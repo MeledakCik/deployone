@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import type { Schema } from "./types";
-import { Btn, Field, Modal, Notice, api, inputCls, td, th } from "./ui";
+import { Btn, Field, Modal, Notice, api, heading, inputCls, subtle, td, th } from "./ui";
 
 type NewCol = { name: string; type: string; pk: boolean; notNull: boolean; autoincrement: boolean; default: string };
 const emptyCol = (): NewCol => ({ name: "", type: "TEXT", pk: false, notNull: false, autoincrement: false, default: "" });
@@ -33,13 +33,13 @@ export default function StructureTab({ id, schema, table, setTable, onChanged }:
   return (
     <div className="space-y-5">
       <div className="flex flex-wrap items-center gap-2">
-        <select className={`${inputCls} !w-auto`} value={table} onChange={(e) => setTable(e.target.value)} aria-label="Pilih tabel">
+        <select className={`${inputCls} !w-auto max-w-full`} value={table} onChange={(e) => setTable(e.target.value)} aria-label="Pilih tabel">
           {schema.tables.length === 0 && <option value="">(belum ada tabel)</option>}
           {schema.tables.map((x) => (
             <option key={x.name}>{x.name}</option>
           ))}
         </select>
-        <div className="ml-auto flex gap-2">
+        <div className="flex w-full gap-2 sm:ml-auto sm:w-auto [&>*]:flex-1 sm:[&>*]:flex-none">
           <Btn variant="primary" onClick={() => setCreating(true)}>
             + Buat tabel
           </Btn>
@@ -56,10 +56,10 @@ export default function StructureTab({ id, schema, table, setTable, onChanged }:
       {t && (
         <>
           <section className="space-y-2">
-            <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Kolom</h3>
-            <div className="overflow-x-auto rounded-md border border-slate-200 dark:border-slate-800">
+            <h3 className={heading}>Kolom</h3>
+            <div className="overflow-x-auto rounded-xl border border-violet-100 dark:border-white/10">
               <table className="w-full min-w-[520px]">
-                <thead className="bg-slate-50 dark:bg-slate-950">
+                <thead className="bg-violet-50/70 dark:bg-white/5">
                   <tr>
                     {["#", "Nama", "Tipe", "Null", "Default", "PK", ""].map((h) => (
                       <th key={h} className={th}>
@@ -68,7 +68,7 @@ export default function StructureTab({ id, schema, table, setTable, onChanged }:
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                <tbody className="divide-y divide-violet-50 dark:divide-white/5">
                   {t.columns.map((c) => (
                     <tr key={c.name}>
                       <td className={td}>{c.cid}</td>
@@ -94,7 +94,7 @@ export default function StructureTab({ id, schema, table, setTable, onChanged }:
           {t.type === "table" && (
             <>
               <section className="space-y-2">
-                <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Tambah kolom</h3>
+                <h3 className={heading}>Tambah kolom</h3>
                 <div className="grid gap-2 sm:grid-cols-[1fr_8rem_1fr_auto_auto]">
                   <input className={inputCls} placeholder="nama_kolom" value={addCol.name} onChange={(e) => setAddCol({ ...addCol, name: e.target.value })} aria-label="Nama kolom" />
                   <select className={inputCls} value={addCol.type} onChange={(e) => setAddCol({ ...addCol, type: e.target.value })} aria-label="Tipe">
@@ -108,6 +108,7 @@ export default function StructureTab({ id, schema, table, setTable, onChanged }:
                   </label>
                   <Btn
                     variant="primary"
+                    className="w-full sm:w-auto"
                     onClick={async () => {
                       if (await act({ action: "addColumn", table: t.name, column: addCol }, `Kolom ${addCol.name} ditambahkan.`)) setAddCol(emptyCol());
                     }}
@@ -118,16 +119,16 @@ export default function StructureTab({ id, schema, table, setTable, onChanged }:
               </section>
 
               <section className="space-y-2">
-                <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-100">Index</h3>
-                {t.indexes.length === 0 && <p className="text-sm text-slate-500">Belum ada index.</p>}
+                <h3 className={heading}>Index</h3>
+                {t.indexes.length === 0 && <p className={subtle}>Belum ada index.</p>}
                 <ul className="divide-y divide-slate-100 text-sm dark:divide-slate-800">
                   {t.indexes.map((i) => (
                     <li key={i.name} className="flex items-center justify-between gap-2 py-2">
                       <div className="min-w-0">
-                        <div className="font-medium text-slate-800 dark:text-slate-100">
-                          {i.name} {i.unique && <span className="text-xs text-slate-500">(unique)</span>}
+                        <div className="font-medium text-slate-900 dark:text-slate-100">
+                          {i.name} {i.unique && <span className="ml-1 rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-medium text-violet-700 dark:bg-white/10 dark:text-violet-200">unique</span>}
                         </div>
-                        <code className="block truncate text-xs text-slate-500">{i.sql ?? `auto (${i.origin})`}</code>
+                        <code className="block truncate font-mono text-xs text-slate-500 dark:text-slate-400">{i.sql ?? `auto (${i.origin})`}</code>
                       </div>
                       {i.sql && (
                         <Btn small variant="danger" onClick={() => act({ action: "dropIndex", name: i.name }, `Index ${i.name} dihapus.`, `Hapus index “${i.name}”?`)}>
@@ -149,6 +150,7 @@ export default function StructureTab({ id, schema, table, setTable, onChanged }:
                   </label>
                   <Btn
                     variant="primary"
+                    className="w-full sm:w-auto"
                     onClick={async () => {
                       if (await act({ action: "createIndex", table: t.name, ...idx }, `Index ${idx.name} dibuat.`)) setIdx({ name: "", columns: [], unique: false });
                     }}
@@ -191,7 +193,7 @@ function CreateTable({ onClose, onSubmit }: { onClose: () => void; onSubmit: (na
         </Field>
         <div className="space-y-2">
           {cols.map((c, i) => (
-            <div key={i} className="grid items-center gap-2 sm:grid-cols-[1fr_7rem_1fr_auto]">
+            <div key={i} className="grid items-center gap-2 rounded-xl border border-violet-100 p-2.5 dark:border-white/10 sm:grid-cols-[1fr_7rem_1fr_auto] sm:border-0 sm:p-0">
               <input className={inputCls} placeholder="nama_kolom" value={c.name} onChange={(e) => set(i, { name: e.target.value })} aria-label={`Nama kolom ${i + 1}`} />
               <select className={inputCls} value={c.type} onChange={(e) => set(i, { type: e.target.value })} aria-label="Tipe">
                 {TYPES.map((x) => (
@@ -199,7 +201,7 @@ function CreateTable({ onClose, onSubmit }: { onClose: () => void; onSubmit: (na
                 ))}
               </select>
               <input className={inputCls} placeholder="default" value={c.default} onChange={(e) => set(i, { default: e.target.value })} aria-label="Default" />
-              <div className="flex items-center gap-3 text-xs text-slate-600 dark:text-slate-300">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600 dark:text-slate-300">
                 <label><input type="checkbox" checked={c.pk} onChange={(e) => set(i, { pk: e.target.checked })} /> PK</label>
                 <label><input type="checkbox" checked={c.autoincrement} onChange={(e) => set(i, { autoincrement: e.target.checked })} /> AI</label>
                 <label><input type="checkbox" checked={c.notNull} onChange={(e) => set(i, { notNull: e.target.checked })} /> NN</label>
@@ -208,9 +210,9 @@ function CreateTable({ onClose, onSubmit }: { onClose: () => void; onSubmit: (na
             </div>
           ))}
         </div>
-        <div className="flex justify-between">
+        <div className="flex flex-col gap-2 sm:flex-row sm:justify-between">
           <Btn onClick={() => setCols([...cols, emptyCol()])}>+ Kolom</Btn>
-          <div className="flex gap-2">
+          <div className="flex flex-col-reverse gap-2 sm:flex-row">
             <Btn onClick={onClose}>Batal</Btn>
             <Btn variant="primary" onClick={() => onSubmit(name, cols.filter((c) => c.name.trim()))}>
               Buat
