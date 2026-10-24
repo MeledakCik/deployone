@@ -170,6 +170,7 @@ export const Hammer = Pack27;
 export const RotateCcw = Pack01Flip;
 
 // ---- ikon pelengkap (gaya sama dengan pack) ----
+export const Database = lineIcon("Database", <><ellipse cx="12" cy="6" rx="7" ry="3" /><path d="M5 6v6c0 1.7 3.1 3 7 3s7-1.3 7-3V6M5 12v6c0 1.7 3.1 3 7 3s7-1.3 7-3v-6" /></>);
 export const X = lineIcon("X", <><path d="M6 6l12 12M18 6L6 18" /></>);
 export const Check = lineIcon("Check", <><path d="M5 12.5l5 5L19 7.5" /></>);
 export const ChevronDown = lineIcon("ChevronDown", <><path d="M6 9l6 6 6-6" /></>);

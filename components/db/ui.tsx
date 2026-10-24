@@ -27,7 +27,7 @@ export async function api<T = any>(url: string, init: Omit<RequestInit, "body"> 
   } catch {
     /* bukan JSON */
   }
-  if (!res.ok || !j?.ok) throw new ApiError(j?.error?.message || `Permintaan gagal (${res.status}).`, res.status, j?.error?.code);
+  if (!res.ok || !j?.ok) throw new ApiError((typeof j?.error === "string" ? j.error : j?.error?.message) || `Permintaan gagal (${res.status}).`, res.status, j?.error?.code ?? j?.code);
   return j.data as T;
 }
 

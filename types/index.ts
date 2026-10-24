@@ -105,7 +105,8 @@ export type DashboardView =
   | "donate"
   | "upload"
   | "hosting"
-  | "ai";
+  | "ai"
+  | "database";
 
 /* ---------------------------------------------------------------------- */
 /*  Backend API contracts (app/api/**)                                    */

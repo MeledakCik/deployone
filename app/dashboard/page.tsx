@@ -18,6 +18,7 @@ import { EnvironmentView } from "@/components/dashboard/EnvironmentView";
 import { DocsView } from "@/components/dashboard/DocsView";
 import { SettingsView } from "@/components/dashboard/SettingsView";
 import { DonateView } from "@/components/dashboard/DonateView";
+import { DatabasesView } from "@/components/dashboard/DatabasesView";
 import { AnnouncementBanner } from "@/components/dashboard/AnnouncementBanner";
 import { DeployModal } from "@/components/dashboard/DeployModal";
 import { SupportChat } from "@/components/dashboard/SupportChat";
@@ -82,6 +83,7 @@ export default function DashboardPage() {
             {view === "projects" && <ProjectsView />}
             {view === "domains" && <DomainsView />}
             {view === "env" && <EnvironmentView />}
+            {view === "database" && <DatabasesView />}
             {view === "docs" && <DocsView />}
             {view === "settings" && <SettingsView />}
             {view === "donate" && <DonateView />}

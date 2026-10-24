@@ -1,5 +1,4 @@
 "use client";
-import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import type { KeyInfo, PublicDb } from "./types";
 import { Btn, CopyBtn, Field, Modal, Notice, SecretRow, UsageBar, api, fmtBytes, fmtDate, inputCls, surface, td, th } from "./ui";
@@ -12,7 +11,7 @@ type Created = {
   apiKeys: (KeyInfo & { plain: string })[];
 };
 
-export default function DatabaseList() {
+export default function DatabaseList({ onOpen }: { onOpen: (id: string) => void }) {
   const [data, setData] = useState<ListData | null>(null);
   const [err, setErr] = useState("");
   const [creating, setCreating] = useState(false);
@@ -36,7 +35,7 @@ export default function DatabaseList() {
   const maxed = !!data && data.databases.length >= data.maxDatabases;
 
   return (
-    <div className="mx-auto max-w-5xl space-y-5 p-4 sm:p-6">
+    <div className="space-y-5">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-slate-900 dark:text-slate-100">Database</h1>
@@ -88,9 +87,9 @@ export default function DatabaseList() {
                     <td className={td}>{fmtDate(d.createdAt)}</td>
                     <td className={`${td} text-right`}>
                       <div className="flex flex-wrap justify-end gap-1.5">
-                        <Link href={`/dashboard/databases/${d.id}`} className="inline-flex items-center rounded-md bg-indigo-600 px-2 py-1 text-xs font-medium text-white hover:bg-indigo-500">
+                        <Btn small variant="primary" onClick={() => onOpen(d.id)}>
                           Buka
-                        </Link>
+                        </Btn>
                         <a href={`/db/${d.id}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center rounded-md border border-slate-300 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800">
                           Tab baru
                         </a>
@@ -120,7 +119,17 @@ export default function DatabaseList() {
           }}
         />
       )}
-      {created && <CreatedCard c={created} onClose={() => setCreated(null)} />}
+      {created && (
+        <CreatedCard
+          c={created}
+          onOpen={() => {
+            const id = created.database.id;
+            setCreated(null);
+            onOpen(id);
+          }}
+          onClose={() => setCreated(null)}
+        />
+      )}
       {rename && (
         <RenameModal
           row={rename}
@@ -180,16 +189,16 @@ function CreateModal({ onClose, onDone }: { onClose: () => void; onDone: (c: Cre
   );
 }
 
-function CreatedCard({ c, onClose }: { c: Created; onClose: () => void }) {
+function CreatedCard({ c, onOpen, onClose }: { c: Created; onOpen: () => void; onClose: () => void }) {
   const endpoint = typeof window !== "undefined" ? `${window.location.origin}/api/v1/db/${c.database.id}/query` : `/api/v1/db/${c.database.id}/query`;
   return (
     <Modal title={`Database “${c.database.displayName}” berhasil dibuat`} onClose={onClose} wide>
       <div className="space-y-4">
         <Notice kind="warn">Password dan API key di bawah hanya tampil sekali. Simpan sekarang; nanti hanya bisa di-reset atau dibuat ulang.</Notice>
         <div className="flex flex-wrap gap-2">
-          <Link href={`/dashboard/databases/${c.database.id}`} className="inline-flex items-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-medium text-white hover:bg-indigo-500">
+          <Btn variant="primary" onClick={onOpen}>
             Open
-          </Link>
+          </Btn>
           <a href={`/db/${c.database.id}`} target="_blank" rel="noopener noreferrer" className="inline-flex items-center rounded-md border border-slate-300 px-3 py-2 text-sm font-medium text-slate-800 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-100 dark:hover:bg-slate-800">
             Open in new tab
           </a>

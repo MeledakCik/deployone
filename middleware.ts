@@ -49,6 +49,20 @@ function isPublicPath(pathname: string): boolean {
  * Endpoint yang dipanggil CLI `depup share` (tanpa session browser). Mereka
  * punya autentikasi sendiri: bearer token per-tunnel (lihat _lib/tunnel.ts).
  */
+/**
+ * Fitur Database: route di bawah /api/databases/<id>/ punya otorisasi sendiri (session Google pemilik ATAU
+ * cookie login database, lihat _lib/dbauth.ts), jadi tidak boleh dicegat gerbang session global.
+ * /api/databases (daftar & buat) tetap wajib session.
+ */
+function isDbOwnAuthPath(pathname: string): boolean {
+  return /^\/api\/databases\/[a-z0-9]{16}(\/|$)/.test(pathname);
+}
+
+/** REST API publik database: Bearer API key buatan Depup (tanpa cookie), rate limit per key di route-nya. */
+function isDbRestApiPath(pathname: string): boolean {
+  return /^\/api\/v1\/db\/[a-z0-9]{16}\/query\/?$/.test(pathname);
+}
+
 function isTunnelClientPath(pathname: string): boolean {
   return /^\/api\/tunnel\/(create|poll|respond|close)\/?$/.test(pathname);
 }
@@ -98,6 +112,8 @@ function bucketFor(pathname: string): { bucket: string; limit: number; windowSec
   const segments = rest.split("/").filter(Boolean);
   const twoSeg = segments.slice(0, 2).join("/");
   const oneSeg = segments[0] ?? "root";
+  // Panel database (browse, SQL, paginasi) memanggil API cukup sering; beri batas lebih longgar.
+  if (oneSeg === "databases") return { bucket: "databases", limit: 240, windowSeconds: 60 };
   const custom = CUSTOM_LIMITS[twoSeg];
   const { limit, windowSeconds } = custom ?? DEFAULT_LIMIT;
   return { bucket: custom ? twoSeg : oneSeg, limit, windowSeconds };
@@ -270,6 +286,9 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
+  // REST API database: autentikasi Bearer sendiri (tanpa cookie, jadi aman dipanggil lintas-origin).
+  if (isDbRestApiPath(pathname)) return NextResponse.next();
+
   // Anti-CSRF: situs yang di-host Link Instan hidup di subdomain yang "same-site" dengan dashboard,
   // jadi cookie SameSite=Lax tetap terkirim dari sana. Tolak request yang mengubah data kalau
   // header Origin-nya bukan host Depup sendiri. (CLI tidak mengirim Origin, jadi tidak terpengaruh.)
@@ -299,7 +318,7 @@ export async function middleware(req: NextRequest) {
 
   const email = await verifySessionEdge(req.cookies.get(SESSION_COOKIE)?.value);
 
-  if (!email && !isPublicPath(pathname)) {
+  if (!email && !isPublicPath(pathname) && !isDbOwnAuthPath(pathname)) {
     return NextResponse.json(
       { ok: false, error: "Sesi login habis. Silakan login lagi.", code: "unauthorized" },
       { status: 401 }

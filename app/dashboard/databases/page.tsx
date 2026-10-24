@@ -1,7 +1,6 @@
-import DatabaseList from "../../../components/db/DatabaseList";
+import { redirect } from "next/navigation";
 
-export const metadata = { title: "Database — Depup" };
-
-export default function DatabasesPage() {
-  return <DatabaseList />;
+// Menu Database hidup di dalam dashboard (state-based, seperti menu lainnya) supaya sidebar tetap tampil.
+export default function DatabasesRedirect() {
+  redirect("/dashboard?view=database");
 }

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { LayoutDashboard, FolderKanban, Rocket, UploadCloud, Link2, Sparkles, Globe2, KeyRound, BookOpen, Settings2, Heart, LogOut, ShieldCheck } from "@/components/ui/icons";
+import { LayoutDashboard, FolderKanban, Rocket, UploadCloud, Link2, Sparkles, Globe2, KeyRound, BookOpen, Database, Settings2, Heart, LogOut, ShieldCheck } from "@/components/ui/icons";
 import { useAuth } from "@/lib/auth-context";
 import { useDeploy } from "@/lib/deploy-context";
 import { AppSidebar, SIDEBAR_LINK_CLASS, type NavGroup } from "@/components/ui/AppSidebar";
@@ -39,6 +39,7 @@ export function Sidebar() {
         items: [
           { id: "domains", label: "Domains", icon: Globe2 },
           { id: "env", label: "Environment", icon: KeyRound },
+          { id: "database", label: "Database", icon: Database },
           { id: "settings", label: "Settings", icon: Settings2 },
         ],
       },
