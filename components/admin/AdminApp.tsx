@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { LayoutDashboard, ShieldAlert, Link2, Users, MessageCircle, Settings2, History, ShieldCheck, LogOut, ArrowLeft } from "@/components/ui/icons";
+import { LayoutDashboard, ShieldAlert, Link2, Users, MessageCircle, Settings2, History, ShieldCheck, LogOut, ArrowLeft, Database } from "@/components/ui/icons";
 import { Megaphone } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/components/ui/Toast";
@@ -21,12 +21,14 @@ import { PromoTab } from "./PromoTab";
 import { SettingsTab } from "./SettingsTab";
 import { AuditTab } from "./AuditTab";
 import { HealthTab } from "./HealthTab";
+import { DatabasesTab } from "./DatabasesTab";
 
 const TABS = [
   { id: "overview", label: "Ringkasan", icon: LayoutDashboard },
   { id: "abuse", label: "Abuse & Takedown", icon: ShieldAlert },
   { id: "links", label: "Link aktif", icon: Link2 },
   { id: "users", label: "Pengguna", icon: Users },
+  { id: "databases", label: "Database", icon: Database },
   { id: "support", label: "Bantuan", icon: MessageCircle },
   { id: "promo", label: "Promosi", icon: Megaphone },
   { id: "health", label: "Audit sistem", icon: ShieldCheck },
@@ -147,6 +149,7 @@ export function AdminApp({ name, email }: { name: string; email: string }) {
               {tab === "abuse" && <AbuseTab toast={showToast} />}
               {tab === "links" && <LinksTab toast={showToast} />}
               {tab === "users" && <UsersTab toast={showToast} />}
+              {tab === "databases" && <DatabasesTab toast={showToast} />}
               {tab === "support" && <SupportTab toast={showToast} />}
               {tab === "promo" && <PromoTab toast={showToast} />}
               {tab === "health" && <HealthTab toast={showToast} />}
