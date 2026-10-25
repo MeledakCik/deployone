@@ -49,6 +49,7 @@ export function Footer() {
           <DashboardLink href="/dashboard" className="underline-offset-4 transition-colors hover:underline">Panduan</DashboardLink>
           <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="underline-offset-4 transition-colors hover:underline">GitHub</a>
           <a href="/docs/mcp" className="underline-offset-4 transition-colors hover:underline">Konektor Claude</a>
+          <a href="/docs" className="underline-offset-4 transition-colors hover:underline">Documentasi</a>
           <a href="/privacy" className="underline-offset-4 transition-colors hover:underline">Privasi</a>
           <a href="/donate" target="_blank" rel="noopener noreferrer" className="underline-offset-4 transition-colors hover:underline">Dukung lewat Saweria</a>
         </nav>

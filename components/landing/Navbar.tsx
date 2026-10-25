@@ -17,6 +17,7 @@ const NAV_LINKS = [
   { href: "#demo", label: "Demo" },
   { href: "#support", label: "Repo yang didukung" },
   { href: "#faq", label: "FAQ" },
+  { href: "/docs", label: "Docs" },
 ];
 
 export function Navbar() {

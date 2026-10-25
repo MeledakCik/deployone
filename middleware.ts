@@ -4,20 +4,9 @@ import { rateLimit, clientIp } from "@/app/api/_lib/rate-limit";
 import { slugFromHost, SLUG_RE } from "@/app/api/_lib/tunnel-host";
 import { isAdminEmail } from "@/app/api/_lib/admin-config";
 import { kv } from "@vercel/kv";
-
-/**
- * Matcher mencakup SEMUA path (bukan cuma /api) karena fitur Link Gaib:
- * request ke https://<slug>.<TUNNEL_BASE_DOMAIN>/apa-saja — termasuk /api/*
- * dan /_next/* milik app si developer — harus di-rewrite ke tunnel, bukan
- * dilayani Depup. Untuk host biasa, non-/api langsung diteruskan (murah).
- */
 export const config = {
   matcher: [
-    // Host utama: semua path KECUALI aset statis (Vercel menyajikannya dari CDN tanpa menjalankan middleware).
     "/((?!_next/static|_next/image|favicon\\.ico|robots\\.txt|sitemap\\.xml|manifest\\.webmanifest|apple-touch-icon\\.png|icon-192\\.png|icon-512\\.png|icon-maskable-512\\.png|logo\\.png|email/|glassmorphic_dashboard_hero\\.svg).*)",
-    // Host tunnel/situs (<awalan>-<5 huruf-angka acak>.<TUNNEL_BASE_DOMAIN>): SEMUA path, termasuk /_next/*
-    // milik app si developer. Pola ini sama dengan format slug di tunnel.ts (randomSuffix) —
-    // kalau format slug diubah, ubah juga regex ini.
     {
       source: "/:path*",
       has: [{ type: "host", value: "[a-z0-9-]*-[a-hj-km-np-z2-9]{5}\\..+" }],
@@ -26,49 +15,22 @@ export const config = {
 };
 
 const SESSION_COOKIE = "depup_session";
-
-/**
- * Hanya endpoint auth yang boleh diakses tanpa login (login Google,
- * callback, logout, dan cek session). Semua route /api/* lainnya — proxy
- * Vercel/Cloudflare/Railway, deploy, 【entity-github¦canonical_name=github】, user-data — WAJIB session valid,
- * supaya server ini tidak bisa dipakai orang luar sebagai proxy gratis.
- */
 function isPublicPath(pathname: string): boolean {
   return (
     pathname === "/api/auth" ||
     pathname.startsWith("/api/auth/") ||
-    // Laporan abuse boleh dari siapa saja (korban phishing tidak punya akun); dibatasi ketat per IP.
     pathname === "/api/abuse" ||
-    // Berhenti berlangganan email: dibuka dari link email / klien email tanpa session; dilindungi token HMAC.
     pathname === "/api/unsubscribe" ||
     isTunnelClientPath(pathname)
   );
 }
 
-/**
- * Endpoint yang dipanggil CLI `depup share` (tanpa session browser). Mereka
- * punya autentikasi sendiri: bearer token per-tunnel (lihat _lib/tunnel.ts).
- */
-/**
- * Fitur Database: route di bawah /api/databases/<id>/ punya otorisasi sendiri (session Google pemilik ATAU
- * cookie login database, lihat _lib/dbauth.ts), jadi tidak boleh dicegat gerbang session global.
- * /api/databases (daftar & buat) tetap wajib session.
- */
 function isDbOwnAuthPath(pathname: string): boolean {
   return /^\/api\/databases\/[a-z0-9]{16}(\/|$)/.test(pathname);
 }
-
-/** REST API publik database: Bearer API key buatan Depup (tanpa cookie), rate limit per key di route-nya. */
 function isDbRestApiPath(pathname: string): boolean {
   return /^\/api\/v1\/db\/[a-z0-9]{16}\/query\/?$/.test(pathname);
 }
-
-/**
- * Konektor MCP (Claude web & app HP): endpoint ini memakai Bearer token OAuth sendiri (bukan cookie session) dan
- * dipanggil dari server Claude / klien MCP, jadi tidak boleh dicegat gerbang session & cek Origin global.
- * Rate limit dan autentikasi dilakukan di dalam route-nya. Route persetujuan /api/mcp/connect SENGAJA tidak
- * dimasukkan: ia butuh session Google + Origin sama seperti API dashboard lainnya.
- */
 function isMcpOwnAuthPath(pathname: string): boolean {
   return /^\/api\/mcp(\/oauth\/(register|token))?\/?$/.test(pathname);
 }
@@ -76,42 +38,26 @@ function isMcpOwnAuthPath(pathname: string): boolean {
 function isTunnelClientPath(pathname: string): boolean {
   return /^\/api\/tunnel\/(create|poll|respond|close)\/?$/.test(pathname);
 }
-
-/** Poll & respond dipanggil sangat sering & sudah dilindungi token + TTL; jangan hitung ke rate limit global. */
 function skipRateLimit(pathname: string): boolean {
   return (
     /^\/api\/tunnel\/(poll|respond|close)\/?$/.test(pathname) ||
-    // Upload Link Instan mengirim belasan potongan berurutan; dibatasi per-user di route init.
     /^\/api\/sites\/[^/]+\/chunk\/?$/.test(pathname)
   );
 }
-
-/**
- * Stricter buckets for endpoints that are reachable without a session
- * (so they're the ones most exposed to brute-force / scraping) or that
- * proxy out to a third party we don't want to get rate-limited by
- * (GitHub, Google). Anything not listed falls back to DEFAULT_LIMIT.tes
- */
 const CUSTOM_LIMITS: Record<string, { limit: number; windowSeconds: number }> = {
   "auth/google": { limit: 20, windowSeconds: 60 },
   "auth/app-exchange": { limit: 20, windowSeconds: 60 },
   "auth/session": { limit: 120, windowSeconds: 60 },
   "github/validate": { limit: 20, windowSeconds: 60 },
   "github/whoami": { limit: 20, windowSeconds: 60 },
-  // Tiap pesan = 1 panggilan Groq berbayar/berkuota; batasi per pengguna.
   "support/chat": { limit: 12, windowSeconds: 60 },
   "support/report": { limit: 5, windowSeconds: 60 },
-  // Memanggil Saweria pihak ketiga; jaga supaya tidak dipakai spam.
   "donate/create": { limit: 6, windowSeconds: 60 },
   "donate/status": { limit: 30, windowSeconds: 60 },
-  // Tiap generate = 1 panggilan Groq; batasi per pengguna.
   "ai/site": { limit: 6, windowSeconds: 60 },
   "ai/key": { limit: 10, windowSeconds: 60 },
-  // Pembuatan tunnel juga dibatasi per jam di route-nya sendiri.
   "tunnel/create": { limit: 20, windowSeconds: 60 },
-  // Laporan abuse (publik): maks 5 per 10 menit per IP.
   abuse: { limit: 5, windowSeconds: 600 },
-  // Publik (tanpa login): batasi per IP.
   unsubscribe: { limit: 20, windowSeconds: 600 },
 };
 
@@ -122,7 +68,6 @@ function bucketFor(pathname: string): { bucket: string; limit: number; windowSec
   const segments = rest.split("/").filter(Boolean);
   const twoSeg = segments.slice(0, 2).join("/");
   const oneSeg = segments[0] ?? "root";
-  // Panel database (browse, SQL, paginasi) memanggil API cukup sering; beri batas lebih longgar.
   if (oneSeg === "databases") return { bucket: "databases", limit: 240, windowSeconds: 60 };
   const custom = CUSTOM_LIMITS[twoSeg];
   const { limit, windowSeconds } = custom ?? DEFAULT_LIMIT;
@@ -152,7 +97,6 @@ function safeEqual(a: string, b: string): boolean {
   return diff === 0;
 }
 
-/** Sama persis dengan verifySession() di app/api/_lib/session.ts, versi edge. */
 async function verifySessionEdge(token: string | undefined): Promise<string | null> {
   if (!token) return null;
   const secret = process.env.AUTH_SECRET;
@@ -182,11 +126,6 @@ async function verifySessionEdge(token: string | undefined): Promise<string | nu
     return null;
   }
 }
-
-/**
- * Akun yang diblokir lewat panel admin (set Redis `admin:blocked`). Hasil di-cache 15 detik per
- * instance supaya tidak menambah 1 command Redis di tiap request. FAIL-OPEN kalau KV bermasalah.
- */
 const BLOCK_CACHE_MS = 15_000;
 const blockCache = new Map<string, { blocked: boolean; until: number }>();
 
@@ -203,24 +142,9 @@ async function isBlockedEdge(email: string): Promise<boolean> {
     return false;
   }
 }
-
-/**
- * Berlaku untuk setiap request /api/*:
- * 1. Selain endpoint auth, wajib session valid (401 kalau tidak).
- * 2. Rate limit — identitas dari email session yang SUDAH TERVERIFIKASI
- *    (bukan isi cookie mentah, yang bisa dipalsukan untuk ganti bucket),
- *    fallback ke IP untuk request anonim (endpoint auth).
- *
- * Rate limit fail-open — lihat komentar rateLimit() — jadi KV down tidak
- * mematikan API. Gerbang session TIDAK fail-open.
- */
 export async function middleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
   const host = req.headers.get("host") || "";
-
-  // ============ TAMBAHAN FIX SEO & DEPUSH LOGIC ============
-
-  // 1. www.depup.cloud -> depup.cloud (fix GSC www mu)
   if (host === "www.depup.cloud" || host === "www.depup.app") {
     const newHost = host.replace(/^www\./, "");
     const url = req.nextUrl.clone();
@@ -228,9 +152,6 @@ export async function middleware(req: NextRequest) {
     url.protocol = "https:";
     return NextResponse.redirect(url, 308);
   }
-
-  // 2. depup.web.id TANPA subdomain = harusnya gak ada web, redirect ke depup
-  // Sesuai maumu: depup.web.id kalau dibuka langsung -> kosong
   if (host === "depup.web.id") {
     const url = req.nextUrl.clone();
     url.host = "depup.cloud";
@@ -238,18 +159,12 @@ export async function middleware(req: NextRequest) {
     url.pathname = "/";
     return NextResponse.redirect(url, 308);
   }
-
-  // 3. *.depup.web.id (link instan) = kasih noindex biar gak ngerusak SEO depup & gak muncul di Ringkasan AI
   const isDepushSubdomain = host.endsWith(".depup.web.id");
-  // ===========================================================
-
-  // --- Link Gaib: https://<slug>.<TUNNEL_BASE_DOMAIN>/... -> /t/<slug>/... ---
   const hostSlug = slugFromHost(req.headers.get("host"));
   if (hostSlug) {
     const headers = new Headers(req.headers);
     headers.set("x-depup-target", pathname + search);
     const rewritten = new URL(`/t/${hostSlug}${pathname === "/" ? "" : pathname}`, req.url);
-    // Kalau ini subdomain depush, tetap lanjut tapi nanti dikasih noindex di response
     const res = NextResponse.rewrite(rewritten, { request: { headers } });
     if (isDepushSubdomain) {
       res.headers.set("X-Robots-Tag", "noindex, nofollow");
@@ -257,7 +172,6 @@ export async function middleware(req: NextRequest) {
     return res;
   }
 
-  // --- Link Gaib mode path: https://<host depup>/t/<slug>/... ---
   const tm = /^\/t\/([^/]+)(\/.*)?$/.exec(pathname);
   if (tm && SLUG_RE.test(tm[1])) {
     const headers = new Headers(req.headers);
@@ -269,7 +183,6 @@ export async function middleware(req: NextRequest) {
     return res;
   }
 
-  // --- Panel admin: gerbang di edge supaya status HTTP-nya benar (307 ke login / 404), bukan 200 ber-stream. ---
   if (pathname === "/admin" || pathname.startsWith("/admin/")) {
     const who = await verifySessionEdge(req.cookies.get(SESSION_COOKIE)?.value);
     if (!who) {
@@ -277,7 +190,6 @@ export async function middleware(req: NextRequest) {
       login.searchParams.set("next", "/admin");
       return NextResponse.redirect(login);
     }
-    // Bukan admin: pura-pura halaman ini tidak ada.
     if (!isAdminEmail(who)) return NextResponse.rewrite(new URL("/__tidak-ada", req.url), { status: 404 });
     const res = NextResponse.next();
     res.headers.set("Cache-Control", "no-store");
@@ -286,7 +198,6 @@ export async function middleware(req: NextRequest) {
     return res;
   }
 
-  // Selain /api/*, middleware ini tidak melakukan apa-apa — KECUALI untuk depush subdomain kasih noindex
   if (pathname !== "/api" && !pathname.startsWith("/api/")) {
     if (isDepushSubdomain) {
       const res = NextResponse.next();
@@ -296,15 +207,8 @@ export async function middleware(req: NextRequest) {
     return NextResponse.next();
   }
 
-  // REST API database: autentikasi Bearer sendiri (tanpa cookie, jadi aman dipanggil lintas-origin).
   if (isDbRestApiPath(pathname)) return NextResponse.next();
-
-  // Konektor MCP: Bearer OAuth sendiri (lihat isMcpOwnAuthPath).
   if (isMcpOwnAuthPath(pathname)) return NextResponse.next();
-
-  // Anti-CSRF: situs yang di-host Link Instan hidup di subdomain yang "same-site" dengan dashboard,
-  // jadi cookie SameSite=Lax tetap terkirim dari sana. Tolak request yang mengubah data kalau
-  // header Origin-nya bukan host Depup sendiri. (CLI tidak mengirim Origin, jadi tidak terpengaruh.)
   const origin = req.headers.get("origin");
   if (origin && !["GET", "HEAD", "OPTIONS"].includes(req.method)) {
     let originHost = "";
@@ -320,7 +224,6 @@ export async function middleware(req: NextRequest) {
       );
     }
   } else if (!origin && !["GET", "HEAD", "OPTIONS"].includes(req.method)) {
-    // Tanpa Origin (CLI tidak mengirimnya) tapi browser menandai request lintas-situs -> tolak.
     if (req.headers.get("sec-fetch-site") === "cross-site") {
       return NextResponse.json(
         { ok: false, error: "Request lintas-origin ditolak.", code: "unauthorized" },
