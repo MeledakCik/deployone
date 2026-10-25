@@ -44,13 +44,10 @@ const rpcResult = (id: RpcResponse["id"], result: unknown): RpcResponse => ({ js
 const hours = (h: number) => (h < 24 ? `${h} jam` : `${h / 24} hari`);
 
 export const SERVER_INSTRUCTIONS =
-  "Depup menayangkan website statis (HTML/CSS/JS) jadi link publik sementara. " +
-  "Setelah membuat website untuk pengguna, tawarkan atau langsung panggil `deploy_website` agar mereka mendapat link yang bisa dibuka dan dibagikan. " +
-  "Selalu berikan URL hasilnya ke pengguna dan sebutkan kapan link kedaluwarsa. " +
-  "Untuk memperbarui situs yang sudah ada, pakai `replace_site_id` (link-nya akan berganti). Jangan mempublikasikan phishing, malware, atau konten melanggar hukum. " +
-  "Untuk deploy permanen ke Vercel, Cloudflare Pages, atau Railway, pakai `deploy_project` (butuh repo GitHub). " +
-  "Token platform disimpan pengguna di Depup → Settings dan dipakai otomatis di server — JANGAN pernah minta atau menerima token di chat. " +
-  "Kalau belum siap, panggil `connector_status` dan beri tahu pengguna apa yang perlu diatur di Settings → Konektor Claude.";
+  "Depup menayangkan website statis (HTML/CSS/JS) sebagai link publik sementara (Link Instan), dan men-deploy repo GitHub ke Vercel, Cloudflare Pages, atau Railway. " +
+  "`deploy_website` mengembalikan URL publik beserta waktu kedaluwarsanya; `replace_site_id` mengganti situs lama dan mengubah link-nya. " +
+  "`deploy_project` memakai token platform yang disimpan pengguna di Depup (Settings → Konektor Claude); token tidak pernah diminta atau dikembalikan lewat tool. " +
+  "`connector_status` menampilkan platform mana yang sudah siap. Konten phishing, malware, atau yang melanggar hukum tidak diterima.";
 
 function toolList() {
   const L = SITE_LIMITS;
@@ -61,11 +58,10 @@ function toolList() {
       title: "Publikasikan website ke Depup",
       description:
         "Menayangkan website statis (HTML/CSS/JS/gambar) ke Depup dan mengembalikan link publik HTTPS. " +
-        "WAJIB menyertakan `index.html` di root. Tulis semua isi file langsung di `files` (teks biasa; untuk file biner seperti PNG pakai encoding base64, " +
-        "tapi lebih baik gunakan SVG atau CSS inline supaya kecil). Gunakan path relatif antar-file (mis. `css/style.css`). " +
+        "Syarat input: ada `index.html` di root; isi file ditulis langsung di `files` (teks biasa, atau base64 untuk file biner seperti PNG); path antar-file relatif (mis. `css/style.css`). " +
         "Tidak ada proses build dan tidak ada backend/server — hanya file statis; library JS boleh dimuat dari CDN. " +
         `Batas: ${mb} MB total, ${L.maxFiles} file, ${L.maxSites} link aktif per akun. ` +
-        `Link bersifat sementara (${L.ttlOptionsHours.map(hours).join(", ")}; default ${hours(L.defaultTtlHours)}) lalu otomatis dihapus.`,
+        `Link bersifat sementara (${L.ttlOptionsHours.map(hours).join(", ")}; default ${hours(L.defaultTtlHours)}) lalu otomatis dihapus. Jika `replace_site_id` diisi, situs lama itu dihapus.`,
       inputSchema: {
         type: "object",
         properties: {
@@ -127,7 +123,7 @@ function toolList() {
     {
       name: "delete_website",
       title: "Hapus website dari Depup",
-      description: "Menghapus satu website (Link Instan) milik pengguna sekarang juga, sehingga linknya langsung tidak bisa dibuka. Tidak bisa dibatalkan — konfirmasi ke pengguna dulu.",
+      description: "Menghapus satu website (Link Instan) milik pengguna sekarang juga, sehingga linknya langsung tidak bisa dibuka. Tindakan ini tidak bisa dibatalkan.",
       inputSchema: {
         type: "object",
         properties: { site_id: { type: "string", description: "ID situs dari `list_websites`." } },
@@ -141,7 +137,7 @@ function toolList() {
       title: "Status konektor deploy Depup",
       description:
         "Menampilkan platform deploy mana (Vercel, Cloudflare Pages, Railway) yang sudah siap dipakai Claude: token sudah disimpan di Settings dan sudah diizinkan pengguna. " +
-        "Tidak pernah menampilkan token. Panggil ini sebelum `deploy_project` kalau belum yakin.",
+        "Tidak pernah menampilkan token. Berguna untuk mengetahui apakah `deploy_project` bisa dipakai saat ini.",
       inputSchema: { type: "object", properties: {}, additionalProperties: false },
       annotations: { title: "Status konektor deploy Depup", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
     },
@@ -151,7 +147,7 @@ function toolList() {
       description:
         "Men-deploy repo GitHub ke Vercel, Cloudflare Pages, atau Railway memakai token yang sudah disimpan pengguna di Depup → Settings (jangan kirim token di sini). " +
         "Hanya platform yang diizinkan pengguna di Settings → Konektor Claude yang bisa dipakai. Repo harus sudah ada di GitHub dan berisi project yang akan dibangun. " +
-        "Hasilnya URL deployment dan tautan dashboard; build bisa butuh beberapa menit setelah ini. Beda dengan `deploy_website`: ini permanen dan berjalan di akun platform milik pengguna.",
+        "Hasilnya URL deployment dan tautan dashboard; build bisa butuh beberapa menit setelah ini. Berbeda dengan `deploy_website`, hasilnya permanen dan berjalan di akun platform milik pengguna; deploy ulang memperbarui project produksi yang sama.",
       inputSchema: {
         type: "object",
         properties: {
@@ -170,13 +166,13 @@ function toolList() {
             type: "boolean",
             default: false,
             description:
-              "Khusus Railway: true HANYA setelah pengguna menyetujui Depup meng-commit file yang kurang (mis. Procfile/start script) ke repo mereka. Jangan set true tanpa tanya dulu.",
+              "Khusus Railway: true berarti pengguna sudah menyetujui Depup meng-commit file yang kurang (mis. Procfile atau start script) ke repo mereka. Default false: tidak ada perubahan ke repo.",
           },
         },
         required: ["platform", "github_url", "project_name"],
         additionalProperties: false,
       },
-      annotations: { title: "Deploy project ke Vercel / Cloudflare / Railway", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+      annotations: { title: "Deploy project ke Vercel / Cloudflare / Railway", readOnlyHint: false, destructiveHint: true, idempotentHint: false, openWorldHint: true }, // memperbarui deployment produksi & (Railway, dengan persetujuan) meng-commit ke repo
     },
   ];
 }
@@ -292,8 +288,11 @@ export async function handleRpc(msg: RpcRequest, ctx: RpcContext): Promise<RpcRe
   } catch (e) {
     console.error("[mcp] error tak terduga", (e as Error)?.message);
     // Kegagalan di dalam tool dilaporkan sebagai hasil tool (isError) supaya Claude bisa menjelaskannya ke user.
-    if (msg.method === "tools/call") return rpcResult(id, toolError("Terjadi kesalahan di server Depup. Coba lagi sebentar lagi."));
-    return rpcError(id, E_INTERNAL, "Terjadi kesalahan di server.");
+    if (msg.method === "tools/call") {
+      const tool = typeof (params as { name?: unknown }).name === "string" ? (params as { name: string }).name : "tool";
+      return rpcResult(id, toolError(`Tool \`${tool}\` gagal dijalankan karena gangguan sementara di server Depup (bukan karena input). Tidak ada perubahan yang disimpan; coba panggil lagi beberapa saat lagi.`));
+    }
+    return rpcError(id, E_INTERNAL, `Gagal memproses method \`${msg.method}\` karena gangguan sementara di server Depup. Coba lagi beberapa saat lagi.`);
   }
 }
 

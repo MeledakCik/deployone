@@ -125,7 +125,7 @@ function describeError(e: unknown, platform: Platform): string {
     return e.message;
   }
   console.error("[mcp-deploy] error tak terduga", (e as Error)?.message);
-  return `Terjadi kesalahan saat deploy ke ${PLATFORM_LABEL[platform]}. Coba lagi sebentar lagi.`;
+  return `Deploy ke ${PLATFORM_LABEL[platform]} gagal karena gangguan sementara (platform atau server Depup tidak merespons dengan benar). Belum ada deployment yang dikonfirmasi; cek dashboard ${PLATFORM_LABEL[platform]} sebelum mengulang, lalu coba lagi.`;
 }
 
 export async function deployProject(email: string, input: DeployInput): Promise<DeployResult> {
