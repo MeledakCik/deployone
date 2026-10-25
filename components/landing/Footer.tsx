@@ -46,7 +46,6 @@ export function Footer() {
 
         <nav aria-label="Footer" className="flex flex-wrap items-center gap-x-7 gap-y-2 text-[13px] font-medium">
           <a href="/#faq" className="underline-offset-4 transition-colors hover:underline">FAQ</a>
-          <DashboardLink href="/dashboard" className="underline-offset-4 transition-colors hover:underline">Panduan</DashboardLink>
           <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="underline-offset-4 transition-colors hover:underline">GitHub</a>
           <a href="/docs/mcp" className="underline-offset-4 transition-colors hover:underline">Konektor Claude</a>
           <a href="/docs" className="underline-offset-4 transition-colors hover:underline">Documentasi</a>
