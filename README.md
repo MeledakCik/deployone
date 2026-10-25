@@ -116,6 +116,46 @@ Suka dengan Depup? Kamu bisa mendukung lewat QRIS. Sepenuhnya sukarela.
 
 ---
 
+## Hubungkan Claude — publish website dari chat ke Depup
+
+Depup punya **konektor MCP** untuk Claude (web dan app HP). Setelah terhubung, kamu bisa membuat website di Claude lalu
+bilang *"publish ke Depup"* — Claude langsung memberi **link publik** (Link Instan), tanpa download dan upload manual.
+
+**Memasang (sekali saja)**
+1. Buka **Dashboard → Link Instan → Hubungkan Claude** dan salin URL konektornya (`https://<domain-depup>/api/mcp`).
+2. Di **claude.ai** (browser): **Settings → Connectors → Add custom connector**, isi nama `Depup`, tempel URL, lalu **Add** → **Connect**.
+3. Masuk dengan Google di Depup dan tekan **Izinkan**.
+4. Di chat, aktifkan konektor Depup, lalu: *"Buatkan landing page warung kopi, lalu publish ke Depup."*
+
+Di **app Claude (HP)**, konektor yang kamu tambahkan di claude.ai ikut tersedia di akun yang sama — aktifkan dari menu konektor di chat.
+
+**Yang bisa dilakukan Claude** (hanya itu; tidak bisa menyentuh token platform, env, atau database-mu):
+
+| Tool | Fungsi |
+|---|---|
+| `deploy_website` | Menayangkan file statis (wajib ada `index.html`) jadi Link Instan. Bisa mengganti situs lama lewat `replace_site_id`. |
+| `list_websites` | Melihat link aktif milikmu (ID, URL, kedaluwarsa). |
+| `delete_website` | Menghapus satu link. |
+
+Aturannya **sama dengan Link Instan**: hanya situs statis, link sementara (1 jam – 7 hari), kuota per akun mengikuti
+`SITES_MAX_PER_USER`, ukuran lewat konektor maksimal 3 MB per situs (isi file dikirim sebagai teks dari chat).
+**Cabut akses** kapan saja lewat tombol *Cabut semua akses Claude* di kartu yang sama.
+
+**Untuk admin / developer**
+- Tidak perlu env baru. Konektor memakai `AUTH_SECRET` (token ditandatangani terpisah dari cookie session) dan Redis yang sudah ada.
+- Opsional: `NEXT_PUBLIC_SITE_URL` (origin publik, default `https://depup.cloud`) dipakai di metadata OAuth. `MCP_REDIRECT_HOSTS`
+  (daftar host dipisah koma) menambah klien MCP lain selain `claude.ai` / `claude.com`.
+- Endpoint: `POST /api/mcp` (MCP Streamable HTTP, JSON-RPC), `/.well-known/oauth-protected-resource`,
+  `/.well-known/oauth-authorization-server`, `/api/mcp/oauth/register` (DCR), `/connect/authorize` (layar izin), `/api/mcp/oauth/token`.
+- Keamanan: OAuth 2.1 + PKCE S256 wajib, kode otorisasi sekali pakai (5 menit), access token 1 jam, refresh token 30 hari,
+  `redirect_uri` hanya ke host Claude (atau loopback untuk uji lokal), pencabutan lewat *epoch* per akun di Redis,
+  akun yang diblokir admin ikut ditolak. Rate limit: 120 request/menit per akun, dan upload ikut batas 20/jam milik Link Instan.
+- Uji: `AUTH_SECRET=... node --experimental-strip-types --test tests/mcp-token.test.mjs` dan
+  `node --experimental-strip-types --import ./tests/mcp-e2e/register.mjs --test tests/mcp-e2e/mcp.e2e.test.mjs`
+  (alur lengkap register → izin → token → deploy, dengan Redis tiruan di memori).
+
+---
+
 ## Link Gaib — bagikan localhost tanpa deploy
 
 Lagi ngoding di komputermu dan dosen atau client mau lihat hasilnya? Tidak perlu deploy dulu.

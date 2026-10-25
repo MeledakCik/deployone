@@ -4,6 +4,7 @@ import { timingSafeEqual } from "crypto";
 import { signSession, SESSION_COOKIE, OAUTH_STATE_COOKIE, OAUTH_NEXT_COOKIE } from "@/app/api/_lib/session";
 import { getSettings, isBlocked, isKnownUser, recordLogin } from "@/app/api/_lib/admin";
 import { isAdminEmail } from "@/app/api/_lib/admin-config";
+import { isMcpAuthorizeNext } from "@/app/api/_lib/mcp-token";
 import {
   OAUTH_APP_COOKIE,
   appDeepLink,
@@ -153,8 +154,11 @@ export async function GET(req: NextRequest) {
     return fail(e instanceof Error ? e.message : "Gagal membuat session.");
   }
 
-  const wantsAdmin = req.cookies.get(OAUTH_NEXT_COOKIE)?.value === "/admin" && adminLogin;
-  const res = NextResponse.redirect(new URL(wantsAdmin ? "/admin" : "/dashboard", req.url));
+  const nextCookie = req.cookies.get(OAUTH_NEXT_COOKIE)?.value;
+  const wantsAdmin = nextCookie === "/admin" && adminLogin;
+  // Login yang dimulai dari layar izin konektor Claude kembali ke layar itu (bukan ke dashboard).
+  const connectNext = isMcpAuthorizeNext(nextCookie) ? nextCookie : null;
+  const res = NextResponse.redirect(new URL(wantsAdmin ? "/admin" : connectNext ?? "/dashboard", req.url));
   res.cookies.set(SESSION_COOKIE, sessionToken, {
     httpOnly: true,
     secure: true,

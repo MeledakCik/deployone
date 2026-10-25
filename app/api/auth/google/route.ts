@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { OAUTH_NEXT_COOKIE, OAUTH_STATE_COOKIE } from "@/app/api/_lib/session";
 import { OAUTH_APP_COOKIE, isValidChallenge } from "@/app/api/_lib/app-handoff";
+import { isMcpAuthorizeNext } from "@/app/api/_lib/mcp-token";
 
 export const runtime = "nodejs";
 
@@ -54,9 +55,13 @@ export async function GET(req: NextRequest) {
   } else {
     res.cookies.delete(OAUTH_APP_COOKIE);
   }
-  // Login dari halaman admin: ingat tujuannya. Whitelist ketat supaya tidak jadi open redirect.
-  if (req.nextUrl.searchParams.get("next") === "/admin") {
+  // Login dari halaman admin / layar izin konektor Claude: ingat tujuannya. Whitelist ketat supaya tidak jadi open redirect
+  // (konektor hanya boleh kembali ke "/connect/authorize?...", lihat isMcpAuthorizeNext).
+  const nextParam = req.nextUrl.searchParams.get("next");
+  if (nextParam === "/admin") {
     res.cookies.set(OAUTH_NEXT_COOKIE, "/admin", { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 600 });
+  } else if (isMcpAuthorizeNext(nextParam)) {
+    res.cookies.set(OAUTH_NEXT_COOKIE, nextParam, { httpOnly: true, secure: true, sameSite: "lax", path: "/", maxAge: 600 });
   } else {
     res.cookies.delete(OAUTH_NEXT_COOKIE);
   }

@@ -63,6 +63,16 @@ function isDbRestApiPath(pathname: string): boolean {
   return /^\/api\/v1\/db\/[a-z0-9]{16}\/query\/?$/.test(pathname);
 }
 
+/**
+ * Konektor MCP (Claude web & app HP): endpoint ini memakai Bearer token OAuth sendiri (bukan cookie session) dan
+ * dipanggil dari server Claude / klien MCP, jadi tidak boleh dicegat gerbang session & cek Origin global.
+ * Rate limit dan autentikasi dilakukan di dalam route-nya. Route persetujuan /api/mcp/connect SENGAJA tidak
+ * dimasukkan: ia butuh session Google + Origin sama seperti API dashboard lainnya.
+ */
+function isMcpOwnAuthPath(pathname: string): boolean {
+  return /^\/api\/mcp(\/oauth\/(register|token))?\/?$/.test(pathname);
+}
+
 function isTunnelClientPath(pathname: string): boolean {
   return /^\/api\/tunnel\/(create|poll|respond|close)\/?$/.test(pathname);
 }
@@ -288,6 +298,9 @@ export async function middleware(req: NextRequest) {
 
   // REST API database: autentikasi Bearer sendiri (tanpa cookie, jadi aman dipanggil lintas-origin).
   if (isDbRestApiPath(pathname)) return NextResponse.next();
+
+  // Konektor MCP: Bearer OAuth sendiri (lihat isMcpOwnAuthPath).
+  if (isMcpOwnAuthPath(pathname)) return NextResponse.next();
 
   // Anti-CSRF: situs yang di-host Link Instan hidup di subdomain yang "same-site" dengan dashboard,
   // jadi cookie SameSite=Lax tetap terkirim dari sana. Tolak request yang mengubah data kalau

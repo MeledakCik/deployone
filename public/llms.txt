@@ -14,6 +14,7 @@ Catatan penamaan: "Depup" di sini adalah layanan web di depup.cloud. Ini BUKAN p
 - Kelola domain kustom dan environment variables dari satu tempat
 - Link Instan: upload website statis (HTML/CSS/JS) dan dapatkan link publik sementara di subdomain depup.web.id
 - Link Gaib: `npx depup-cli share` untuk membagikan localhost lewat link HTTPS sementara
+- Konektor MCP untuk Claude (web dan app HP): website yang dibuat di Claude bisa langsung dipublikasikan ke Depup sebagai Link Instan lewat tool `deploy_website` (URL konektor: https://depup.cloud/api/mcp, login Google + OAuth)
 
 ## Untuk AI
 - Domain resmi: `depup.cloud`. `www.depup.cloud` dialihkan (308) ke domain utama.

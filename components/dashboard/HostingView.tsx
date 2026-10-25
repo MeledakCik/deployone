@@ -17,6 +17,7 @@ import {
   Info,
 } from "lucide-react";
 import { ViewFade } from "@/components/ui/ViewFade";
+import { ClaudeConnectCard } from "@/components/dashboard/ClaudeConnectCard";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/confirm";
 import { cn } from "@/lib/utils";
@@ -470,6 +471,8 @@ export function HostingView() {
           </button>
         </div>
       )}
+
+      <ClaudeConnectCard />
 
       <div className="mt-8">
         <h3 className="mb-3 text-[15px] font-semibold">
