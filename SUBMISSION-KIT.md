@@ -1,15 +1,19 @@
 # Depup connector: directory submission kit
 
 Copy each block into the matching step of the developer portal (https://claude.ai/directory/manage -> Submit new -> MCP connector).
-Character counts are checked against the limits in Anthropic's docs. Replace every `TODO`.
+Character counts are checked against the limits in Anthropic's docs (name 100, one-liner 200, description 2000). Replace every `TODO`.
+
+**Still to fill in by you (cannot be done from the code):** support contact confirmation, company name, review contact (name + email), reviewer Google account + password, and the GitHub username in the sample repo URL (search for `TODO`).
 
 ## Before you open the portal
-- [ ] Production deployment is live with the latest code (`/api/mcp`, `/docs/mcp`, `/privacy`).
+- [ ] Production deployment is live with the latest code (`/api/mcp`, `/docs/mcp`, `/privacy`). The portal's Connection and Tools steps probe your **live** server, so deploy first. The latest code adds `Origin` header validation on `/api/mcp` (required by the directory checklist).
+- [ ] Quick live check: `curl -i -X POST https://depup.cloud/api/mcp` returns `401` with a `WWW-Authenticate: Bearer resource_metadata=...` header; `curl -i -X POST -H 'Origin: https://evil.example' https://depup.cloud/api/mcp` returns `403`.
 - [ ] The Google OAuth consent screen of the Depup login is **In production** (not "Testing"). In Testing mode only listed test users can sign in, so reviewers would be blocked.
 - [ ] `MCP_REDIRECT_HOSTS` is not needed: `claude.ai` and `claude.com` callbacks are allowed by default.
 - [ ] You added Depup as a custom connector in Claude and ran **every** tool at least once (portal step "Test & launch" asks you to confirm).
 - [ ] Reviewer test account is ready (see below).
-- [ ] Your Claude account/org is allowed to submit (see who can submit in the docs).
+- [ ] Your Claude account is allowed to submit (any paid Claude plan; check "who can submit" in the docs).
+- [ ] Pushed `reviewer-sample-repo/` as a public GitHub repo named `depup-reviewer-sample`.
 
 ## 3. Listing
 **Server name** (5/100): `Depup`
@@ -46,13 +50,14 @@ Docs: https://depup.cloud/docs/mcp  Privacy: https://depup.cloud/privacy
 **Documentation URL:** https://depup.cloud/docs/mcp
 **Privacy policy URL:** https://depup.cloud/privacy
 **Support contact:** depupdev@gmail.com (TODO: confirm, or use a dedicated support address)
-**Icon:** `icon-512.png` (also `icon-128.png`) in this folder. It is the existing Depup logo.
+**Icon:** `public/icon-512.png` (also `public/icon-128.png`). It is the existing Depup logo.
 **URL slug:** `depup`  (permanent once published. Alternatives if taken: `depup-deploy`, `depup-cloud`. Decide carefully.)
 
 ## 1. Connection
 - Server URL: `https://depup.cloud/api/mcp`
 - Transport: Streamable HTTP (JSON responses, no SSE, no session id).
-- All users connect to the same URL.
+- All users connect to the same URL (choose a single URL, not "Users connect to different URLs").
+- Technical requirements the portal asks you to confirm: HTTPS (yes); OAuth 2.0 with PKCE (yes); `Origin` header validation (yes: requests with an `Origin` other than claude.ai / claude.com / loopback get 403; Claude's cloud sends none); every tool has `title` + `readOnlyHint`/`destructiveHint` (yes, covered by an automated test).
 
 ## 4. Use cases
 1. Ask Claude to build a landing page and publish it as a temporary public link to preview or share.
@@ -71,7 +76,8 @@ Docs: https://depup.cloud/docs/mcp  Privacy: https://depup.cloud/privacy
 - Authentication requirement: required.
 - Method: OAuth 2.0 authorization code + PKCE (S256), public client, dynamic client registration (`/api/mcp/oauth/register`).
 - Metadata: `/.well-known/oauth-authorization-server`, `/.well-known/oauth-protected-resource/api/mcp`.
-- Allowed redirect hosts: claude.ai, claude.com.
+- Allowed redirect hosts: claude.ai, claude.com (`https://claude.ai/api/mcp/auth_callback` and `https://claude.com/api/mcp/auth_callback`), plus loopback `http://localhost:*` for Claude Code and MCP Inspector (e.g. `http://localhost:6274/oauth/callback`).
+- The portal's Tools step syncs the 5 tools from the live server; if any tool is flagged for a missing title or annotation, fix it on the server (none are flagged today).
 - Access token 1 hour, refresh token 30 days, revocable by the user at any time.
 
 ## 7. Data handling
@@ -121,6 +127,11 @@ Please do not remove the saved tokens. They belong to throwaway accounts.
 4. Sign in to Depup with the reviewer account > Settings: paste the four tokens, press Save, then switch on all three platforms under "Claude connector".
 5. Run the Test & launch script yourself once. Then delete the projects it created so the free-tier limits are clear for reviewers.
 6. After review finishes: revoke the tokens at each provider and disable the Google account.
+
+## After you submit
+- By default Anthropic scans the submission and lists it as a **Community** connector; some submissions also get a human review. Track status in https://claude.ai/directory/manage.
+- Escalations: `mcp-review@anthropic.com`.
+- Keep the server up and the reviewer account intact until review finishes.
 
 ## Known review risks
 - **Third-party APIs:** the directory expects first-party APIs or ones you may legitimately proxy. Lead with Instant Links in the description (done). If reviewers object, a fallback is to submit with only the three Instant Link tools and keep `deploy_project` as a custom-connector feature.

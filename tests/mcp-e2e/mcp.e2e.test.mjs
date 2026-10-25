@@ -252,3 +252,31 @@ test("JSON-RPC: method asing, tool asing, JSON rusak, batch, GET", async () => {
   const init = await (await rpc(t.access_token, "initialize", { protocolVersion: "1999-01-01" })).json();
   assert.equal(init.result.protocolVersion, "2025-06-18");
 });
+
+test("Origin: tanpa Origin / Claude / loopback diizinkan, selain itu 403 (syarat direktori Claude)", async () => {
+  const { t } = await connect("origin@example.com");
+  const at = { authorization: `Bearer ${t.access_token}` };
+  const ping = (origin) => mcp.POST(json("/api/mcp", { jsonrpc: "2.0", id: 1, method: "ping" }, origin === undefined ? at : { ...at, origin }));
+  assert.equal((await ping(undefined)).status, 200); // server Claude tidak mengirim Origin
+  assert.equal((await ping("https://claude.ai")).status, 200);
+  assert.equal((await ping("https://claude.com")).status, 200);
+  assert.equal((await ping("http://localhost:6274")).status, 200); // MCP Inspector
+  for (const bad of ["https://evil.example", "https://claude.ai.evil.example", "http://claude.ai", "null", "bukan-url"]) {
+    const r = await ping(bad);
+    assert.equal(r.status, 403, `Origin ${bad} harus ditolak`);
+    assert.equal((await r.json()).error, "forbidden_origin");
+  }
+});
+
+test("Setiap tool punya title, annotations, nama <=64 karakter (gerbang portal direktori)", async () => {
+  const { t } = await connect("tools@example.com");
+  const { tools } = (await (await rpc(t.access_token, "tools/list", {})).json()).result;
+  assert.ok(tools.length >= 1);
+  for (const tool of tools) {
+    assert.ok(tool.name.length <= 64, tool.name);
+    assert.ok(tool.title, `${tool.name} tanpa title`);
+    const a = tool.annotations ?? {};
+    assert.equal(typeof a.readOnlyHint === "boolean" || typeof a.destructiveHint === "boolean", true, `${tool.name} tanpa readOnlyHint/destructiveHint`);
+    assert.ok(tool.description && tool.description.length > 30, `${tool.name} deskripsi terlalu pendek`);
+  }
+});

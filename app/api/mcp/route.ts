@@ -1,6 +1,6 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
-import { CORS_HEADERS, authenticateBearer, jsonCors, preflight } from "@/app/api/_lib/mcp-auth";
+import { CORS_HEADERS, authenticateBearer, jsonCors, preflight, rejectDisallowedOrigin } from "@/app/api/_lib/mcp-auth";
 import { INVALID_REQUEST, PARSE_ERROR, handleRpc, type RpcRequest, type RpcResponse } from "@/app/api/_lib/mcp-server";
 import { clientIp, rateLimit } from "@/app/api/_lib/rate-limit";
 
@@ -32,6 +32,10 @@ export const DELETE = GET;
  * (middleware melewatkan path ini karena tidak memakai cookie session).
  */
 export async function POST(req: NextRequest) {
+  // Syarat direktori Claude: tolak Origin yang bukan Claude/loopback (cegah DNS rebinding). Tanpa Origin = server Claude.
+  const badOrigin = rejectDisallowedOrigin(req);
+  if (badOrigin) return badOrigin;
+
   // Batasi probing tanpa token per IP sebelum menyentuh kripto/KV.
   const hasAuth = (req.headers.get("authorization") ?? "").length > 0;
   if (!hasAuth) {

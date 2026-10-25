@@ -2,7 +2,7 @@ import { kv } from "@vercel/kv";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { isAdminEmail } from "@/app/api/_lib/admin-config";
-import { appOrigin, verifyAccessToken } from "@/app/api/_lib/mcp-token";
+import { appOrigin, isAllowedRedirectUri, verifyAccessToken } from "@/app/api/_lib/mcp-token";
 
 /** Epoch pencabutan per-user. Naik 1 = semua token/kode MCP lama milik user itu langsung mati. */
 const kEpoch = (email: string) => `mcp:epoch:${email}`;
@@ -53,6 +53,32 @@ export function jsonCors(body: unknown, status = 200, extra: Record<string, stri
     status,
     headers: { ...CORS_HEADERS, "Cache-Control": "no-store", ...extra },
   });
+}
+
+/* ---------------- validasi header Origin (syarat direktori konektor Claude, cegah DNS rebinding) ---------------- */
+
+/**
+ * Request dari server Claude (cloud Anthropic) tidak membawa header Origin, jadi tanpa Origin = diizinkan.
+ * Kalau Origin ada (klien berbasis browser), hanya host Claude (claude.ai / claude.com, plus MCP_REDIRECT_HOSTS)
+ * dan loopback (MCP Inspector / uji lokal) yang diterima. Selain itu ditolak 403.
+ * Memakai daftar host yang sama dengan redirect_uri OAuth supaya konfigurasinya satu tempat.
+ */
+export function isAllowedMcpOrigin(origin: string | null): boolean {
+  if (origin === null || origin === "") return true;
+  if (origin === "null") return false;
+  try {
+    const u = new URL(origin);
+    if (u.pathname !== "/" || u.search || u.hash) return false;
+    // isAllowedRedirectUri menilai URL penuh; origin saja cukup dengan path "/" agar aturannya sama.
+    return isAllowedRedirectUri(`${u.protocol}//${u.host}/`);
+  } catch {
+    return false;
+  }
+}
+
+export function rejectDisallowedOrigin(req: NextRequest): NextResponse | null {
+  if (isAllowedMcpOrigin(req.headers.get("origin"))) return null;
+  return jsonCors({ error: "forbidden_origin", error_description: "Origin tidak diizinkan untuk endpoint MCP Depup." }, 403);
 }
 
 /* ---------------- autentikasi request /api/mcp ---------------- */
