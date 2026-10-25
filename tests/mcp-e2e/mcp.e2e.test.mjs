@@ -96,7 +96,7 @@ test("alur penuh: initialize, tools/list, deploy, list, delete", async () => {
   assert.equal(note.status, 202);
 
   const list = await (await rpc(t.access_token, "tools/list", {})).json();
-  assert.deepEqual(list.result.tools.map((x) => x.name), ["deploy_website", "list_websites", "delete_website"]);
+  assert.deepEqual(list.result.tools.map((x) => x.name), ["deploy_website", "list_websites", "delete_website", "connector_status", "deploy_project"]);
   for (const x of list.result.tools) assert.ok(x.annotations && x.inputSchema.type === "object");
 
   const html = "<!doctype html><title>Warung</title><link rel=stylesheet href=css/s.css><h1>Kopi</h1>";

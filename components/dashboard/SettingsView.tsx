@@ -7,6 +7,7 @@ import { useTheme } from "next-themes";
 import { HardHat } from "lucide-react";
 import { Eye, EyeOff, Save, ShieldCheck, ShieldAlert, Loader2, Trash2, Moon, Sun, Bug, Rocket, Network as SpiderIcon } from "@/components/ui/icons";
 import { Surface } from "@/components/ui/Surface";
+import { ClaudeConnectCard } from "@/components/dashboard/ClaudeConnectCard";
 import { ViewFade } from "@/components/ui/ViewFade";
 import { useCloudStorage } from "@/lib/useCloudStorage";
 import { useToast } from "@/components/ui/Toast";
@@ -480,6 +481,15 @@ export function SettingsView() {
 
         <AppearanceSettings />
         </div>
+
+        <ClaudeConnectCard
+          tokens={tokens}
+          onTokensChange={(next) => {
+            setTokens(next);
+            setDraft((prev) => ({ ...prev, mcpDeployPlatforms: next.mcpDeployPlatforms }));
+            showToast("Izin konektor Claude disimpan.");
+          }}
+        />
       </div>
     </ViewFade>
   );

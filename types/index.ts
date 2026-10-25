@@ -92,6 +92,11 @@ export interface SettingsTokens {
   railwayToken: string;
   /** Token Groq milik user (fitur AI Web Builder). Hanya dipakai di server; tidak pernah dikirim balik ke browser. */
   groqApiKey?: string;
+  /**
+   * Platform yang BOLEH dipakai konektor Claude (MCP) untuk deploy atas nama user, dipisah koma
+   * (mis. "vercel,railway"). Kosong = Claude tidak boleh deploy ke platform manapun. Diatur di Settings.
+   */
+  mcpDeployPlatforms?: string;
 }
 
 export type DashboardView =

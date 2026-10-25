@@ -47,7 +47,10 @@ export const SERVER_INSTRUCTIONS =
   "Depup menayangkan website statis (HTML/CSS/JS) jadi link publik sementara. " +
   "Setelah membuat website untuk pengguna, tawarkan atau langsung panggil `deploy_website` agar mereka mendapat link yang bisa dibuka dan dibagikan. " +
   "Selalu berikan URL hasilnya ke pengguna dan sebutkan kapan link kedaluwarsa. " +
-  "Untuk memperbarui situs yang sudah ada, pakai `replace_site_id` (link-nya akan berganti). Jangan mempublikasikan phishing, malware, atau konten melanggar hukum.";
+  "Untuk memperbarui situs yang sudah ada, pakai `replace_site_id` (link-nya akan berganti). Jangan mempublikasikan phishing, malware, atau konten melanggar hukum. " +
+  "Untuk deploy permanen ke Vercel, Cloudflare Pages, atau Railway, pakai `deploy_project` (butuh repo GitHub). " +
+  "Token platform disimpan pengguna di Depup → Settings dan dipakai otomatis di server — JANGAN pernah minta atau menerima token di chat. " +
+  "Kalau belum siap, panggil `connector_status` dan beri tahu pengguna apa yang perlu diatur di Settings → Konektor Claude.";
 
 function toolList() {
   const L = SITE_LIMITS;
@@ -133,6 +136,48 @@ function toolList() {
       },
       annotations: { title: "Hapus website dari Depup", readOnlyHint: false, destructiveHint: true, idempotentHint: true, openWorldHint: false },
     },
+    {
+      name: "connector_status",
+      title: "Status konektor deploy Depup",
+      description:
+        "Menampilkan platform deploy mana (Vercel, Cloudflare Pages, Railway) yang sudah siap dipakai Claude: token sudah disimpan di Settings dan sudah diizinkan pengguna. " +
+        "Tidak pernah menampilkan token. Panggil ini sebelum `deploy_project` kalau belum yakin.",
+      inputSchema: { type: "object", properties: {}, additionalProperties: false },
+      annotations: { title: "Status konektor deploy Depup", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
+    },
+    {
+      name: "deploy_project",
+      title: "Deploy project dari GitHub ke Vercel / Cloudflare / Railway",
+      description:
+        "Men-deploy repo GitHub ke Vercel, Cloudflare Pages, atau Railway memakai token yang sudah disimpan pengguna di Depup → Settings (jangan kirim token di sini). " +
+        "Hanya platform yang diizinkan pengguna di Settings → Konektor Claude yang bisa dipakai. Repo harus sudah ada di GitHub dan berisi project yang akan dibangun. " +
+        "Hasilnya URL deployment dan tautan dashboard; build bisa butuh beberapa menit setelah ini. Beda dengan `deploy_website`: ini permanen dan berjalan di akun platform milik pengguna.",
+      inputSchema: {
+        type: "object",
+        properties: {
+          platform: { type: "string", enum: ["vercel", "cloudflare", "railway"], description: "Platform tujuan." },
+          github_url: { type: "string", description: "URL repo GitHub, mis. https://github.com/pemilik/repo." },
+          project_name: {
+            type: "string",
+            maxLength: 100,
+            description: "Nama project di platform (huruf, angka, titik, underscore, strip). Pakai nama yang sama untuk deploy ulang.",
+          },
+          env_text: { type: "string", description: "Environment variables format .env (KEY=value per baris). Opsional." },
+          build_command: { type: "string", description: "Khusus Cloudflare: perintah build. Kosongkan untuk memakai preset otomatis." },
+          output_dir: { type: "string", description: "Khusus Cloudflare: folder output build. Kosongkan untuk preset otomatis." },
+          start_command: { type: "string", description: "Khusus Railway: perintah start. Kosongkan untuk deteksi otomatis." },
+          allow_repo_changes: {
+            type: "boolean",
+            default: false,
+            description:
+              "Khusus Railway: true HANYA setelah pengguna menyetujui Depup meng-commit file yang kurang (mis. Procfile/start script) ke repo mereka. Jangan set true tanpa tanya dulu.",
+          },
+        },
+        required: ["platform", "github_url", "project_name"],
+        additionalProperties: false,
+      },
+      annotations: { title: "Deploy project ke Vercel / Cloudflare / Railway", readOnlyHint: false, destructiveHint: false, idempotentHint: false, openWorldHint: true },
+    },
   ];
 }
 
@@ -172,6 +217,34 @@ async function callTool(name: string, args: Record<string, unknown>, ctx: RpcCon
     case "delete_website": {
       const r = await deleteSiteForUser(ctx.email, args.site_id);
       return r.ok ? text(`Website ${r.id} sudah dihapus.`, { id: r.id }) : toolError(r.error);
+    }
+    case "connector_status": {
+      // Dimuat saat dibutuhkan: modul deploy menarik banyak dependensi yang tidak perlu untuk tool Link Instan.
+      const { getConnectorStatus } = await import("@/app/api/_lib/mcp-deploy");
+      const st = await getConnectorStatus(ctx.email);
+      const lines = st.platforms.map((p) => {
+        const state = p.ready ? "siap dipakai" : !p.tokenSaved ? "token belum disimpan di Settings" : "token ada, tapi belum diizinkan di Settings → Konektor Claude";
+        return `- ${p.label}: ${state}`;
+      });
+      lines.push(`- GitHub token (repo private): ${st.githubSaved ? "tersimpan" : "belum disimpan (cukup untuk repo publik)"}`);
+      const anyReady = st.platforms.some((p) => p.ready);
+      return text(
+        `Status konektor deploy:\n${lines.join("\n")}` +
+          (anyReady ? "" : "\nBelum ada platform yang siap. Minta pengguna membuka Depup → Settings, mengisi token platform, lalu mengaktifkannya di bagian Konektor Claude."),
+        { platforms: st.platforms, githubSaved: st.githubSaved },
+      );
+    }
+    case "deploy_project": {
+      const { deployProject } = await import("@/app/api/_lib/mcp-deploy");
+      const r = await deployProject(ctx.email, args);
+      if (!r.ok) return toolError(r.error);
+      return text(
+        `Deploy ke ${r.platform} dimulai untuk project "${r.project}".\n` +
+          `URL: ${r.url}\nDashboard: ${r.inspectorUrl}\nStatus awal: ${r.readyState} (build bisa butuh beberapa menit; URL aktif setelah build selesai).` +
+          (r.notes.length ? `\nCatatan:\n${r.notes.map((n) => `- ${n}`).join("\n")}` : "") +
+          (r.recorded ? "\nTercatat di riwayat dashboard Depup." : ""),
+        { platform: r.platform, project: r.project, url: r.url, inspectorUrl: r.inspectorUrl, deploymentId: r.deploymentId, readyState: r.readyState, notes: r.notes, recorded: r.recorded },
+      );
     }
     default:
       return null;

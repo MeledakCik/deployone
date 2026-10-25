@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { ok, fail, withErrorHandling } from "@/app/api/_lib/response";
 import { getUserData, putUserData, type UserData } from "@/app/api/_lib/store";
 import { getSessionEmail } from "@/app/api/_lib/session";
+import { MAX_HISTORY, type ServerHistoryItem } from "@/app/api/_lib/mcp-history";
 
 export const runtime = "nodejs";
 
@@ -15,7 +16,15 @@ const ALLOWED_TOKEN_KEYS = [
   "cloudflareAccountId",
   "githubPat",
   "railwayToken",
+  "mcpDeployPlatforms",
 ] as const;
+
+const MCP_PLATFORMS = ["vercel", "cloudflare", "railway"];
+
+function normalizeMcpPlatforms(v: string): string {
+  const picked = v.split(",").map((x) => x.trim().toLowerCase());
+  return MCP_PLATFORMS.filter((p) => picked.includes(p)).join(",");
+}
 
 /** Hanya izinkan key token yang dikenal, value string, panjang dibatasi. */
 function sanitizeTokens(input: unknown): Record<string, string> | null {
@@ -23,9 +32,32 @@ function sanitizeTokens(input: unknown): Record<string, string> | null {
   const out: Record<string, string> = {};
   for (const k of ALLOWED_TOKEN_KEYS) {
     const v = (input as Record<string, unknown>)[k];
-    if (typeof v === "string" && v.length <= 4000) out[k] = v;
+    if (typeof v !== "string" || v.length > 4000) continue;
+    // Daftar platform konektor Claude: hanya nama platform yang dikenal, tanpa duplikat.
+    out[k] = k === "mcpDeployPlatforms" ? normalizeMcpPlatforms(v) : v;
   }
   return out;
+}
+
+const stripFresh = (list: unknown[]): unknown[] =>
+  list.map((h) => {
+    if (h && typeof h === "object" && "fresh" in h) {
+      const { fresh: _f, ...rest } = h as Record<string, unknown>;
+      return rest;
+    }
+    return h;
+  });
+
+/**
+ * Riwayat dari browser menimpa seluruh array. Entri hasil deploy lewat Claude yang masih `fresh` (belum pernah
+ * diambil browser lewat GET) dipertahankan kalau browser yang sudah basi tidak memilikinya. `fresh` dari klien
+ * selalu diabaikan, jadi klien tidak bisa membuat entri "kebal hapus".
+ */
+function mergeHistory(incoming: unknown[], existing: unknown[]): unknown[] {
+  const clean = stripFresh(incoming) as { id?: unknown }[];
+  const ids = new Set(clean.map((h) => String(h?.id)));
+  const keep = (existing as ServerHistoryItem[]).filter((h) => h?.fresh === true && !ids.has(String(h.id)));
+  return [...keep, ...clean].slice(0, MAX_HISTORY);
 }
 
 const okArray = (v: unknown): v is unknown[] => Array.isArray(v) && v.length <= MAX_ITEMS;
@@ -35,6 +67,13 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
   if (!email) return fail("Belum login.", 401, "unauthorized");
 
   const data = await getUserData(email);
+
+  // Entri hasil deploy Claude yang baru: begitu sampai ke browser, penanda `fresh` dilepas (best-effort).
+  const hasFresh = Array.isArray(data.history) && (data.history as ServerHistoryItem[]).some((h) => h?.fresh === true);
+  if (hasFresh) {
+    data.history = stripFresh(data.history) as UserData["history"];
+    await putUserData(email, data).catch(() => undefined);
+  }
 
   // getUserData sudah dijamin balikin shape lengkap dari store.ts,
   // tapi tetap defensif di sini kalau ada format data lama yang beda.
@@ -81,7 +120,7 @@ export const PUT = withErrorHandling(async (req: NextRequest) => {
   const existing = await getUserData(email);
 
   const merged: UserData = {
-    history: okArray(body.history) ? body.history : existing.history,
+    history: okArray(body.history) ? (mergeHistory(body.history, existing.history) as UserData["history"]) : existing.history,
     domains: okArray(body.domains) ? body.domains : existing.domains,
     envVars: okArray(body.envVars) ? body.envVars : existing.envVars,
     settingsTokens: (() => {
