@@ -603,18 +603,18 @@ function GuideCard({ guide }: { guide: Guide }) {
   const Icon = guide.icon;
 
   return (
-    <Surface className="overflow-hidden">
+    <Surface className="overflow-hidden transition-shadow hover:shadow-md">
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
-        className="flex w-full items-start gap-4 p-5 text-left"
+        className="flex w-full items-start gap-4 p-5 text-left sm:p-6"
       >
         <span className={`bounce-t grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-tone-lilac text-lav-text ${open ? "scale-[1.07] -rotate-3" : ""}`}>
           <Icon size={20} />
         </span>
         <div className="min-w-0 flex-1">
-          <h3 className="text-[14px] font-semibold">{guide.title}</h3>
+          <h3 className="text-[14.5px] font-semibold sm:text-[15px]">{guide.title}</h3>
           <p className="mt-1 text-[13px] leading-relaxed text-text-muted">{guide.desc}</p>
         </div>
         <ChevronDown
@@ -625,7 +625,7 @@ function GuideCard({ guide }: { guide: Guide }) {
 
       <div className="acc" data-open={open} aria-hidden={!open}>
        <div className="acc-inner">
-        <div className="border-t px-5 pb-5 pt-4" style={{ borderColor: "var(--surface-line)" }}>
+        <div className="border-t px-5 pb-5 pt-4 sm:px-6 sm:pb-6" style={{ borderColor: "var(--surface-line)" }}>
           <ol className="space-y-4">
             {guide.steps.map((step, i) => (
               <li key={i} className="acc-step flex gap-3 text-[13px] leading-relaxed" style={{ "--i": i } as React.CSSProperties}>
@@ -665,9 +665,12 @@ export function DocsView() {
     ? GUIDES
     : searchable.filter(({ text }) => terms.every((t) => text.includes(t))).map(({ guide }) => guide);
 
+  // Cek kategori mana saja yang punya item yang sedang terlihat
+  const visibleCategories = CATEGORIES.filter(cat => visible.some(g => g.category === cat.id));
+
   return (
     <ViewFade>
-      <div className="space-y-6">
+      <div className="space-y-6 sm:space-y-8">
         <div>
           <PageTitle
             title="Docs"
@@ -675,32 +678,49 @@ export function DocsView() {
           />
         </div>
 
-        <div className="relative">
-          <Search size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-text-faint" />
-          <input
-            type="text"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Cari panduan, mis. domain, token, error"
-            aria-label="Cari panduan"
-            className="w-full h-12 rounded-full border border-[var(--line-strong)] bg-[var(--surface-solid)] pl-11 pr-11 text-[13.5px] sm:text-[14px] text-[var(--text)] shadow-[var(--surface-shadow)] placeholder:text-[var(--text-faint)] focus:border-[var(--ring)] focus:outline-none focus:ring-[3px] focus:ring-violet-200 dark:focus:ring-violet-800 transition-colors"
-          />
-          {query && (
-            <button
-              type="button"
-              onClick={() => setQuery("")}
-              aria-label="Hapus pencarian"
-              className="absolute right-3 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full text-text-faint transition-colors hover:bg-[var(--pill-bg)] hover:text-[var(--text)]"
-            >
-              <X size={14} />
-            </button>
+        <div className="space-y-4">
+          <div className="relative">
+            <Search size={16} className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-text-faint" />
+            <input
+              type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Cari panduan, mis. domain, token, error"
+              aria-label="Cari panduan"
+              className="w-full h-12 rounded-full border border-[var(--line-strong)] bg-[var(--surface-solid)] pl-11 pr-11 text-[13.5px] sm:text-[14px] text-[var(--text)] shadow-[var(--surface-shadow)] placeholder:text-[var(--text-faint)] focus:border-[var(--ring)] focus:outline-none focus:ring-[3px] focus:ring-violet-200 dark:focus:ring-violet-800 transition-colors"
+            />
+            {query && (
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                aria-label="Hapus pencarian"
+                className="absolute right-3 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full text-text-faint transition-colors hover:bg-[var(--pill-bg)] hover:text-[var(--text)]"
+              >
+                <X size={14} />
+              </button>
+            )}
+          </div>
+
+          {/* Navigasi Cepat per Kategori */}
+          {visibleCategories.length > 0 && (
+            <div className="flex flex-wrap gap-2 pt-1 pb-2">
+              {visibleCategories.map((cat) => (
+                <a
+                  key={cat.id}
+                  href={`#docs-${cat.id}`}
+                  className="whitespace-nowrap rounded-full border border-[var(--line-strong)] bg-[var(--surface-solid)] px-3.5 py-1.5 text-[12px] font-medium text-text-muted transition-colors hover:border-[var(--ring)] hover:text-[var(--text)]"
+                >
+                  {cat.label}
+                </a>
+              ))}
+            </div>
           )}
         </div>
 
         {visible.length === 0 ? (
-          <Surface className="p-6 text-center">
-            <p className="text-[14px] font-semibold">Tidak ada panduan yang cocok dengan &ldquo;{query.trim()}&rdquo;</p>
-            <p className="mt-1 text-[13px] leading-relaxed text-text-muted">
+          <Surface className="p-8 text-center sm:p-10">
+            <p className="text-[15px] font-semibold">Tidak ada panduan yang cocok dengan &ldquo;{query.trim()}&rdquo;</p>
+            <p className="mt-2 text-[13px] leading-relaxed text-text-muted">
               Coba kata kunci lain, atau tanyakan ke Asisten Bantuan lewat tombol Bantuan di pojok kanan bawah.
             </p>
           </Surface>
@@ -709,12 +729,12 @@ export function DocsView() {
             const items = visible.filter((g) => g.category === cat.id);
             if (items.length === 0) return null;
             return (
-              <section key={cat.id} className="space-y-3" aria-labelledby={`docs-${cat.id}`}>
-                <div>
-                  <h2 id={`docs-${cat.id}`} className="text-[15px] font-semibold">
+              <section key={cat.id} id={`docs-${cat.id}`} className="scroll-mt-24 space-y-4 pt-4">
+                <div className="border-b border-[var(--line-strong)] pb-2">
+                  <h2 id={`docs-${cat.id}-title`} className="text-[16px] font-semibold sm:text-[17px]">
                     {cat.label}
                   </h2>
-                  <p className="mt-0.5 text-[12.5px] text-text-muted">{cat.desc}</p>
+                  <p className="mt-1 text-[13px] text-text-muted">{cat.desc}</p>
                 </div>
                 <div className="space-y-3">
                   {items.map((guide) => (
