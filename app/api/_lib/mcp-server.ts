@@ -61,7 +61,7 @@ function toolList() {
         "Syarat input: ada `index.html` di root; isi file ditulis langsung di `files` (teks biasa, atau base64 untuk file biner seperti PNG); path antar-file relatif (mis. `css/style.css`). " +
         "Tidak ada proses build dan tidak ada backend/server — hanya file statis; library JS boleh dimuat dari CDN. " +
         `Batas: ${mb} MB total, ${L.maxFiles} file, ${L.maxSites} link aktif per akun. ` +
-        `Link bersifat sementara (${L.ttlOptionsHours.map(hours).join(", ")}; default ${hours(L.defaultTtlHours)}) lalu otomatis dihapus. Jika `replace_site_id` diisi, situs lama itu dihapus.`,
+        `Link bersifat sementara (${L.ttlOptionsHours.map(hours).join(", ")}; default ${hours(L.defaultTtlHours)}) lalu otomatis dihapus. Jika \`replace_site_id\` diisi, situs lama itu dihapus.`,
       inputSchema: {
         type: "object",
         properties: {
