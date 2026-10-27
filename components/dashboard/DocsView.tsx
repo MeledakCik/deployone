@@ -526,10 +526,10 @@ const GUIDES: Guide[] = [
     title: "Aktifkan Link Instan dan Link Gaib di server sendiri",
     desc: "Kedua fitur ini butuh domain wildcard. Tanpa itu, menu Link Instan tampil dengan pesan bahwa fitur belum aktif.",
     steps: [
-      "Siapkan domain yang terpisah dari domain dashboard Depup (mis. depup.link). Alasannya: isi link adalah milik pengguna, dan kalau satu subdomain ditandai phishing, reputasi seluruh domain ikut turun.",
-      "Di Vercel → project Depup → Settings → Domains, tambahkan domain itu dan juga wildcard-nya (*.depup.link).",
+      "Siapkan domain yang terpisah dari domain dashboard Depup (mis. depup.web.id). Alasannya: isi link adalah milik pengguna, dan kalau satu subdomain ditandai phishing, reputasi seluruh domain ikut turun.",
+      "Di Vercel → project Depup → Settings → Domains, tambahkan domain itu dan juga wildcard-nya (*.depup.web.id).",
       "Wildcard butuh nameserver domain diarahkan ke Vercel (ns1.vercel-dns.com dan ns2.vercel-dns.com) supaya sertifikat wildcard bisa diterbitkan.",
-      "Isi environment variable TUNNEL_BASE_DOMAIN dengan domain itu (mis. depup.link), lalu redeploy. Env ini juga dibaca saat build.",
+      "Isi environment variable TUNNEL_BASE_DOMAIN dengan domain itu (mis. depup.web.id), lalu redeploy. Env ini juga dibaca saat build.",
       "Untuk CLI Link Gaib, set DEPUP_HOST ke alamat Depup-mu, atau ubah DEFAULT_HOST di cli/bin/depup.js.",
       "Fitur ini otomatis mati kalau TUNNEL_BASE_DOMAIN kosong. Itu disengaja, supaya kode milik pengguna tidak jalan di domain dashboard.",
       "Batas bawaan Link Instan bisa diubah lewat env SITES_MAX_MB dan SITES_MAX_PER_USER. Daftar lengkap variabelnya ada di file .env.example.",
