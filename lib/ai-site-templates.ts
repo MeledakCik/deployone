@@ -798,7 +798,7 @@ function extraCss(t: Theme, bd: string, hover: HoverEffect, extra: string[]): st
   const glow = layers.length ? `.glow{background:${layers.join(",")}}` : "";
   const look = t.brutal
     ? ""
-    : `.ico,.pico,.vrow i,.ci i,.acard i,.tqh .ico{display:grid;place-items:center;flex:none;width:40px;height:40px;border-radius:50%;background:var(--ib);color:var(--at)}
+    : `.ico,.pico,.vrow i,.ci i,.acard i,.tqh .ico{display:grid;place-items:center;place-content:center;justify-content:center;align-items:center;flex:none;width:40px;height:40px;border-radius:50%;background:var(--ib);color:var(--at)}
 .ico svg,.pico svg,.vrow i svg,.ci svg,.acard i svg,.tqh .ico svg{width:20px;height:20px}
 .feat,.prod,.scard,.acard,.post{transition:transform .3s ease,box-shadow .3s ease,border-color .3s ease}
 .feat:hover,.prod:hover,.scard:hover,.acard:hover,.post:hover{${move};box-shadow:${lift}}
@@ -1261,4 +1261,204 @@ ${js ? `<script src="assets/app.js" defer></script>` : ""}
 /** Satu file HTML mandiri (pratinjau & publish). */
 export function renderSite(content: SiteContent, template: TemplateId, accent?: string, opts?: RenderOpts): string {
   return buildSite(content, template, accent, opts).single;
+}
+
+/* ------------------------------------------------------------------ */
+/* Contoh isi untuk pratinjau instan (tanpa memanggil AI)              */
+/* ------------------------------------------------------------------ */
+
+const SAMPLE_BASE = {
+  template: "bersih" as TemplateId,
+  accent: "#2563EB",
+  hero: "center" as HeroLayout,
+  feat: "grid" as FeatLayout,
+  brandIcon: "",
+  badge: "",
+  items: [] as SiteItem[],
+  itemsTitle: "",
+  steps: [] as SiteStep[],
+  stepsTitle: "Cara kerjanya",
+  whatsapp: "",
+  email: "halo@contoh.id",
+  address: "Bandung, Jawa Barat",
+  hours: "Senin – Sabtu, 09.00 – 17.00",
+};
+
+/**
+ * Isi contoh yang dirender langsung di pratinjau sebelum pengguna menekan "Buat website".
+ * Tidak pernah dipublish atau diekspor; hanya untuk melihat efek template, warna, dan tata letak.
+ */
+export function sampleContent(kind: SiteKind = "jasa"): SiteContent {
+  const feats = (rows: [string, string, string][]): SiteFeature[] => rows.map(([icon, title, text]) => ({ icon, title, text }));
+  switch (kind) {
+    case "umkm":
+      return {
+        ...SAMPLE_BASE,
+        kind,
+        brand: "Warung Contoh",
+        slogan: "Enak, cepat, harga bersahabat",
+        badge: "Buka setiap hari",
+        headline: "Masakan rumahan yang bikin kangen",
+        subheadline: "Dimasak segar setiap pagi dengan bahan pilihan, siap diantar ke rumahmu.",
+        ctaLabel: "Lihat menu",
+        featuresTitle: "Kenapa pilih kami",
+        features: feats([
+          ["leaf", "Bahan segar", "Belanja langsung dari pasar setiap pagi."],
+          ["clock", "Cepat saji", "Pesanan siap dalam hitungan menit."],
+          ["truck", "Antar ke rumah", "Gratis ongkir untuk area sekitar."],
+        ]),
+        itemsTitle: "Menu favorit",
+        items: [
+          { id: "s1", name: "Paket Hemat", desc: "Nasi, lauk, dan sayur pilihan.", price: 18000, category: "Paket", icon: "utensils", img: "", size: "large", tag: "Best Seller" },
+          { id: "s2", name: "Sup Hangat", desc: "Kuah gurih dengan isian lengkap.", price: 15000, category: "Makanan", icon: "soup", img: "" },
+          { id: "s3", name: "Es Teh Manis", desc: "Segar dan manisnya pas.", price: 5000, category: "Minuman", icon: "cup-soda", img: "" },
+        ],
+        steps: [
+          { title: "Pilih menu", text: "Pilih makanan dan minuman favoritmu." },
+          { title: "Kirim pesanan", text: "Pesan lewat WhatsApp dengan sekali klik." },
+          { title: "Tinggal santap", text: "Pesanan datang masih hangat." },
+        ],
+        aboutTitle: "Tentang kami",
+        about: "Kami usaha keluarga yang percaya makanan enak tidak harus mahal. Setiap porsi dimasak dengan resep yang sama sejak awal.",
+        closing: "Lapar? Pesan sekarang",
+        closingText: "Hubungi kami dan pesananmu langsung kami siapkan.",
+        testimonial: { text: "Rasanya konsisten dan pengantarannya cepat. Langganan sejak buka.", name: "Rina, pelanggan" },
+      };
+    case "portofolio":
+      return {
+        ...SAMPLE_BASE,
+        kind,
+        brand: "Nama Kamu",
+        slogan: "Desainer & pengembang web",
+        badge: "Terbuka untuk proyek baru",
+        headline: "Saya membangun produk digital yang rapi dan mudah dipakai",
+        subheadline: "Fokus pada antarmuka yang jelas, performa cepat, dan hasil yang bisa diukur.",
+        ctaLabel: "Lihat karya",
+        featuresTitle: "Keahlian",
+        features: feats([
+          ["code", "Pengembangan web", "React, Next.js, dan Tailwind CSS."],
+          ["palette", "Desain antarmuka", "Prototipe, sistem desain, dan uji pengguna."],
+          ["users", "Kerja tim", "Terbiasa dengan Git, review kode, dan dokumentasi."],
+        ]),
+        steps: [
+          { title: "Diskusi", text: "Memahami tujuan dan kebutuhanmu." },
+          { title: "Rancang", text: "Membuat desain dan prototipe." },
+          { title: "Bangun", text: "Mengembangkan dan merilis hasilnya." },
+        ],
+        aboutTitle: "Tentang saya",
+        about: "Saya senang mengubah ide menjadi produk yang benar-benar dipakai orang, dengan perhatian pada detail kecil.",
+        closing: "Punya proyek?",
+        closingText: "Ceritakan idemu, saya balas secepatnya.",
+      };
+    case "event":
+      return {
+        ...SAMPLE_BASE,
+        kind,
+        brand: "Festival Contoh",
+        slogan: "Satu hari penuh seru",
+        badge: "Sabtu, 15 November",
+        headline: "Festival komunitas terbesar tahun ini",
+        subheadline: "Musik, kuliner, dan workshop gratis untuk semua umur.",
+        ctaLabel: "Daftar sekarang",
+        featuresTitle: "Yang menunggumu",
+        features: feats([
+          ["music", "Penampil lokal", "Belasan penampil dari kota sendiri."],
+          ["utensils", "Bazar kuliner", "Puluhan stan makanan dan minuman."],
+          ["ticket", "Tiket gratis", "Daftar online, kuota terbatas."],
+        ]),
+        steps: [
+          { title: "Daftar", text: "Isi data singkat secara online." },
+          { title: "Datang", text: "Tunjukkan kode pendaftaran di pintu masuk." },
+          { title: "Nikmati", text: "Ikuti acara dari pagi sampai malam." },
+        ],
+        aboutTitle: "Tentang acara",
+        about: "Festival tahunan yang mempertemukan warga, pelaku usaha kecil, dan seniman dalam satu tempat.",
+        closing: "Jangan sampai ketinggalan",
+        closingText: "Kuota terbatas, amankan tempatmu hari ini.",
+        address: "Lapangan Kota",
+        hours: "10.00 – 22.00",
+      };
+    case "profil":
+      return {
+        ...SAMPLE_BASE,
+        kind,
+        brand: "Komunitas Contoh",
+        slogan: "Tumbuh bersama",
+        headline: "Wadah belajar dan berbagi untuk semua anggota",
+        subheadline: "Kami mengadakan pertemuan rutin, pelatihan, dan kegiatan sosial.",
+        ctaLabel: "Gabung",
+        featuresTitle: "Kegiatan kami",
+        features: feats([
+          ["users", "Pertemuan rutin", "Berkumpul dan berbagi setiap bulan."],
+          ["graduation-cap", "Pelatihan", "Kelas singkat dari anggota berpengalaman."],
+          ["hand-heart", "Aksi sosial", "Kegiatan bermanfaat untuk lingkungan sekitar."],
+        ]),
+        steps: [
+          { title: "Kenalan", text: "Hadiri pertemuan terbuka pertama." },
+          { title: "Daftar", text: "Isi formulir keanggotaan." },
+          { title: "Terlibat", text: "Ikut kegiatan sesuai minatmu." },
+        ],
+        aboutTitle: "Tentang kami",
+        about: "Berdiri dari sekelompok teman yang ingin saling membantu, kini kami memiliki ratusan anggota aktif.",
+        closing: "Mau bergabung?",
+        closingText: "Pendaftaran terbuka untuk siapa saja.",
+      };
+    case "artikel":
+      return {
+        ...SAMPLE_BASE,
+        kind,
+        template: "majalah",
+        brand: "Catatan Contoh",
+        slogan: "Tulisan yang layak dibaca",
+        headline: "Cerita, ide, dan catatan harian",
+        subheadline: "Tulisan singkat seputar hal yang sedang saya pelajari.",
+        ctaLabel: "Baca artikel",
+        featuresTitle: "Topik",
+        features: feats([
+          ["pen-tool", "Menulis", "Tips dan proses di balik tulisan."],
+          ["lightbulb", "Ide", "Gagasan kecil yang layak dicoba."],
+          ["book-open", "Bacaan", "Buku dan artikel yang menginspirasi."],
+        ]),
+        articles: [
+          { id: "a1", title: "Mulai menulis tanpa menunggu siap", excerpt: "Kebiasaan kecil yang membuat tulisan terus jalan.", category: "Menulis", author: "Penulis", readMin: 4, body: ["Mulai dari satu paragraf sehari.", "## Kenapa kecil lebih baik", "Target kecil lebih mudah dijaga dalam jangka panjang."] },
+          { id: "a2", title: "Tiga catatan dari buku bulan ini", excerpt: "Hal yang paling membekas dari bacaan terakhir.", category: "Bacaan", author: "Penulis", readMin: 3, body: ["Satu ide sederhana bisa mengubah cara kerja.", "Catat hal yang benar-benar kamu pakai."] },
+        ],
+        stepsTitle: "Cara berlangganan",
+        steps: [
+          { title: "Pilih topik", text: "Temukan tulisan yang kamu suka." },
+          { title: "Baca", text: "Tiap artikel selesai dalam beberapa menit." },
+        ],
+        aboutTitle: "Tentang blog ini",
+        about: "Blog pribadi tempat saya mencatat hal-hal yang sedang dipelajari.",
+        closing: "Tetap terhubung",
+        closingText: "Hubungi saya untuk kolaborasi atau sekadar menyapa.",
+      };
+    default:
+      return {
+        ...SAMPLE_BASE,
+        kind: "jasa",
+        brand: "Layanan Contoh",
+        slogan: "Rapi, tepat waktu, terpercaya",
+        badge: "Terima pesanan baru",
+        headline: "Layanan profesional untuk kebutuhanmu",
+        subheadline: "Dikerjakan oleh tim berpengalaman dengan harga yang jelas sejak awal.",
+        ctaLabel: "Hubungi kami",
+        featuresTitle: "Kenapa memilih kami",
+        features: feats([
+          ["shield-check", "Terpercaya", "Garansi pengerjaan dan layanan purna jual."],
+          ["clock", "Tepat waktu", "Jadwal jelas dan dikerjakan sesuai kesepakatan."],
+          ["badge-check", "Berpengalaman", "Ratusan pekerjaan selesai dengan hasil memuaskan."],
+        ]),
+        steps: [
+          { title: "Konsultasi", text: "Ceritakan kebutuhanmu, gratis." },
+          { title: "Penawaran", text: "Terima rincian harga yang transparan." },
+          { title: "Pengerjaan", text: "Kami kerjakan dan laporkan progresnya." },
+        ],
+        aboutTitle: "Tentang kami",
+        about: "Kami tim kecil yang mengutamakan kualitas kerja dan komunikasi yang jujur dengan setiap klien.",
+        closing: "Siap memulai?",
+        closingText: "Hubungi kami hari ini untuk konsultasi gratis.",
+        testimonial: { text: "Pekerjaan rapi dan sesuai jadwal. Pasti pakai lagi.", name: "Budi, klien" },
+      };
+  }
 }
