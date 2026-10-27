@@ -58,7 +58,7 @@ export default function PrivacyPage() {
 
       <h2>5. Berapa lama data disimpan</h2>
       <ul>
-        <li>Link Instan: otomatis dihapus saat kedaluwarsa (1 jam sampai 7 hari, sesuai pilihanmu), atau saat kamu menghapusnya.</li>
+        <li>Link Instan: otomatis dihapus saat kedaluwarsa (1 jam sampai 30 hari, sesuai pilihanmu), atau saat kamu menghapusnya.</li>
         <li>Data akun dan dashboard: disimpan selama akunmu aktif. Kamu bisa menghapus token, environment variables, dan riwayat dari dashboard kapan saja.</li>
         <li>Token akses konektor: kedaluwarsa otomatis, dan semuanya langsung tidak berlaku saat kamu mencabut akses.</li>
         <li>Permintaan hapus akun dan data: kirim email ke {CONTACT}; kami tindak lanjuti dalam waktu wajar.</li>

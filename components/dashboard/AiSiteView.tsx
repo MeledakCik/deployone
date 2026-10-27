@@ -1046,7 +1046,7 @@ export function AiSiteView() {
               </Btn>
             </div>
             <p className={`leading-relaxed ${hintCls} !text-current opacity-90`}>
-              Setelah masa aktif habis, link mati otomatis. Unduh ZIP kalau kamu mau menyimpan websitenya permanen. Link ini juga ada di menu Link Instan.
+              Setelah masa aktif habis, link mati otomatis. Opsi perpanjangan waktu akan tersedia mulai 3 hari sebelum link kedaluwarsa. Unduh ZIP kalau kamu mau menyimpan websitenya permanen. Link ini juga ada di menu Link Instan.
             </p>
           </div>
         )}
@@ -1088,7 +1088,7 @@ export function AiSiteView() {
               </label>
             )}
             <p className={`leading-relaxed ${hintCls}`}>
-              Ganti template, warna, atau gambar di kolom pengaturan untuk melihat tampilan lain tanpa memanggil AI lagi. Setiap publish membuat link baru yang aktif {ttlLabel(ttlHours)}.
+              Ganti template, warna, atau gambar di kolom pengaturan untuk melihat tampilan lain tanpa memanggil AI lagi. Setiap publish membuat link baru yang aktif {ttlLabel(ttlHours)}. Opsi perpanjangan waktu akan tersedia mulai 3 hari sebelum link kedaluwarsa.
             </p>
           </div>
         )}
@@ -1272,6 +1272,10 @@ export function AiSiteView() {
                   </Select>
                 </Field>
               </div>
+
+              <p className={`-mt-1 leading-relaxed ${hintCls}`}>
+                Masa aktif link maksimal 30 hari, lalu link dan filenya terhapus otomatis. Opsi perpanjangan waktu akan tersedia mulai 3 hari sebelum link kedaluwarsa.
+              </p>
 
               <div className="space-y-2">
                 <Btn

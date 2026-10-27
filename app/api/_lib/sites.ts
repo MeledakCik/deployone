@@ -34,7 +34,7 @@ export const CHUNK_BYTES = 512 * 1024;
 export const MAX_SITE_BYTES = envInt("SITES_MAX_MB", 10, 1, 50) * 1024 * 1024;
 export const MAX_SITE_FILES = 500;
 export const MAX_ACTIVE_SITES_PER_USER = envInt("SITES_MAX_PER_USER", 3, 1, 10);
-export const TTL_OPTIONS_HOURS = [1, 6, 24, 72, 168] as const;
+export const TTL_OPTIONS_HOURS = [1, 6, 24, 72, 168, 720] as const;
 export const DEFAULT_TTL_HOURS = 24;
 /** Upload yang tidak di-finish dibuang setelah ini. */
 export const PENDING_TTL_SECONDS = 3600;

@@ -108,7 +108,7 @@ export function ClaudeConnectCard({
       </ol>
       <p className="mt-3 text-[12px] text-text-muted">
         Di app Claude (HP): konektor yang sudah kamu tambahkan di claude.ai ikut muncul di akun yang sama. Aktifkan dari menu konektor di chat, lalu pakai seperti biasa.
-        Link Instan bersifat sementara (maksimal 7 hari); deploy ke Vercel, Cloudflare, dan Railway permanen di akun platformmu.
+        Link Instan bersifat sementara (maksimal 30 hari); deploy ke Vercel, Cloudflare, dan Railway permanen di akun platformmu.
       </p>
 
       <div className="mt-5 border-t border-[var(--line)] pt-4">

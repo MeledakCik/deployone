@@ -436,7 +436,7 @@ export function HostingView() {
                   </option>
                 ))}
               </select>
-              <p className="mt-1 text-[12px] text-text-muted">Setelah itu link & file otomatis dihapus.</p>
+              <p className="mt-1 text-[12px] text-text-muted">Setelah itu link & file otomatis dihapus. Opsi perpanjangan waktu akan tersedia mulai 3 hari sebelum link kedaluwarsa.</p>
             </div>
           </div>
 

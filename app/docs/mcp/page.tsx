@@ -20,7 +20,7 @@ export default function McpDocsPage() {
 
       <h2>Apa yang bisa dilakukan</h2>
       <ul>
-        <li><code>deploy_website</code> — menayangkan file HTML/CSS/JS sebagai link publik sementara (1 jam sampai 7 hari). Opsi <code>replace_site_id</code> mengganti situs lama.</li>
+        <li><code>deploy_website</code> — menayangkan file HTML/CSS/JS sebagai link publik sementara (1 jam sampai 30 hari). Opsi <code>replace_site_id</code> mengganti situs lama.</li>
         <li><code>list_websites</code> — melihat Link Instan aktif milikmu.</li>
         <li><code>delete_website</code> — menghapus satu Link Instan.</li>
         <li><code>connector_status</code> — melihat platform deploy mana yang sudah siap dipakai Claude (tanpa menampilkan token).</li>
