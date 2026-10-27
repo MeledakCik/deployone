@@ -8,7 +8,7 @@ npx depup-cli share 8000     # atau sebutkan port-nya
 ```
 
 ```
-  ● Online   localhost:8000  →  https://cantik-depup-x7k2m.depup.web.id/
+  ● Online   localhost:8000  →  https://cantik-depup-x7k2m.depup.link/
   Aktif ±120 menit · Ctrl+C untuk berhenti
 ```
 

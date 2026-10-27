@@ -159,14 +159,14 @@ export async function middleware(req: NextRequest) {
     url.pathname = "/";
     return NextResponse.redirect(url, 308);
   }
-  const isDepupSubdomain = host.endsWith(".depup.web.id");
+  const isDepushSubdomain = host.endsWith(".depup.web.id");
   const hostSlug = slugFromHost(req.headers.get("host"));
   if (hostSlug) {
     const headers = new Headers(req.headers);
     headers.set("x-depup-target", pathname + search);
     const rewritten = new URL(`/t/${hostSlug}${pathname === "/" ? "" : pathname}`, req.url);
     const res = NextResponse.rewrite(rewritten, { request: { headers } });
-    if (isDepupSubdomain) {
+    if (isDepushSubdomain) {
       res.headers.set("X-Robots-Tag", "noindex, nofollow");
     }
     return res;
@@ -177,7 +177,7 @@ export async function middleware(req: NextRequest) {
     const headers = new Headers(req.headers);
     headers.set("x-depup-target", (tm[2] ?? "/") + search); // selalu ditimpa -> tidak bisa dipalsukan klien
     const res = NextResponse.next({ request: { headers } });
-    if (isDepupSubdomain) {
+    if (isDepushSubdomain) {
       res.headers.set("X-Robots-Tag", "noindex, nofollow");
     }
     return res;
@@ -194,12 +194,12 @@ export async function middleware(req: NextRequest) {
     const res = NextResponse.next();
     res.headers.set("Cache-Control", "no-store");
     res.headers.set("X-Robots-Tag", "noindex, nofollow");
-    if (isDepupSubdomain) res.headers.append("X-Robots-Tag", "noindex, nofollow");
+    if (isDepushSubdomain) res.headers.append("X-Robots-Tag", "noindex, nofollow");
     return res;
   }
 
   if (pathname !== "/api" && !pathname.startsWith("/api/")) {
-    if (isDepupSubdomain) {
+    if (isDepushSubdomain) {
       const res = NextResponse.next();
       res.headers.set("X-Robots-Tag", "noindex, nofollow");
       return res;
@@ -251,7 +251,7 @@ export async function middleware(req: NextRequest) {
 
   if (skipRateLimit(pathname)) {
     const res = NextResponse.next();
-    if (isDepupSubdomain) res.headers.set("X-Robots-Tag", "noindex, nofollow");
+    if (isDepushSubdomain) res.headers.set("X-Robots-Tag", "noindex, nofollow");
     return res;
   }
 
@@ -259,7 +259,7 @@ export async function middleware(req: NextRequest) {
   // Untuk user yang sudah terverifikasi, rate limit-nya cuma membuang 1 command Redis per load.
   if (email && req.method === "GET" && pathname === "/api/auth/session") {
     const res = NextResponse.next();
-    if (isDepupSubdomain) res.headers.set("X-Robots-Tag", "noindex, nofollow");
+    if (isDepushSubdomain) res.headers.set("X-Robots-Tag", "noindex, nofollow");
     return res;
   }
 
@@ -285,7 +285,7 @@ export async function middleware(req: NextRequest) {
   const res = NextResponse.next();
   res.headers.set("X-RateLimit-Limit", String(result.limit));
   res.headers.set("X-RateLimit-Remaining", String(result.remaining));
-  if (isDepupSubdomain) {
+  if (isDepushSubdomain) {
     res.headers.set("X-Robots-Tag", "noindex, nofollow");
   }
   return res;
