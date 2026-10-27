@@ -282,6 +282,9 @@ function parsePrice(v: unknown): number {
   return Math.round(n * (unit === "jt" || unit === "juta" ? 1_000_000 : 1000));
 }
 
+/** Batas artikel per situs (permintaan seperti "15 topik" harus muat). */
+export const MAX_ARTICLES = 15;
+
 export function normalizeContent(raw: unknown, forceKind?: SiteKind): SiteContent | null {
   if (!raw || typeof raw !== "object") return null;
   const { flat: r, isNew } = adaptNew(raw as Record<string, unknown>);
@@ -314,7 +317,7 @@ export function normalizeContent(raw: unknown, forceKind?: SiteKind): SiteConten
   const articles: SiteArticle[] = [];
   const aSeed = hash(brand || "x").toString(36);
   if (Array.isArray(r.articles)) {
-    for (const ar of r.articles.slice(0, 6)) {
+    for (const ar of r.articles.slice(0, MAX_ARTICLES)) {
       if (!ar || typeof ar !== "object") continue;
       const o = ar as Record<string, unknown>;
       const title = str(o.title, 90);
@@ -444,7 +447,7 @@ Pilihan nilai:
 - palette_id: bakso (kuliner hangat, krem + terakota) | kue (bakery/dessert, persik + pink tua) | barber (gelap pekat + kuning: barber, studio, otomotif, gaming) | tech (putih kebiruan + navy: jasa digital, konsultan, startup). Pilih yang paling dekat dengan karakter usaha. Untuk type artikel pakai majalah (terang, serif, merah editorial) atau jurnal (gelap, nyaman dibaca, amber). Untuk usaha yang tidak cocok dengan keempatnya boleh pakai: segar (herbal, kesehatan, tani) | elegan (butik, foto, kerajinan) | pastel (kreatif, kids) | tegas (event, promo).
 - hero.layout: split-bold (teks besar di kiri, tumpukan kartu di kanan, 60/40) | asymmetric (1 kartu besar + 2 kecil) | editorial (headline raksasa, tipografi). DILARANG "center". Variasikan, jangan selalu split-bold.
 - hover_effect: lift | tilt.
-- products[].size: "large" atau "small". Buat variasi: tepat 1 produk "large" (best seller, tag "Best Seller" atau sejenisnya), sisanya "small". Jumlah produk untuk umkm: 5 atau 9 (agar grid bento rapi). Untuk jasa/portofolio/event: 3 sampai 5 item (paket layanan, karya, atau acara), 1 di antaranya large. Untuk profil boleh []. Untuk artikel: [].
+- products[].size: "large" atau "small". Buat variasi: tepat 1 produk "large" (best seller, tag "Best Seller" atau sejenisnya), sisanya "small". Jumlah produk untuk umkm: 5 atau 9 (agar grid bento rapi), kecuali pengguna menyebut jumlah tertentu: ikuti persis (maks 12). Untuk jasa/portofolio/event: 3 sampai 5 item (paket layanan, karya, atau acara), 1 di antaranya large. Untuk profil boleh []. Untuk artikel: [].
 - products[].price: teks harga, mis. "Rp 15.000" atau "15rb". HANYA bila pengguna menyebut harga; selain itu "".
 - bento_features: 3 sampai 5 item (untuk artikel boleh 0 sampai 3). col_span 2 untuk 1 atau 2 kartu penting, selebihnya 1. Jangan semua sama lebar.
 - ikon (products[].icon, bento_features[].icon): satu nama ikon Lucide dari daftar ini saja: ${PROMPT_ICONS} clock-3. Pilih yang spesifik ke maknanya: bakso = beef, pedas = flame, jam = clock-3, segar = leaf, gunting = scissors. JANGAN memakai shopping-bag untuk semuanya. Jangan pernah memakai emoji.
@@ -457,10 +460,11 @@ Aturan isi (anti AI look):
 - brand.slogan: maks 5 kata, punchy. hero.headline: maks 10 kata, 2 baris, punya sudut pandang. hero.sub: 1 sampai 2 kalimat pendek. hero.cta: maks 3 kata. hero.badge: fakta dari pengguna, maks 5 kata, mis. "Buka Hari Ini • 10-21 WIB" (hanya jika jam disebut, selain itu fakta lain atau "").
 - bento_features: title maks 4 kata; desc maks 20 kata, berupa fakta, bukan klaim kosong.
 - products[].desc: maks 14 kata, spesifik.
-- articles (WAJIB bila type artikel, selain itu []): 3 sampai 4 artikel dengan topik berbeda. title maks 12 kata, excerpt maks 25 kata, category 1 sampai 2 kata, read_min angka, body 3 sampai 4 paragraf (tiap paragraf 2 sampai 3 kalimat, konkret dan informatif; boleh satu paragraf berawalan "## " sebagai subjudul). author HANYA bila pengguna menyebut nama, selain itu "". Jangan mengarang statistik, kutipan ahli, atau klaim medis/hukum.
+- articles (WAJIB bila type artikel, selain itu []): 3 sampai 4 artikel dengan topik berbeda, KECUALI pengguna meminta jumlah tertentu (mis. 15 topik): ikuti jumlah itu persis, maksimal 15, dan jangan menolaknya. Bila artikel lebih dari 6, tiap body cukup 2 paragraf pendek dan excerpt maks 18 kata supaya JSON tetap muat. title maks 12 kata, excerpt maks 25 kata, category 1 sampai 2 kata, read_min angka, body 3 sampai 4 paragraf (tiap paragraf 2 sampai 3 kalimat, konkret dan informatif; boleh satu paragraf berawalan "## " sebagai subjudul). author HANYA bila pengguna menyebut nama, selain itu "". Jangan mengarang statistik, kutipan ahli, atau klaim medis/hukum.
 - testimonial: isi HANYA bila pengguna memberikan kutipan pelanggan yang nyata. Selain itu text dan name string kosong. Jangan mengarang testimoni.
 - contact.wa (angka internasional tanpa +), contact.address, contact.hours, contact.email: isi HANYA jika pengguna menyebutkannya; selain itu string kosong. Jangan mengarang kontak.
-- Tolak (isi {"error":"alasan singkat"}) bila permintaan untuk phishing, meniru bank/instansi/merek lain, penipuan, judi, konten dewasa, atau melanggar hukum.`;
+- Pengguna bisa menyiapkan foto sendiri; gambar dipasang terpisah oleh sistem, jadi JANGAN menulis URL gambar dan jangan menolak permintaan karena jumlah gambar.
+- Tolak (isi {"error":"alasan singkat"}) HANYA bila permintaan untuk phishing, meniru bank/instansi/merek lain, penipuan, judi, konten dewasa, atau melanggar hukum. Blog, event sekolah/kampus, usaha, portofolio, dan topik umum lainnya SELALU boleh. Jangan menolak karena jumlah item, jumlah artikel, atau permintaan yang banyak; sesuaikan saja isinya.`;
 
 /* ---------- render ---------- */
 

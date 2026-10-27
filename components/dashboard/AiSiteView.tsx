@@ -38,8 +38,11 @@ import {
   formatBytes,
   IMAGE_ACCEPT,
   IMAGE_BUDGET_BYTES,
+  MAX_PRELOAD_BYTES,
+  isAcceptedImage,
   type ImageSlot,
 } from "@/lib/ai-site-images";
+import { assignPhotos, type PhotoDraft } from "@/lib/ai-site-photos";
 
 /** Gaya bersama halaman ini: label kecil di atas kolom isian, sama seperti form dashboard lain. */
 const labelCls = "mb-1.5 block text-[12px] font-medium text-text-muted";
@@ -229,6 +232,89 @@ function PaletteEditor({
   );
 }
 
+/** Foto yang disiapkan sebelum generate: dipasang berurutan ke artikel/produk setelah situs jadi. */
+function PhotoPool({
+  photos, adding, usedCount, hasContent, onAdd, onRemove, onClear,
+}: {
+  photos: PhotoDraft[];
+  adding: boolean;
+  usedCount: number | null;
+  hasContent: boolean;
+  onAdd: (files: File[]) => void;
+  onRemove: (id: string) => void;
+  onClear: () => void;
+}) {
+  const inputRef = React.useRef<HTMLInputElement>(null);
+  const [drag, setDrag] = React.useState(false);
+  const bytes = photos.reduce((n, p) => n + p.file.size, 0);
+  const pct = Math.min(100, (bytes / MAX_PRELOAD_BYTES) * 100);
+  return (
+    <div
+      onDragOver={(e) => { e.preventDefault(); setDrag(true); }}
+      onDragLeave={() => setDrag(false)}
+      onDrop={(e) => { e.preventDefault(); setDrag(false); onAdd(Array.from<File>(e.dataTransfer.files)); }}
+      className={cn(
+        "space-y-3 rounded-2xl border border-dashed p-3.5 transition",
+        drag ? "border-[var(--accent)] bg-tone-lilac" : "border-[var(--line-strong)] bg-[var(--pill-bg)]",
+      )}
+    >
+      <div className="flex flex-wrap items-center gap-2">
+        <Btn busy={adding} onClick={() => inputRef.current?.click()}>
+          <ImagePlus size={13} /> {photos.length ? "Tambah foto" : "Pilih foto"}
+        </Btn>
+        {photos.length > 0 && <Btn variant="ghost" onClick={onClear}>Hapus semua</Btn>}
+        <span className="ml-auto text-[11.5px] tabular-nums text-text-muted">
+          {photos.length} foto · {formatBytes(bytes)} / {formatBytes(MAX_PRELOAD_BYTES)}
+        </span>
+      </div>
+      {photos.length > 0 && (
+        <>
+          <div className="h-1.5 overflow-hidden rounded-full bg-[var(--line)]" aria-hidden>
+            <div className="h-full rounded-full bg-[var(--accent)] transition-[width]" style={{ width: `${pct}%` }} />
+          </div>
+          <ul className="grid grid-cols-4 gap-2 min-[480px]:grid-cols-6 sm:grid-cols-8">
+            {photos.map((p, i) => (
+              <li key={p.id} className="relative aspect-square overflow-hidden rounded-xl ring-1 ring-[var(--line)]">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={p.preview} alt={`Foto ${i + 1}`} className="h-full w-full object-cover" />
+                <span className="absolute bottom-1 left-1 rounded-full bg-black/60 px-1.5 text-[10.5px] font-medium leading-4 text-white">{i + 1}</span>
+                <button
+                  type="button"
+                  onClick={() => onRemove(p.id)}
+                  aria-label={`Hapus foto ${i + 1}`}
+                  className="absolute right-1 top-1 grid h-5 w-5 place-items-center rounded-full bg-black/60 text-white hover:bg-black/80"
+                >
+                  <X size={11} />
+                </button>
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+      <p className="text-[11.5px] leading-snug text-text-muted">
+        {photos.length === 0
+          ? "Opsional. Seret foto ke sini atau pilih sekaligus banyak (PNG, JPG, WebP, GIF; total maks 10 MB). Tanpa foto pun bisa: tambahkan nanti di bagian 4. Gambar."
+          : "Foto dipasang berurutan ke sampul artikel atau foto produk setelah websitenya jadi. Urutan = nomor di pojok foto. Bisa kamu tukar nanti di bagian 4. Gambar."}
+        {hasContent && usedCount !== null && photos.length > 0 && usedCount < photos.length && (
+          <span className="mt-1 block font-medium text-text">{photos.length - usedCount} foto belum terpakai (tempatnya sudah penuh atau gagal diproses).</span>
+        )}
+      </p>
+      <input
+        ref={inputRef}
+        type="file"
+        multiple
+        accept={IMAGE_ACCEPT}
+        className="hidden"
+        onChange={(e) => {
+          const list = Array.from(e.target.files ?? []);
+          e.target.value = "";
+          onAdd(list);
+        }}
+      />
+    </div>
+  );
+}
+
 interface ImageSlotDef {
   key: string;
   slot: ImageSlot;
@@ -307,6 +393,14 @@ export function AiSiteView() {
   const [showAllImgs, setShowAllImgs] = React.useState(false);
   const fileRef = React.useRef<HTMLInputElement>(null);
   const pendingRef = React.useRef<ImageSlotDef | null>(null);
+
+  // Foto yang disiapkan sebelum generate (berkas asli tetap di memori browser).
+  const [photos, setPhotos] = React.useState<PhotoDraft[]>([]);
+  const [photosAdding, setPhotosAdding] = React.useState(false);
+  const [photosUsed, setPhotosUsed] = React.useState<number | null>(null);
+  const photosRef = React.useRef<PhotoDraft[]>([]);
+  photosRef.current = photos;
+  React.useEffect(() => () => photosRef.current.forEach((p) => URL.revokeObjectURL(p.preview)), []);
 
   const [content, setContent] = React.useState<SiteContent | null>(null);
   const [busy, setBusy] = React.useState<null | "ai" | "publish">(null);
@@ -397,6 +491,42 @@ export function AiSiteView() {
     }
   }
 
+  function addPhotos(files: File[]) {
+    if (!files.length) return;
+    setPhotosAdding(true);
+    try {
+      let total = photosRef.current.reduce((n, p) => n + p.file.size, 0);
+      const next: PhotoDraft[] = [];
+      let badType = 0;
+      let tooBig = 0;
+      for (const f of files) {
+        if (!isAcceptedImage(f)) { badType++; continue; }
+        if (total + f.size > MAX_PRELOAD_BYTES) { tooBig++; continue; }
+        total += f.size;
+        next.push({ id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`, file: f, preview: URL.createObjectURL(f) });
+      }
+      if (next.length) setPhotos((cur) => [...cur, ...next]);
+      if (tooBig) showToast(`${tooBig} foto tidak ditambahkan: total melebihi ${formatBytes(MAX_PRELOAD_BYTES)}.`);
+      else if (badType) showToast(`${badType} file dilewati. Pakai PNG, JPG, WebP, atau GIF.`);
+    } finally {
+      setPhotosAdding(false);
+    }
+  }
+
+  function removePhoto(id: string) {
+    setPhotos((cur) => {
+      const gone = cur.find((p) => p.id === id);
+      if (gone) URL.revokeObjectURL(gone.preview);
+      return cur.filter((p) => p.id !== id);
+    });
+  }
+
+  function clearPhotos() {
+    photosRef.current.forEach((p) => URL.revokeObjectURL(p.preview));
+    setPhotos([]);
+    setPhotosUsed(null);
+  }
+
   function removeImage(key: string) {
     setImages((m) => {
       const n = { ...m };
@@ -475,9 +605,18 @@ export function AiSiteView() {
       const r = await api<{ content: SiteContent; source: "own" | "free" }>("/api/ai/site", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ prompt, variant: v, kind: kindPick === "auto" ? undefined : kindPick }),
+        body: JSON.stringify({ prompt, variant: v, kind: kindPick === "auto" ? undefined : kindPick, photoCount: photos.length }),
       });
-      const nextImages = pruneImages(images, r.content);
+      let nextImages = pruneImages(images, r.content);
+      if (photos.length > 0) {
+        // Foto yang disiapkan lebih dulu dipasang otomatis; logo buatan sendiri tetap dipertahankan.
+        setProgress("Memasang foto…");
+        const keep: SiteImages = images.logo ? { logo: images.logo } : {};
+        const placed = await assignPhotos(r.content, photos, keep);
+        nextImages = placed.images;
+        setPhotosUsed(placed.used);
+        if (placed.failed > 0) showToast(`${placed.failed} foto gagal dipasang (format rusak atau melebihi batas ukuran gambar).`);
+      }
       setVariant(v);
       setContent(r.content);
       setImages(nextImages);
@@ -507,6 +646,7 @@ export function AiSiteView() {
       setError((e as Error).message);
     } finally {
       setBusy((b) => (b === "ai" ? null : b));
+      setProgress((p) => (p === "Memasang foto…" ? "" : p));
     }
   }
 
@@ -555,7 +695,7 @@ export function AiSiteView() {
 
   const showKeyForm = !keyStatus.hasKey || editingKey;
   const promptReady = prompt.trim().length >= 10;
-  const busyLabel = busy === "ai" ? "AI sedang merancang…" : busy === "publish" ? progress || "Mempublikasikan…" : null;
+  const busyLabel = busy === "ai" ? progress || "AI sedang merancang…" : busy === "publish" ? progress || "Mempublikasikan…" : null;
 
   return (
     <ViewFade>
@@ -720,6 +860,18 @@ export function AiSiteView() {
                 ))}
               </div>
             </div>
+
+            <Field label="Foto (opsional)">
+              <PhotoPool
+                photos={photos}
+                adding={photosAdding}
+                usedCount={photosUsed}
+                hasContent={!!content}
+                onAdd={addPhotos}
+                onRemove={removePhoto}
+                onClear={clearPhotos}
+              />
+            </Field>
 
             <Field label="Jenis situs" hint={kindPick === "auto" ? "AI memilih sendiri dari deskripsimu." : KIND_LABEL[kindPick]}>
               <Select value={kindPick} onValueChange={(v) => setKindPick(v as SiteKind | "auto")}>
@@ -899,7 +1051,7 @@ export function AiSiteView() {
             )}
             {!content && (
               <p className="text-[12px] leading-snug text-text-muted">
-                Foto produk atau sampul artikel muncul di sini setelah websitenya dibuat.
+                Belum mengunggah foto di langkah 2? Tidak masalah. Foto produk atau sampul artikel muncul di sini setelah websitenya dibuat, lalu unggah satu per satu.
               </p>
             )}
             <p className="text-[11.5px] leading-snug text-text-muted">

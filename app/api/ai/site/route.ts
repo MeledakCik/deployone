@@ -5,13 +5,29 @@ import { rateLimit } from "@/app/api/_lib/rate-limit";
 import { redactSecrets } from "@/app/api/_lib/redact";
 import { groqChat, GroqError } from "@/app/api/_lib/groq";
 import { freeAiPerDay, getUserGroqKey } from "@/app/api/_lib/ai-keys";
-import { SITE_SYSTEM_PROMPT, KIND_OPTIONS, normalizeContent, type SiteKind } from "@/lib/ai-site-templates";
+import { SITE_SYSTEM_PROMPT, KIND_OPTIONS, MAX_ARTICLES, normalizeContent, type SiteKind } from "@/lib/ai-site-templates";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 const MAX_PROMPT = 1400;
+/** Batas total satu permintaan (detik) mengikuti maxDuration; sisakan jeda untuk respons. */
+const BUDGET_MS = 55_000;
+
+/** Jumlah artikel/topik yang diminta pengguna, mis. "15 topik", "10 artikel". null = tidak disebut. */
+function requestedArticles(prompt: string): number | null {
+  const m = prompt.match(/\b(\d{1,2})\s*(?:topik|artikel|tulisan|postingan|post|berita|judul|konten)\b/i);
+  const n = m ? Number(m[1]) : NaN;
+  return Number.isFinite(n) && n >= 2 ? Math.min(n, MAX_ARTICLES) : null;
+}
+
+/** Jumlah produk/menu/karya yang diminta pengguna, mis. "8 produk". null = tidak disebut. */
+function requestedItems(prompt: string): number | null {
+  const m = prompt.match(/\b(\d{1,2})\s*(?:produk|menu|item|karya|paket|layanan)\b/i);
+  const n = m ? Number(m[1]) : NaN;
+  return Number.isFinite(n) && n >= 1 ? Math.min(n, 12) : null;
+}
 
 /** Ambil objek JSON pertama dari balasan model (jaga-jaga kalau dibungkus teks/markdown). */
 function extractJson(text: string): unknown {
@@ -59,7 +75,7 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
   const email = getSessionEmail(req);
   if (!email) return fail("Sesi login habis. Silakan login lagi.", 401, "unauthorized");
 
-  let body: { prompt?: unknown; variant?: unknown; kind?: unknown } | null = null;
+  let body: { prompt?: unknown; variant?: unknown; kind?: unknown; photoCount?: unknown } | null = null;
   try {
     body = await req.json();
   } catch {
@@ -73,7 +89,14 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
   // Jenis situs pilihan pengguna (opsional). Kosong = AI yang memilih.
   const forceKind: SiteKind | undefined = KIND_OPTIONS.find((k) => k.id === body?.kind)?.id;
   const kindNote = forceKind ? `\n\n(Jenis situs yang diminta pengguna: type "${forceKind}". Wajib memakai type ini${forceKind === "artikel" ? " dan isi articles lengkap beserta body-nya" : ""}.)` : "";
-  const userMsg = (variant > 0 ? `${prompt}\n\n(Variasi #${variant}: pilih template, tata letak hero/feat, warna, dan gaya headline yang BERBEDA dari desain pada umumnya.)` : prompt) + kindNote;
+  // Foto yang sudah disiapkan pengguna sebelum generate (jumlahnya saja; berkasnya tidak dikirim ke AI).
+  const photoCount = typeof body?.photoCount === "number" && Number.isFinite(body.photoCount) ? Math.max(0, Math.min(MAX_ARTICLES, Math.floor(body.photoCount))) : 0;
+  const wantArticles = requestedArticles(prompt) ?? (photoCount >= 2 && (forceKind === "artikel" || /\b(blog|artikel|majalah|berita|jurnal)\b/i.test(prompt)) ? photoCount : null);
+  const wantItems = requestedItems(prompt);
+  const countNote =
+    (wantArticles ? `\n\n(Jumlah artikel: buat TEPAT ${wantArticles} artikel pada "articles" dengan topik berbeda-beda. Aturan "3 sampai 4 artikel" TIDAK berlaku untuk permintaan ini.${wantArticles > 6 ? " Karena banyak, tiap artikel cukup 2 paragraf pendek dan excerpt maks 18 kata." : ""} Permintaan ini sah, jangan ditolak.)` : "") +
+    (wantItems ? `\n\n(Jumlah item: buat TEPAT ${wantItems} item pada "products". Aturan 5 atau 9 produk TIDAK berlaku untuk permintaan ini.)` : "");
+  const userMsg = (variant > 0 ? `${prompt}\n\n(Variasi #${variant}: pilih template, tata letak hero/feat, warna, dan gaya headline yang BERBEDA dari desain pada umumnya.)` : prompt) + kindNote + countNote;
 
   // Token milik user diutamakan. Tanpa itu, pakai token server hanya bila admin memberi jatah harian.
   const ownKey = await getUserGroqKey(email);
@@ -92,15 +115,26 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
 
   try {
     // Percobaan 1: mode JSON. Bila ditolak/tak valid, percobaan 2 tanpa mode JSON dengan pengingat format.
+    // Keluaran panjang (banyak artikel) butuh token dan waktu lebih besar.
+    const maxTokens = wantArticles ? Math.min(14000, 3500 + wantArticles * 600) : 6000;
+    const baseTimeout = wantArticles && wantArticles > 4 ? 45_000 : 28_000;
+    const t0 = Date.now();
     let content: ReturnType<typeof normalizeContent> = null;
+    let refused = false;
     for (let attempt = 0; attempt < 2 && !content; attempt++) {
+      const left = BUDGET_MS - (Date.now() - t0);
+      if (attempt > 0 && left < 10_000) break;
+      const retryNote = refused
+        ? `\n\nPENTING: permintaan ini sah dan aman, jadi JANGAN menolak. Buat isi websitenya sesuai permintaan (ikuti jumlah yang diminta) dan balas hanya JSON lengkap sesuai bentuk yang ditentukan.`
+        : `\n\nPENTING: balas hanya JSON lengkap sesuai bentuk yang ditentukan (brand, headline, minimal 3 features).`;
       let reply: string;
       try {
-        reply = await groqChat(SITE_SYSTEM_PROMPT, [{ role: "user", content: attempt === 0 ? userMsg : `${userMsg}\n\nPENTING: balas hanya JSON lengkap sesuai bentuk yang ditentukan (brand, headline, minimal 3 features).` }], {
+        reply = await groqChat(SITE_SYSTEM_PROMPT, [{ role: "user", content: attempt === 0 ? userMsg : `${userMsg}${retryNote}` }], {
           apiKey: ownKey ?? undefined,
-          maxTokens: 6000,
+          maxTokens,
           temperature: attempt === 0 ? (variant > 0 ? 0.95 : 0.8) : 0.5,
           json: attempt === 0,
+          timeoutMs: Math.max(8_000, Math.min(baseTimeout, left - 1_000)),
         });
       } catch (e) {
         if (attempt === 0 && e instanceof GroqError && (e.kind === "upstream" || e.kind === "model_unavailable")) continue;
@@ -108,6 +142,12 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
       }
       const json = extractJson(reply);
       if (json && typeof json === "object" && typeof (json as { error?: unknown }).error === "string") {
+        // Model kadang menolak permintaan yang sebenarnya wajar (mis. jumlah item banyak). Coba sekali lagi sebelum menyerah.
+        console.error(`[ai/site] model menolak (percobaan ${attempt + 1}):`, String((json as { error: string }).error).slice(0, 200));
+        if (attempt === 0) {
+          refused = true;
+          continue;
+        }
         return fail("Permintaan ini tidak bisa dibuatkan website-nya oleh AI. Coba deskripsi usaha/kegiatan yang lain.", 422, "bad_request");
       }
       content = normalizeContent(json, forceKind);

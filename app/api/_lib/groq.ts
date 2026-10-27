@@ -39,6 +39,8 @@ export interface GroqOptions {
   temperature?: number;
   /** Minta keluaran berupa satu objek JSON valid (response_format json_object). */
   json?: boolean;
+  /** Batas waktu satu permintaan (ms). Default 28 detik; naikkan untuk keluaran panjang. */
+  timeoutMs?: number;
 }
 
 export async function groqChat(system: string, messages: ChatMessage[], opts: GroqOptions = {}): Promise<string> {
@@ -60,7 +62,7 @@ export async function groqChat(system: string, messages: ChatMessage[], opts: Gr
   if (opts.json) body.response_format = { type: "json_object" };
 
   const ctrl = new AbortController();
-  const timer = setTimeout(() => ctrl.abort(), TIMEOUT_MS);
+  const timer = setTimeout(() => ctrl.abort(), opts.timeoutMs ?? TIMEOUT_MS);
 
   let res: Response;
   try {

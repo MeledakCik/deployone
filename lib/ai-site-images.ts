@@ -15,7 +15,14 @@ export const MAX_INPUT_BYTES = 12 * 1024 * 1024;
 /** Total gambar yang boleh tertanam. Batas upload situs default 10 MB, sisanya untuk HTML. */
 export const IMAGE_BUDGET_BYTES = 6 * 1024 * 1024;
 
+/** Total ukuran file asli yang boleh disiapkan sebelum website dibuat (berapa pun jumlahnya). */
+export const MAX_PRELOAD_BYTES = 10 * 1024 * 1024;
+
 const ACCEPT = /^image\/(png|jpe?g|webp|gif)$/i;
+
+export function isAcceptedImage(file: File): boolean {
+  return ACCEPT.test(file.type);
+}
 export const IMAGE_ACCEPT = "image/png,image/jpeg,image/webp,image/gif";
 
 export function dataUrlBytes(u: string): number {
