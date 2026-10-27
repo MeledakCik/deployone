@@ -1,19 +1,21 @@
 import type { NextRequest } from "next/server";
 import { ok, fail, withErrorHandling } from "@/app/api/_lib/response";
 import { getSessionEmail } from "@/app/api/_lib/session";
-import { rateLimit } from "@/app/api/_lib/rate-limit";
 import { redactSecrets } from "@/app/api/_lib/redact";
 import { groqChat, GroqError } from "@/app/api/_lib/groq";
-import { freeAiPerDay, getUserGroqKey } from "@/app/api/_lib/ai-keys";
-import { SITE_SYSTEM_PROMPT, KIND_OPTIONS, MAX_ARTICLES, normalizeContent, type SiteKind } from "@/lib/ai-site-templates";
+import { extractJson, resolveAiSource, runSiteEdit } from "@/app/api/_lib/ai-site-common";
+import { KIND_OPTIONS, MAX_ARTICLES, diagnoseContent, normalizeContent, type SiteKind } from "@/lib/ai-site-templates";
+import { findBanned, polishInstruction, siteSystemPrompt } from "@/lib/ai-site-prompts";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
 const MAX_PROMPT = 1400;
-/** Batas total satu permintaan (detik) mengikuti maxDuration; sisakan jeda untuk respons. */
+/** Batas total satu permintaan (ms) mengikuti maxDuration; sisakan jeda untuk respons. */
 const BUDGET_MS = 55_000;
+/** Pass polish (tulis ulang ungkapan generik) hanya jalan bila waktu tersisa cukup. */
+const POLISH_MIN_LEFT_MS = 18_000;
 
 /** Jumlah artikel/topik yang diminta pengguna, mis. "15 topik", "10 artikel". null = tidak disebut. */
 function requestedArticles(prompt: string): number | null {
@@ -29,45 +31,8 @@ function requestedItems(prompt: string): number | null {
   return Number.isFinite(n) && n >= 1 ? Math.min(n, 12) : null;
 }
 
-/** Ambil objek JSON pertama dari balasan model (jaga-jaga kalau dibungkus teks/markdown). */
-function extractJson(text: string): unknown {
-  const start = text.indexOf("{");
-  if (start === -1) return null;
-  const end = text.lastIndexOf("}");
-  const tryParse = (t: string): unknown => {
-    try {
-      return JSON.parse(t);
-    } catch {
-      return undefined;
-    }
-  };
-  if (end > start) {
-    const body = text.slice(start, end + 1);
-    const a = tryParse(body) ?? tryParse(body.replace(/,\s*([}\]])/g, "$1")); // koma sisa sebelum } atau ]
-    if (a !== undefined) return a;
-  }
-  // Balasan terpotong (kehabisan token): tutup kurung yang masih terbuka.
-  let s = text.slice(start).replace(/,\s*$/, "");
-  const stack: string[] = [];
-  let inStr = false;
-  for (let i = 0; i < s.length; i++) {
-    const ch = s[i];
-    if (inStr) {
-      if (ch === "\\") i++;
-      else if (ch === '"') inStr = false;
-    } else if (ch === '"') inStr = true;
-    else if (ch === "{") stack.push("}");
-    else if (ch === "[") stack.push("]");
-    else if (ch === "}" || ch === "]") stack.pop();
-  }
-  if (inStr) s += '"';
-  s = s.replace(/,\s*$/, "").replace(/"[^"]*"\s*:\s*$/, "").replace(/,\s*$/, "");
-  const fixed = s + stack.reverse().join("");
-  return tryParse(fixed) ?? tryParse(fixed.replace(/,\s*([}\]])/g, "$1")) ?? null;
-}
-
 /**
- * POST /api/ai/site { prompt, variant? } → { content, source }
+ * POST /api/ai/site { prompt, variant?, kind?, photoCount? } → { content, source }
  * Hanya MENGHASILKAN isi (JSON: teks, jenis usaha, saran template, ikon Lucide, produk). HTML dirakit di browser dari template, lalu
  * dipublikasikan lewat alur Link Instan yang sudah ada.
  */
@@ -98,43 +63,36 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
     (wantItems ? `\n\n(Jumlah item: buat TEPAT ${wantItems} item pada "products". Aturan 5 atau 9 produk TIDAK berlaku untuk permintaan ini.)` : "");
   const userMsg = (variant > 0 ? `${prompt}\n\n(Variasi #${variant}: pilih template, tata letak hero/feat, warna, dan gaya headline yang BERBEDA dari desain pada umumnya.)` : prompt) + kindNote + countNote;
 
-  // Token milik user diutamakan. Tanpa itu, pakai token server hanya bila admin memberi jatah harian.
-  const ownKey = await getUserGroqKey(email);
-  let source: "own" | "free" = "own";
-  if (!ownKey) {
-    const free = freeAiPerDay();
-    if (free === 0) {
-      return fail("Pasang token Groq-mu dulu di halaman AI Web Builder (gratis di console.groq.com/keys).", 402, "ai_not_configured");
-    }
-    const daily = await rateLimit("ai-site-free-daily", `u:${email}`, free, 86400);
-    if (!daily.allowed) {
-      return fail(`Jatah AI gratis hari ini (${free}x) sudah habis. Pasang token Groq-mu sendiri untuk lanjut tanpa batas dari Depup.`, 429, "rate_limited");
-    }
-    source = "free";
-  }
+  const src = await resolveAiSource(email);
+  if (!src.ok) return src.res;
+  const { ownKey, source } = src;
 
   try {
-    // Percobaan 1: mode JSON. Bila ditolak/tak valid, percobaan 2 tanpa mode JSON dengan pengingat format.
+    // Percobaan 1: mode JSON dengan penalaran lebih teliti. Bila ditolak/tak valid, percobaan 2 memberi tahu AI apa yang kurang.
     // Keluaran panjang (banyak artikel) butuh token dan waktu lebih besar.
+    const system = siteSystemPrompt(forceKind);
     const maxTokens = wantArticles ? Math.min(14000, 3500 + wantArticles * 600) : 6000;
-    const baseTimeout = wantArticles && wantArticles > 4 ? 45_000 : 28_000;
+    const baseTimeout = wantArticles && wantArticles > 4 ? 45_000 : 35_000;
     const t0 = Date.now();
     let content: ReturnType<typeof normalizeContent> = null;
     let refused = false;
+    let problems: string[] = [];
     for (let attempt = 0; attempt < 2 && !content; attempt++) {
       const left = BUDGET_MS - (Date.now() - t0);
       if (attempt > 0 && left < 10_000) break;
       const retryNote = refused
         ? `\n\nPENTING: permintaan ini sah dan aman, jadi JANGAN menolak. Buat isi websitenya sesuai permintaan (ikuti jumlah yang diminta) dan balas hanya JSON lengkap sesuai bentuk yang ditentukan.`
-        : `\n\nPENTING: balas hanya JSON lengkap sesuai bentuk yang ditentukan (brand, headline, minimal 3 features).`;
+        : `\n\nPENTING: balasan sebelumnya belum lengkap${problems.length ? `: ${problems.join("; ")}` : ""}. Balas hanya JSON lengkap sesuai bentuk yang ditentukan (brand, headline, minimal 3 bento_features).`;
       let reply: string;
       try {
-        reply = await groqChat(SITE_SYSTEM_PROMPT, [{ role: "user", content: attempt === 0 ? userMsg : `${userMsg}${retryNote}` }], {
+        reply = await groqChat(system, [{ role: "user", content: attempt === 0 ? userMsg : `${userMsg}${retryNote}` }], {
           apiKey: ownKey ?? undefined,
           maxTokens,
           temperature: attempt === 0 ? (variant > 0 ? 0.95 : 0.8) : 0.5,
           json: attempt === 0,
           timeoutMs: Math.max(8_000, Math.min(baseTimeout, left - 1_000)),
+          // Percobaan pertama lebih teliti; ulangan dibuat cepat supaya muat di sisa waktu.
+          reasoningEffort: attempt === 0 ? "medium" : "low",
         });
       } catch (e) {
         if (attempt === 0 && e instanceof GroqError && (e.kind === "upstream" || e.kind === "model_unavailable")) continue;
@@ -151,9 +109,26 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
         return fail("Permintaan ini tidak bisa dibuatkan website-nya oleh AI. Coba deskripsi usaha/kegiatan yang lain.", 422, "bad_request");
       }
       content = normalizeContent(json, forceKind);
-      if (!content) console.error(`[ai/site] isi tidak lengkap (percobaan ${attempt + 1}):`, json ? Object.keys(json as object).join(",") : "bukan JSON", "|", reply.slice(0, 240).replace(/\s+/g, " "));
+      if (!content) {
+        problems = diagnoseContent(json, forceKind);
+        console.error(`[ai/site] isi tidak lengkap (percobaan ${attempt + 1}):`, problems.join("; ") || "-", "|", reply.slice(0, 240).replace(/\s+/g, " "));
+      }
     }
     if (!content) return fail("AI belum mengembalikan isi yang lengkap. Coba kirim ulang, atau tambahkan detail di deskripsi.", 502, "ai_unavailable");
+
+    // Pass polish: model kecil kadang tetap memakai ungkapan generik yang dilarang. Tulis ulang hanya bidang yang melanggar.
+    // Gagal atau kehabisan waktu = pakai isi aslinya (tidak pernah membuat permintaan gagal).
+    const hits = findBanned(content, prompt);
+    const left = BUDGET_MS - (Date.now() - t0);
+    if (hits.length > 0 && left >= POLISH_MIN_LEFT_MS) {
+      try {
+        const fixed = await runSiteEdit(content, polishInstruction(hits), { apiKey: ownKey ?? undefined, timeoutMs: Math.min(25_000, left - 2_000) });
+        // Terima hasil polish hanya bila pelanggarannya benar-benar berkurang.
+        if (fixed && fixed.changed.length > 0 && findBanned(fixed.content, prompt).length < hits.length) content = fixed.content;
+      } catch (e) {
+        console.error("[ai/site] polish dilewati:", e instanceof Error ? e.message : e);
+      }
+    }
     return ok({ content, source });
   } catch (e) {
     if (e instanceof GroqError) {

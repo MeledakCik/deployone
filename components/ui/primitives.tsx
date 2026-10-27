@@ -83,10 +83,23 @@ export type BtnVariant = "primary" | "ghost" | "danger" | "destructive";
 export function Btn({
   variant = "ghost",
   busy,
+  softDisabled,
+  onDisabledClick,
   className,
   children,
+  onClick,
   ...rest
-}: React.ButtonHTMLAttributes<HTMLButtonElement> & { variant?: BtnVariant; busy?: boolean }) {
+}: React.ButtonHTMLAttributes<HTMLButtonElement> & {
+  variant?: BtnVariant;
+  busy?: boolean;
+  /**
+   * true = saat nonaktif/busy tombol tetap bisa difokus (aria-disabled, bukan atribut disabled).
+   * Fokus keyboard tidak hilang saat proses berjalan, dan alasan nonaktif bisa dibaca lewat aria-describedby.
+   */
+  softDisabled?: boolean;
+  /** Dipanggil bila tombol soft-disabled ditekan (bukan saat busy), mis. untuk menjelaskan alasannya. */
+  onDisabledClick?: () => void;
+}) {
   const base =
     "inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 text-[12.5px] font-medium active:scale-[0.97] max-md:min-h-[40px] max-md:px-4 disabled:cursor-not-allowed disabled:opacity-50";
   const v =
@@ -97,9 +110,25 @@ export function Btn({
         : variant === "danger"
           ? "pill text-bad-fg hover:!bg-bad-bg"
           : "pill";
+  const off = !!(rest.disabled || busy);
   return (
-    <button type="button" {...rest} disabled={rest.disabled || busy} className={cn(base, v, className)}>
-      {busy && <Loader2 size={13} className="animate-spin" />}
+    <button
+      type="button"
+      {...rest}
+      disabled={softDisabled ? undefined : off}
+      aria-disabled={softDisabled && off ? true : rest["aria-disabled"]}
+      aria-busy={busy || undefined}
+      onClick={(e) => {
+        if (softDisabled && off) {
+          e.preventDefault();
+          if (!busy) onDisabledClick?.();
+          return;
+        }
+        onClick?.(e);
+      }}
+      className={cn(base, v, softDisabled && "aria-disabled:cursor-not-allowed aria-disabled:opacity-50", className)}
+    >
+      {busy && <Loader2 size={13} className="animate-spin motion-reduce:animate-none" aria-hidden />}
       {children}
     </button>
   );

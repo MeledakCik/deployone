@@ -282,6 +282,33 @@ function parsePrice(v: unknown): number {
   return Math.round(n * (unit === "jt" || unit === "juta" ? 1_000_000 : 1000));
 }
 
+/**
+ * Daftar kekurangan isi mentah dari AI (sebelum dinormalisasi), untuk diberitahukan ke AI saat percobaan ulang.
+ * Kosong = tak ada masalah yang terdeteksi.
+ */
+export function diagnoseContent(raw: unknown, forceKind?: SiteKind): string[] {
+  if (!raw || typeof raw !== "object") return ["balasan sebelumnya bukan objek JSON yang valid"];
+  const { flat: r } = adaptNew(raw as Record<string, unknown>);
+  const out: string[] = [];
+  if (!str(r.brand, 40)) out.push('"brand.name" kosong');
+  if (!str(r.headline, 90)) out.push('"hero.headline" kosong');
+  const kind = forceKind ?? r.kind;
+  const ok2 = (list: unknown, a: string, b: string, aMax: number, bMax: number): number =>
+    Array.isArray(list)
+      ? list.filter((x) => {
+          const o = rec(x);
+          return str(o.title, aMax) && str(o[a] ?? o[b], bMax);
+        }).length
+      : 0;
+  if (kind === "artikel") {
+    const n = Array.isArray(r.articles) ? r.articles.filter((x) => str(rec(x).title, 90) && (Array.isArray(rec(x).body) ? (rec(x).body as unknown[]).length > 0 : !!str(rec(x).excerpt ?? rec(x).desc, 200))).length : 0;
+    if (n < 2) out.push('"articles" harus berisi minimal 2 artikel lengkap (title, excerpt, body berupa array paragraf)');
+  } else if (ok2(r.features, "text", "desc", 50, 160) < 2) {
+    out.push('"bento_features" harus berisi minimal 3 item lengkap (title dan desc)');
+  }
+  return out;
+}
+
 /** Batas artikel per situs (permintaan seperti "15 topik" harus muat). */
 export const MAX_ARTICLES = 15;
 
@@ -476,11 +503,6 @@ const rgb = (hex: string): string => {
   return `${(n >> 16) & 255},${(n >> 8) & 255},${n & 255}`;
 };
 
-const lum = (hex: string): number => {
-  const n = parseInt(hex.slice(1), 16);
-  return (((n >> 16) & 255) * 299 + ((n >> 8) & 255) * 587 + (n & 255) * 114) / 1000;
-};
-
 /** Campur warna dengan putih (0..1). */
 function mixWhite(hex: string, k: number): string {
   const n = parseInt(hex.slice(1), 16);
@@ -491,20 +513,41 @@ function mixWhite(hex: string, k: number): string {
 /** Isian tipis dari sebuah warna (latar kotak ikon). */
 const tint = (hex: string, dark: boolean): string => `rgba(${rgb(hex)},${dark ? ".24" : ".30"})`;
 
-/** Pilih teks hitam/putih yang terbaca di atas warna aksen. */
-function onColor(hex: string): string {
-  return lum(hex) > 150 ? "#111111" : "#ffffff";
+/** Luminans relatif WCAG (0..1) dari warna hex #rrggbb. */
+function relLum(hex: string): number {
+  const n = parseInt(hex.slice(1), 16);
+  const ch = (v: number) => {
+    const c = v / 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * ch((n >> 16) & 255) + 0.7152 * ch((n >> 8) & 255) + 0.0722 * ch(n & 255);
 }
 
-/** Warna aksen untuk TEKS kecil: digelapkan di tema terang / dicerahkan di tema gelap agar kontras cukup. */
-function readable(hex: string, dark: boolean): string {
+/** Rasio kontras WCAG 2.x antara dua warna hex (1..21). Dipakai editor palet dan renderer. */
+export function contrastRatio(a: string, b: string): number {
+  const la = relLum(a);
+  const lb = relLum(b);
+  return (Math.max(la, lb) + 0.05) / (Math.min(la, lb) + 0.05);
+}
+
+/** Pilih teks hitam/putih dengan kontras WCAG tertinggi di atas warna aksen. */
+function onColor(hex: string): string {
+  return contrastRatio(hex, "#ffffff") >= contrastRatio(hex, "#111111") ? "#ffffff" : "#111111";
+}
+
+/**
+ * Warna aksen untuk TEKS kecil: digelapkan di tema terang / dicerahkan di tema gelap
+ * sampai kontrasnya terhadap latar halaman minimal 4,5:1 (WCAG AA).
+ */
+function readable(hex: string, dark: boolean, bg: string = dark ? "#0b0b0b" : "#ffffff"): string {
   let c = hex;
-  for (let i = 0; i < 8; i++) {
-    const l = lum(c);
-    if (dark ? l >= 120 : l <= 125) break;
+  for (let i = 0; i < 24; i++) {
+    if (contrastRatio(c, bg) >= 4.5) break;
     const n = parseInt(c.slice(1), 16);
-    const k = dark ? 1.18 : 0.86;
-    const f = (v: number) => Math.max(0, Math.min(255, Math.round(dark ? v * k + 18 : v * k)));
+    const f = (v: number) => {
+      const out = dark ? v + (255 - v) * 0.12 : v * 0.9;
+      return Math.max(0, Math.min(255, Math.round(out)));
+    };
     c = "#" + [(n >> 16) & 255, (n >> 8) & 255, n & 255].map((v) => f(v).toString(16).padStart(2, "0")).join("");
   }
   return c;
@@ -661,7 +704,7 @@ const fmtRp = (n: number): string => "Rp " + String(Math.round(n)).replace(/\B(?
 
 function buildCss(t: Theme, a: string, hero: HeroLayout, shop: boolean, hover: HoverEffect, extra: string[], article: boolean): string {
   const A = rgb(a);
-  const aText = readable(a, t.dark);
+  const aText = readable(a, t.dark, t.bg);
   const bd = t.brutal ? "3px solid #0a0a0a" : `1px solid ${t.line}`;
   const grad = t.gradientHead
     ? `background:linear-gradient(120deg,var(--fg) 25%,var(--a) 135%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;`
@@ -785,6 +828,9 @@ ${shop ? shopCss(t, bd) : ""}
 @media(max-width:980px){.links{display:none}}
 @media(max-width:820px){.split{grid-template-columns:1fr}}
 @media(max-width:520px){.wrap{padding:0 18px}.nav .wrap{height:62px;gap:12px}.nav .btn{padding:9px 16px}.card{padding:24px}.bento{grid-template-columns:1fr}.bento .feat:first-child{grid-column:span 1}.frow{grid-template-columns:1fr}}
+.skip{position:absolute;left:12px;top:-80px;z-index:100;background:var(--a);color:var(--on);padding:10px 16px;border-radius:10px;font:600 14px ${SANS};text-decoration:none}.skip:focus{top:12px}
+a:focus-visible,button:focus-visible,summary:focus-visible,[tabindex]:focus-visible,.search input:focus-visible,.fld input:focus-visible,.fld textarea:focus-visible,.fld select:focus-visible{outline:3px solid var(--at);outline-offset:3px}
+main:focus{outline:none}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}`;
 }
 
@@ -996,7 +1042,7 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
   const toneStyle = (i: number): string => {
     if (!cyc.length || t.brutal) return "";
     const col = cyc[i % cyc.length];
-    return ` style="--tb:${tint(col, t.dark)};--tt:${readable(col, t.dark)}"`;
+    return ` style="--tb:${tint(col, t.dark)};--tt:${readable(col, t.dark, t.bg)}"`;
   };
 
   const c = content;
@@ -1133,7 +1179,7 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
           const next = arts[i + 1];
           const cov = imgSrc(`article:${x.id}`);
           const body = x.body.map((p) => (p.startsWith("## ") ? `<h3>${esc(p.slice(3))}</h3>` : `<p>${esc(p)}</p>`)).join("");
-          return `<article id="a-${x.id}" class="reader" aria-label="${esc(x.title)}"><div class="rbar"><div class="wrap rw"><a class="btn ghost sm" href="#artikel">${ico("arrow-left", 16)}Semua artikel</a><span class="rbrand">${esc(c.brand)}</span></div></div><div class="rbody"><header class="rhead">${x.category ? `<span class="ptag hot">${esc(x.category)}</span>` : ""}<h1>${esc(x.title)}</h1><p class="rmeta">${artMeta(x)}</p></header>${cov ? `<div class="acov rcov"><img src="${esc(cov)}" alt=""></div>` : ""}<div class="prose">${body}</div><nav class="rnav">${prev ? `<a class="card" href="#a-${prev.id}"><small>Sebelumnya</small><b>${esc(prev.title)}</b></a>` : "<span></span>"}${next ? `<a class="card" href="#a-${next.id}"><small>Berikutnya</small><b>${esc(next.title)}</b></a>` : "<span></span>"}</nav></div></article>`;
+          return `<article id="a-${x.id}" class="reader" aria-label="${esc(x.title)}"><div class="rbar"><div class="wrap rw"><a class="btn ghost sm" href="#artikel">${ico("arrow-left", 16)}Semua artikel</a><span class="rbrand">${esc(c.brand)}</span></div></div><div class="rbody"><header class="rhead">${x.category ? `<span class="ptag hot">${esc(x.category)}</span>` : ""}<h1>${esc(x.title)}</h1><p class="rmeta">${artMeta(x)}</p></header>${cov ? `<div class="acov rcov"><img src="${esc(cov)}" alt=""></div>` : ""}<div class="prose">${body}</div><nav class="rnav" aria-label="Artikel lainnya">${prev ? `<a class="card" href="#a-${prev.id}"><small>Sebelumnya</small><b>${esc(prev.title)}</b></a>` : "<span></span>"}${next ? `<a class="card" href="#a-${next.id}"><small>Berikutnya</small><b>${esc(next.title)}</b></a>` : "<span></span>"}</nav></div></article>`;
         })
         .join("\n")
     : "";
@@ -1223,8 +1269,8 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
 <meta name="description" content="${esc(c.subheadline || c.headline)}">
 <meta name="theme-color" content="${t.bg}">`;
 
-  const body = `<header class="nav"><div class="wrap"><a class="brand" href="#"><i${logo ? ' class="logo"' : ""}>${brandMark}</i><span>${esc(c.brand)}</span></a><nav class="links">${nav}</nav>${cartBtn}<a class="btn" href="${ctaHref}">${esc(c.ctaLabel)}</a></div></header>
-<main>
+  const body = `<a class="skip" href="#main">Lewati ke konten</a>\n<header class="nav"><div class="wrap"><a class="brand" href="#"><i${logo ? ' class="logo"' : ""}>${brandMark}</i><span>${esc(c.brand)}</span></a><nav class="links" aria-label="Menu utama">${nav}</nav>${cartBtn}<a class="btn" href="${ctaHref}">${esc(c.ctaLabel)}</a></div></header>
+<main id="main" tabindex="-1">
 ${hero}
 ${sections.join("\n")}
 </main>

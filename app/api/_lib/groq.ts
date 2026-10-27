@@ -41,6 +41,8 @@ export interface GroqOptions {
   json?: boolean;
   /** Batas waktu satu permintaan (ms). Default 28 detik; naikkan untuk keluaran panjang. */
   timeoutMs?: number;
+  /** Hanya untuk model gpt-oss. Default "low" (cepat); "medium" = lebih teliti tapi lebih lambat. */
+  reasoningEffort?: "low" | "medium";
 }
 
 export async function groqChat(system: string, messages: ChatMessage[], opts: GroqOptions = {}): Promise<string> {
@@ -58,7 +60,7 @@ export async function groqChat(system: string, messages: ChatMessage[], opts: Gr
     // Model gpt-oss menghitung token "berpikir" ke dalam batas ini, jadi dibuat longgar.
     max_completion_tokens: opts.maxTokens ?? 1500,
   };
-  if (model.startsWith("openai/gpt-oss")) body.reasoning_effort = "low";
+  if (model.startsWith("openai/gpt-oss")) body.reasoning_effort = opts.reasoningEffort ?? "low";
   if (opts.json) body.response_format = { type: "json_object" };
 
   const ctrl = new AbortController();
