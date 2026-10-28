@@ -2,12 +2,11 @@
 
 import * as React from "react";
 import { Copy, Sparkles, Unplug } from "lucide-react";
+import { cn } from "@/lib/utils";
 import type { Platform, SettingsTokens } from "@/types";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/confirm";
 import { api } from "@/components/db/ui";
-import { Btn } from "@/components/ui/primitives";
-import { Switch } from "@/components/ui/Switch";
 
 const DEPLOY_TARGETS: { platform: Platform; label: string; tokenField: keyof SettingsTokens }[] = [
   { platform: "vercel", label: "Vercel", tokenField: "vercelToken" },
@@ -80,11 +79,11 @@ export function ClaudeConnectCard({
   }
 
   return (
-    <section className="surface-solid p-4 sm:p-6" aria-labelledby="claude-connect-title">
-      <h3 id="claude-connect-title" className="flex items-center gap-2 text-[16px] font-bold tracking-tight">
+    <section className="surface-solid rounded-3xl p-5 sm:p-6" aria-labelledby="claude-connect-title">
+      <h3 id="claude-connect-title" className="flex items-center gap-2 text-[15px] font-semibold">
         <Sparkles size={16} /> Konektor Claude
       </h3>
-      <p className="mt-1 max-w-2xl text-[13px] leading-relaxed text-text-muted">
+      <p className="mt-1 text-[12.5px] text-text-muted">
         Hubungkan Depup ke Claude: publish website jadi Link Instan, atau deploy repo GitHub ke Vercel, Cloudflare Pages, dan Railway langsung dari chat.
       </p>
 
@@ -94,26 +93,26 @@ export function ClaudeConnectCard({
           value={mcpUrl ?? "Memuat…"}
           aria-label="URL konektor MCP Depup"
           onFocus={(e) => e.currentTarget.select()}
-          className="input-solid mono h-11 min-w-0 flex-1 px-3.5 text-[13px]"
+          className="min-w-0 flex-1 rounded-xl border border-[var(--line)] bg-[var(--pill-bg)] px-3.5 py-2.5 font-mono text-[12.5px] outline-none"
         />
-        <Btn onClick={copy} disabled={!mcpUrl} className="h-11 px-4">
-          <Copy size={14} /> Salin
-        </Btn>
+        <button type="button" onClick={copy} disabled={!mcpUrl} className="pill inline-flex items-center gap-1.5 px-3 py-2 text-[12px] disabled:opacity-50">
+          <Copy size={13} /> Salin
+        </button>
       </div>
 
-      <ol className="mt-4 list-decimal space-y-1.5 pl-5 text-[13px] leading-relaxed">
+      <ol className="mt-4 list-decimal space-y-1.5 pl-5 text-[12.5px] leading-relaxed">
         <li>Buka <strong>claude.ai</strong> di browser, lalu <strong>Settings → Connectors → Add custom connector</strong>.</li>
         <li>Isi nama <strong>Depup</strong> dan tempel URL di atas, lalu klik <strong>Add</strong> dan <strong>Connect</strong>.</li>
         <li>Masuk dengan Google di Depup dan tekan <strong>Izinkan</strong>.</li>
         <li>Di chat, aktifkan konektor Depup dan ketik: <em>&quot;Buatkan landing page warung kopi, lalu publish ke Depup.&quot;</em></li>
       </ol>
-      <p className="mt-3 text-[12px] leading-relaxed text-text-muted">
+      <p className="mt-3 text-[12px] text-text-muted">
         Di app Claude (HP): konektor yang sudah kamu tambahkan di claude.ai ikut muncul di akun yang sama. Aktifkan dari menu konektor di chat, lalu pakai seperti biasa.
-        Link Instan bersifat sementara (maksimal 30 hari); deploy ke Vercel, Cloudflare, dan Railway permanen di akun platformmu.
+        Link Instan bersifat sementara (maksimal 7 hari); deploy ke Vercel, Cloudflare, dan Railway permanen di akun platformmu.
       </p>
 
-      <div className="mt-5 border-t border-[var(--surface-line)] pt-4">
-        <h4 className="text-[14px] font-semibold">Izinkan Claude deploy ke</h4>
+      <div className="mt-5 border-t border-[var(--line)] pt-4">
+        <h4 className="text-[13.5px] font-semibold">Izinkan Claude deploy ke</h4>
         <p className="mt-1 text-[12px] text-text-muted">
           Claude memakai token yang kamu simpan di form Settings di atas, langsung dari server — token tidak pernah dikirim lewat chat. Platform yang dimatikan tidak bisa dipakai Claude.
         </p>
@@ -127,15 +126,28 @@ export function ClaudeConnectCard({
                 <div className="min-w-0">
                   <label htmlFor={id} className="block cursor-pointer text-[13px] font-medium">{t.label}</label>
                   <p className="text-[12px] text-text-muted">
-                    {hasToken ? "Token tersimpan." : "Isi token " + t.label + " di atas dulu, lalu klik Simpan."}
+                    {hasToken ? "Token tersimpan." : "Isi token " + t.label + " di form Settings dulu, lalu klik Simpan."}
                   </p>
                 </div>
-                <Switch
+                <button
                   id={id}
-                  checked={on}
+                  type="button"
+                  role="switch"
+                  aria-checked={on}
                   disabled={!hasToken}
-                  onChange={(v) => togglePlatform(t.platform, v)}
-                />
+                  onClick={() => togglePlatform(t.platform, !on)}
+                  className={cn(
+                    "relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-40",
+                    on ? "bg-[var(--ink-fill)]" : "bg-[var(--line-strong)]"
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "absolute left-1 top-1 h-5 w-5 rounded-full bg-white shadow transition-transform duration-300 [transition-timing-function:var(--ease-soft)]",
+                      on ? "translate-x-5" : "translate-x-0"
+                    )}
+                  />
+                </button>
               </li>
             );
           })}
@@ -145,9 +157,14 @@ export function ClaudeConnectCard({
         </p>
       </div>
 
-      <Btn variant="danger" onClick={revoke} busy={busy} className="mt-4">
+      <button
+        type="button"
+        onClick={revoke}
+        disabled={busy}
+        className="pill mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] text-bad-fg disabled:opacity-50"
+      >
         <Unplug size={13} /> Cabut semua akses Claude
-      </Btn>
+      </button>
     </section>
   );
 }

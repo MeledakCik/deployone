@@ -19,6 +19,11 @@ const notTunnelHost = tunnelBase
     ]
   : [];
 
+// Pratinjau Link Instan di dashboard = iframe ke subdomain situs (origin berbeda dari dashboard).
+const frameSrc = ["'self'"];
+if (tunnelBase === "localhost" || tunnelBase.endsWith(".localhost")) frameSrc.push(`http://*.${tunnelBase}:*`);
+else if (tunnelBase) frameSrc.push(`https://*.${tunnelBase}`);
+
 // 'unsafe-eval' hanya dibutuhkan React/Next saat development (hot reload). Di production dibuang
 // supaya XSS tidak bisa mengeksekusi string lewat eval().
 const isProd = process.env.NODE_ENV === "production";
@@ -89,6 +94,7 @@ const nextConfig = {
               "img-src 'self' data: https:",
               "font-src 'self' data:",
               "connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com https://www.googleapis.com https://api.github.com",
+              `frame-src ${frameSrc.join(" ")}`,
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self' https://accounts.google.com",

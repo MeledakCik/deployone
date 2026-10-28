@@ -7,6 +7,19 @@ import type { CollectResult, UploadFile } from "@/lib/github-upload";
 
 export class SiteError extends Error {}
 
+/** Statistik kunjungan per situs (per jam). Lihat SiteStats di app/api/_lib/sites.ts. */
+export interface SiteStats {
+  requests: number;
+  views: number;
+  visitors: number;
+  bytes: number;
+  errors: number;
+  /** Jam (epoch jam) untuk indeks 0 di semua deret; indeks terakhir = jam sekarang. */
+  startHour: number;
+  series: { requests: number[]; views: number[]; bytes: number[]; errors: number[] };
+  topPages: { path: string; views: number }[];
+}
+
 export interface SiteInfo {
   id: string;
   name: string;
@@ -16,6 +29,7 @@ export interface SiteInfo {
   totalBytes: number;
   fileCount: number;
   spa: boolean;
+  stats: SiteStats | null;
 }
 
 export interface SiteConfig {

@@ -17,6 +17,7 @@ import {
   contentTypeFor,
   expectedChunkCount,
   listUserSites,
+  loadSiteStats,
   reserveSlug,
   siteUrl,
   sitesEnabled,
@@ -35,6 +36,7 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
 
   const enabled = sitesEnabled() && (await getSettings()).sitesEnabled;
   const sites = enabled ? await listUserSites(email) : [];
+  const stats = await loadSiteStats(sites);
   return ok({
     enabled,
     baseDomain: tunnelBaseDomain(),
@@ -53,6 +55,7 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
       totalBytes: s.totalBytes,
       fileCount: s.files.length,
       spa: s.spa,
+      stats: stats.get(s.id) ?? null,
     })),
   });
 });

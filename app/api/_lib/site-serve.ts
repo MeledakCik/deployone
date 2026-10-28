@@ -1,5 +1,5 @@
-import { rateLimit } from "@/app/api/_lib/rate-limit";
-import { readSiteFile, type SiteFile, type SiteMeta } from "@/app/api/_lib/sites";
+import { clientIp, rateLimit } from "@/app/api/_lib/rate-limit";
+import { OTHER_PATH, readSiteFile, recordSiteHit, visitorHash, type SiteFile, type SiteMeta } from "@/app/api/_lib/sites";
 import { withDirBase } from "@/app/api/_lib/site-html";
 
 /** Menyajikan satu request GET/HEAD dari situs statis "Link Instan". */
@@ -34,6 +34,12 @@ function textPage(status: number, title: string, msg: string): Response {
   );
 }
 
+/** "index.html" -> "/", "about.html" -> "/about", "blog/index.html" -> "/blog". Jumlahnya dibatasi manifest. */
+function canonicalPage(filePath: string): string {
+  const p = "/" + filePath.replace(/(^|\/)index\.html$/i, "$1").replace(/\.html?$/i, "");
+  return p.length > 1 ? p.replace(/\/+$/, "") || "/" : "/";
+}
+
 async function send(meta: SiteMeta, file: SiteFile, status: number, method: string, dirBase?: string): Promise<Response> {
   let buf = await readSiteFile(meta, file);
   if (!buf) return textPage(500, "Isi situs tidak lengkap", "Pemilik perlu meng-upload ulang situs ini.");
@@ -47,7 +53,44 @@ async function send(meta: SiteMeta, file: SiteFile, status: number, method: stri
   return new Response(method === "HEAD" ? null : new Uint8Array(buf), { status, headers });
 }
 
+/** Info yang dicatat serveSiteInner untuk statistik (diisi hanya kalau ada file HTML yang disajikan). */
+interface HitInfo {
+  page?: string;
+}
+
+const BOT_RE = /bot|crawl|spider|slurp|preview|monitor|uptime|headless|curl|wget|python-requests|go-http/i;
+
+/** Param penanda pratinjau di dashboard Depup: tidak dihitung sebagai kunjungan. */
+const PREVIEW_PARAM = "depup-preview";
+
+function isOwnerPreview(req: Request, target: string): boolean {
+  if (target.includes(PREVIEW_PARAM + "=")) return true;
+  return (req.headers.get("referer") ?? "").includes(PREVIEW_PARAM + "=");
+}
+
 export async function serveSite(req: Request, meta: SiteMeta, target: string): Promise<Response> {
+  const info: HitInfo = {};
+  const res = await serveSiteInner(req, meta, target, info);
+  // 429 = pertahanan banjir request; jangan ikut menulis ke Redis. HEAD/pratinjau dashboard tidak dihitung.
+  if (res.status !== 429 && req.method.toUpperCase() === "GET" && !isOwnerPreview(req, target)) {
+    try {
+      const ua = req.headers.get("user-agent") ?? "";
+      const dest = req.headers.get("sec-fetch-dest");
+      const isView = res.status === 200 && !!info.page && (!dest || dest === "document") && !BOT_RE.test(ua);
+      await recordSiteHit(meta, {
+        page: isView ? info.page : undefined,
+        status: res.status,
+        bytes: Number(res.headers.get("content-length")) || 0,
+        visitor: isView ? visitorHash(clientIp(req), ua) : undefined,
+      });
+    } catch {
+      /* statistik tidak boleh menjatuhkan situs */
+    }
+  }
+  return res;
+}
+
+async function serveSiteInner(req: Request, meta: SiteMeta, target: string, info: HitInfo): Promise<Response> {
   const method = req.method.toUpperCase();
   if (method !== "GET" && method !== "HEAD") {
     return textPage(405, "Method tidak didukung", "Situs statis hanya melayani GET.");
@@ -85,13 +128,19 @@ export async function serveSite(req: Request, meta: SiteMeta, target: string): P
       if (hit) dirBase = rel;
     }
   }
-  if (hit) return send(meta, hit, 200, method, dirBase);
+  if (hit) {
+    if (hit.t.startsWith("text/html")) info.page = canonicalPage(hit.p);
+    return send(meta, hit, 200, method, dirBase);
+  }
 
   const last = rel.split("/").pop() ?? "";
   const looksLikeAsset = last.includes(".");
   if (meta.spa && !looksLikeAsset) {
     const index = map.get("index.html");
-    if (index) return send(meta, index, 200, method);
+    if (index) {
+      info.page = OTHER_PATH;
+      return send(meta, index, 200, method);
+    }
   }
   const custom = map.get("404.html");
   if (custom) return send(meta, custom, 404, method);

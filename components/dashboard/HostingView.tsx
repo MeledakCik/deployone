@@ -8,15 +8,12 @@ import {
   FolderUp,
   Loader2,
   CircleAlert,
-  Copy,
-  ExternalLink,
-  Trash2,
   X,
-  Clock,
   TriangleAlert,
   Info,
 } from "lucide-react";
 import { ViewFade } from "@/components/ui/ViewFade";
+import { LinkOverview } from "@/components/dashboard/LinkOverview";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/confirm";
 import { cn } from "@/lib/utils";
@@ -101,7 +98,14 @@ export function HostingView() {
   React.useEffect(() => {
     void reload();
     const t = setInterval(() => setNow(Date.now()), 30_000);
-    return () => clearInterval(t);
+    // Segarkan statistik kunjungan tiap menit selama tab terlihat.
+    const r = setInterval(() => {
+      if (document.visibilityState === "visible") void reload();
+    }, 60_000);
+    return () => {
+      clearInterval(t);
+      clearInterval(r);
+    };
   }, [reload]);
 
   const busy = stage === "reading" || stage === "publishing";
@@ -436,7 +440,7 @@ export function HostingView() {
                   </option>
                 ))}
               </select>
-              <p className="mt-1 text-[12px] text-text-muted">Setelah itu link & file otomatis dihapus. Opsi perpanjangan waktu akan tersedia mulai 3 hari sebelum link kedaluwarsa.</p>
+              <p className="mt-1 text-[12px] text-text-muted">Setelah itu link & file otomatis dihapus.</p>
             </div>
           </div>
 
@@ -472,61 +476,16 @@ export function HostingView() {
       )}
 
 
-      <div className="mt-8">
-        <h3 className="mb-3 text-[15px] font-semibold">
-          Link aktif{config ? ` (${config.sites.length}/${config.maxSites})` : ""}
-        </h3>
-        {!config && !loadError && <p className="text-[12.5px] text-text-muted">Memuat…</p>}
-        {config && config.sites.length === 0 && (
+      {!config && !loadError && <p className="mt-8 text-[12.5px] text-text-muted">Memuat…</p>}
+      {config && config.sites.length === 0 && (
+        <div className="mt-8">
+          <h3 className="mb-3 text-[15px] font-semibold">Link aktif (0/{config.maxSites})</h3>
           <p className="text-[12.5px] text-text-muted">Belum ada link aktif.</p>
-        )}
-        <ul className="space-y-3">
-          {config?.sites.map((s) => (
-            <li key={s.id} className="surface-solid flex flex-wrap items-center gap-3 rounded-2xl px-4 py-3.5">
-              <div className="min-w-0 flex-1">
-                <a
-                  href={s.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="block break-all text-[13.5px] font-medium underline-offset-4 hover:underline"
-                >
-                  {s.url.replace(/^https?:\/\//, "").replace(/\/$/, "")}
-                </a>
-                <p className="mt-0.5 flex flex-wrap items-center gap-x-3 text-[12px] text-text-muted">
-                  <span className="inline-flex items-center gap-1">
-                    <Clock size={11} /> {remaining(s.expiresAt, now)}
-                  </span>
-                  <span>
-                    {s.fileCount} file · {formatBytes(s.totalBytes)}
-                  </span>
-                </p>
-              </div>
-              <div className="flex shrink-0 items-center gap-2">
-                <button type="button" onClick={() => copy(s.url)} className="pill inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px]">
-                  <Copy size={13} /> Salin
-                </button>
-                <a
-                  href={s.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  aria-label="Buka link"
-                  className="pill inline-flex items-center px-2.5 py-1.5"
-                >
-                  <ExternalLink size={13} />
-                </a>
-                <button
-                  type="button"
-                  onClick={() => remove(s.id)}
-                  aria-label="Hapus link"
-                  className="pill inline-flex items-center px-2.5 py-1.5 text-bad-fg"
-                >
-                  <Trash2 size={13} />
-                </button>
-              </div>
-            </li>
-          ))}
-        </ul>
-      </div>
+        </div>
+      )}
+      {config && config.sites.length > 0 && (
+        <LinkOverview sites={config.sites} maxSites={config.maxSites} now={now} onCopy={copy} onDelete={remove} />
+      )}
     </ViewFade>
   );
 }

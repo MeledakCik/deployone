@@ -1,3 +1,4 @@
+import { createHmac } from "node:crypto";
 import { kv } from "@vercel/kv";
 import {
   SLUG_RE,
@@ -34,7 +35,7 @@ export const CHUNK_BYTES = 512 * 1024;
 export const MAX_SITE_BYTES = envInt("SITES_MAX_MB", 10, 1, 50) * 1024 * 1024;
 export const MAX_SITE_FILES = 500;
 export const MAX_ACTIVE_SITES_PER_USER = envInt("SITES_MAX_PER_USER", 3, 1, 10);
-export const TTL_OPTIONS_HOURS = [1, 6, 24, 72, 168, 720] as const;
+export const TTL_OPTIONS_HOURS = [1, 6, 24, 72, 168] as const;
 export const DEFAULT_TTL_HOURS = 24;
 /** Upload yang tidak di-finish dibuang setelah ini. */
 export const PENDING_TTL_SECONDS = 3600;
@@ -42,6 +43,8 @@ export const PENDING_TTL_SECONDS = 3600;
 export const kSiteMeta = (id: string) => `site:meta:${id}`;
 export const kSiteChunk = (id: string, i: number) => `site:c:${id}:${i}`;
 export const kUserSites = (email: string) => `site:user:${email}`;
+export const kSiteStat = (id: string) => `site:stat:${id}`;
+export const kSiteVisitors = (id: string) => `site:uv:${id}`;
 
 export interface SiteFile {
   /** Path relatif tanpa "/" di depan. */
@@ -308,7 +311,132 @@ export async function readSiteFile(meta: SiteMeta, file: SiteFile): Promise<Buff
 }
 
 export async function deleteSiteData(meta: SiteMeta): Promise<void> {
-  const keys = [kSiteMeta(meta.id)];
+  const keys = [kSiteMeta(meta.id), kSiteStat(meta.id), kSiteVisitors(meta.id)];
   for (let i = 0; i < meta.chunkCount; i++) keys.push(kSiteChunk(meta.id, i));
   await kv.del(...keys);
+}
+
+/* ---------- statistik kunjungan ---------- */
+
+/**
+ * Statistik ringan per situs (satu hash Redis + satu HyperLogLog), dihitung per jam:
+ *   r:<jam> permintaan · b:<jam> byte keluar · v:<jam> tampilan halaman · e:<jam> error (4xx/5xx)
+ *   p:<path> tampilan halaman per file HTML (dibatasi manifest, jadi tidak bisa membengkak)
+ * Visitor unik = HyperLogLog dari hash (IP + user agent) yang diberi garam AUTH_SECRET; IP mentah tidak disimpan.
+ * Kedua key ikut kedaluwarsa bersama situsnya. Matikan dengan env SITES_STATS=false.
+ * Catatan: dihitung saat request sampai ke server; cache CDN (maks 2 menit) bisa membuat hitungannya sedikit lebih rendah.
+ */
+export const statsEnabled = () => (process.env.SITES_STATS ?? "").trim().toLowerCase() !== "false";
+
+const HOUR_MS = 3600_000;
+/** Label untuk halaman HTML yang bukan file di manifest (mis. rute SPA). */
+export const OTHER_PATH = "(lainnya)";
+
+export interface SiteHit {
+  /** Path kanonik file HTML yang disajikan (mis. "/", "/about"), atau OTHER_PATH. Kosong = bukan halaman. */
+  page?: string;
+  status: number;
+  bytes: number;
+  /** Hash visitor (lihat visitorHash). Hanya dikirim untuk tampilan halaman. */
+  visitor?: string;
+}
+
+export function visitorHash(ip: string, userAgent: string): string {
+  const secret = process.env.AUTH_SECRET || "depup-stats";
+  return createHmac("sha256", secret).update(`${ip}|${userAgent}`).digest("base64url").slice(0, 16);
+}
+
+export async function recordSiteHit(meta: SiteMeta, hit: SiteHit): Promise<void> {
+  if (!statsEnabled()) return;
+  const h = Math.floor(Date.now() / HOUR_MS);
+  const key = kSiteStat(meta.id);
+  const ttl = Math.max(60, Math.ceil((meta.expiresAt - Date.now()) / 1000) + 3600);
+  const p = kv.pipeline();
+  p.hincrby(key, `r:${h}`, 1);
+  p.hincrby(key, `b:${h}`, Math.max(0, Math.floor(hit.bytes)));
+  if (hit.status >= 400) p.hincrby(key, `e:${h}`, 1);
+  if (hit.page) {
+    p.hincrby(key, `v:${h}`, 1);
+    p.hincrby(key, `p:${hit.page}`, 1);
+    if (hit.visitor) p.pfadd(kSiteVisitors(meta.id), hit.visitor);
+  }
+  p.expire(key, ttl, "NX");
+  if (hit.page && hit.visitor) p.expire(kSiteVisitors(meta.id), ttl, "NX");
+  await p.exec();
+}
+
+export interface SiteStats {
+  requests: number;
+  views: number;
+  visitors: number;
+  bytes: number;
+  errors: number;
+  /** Jam (epoch jam) untuk indeks 0 di semua deret di bawah; indeks terakhir = jam sekarang. */
+  startHour: number;
+  series: { requests: number[]; views: number[]; bytes: number[]; errors: number[] };
+  topPages: { path: string; views: number }[];
+}
+
+const num = (v: unknown) => {
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+};
+
+function buildStats(meta: SiteMeta, hash: Record<string, unknown> | null, visitors: unknown): SiteStats {
+  const nowH = Math.floor(Date.now() / HOUR_MS);
+  const startHour = Math.max(Math.floor(meta.createdAt / HOUR_MS), nowH - 167);
+  const len = Math.max(1, nowH - startHour + 1);
+  const series = {
+    requests: new Array<number>(len).fill(0),
+    views: new Array<number>(len).fill(0),
+    bytes: new Array<number>(len).fill(0),
+    errors: new Array<number>(len).fill(0),
+  };
+  const pages: { path: string; views: number }[] = [];
+  const total = { requests: 0, views: 0, bytes: 0, errors: 0 };
+  for (const [field, raw] of Object.entries(hash ?? {})) {
+    const v = num(raw);
+    if (!v) continue;
+    if (field.startsWith("p:")) {
+      pages.push({ path: field.slice(2), views: v });
+      continue;
+    }
+    const kind = field[0];
+    const hour = Number(field.slice(2));
+    if (field[1] !== ":" || !Number.isFinite(hour)) continue;
+    const name = kind === "r" ? "requests" : kind === "v" ? "views" : kind === "b" ? "bytes" : kind === "e" ? "errors" : null;
+    if (!name) continue;
+    total[name] += v;
+    const i = hour - startHour;
+    if (i >= 0 && i < len) series[name][i] += v;
+  }
+  pages.sort((a, b) => b.views - a.views);
+  return { ...total, visitors: num(visitors), startHour, series, topPages: pages.slice(0, 5) };
+}
+
+/** Statistik semua situs sekaligus dalam satu pipeline Redis. */
+export async function loadSiteStats(metas: SiteMeta[]): Promise<Map<string, SiteStats>> {
+  const out = new Map<string, SiteStats>();
+  if (metas.length === 0) return out;
+  const empty = (m: SiteMeta) => buildStats(m, null, 0);
+  if (!statsEnabled()) {
+    metas.forEach((m) => out.set(m.id, empty(m)));
+    return out;
+  }
+  try {
+    const p = kv.pipeline();
+    for (const m of metas) {
+      p.hgetall(kSiteStat(m.id));
+      p.pfcount(kSiteVisitors(m.id));
+    }
+    const res = (await p.exec()) as unknown[];
+    metas.forEach((m, i) => {
+      const hash = res[i * 2];
+      out.set(m.id, buildStats(m, hash && typeof hash === "object" ? (hash as Record<string, unknown>) : null, res[i * 2 + 1]));
+    });
+  } catch {
+    // Statistik hanya pelengkap: kalau Redis gagal, daftar link tetap tampil.
+    metas.forEach((m) => out.set(m.id, empty(m)));
+  }
+  return out;
 }

@@ -1,13 +1,12 @@
 "use client";
 
-import { Btn, Badge, PageTitle } from "@/components/ui/primitives";
+import { PageTitle } from "@/components/ui/primitives";
 import { notifySessionExpired } from "@/lib/session-expired";
 import * as React from "react";
+import { useTheme } from "next-themes";
 import { HardHat } from "lucide-react";
-import { Eye, EyeOff, Save, ShieldCheck, ShieldAlert, Trash2, Bug, Rocket, Check, ExternalLink, KeyRound, Network as SpiderIcon } from "@/components/ui/icons";
-import { VercelIcon, CloudflareIcon, RailwayIcon } from "@/components/ui/PlatformIcon";
+import { Eye, EyeOff, Save, ShieldCheck, ShieldAlert, Loader2, Trash2, Moon, Sun, Bug, Rocket, Network as SpiderIcon } from "@/components/ui/icons";
 import { Surface } from "@/components/ui/Surface";
-import { Switch } from "@/components/ui/Switch";
 import { ClaudeConnectCard } from "@/components/dashboard/ClaudeConnectCard";
 import { ViewFade } from "@/components/ui/ViewFade";
 import { useCloudStorage } from "@/lib/useCloudStorage";
@@ -31,9 +30,6 @@ const DEFAULT_TOKENS: SettingsTokens = {
   railwayToken: "",
 };
 
-/** Kolom yang diisi lewat form ini (dipakai untuk mendeteksi perubahan yang belum disimpan). */
-const FORM_FIELDS = ["vercelToken", "cloudflareToken", "cloudflareAccountId", "githubPat", "railwayToken"] as const;
-
 async function callApi<T>(url: string, init?: RequestInit): Promise<T> {
   const res = await fetch(url, init);
   const body = (await res.json().catch(() => null)) as ApiResponse<T> | null;
@@ -48,16 +44,9 @@ type CheckState =
   | { status: "ok"; label: string }
   | { status: "error"; message: string };
 
-/**
- * Satu platform = satu kartu: nama + status tersimpan, isian token, lalu aksi (Test, Hapus, ambil token).
- * Status tidak hanya lewat warna: selalu ada teks ("Tersimpan" / "Belum diisi") dan ikon.
- */
 function TokenField({
   id,
   label,
-  icon,
-  tokenUrl,
-  saved,
   value,
   onChange,
   check,
@@ -66,23 +55,15 @@ function TokenField({
 }: {
   id: string;
   label: string;
-  icon: React.ReactNode;
-  /** Halaman resmi untuk membuat token ini. */
-  tokenUrl: string;
-  /** Sudah ada token tersimpan di akun. */
-  saved: boolean;
   value: string;
   onChange: (v: string) => void;
   check: CheckState;
-  onTest: () => void;
+  onTest?: () => void;
   /** Hapus token ini dari akun (langsung tersimpan, setelah konfirmasi). */
-  onRemove: () => void;
+  onRemove?: () => void;
 }) {
   const [visible, setVisible] = React.useState(false);
   const [confirming, setConfirming] = React.useState(false);
-  const { showToast } = useToast();
-  const hasValue = !!value?.trim();
-  const statusId = `${id}-status`;
 
   // Kalau kolom dikosongkan (mis. setelah dihapus), tutup konfirmasi yang masih terbuka.
   React.useEffect(() => {
@@ -90,109 +71,91 @@ function TokenField({
   }, [value]);
 
   return (
-    <div className="rounded-2xl bg-[var(--surface-solid-2)] p-4">
-      <div className="mb-3 flex items-center justify-between gap-3">
-        <div className="flex min-w-0 items-center gap-2.5">
-          <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-tone-lilac text-lav-text">{icon}</span>
-          <label htmlFor={id} className="min-w-0 truncate text-[14px] font-semibold">
-            {label}
-          </label>
+    <div>
+      <div className="mb-1.5 flex items-center justify-between">
+        <label htmlFor={id} className="block text-[12px] font-medium text-text-muted">
+          {label}
+        </label>
+        <div className="flex items-center gap-3">
+          {onRemove && value?.trim() && !confirming && (
+            <button
+              type="button"
+              onClick={() => setConfirming(true)}
+              aria-label={`Hapus ${label}`}
+              className="inline-flex items-center gap-1 text-[12px] font-medium text-bad-fg hover:brightness-110"
+            >
+              <Trash2 size={11} /> Hapus
+            </button>
+          )}
+          {onTest && (
+            <button
+              type="button"
+              onClick={onTest}
+              disabled={!value?.trim() || check.status === "checking"}
+              className="inline-flex items-center gap-1 text-[12px] font-medium text-lav-text hover:brightness-110 disabled:opacity-40"
+            >
+              {check.status === "checking" && <Loader2 size={11} className="animate-spin" />}
+              Test Koneksi
+            </button>
+          )}
         </div>
-        {saved ? (
-          <Badge tone="good">
-            <Check size={12} aria-hidden /> Tersimpan
-          </Badge>
-        ) : (
-          <Badge>Belum diisi</Badge>
-        )}
       </div>
-
+      {confirming && onRemove && (
+        <div
+          role="alert"
+          className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[var(--bad-bg)] px-3 py-2 text-[12px] text-bad-fg"
+        >
+          <span>Hapus {label} dari akunmu? Deploy ke platform ini tidak bisa jalan sampai diisi lagi.</span>
+          <span className="flex gap-3">
+            <button
+              type="button"
+              onClick={() => {
+                setConfirming(false);
+                onRemove();
+              }}
+              className="font-semibold text-bad-fg underline underline-offset-2"
+            >
+              Ya, hapus
+            </button>
+            <button type="button" onClick={() => setConfirming(false)} className="text-text-muted underline underline-offset-2">
+              Batal
+            </button>
+          </span>
+        </div>
+      )}
       <div className="relative">
         <input
           id={id}
           type={visible ? "text" : "password"}
-          placeholder="Tempel token di sini"
-          autoComplete="off"
-          spellCheck={false}
+          placeholder="••••••••••••••••••••"
           value={value ?? ""}
           onChange={(e) => onChange(e.target.value)}
-          aria-describedby={statusId}
-          className="input-solid mono h-11 w-full px-3.5 pr-12 text-[13px]"
+          className="input-solid mono h-11 w-full px-3.5 pr-11 text-[13px]"
         />
         <button
           type="button"
           onClick={() => setVisible((v) => !v)}
           aria-label={visible ? `Sembunyikan ${label}` : `Tampilkan ${label}`}
-          className="absolute right-1.5 top-1/2 grid h-9 w-9 -translate-y-1/2 place-items-center rounded-full text-text-muted hover:bg-[var(--row-hover)] hover:text-text"
+          className="absolute right-2 top-1/2 -translate-y-1/2 grid h-7 w-7 place-items-center rounded-full text-text-muted hover:bg-[var(--row-hover)] hover:text-text"
         >
-          {visible ? <EyeOff size={16} /> : <Eye size={16} />}
+          {visible ? <EyeOff size={15} /> : <Eye size={15} />}
         </button>
       </div>
-
-      <div className="mt-3 flex flex-wrap items-center gap-2">
-        <Btn
-          onClick={onTest}
-          busy={check.status === "checking"}
-          softDisabled
-          disabled={!hasValue}
-          onDisabledClick={() => showToast(`Isi ${label} dulu sebelum tes koneksi.`)}
-        >
-          <ShieldCheck size={13} /> Test Koneksi
-        </Btn>
-        {saved && !confirming && (
-          <Btn variant="danger" onClick={() => setConfirming(true)} aria-label={`Hapus ${label}`}>
-            <Trash2 size={13} /> Hapus
-          </Btn>
-        )}
-        <a
-          href={tokenUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="ml-auto inline-flex items-center gap-1 rounded-full px-2 py-1.5 text-[12px] font-medium text-lav-text underline-offset-4 hover:underline"
-        >
-          Ambil token <ExternalLink size={12} aria-hidden />
-          <span className="sr-only">(buka di tab baru)</span>
-        </a>
-      </div>
-
-      {confirming && (
-        <div
-          role="alert"
-          className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[var(--bad-bg)] px-3 py-2.5 text-[12.5px] text-bad-fg"
-        >
-          <span>Hapus {label} dari akunmu? Deploy ke platform ini tidak bisa jalan sampai diisi lagi.</span>
-          <span className="flex gap-2">
-            <Btn
-              variant="destructive"
-              onClick={() => {
-                setConfirming(false);
-                onRemove();
-              }}
-            >
-              Ya, hapus
-            </Btn>
-            <Btn onClick={() => setConfirming(false)}>Batal</Btn>
-          </span>
-        </div>
+      {check.status === "ok" && (
+        <p className="mt-1.5 inline-flex items-center gap-1.5 text-[12px] text-ok-fg">
+          <ShieldCheck size={13} /> {check.label}
+        </p>
       )}
-
-      <div id={statusId} aria-live="polite">
-        {check.status === "ok" && (
-          <p className="mt-3 inline-flex items-start gap-1.5 text-[12.5px] text-ok-fg">
-            <ShieldCheck size={14} className="mt-0.5 shrink-0" aria-hidden /> {check.label}
-          </p>
-        )}
-        {check.status === "error" && (
-          <p className="mt-3 inline-flex items-start gap-1.5 text-[12.5px] text-bad-fg">
-            <ShieldAlert size={14} className="mt-0.5 shrink-0" aria-hidden /> {check.message}
-          </p>
-        )}
-      </div>
+      {check.status === "error" && (
+        <p className="mt-1.5 inline-flex items-center gap-1.5 text-[12px] text-bad-fg">
+          <ShieldAlert size={13} /> {check.message}
+        </p>
+      )}
     </div>
   );
 }
 
-/** Baris saklar: ikon + judul + penjelasan di kiri, saklar di kanan. Klik judul juga menyalakan saklar. */
+/** Saklar on/off yang aksesibel (role="switch"). */
 function SwitchRow({
   id,
   icon,
@@ -211,17 +174,34 @@ function SwitchRow({
   return (
     <div className="flex items-center justify-between gap-4">
       <div className="flex min-w-0 items-start gap-3">
-        <div className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-tone-lilac text-text">{icon}</div>
+        <div className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-tone-lilac text-text">
+          {icon}
+        </div>
         <div className="min-w-0">
-          <label htmlFor={id} className="block cursor-pointer text-[14px] font-medium">
+          <label htmlFor={id} className="block cursor-pointer text-[13.5px] font-medium">
             {title}
           </label>
-          <p id={`${id}-desc`} className="text-[12.5px] leading-relaxed text-text-muted">
-            {description}
-          </p>
+          <p className="text-[12px] leading-relaxed text-text-muted">{description}</p>
         </div>
       </div>
-      <Switch id={id} checked={checked} onChange={onChange} aria-describedby={`${id}-desc`} />
+      <button
+        id={id}
+        type="button"
+        role="switch"
+        aria-checked={checked}
+        onClick={() => onChange(!checked)}
+        className={cn(
+          "relative h-7 w-12 shrink-0 rounded-full transition-colors",
+          checked ? "bg-[var(--ink-fill)]" : "bg-[var(--line-strong)]"
+        )}
+      >
+        <span
+          className={cn(
+            "absolute left-1 top-1 h-5 w-5 rounded-full bg-white shadow transition-transform duration-300 [transition-timing-function:var(--ease-soft)]",
+            checked ? "translate-x-5" : "translate-x-0"
+          )}
+        />
+      </button>
     </div>
   );
 }
@@ -232,90 +212,73 @@ const ANIMATION_OPTIONS: { value: DeployAnimation; label: string; hint: string; 
   { value: "kuli", label: "Kuli Proyek", hint: "Kuli dan mandor membangun gedung selagi deploy berjalan", icon: <HardHat size={16} /> },
 ];
 
-/** Preferensi tampilan jendela deploy. Tema gelap/terang sengaja tidak ada di sini: ganti lewat saklar di sidebar. */
-function DeploySettings() {
+function AppearanceSettings() {
+  const { resolvedTheme, setTheme } = useTheme();
+  const [mounted, setMounted] = React.useState(false);
   const [prefs, updatePrefs] = useDeployPreferences();
-  const optionRefs = React.useRef<(HTMLButtonElement | null)[]>([]);
 
-  /** Navigasi keyboard radio group: panah memindah sekaligus memilih, Tab hanya berhenti di pilihan aktif. */
-  function onKeyDown(e: React.KeyboardEvent, index: number) {
-    const last = ANIMATION_OPTIONS.length - 1;
-    let next = index;
-    if (e.key === "ArrowDown" || e.key === "ArrowRight") next = index === last ? 0 : index + 1;
-    else if (e.key === "ArrowUp" || e.key === "ArrowLeft") next = index === 0 ? last : index - 1;
-    else if (e.key === "Home") next = 0;
-    else if (e.key === "End") next = last;
-    else return;
-    e.preventDefault();
-    updatePrefs({ deployAnimation: ANIMATION_OPTIONS[next].value });
-    optionRefs.current[next]?.focus();
-  }
+  React.useEffect(() => setMounted(true), []);
+  const isLight = mounted && resolvedTheme === "light";
 
   return (
-    <Surface className="space-y-5 p-4 sm:p-6">
+    <Surface className="flex flex-col gap-4 p-4 sm:p-6">
       <div>
-        <h3 className="text-[16px] font-bold tracking-tight">Tampilan deploy</h3>
-        <p className="mt-0.5 text-[12.5px] text-text-muted">Langsung berlaku dan tersimpan di perangkat ini.</p>
+        <h3 className="text-[16px] font-bold tracking-tight">Tampilan</h3>
+        <p className="text-[12px] text-text-muted">Pengaturan ini tersimpan di perangkat ini.</p>
       </div>
 
-      <div role="radiogroup" aria-labelledby="deployAnimLabel">
-        <p id="deployAnimLabel" className="mb-2 text-[14px] font-medium">
-          Animasi loading
-        </p>
-        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1">
-          {ANIMATION_OPTIONS.map((opt, i) => {
+      <SwitchRow
+        id="settingsLightMode"
+        icon={isLight ? <Sun size={16} /> : <Moon size={16} />}
+        title="Mode terang"
+        description={isLight ? "Sedang memakai mode terang. Matikan untuk kembali ke mode gelap." : "Sedang memakai mode gelap. Nyalakan untuk mode terang."}
+        checked={isLight}
+        onChange={(v) => setTheme(v ? "light" : "dark")}
+      />
+
+      <div className="h-px bg-[var(--surface-line)]" />
+
+      <fieldset>
+        <legend className="mb-2 text-[13.5px] font-medium">Animasi loading deploy</legend>
+        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1" role="radiogroup" aria-label="Animasi loading deploy">
+          {ANIMATION_OPTIONS.map((opt) => {
             const selected = prefs.deployAnimation === opt.value;
             return (
               <button
                 key={opt.value}
-                ref={(el) => {
-                  optionRefs.current[i] = el;
-                }}
                 type="button"
                 role="radio"
                 aria-checked={selected}
-                tabIndex={selected ? 0 : -1}
                 onClick={() => updatePrefs({ deployAnimation: opt.value })}
-                onKeyDown={(e) => onKeyDown(e, i)}
                 className={cn(
                   "flex items-start gap-3 rounded-2xl p-3.5 text-left transition-colors",
                   selected
-                    ? "bg-violet-500 text-white [&_.text-text-muted]:!text-violet-100"
+                    ? "bg-violet-500 text-white [&_.text-text-muted]:!text-violet-100 [&_.text-lav-text]:!text-white"
                     : "bg-[var(--surface-solid-2)] hover:brightness-95"
                 )}
               >
-                <span className={cn("mt-0.5", selected ? "text-white" : "text-text-muted")} aria-hidden>
-                  {opt.icon}
-                </span>
-                <span className="min-w-0 flex-1">
-                  <span className="block text-[13.5px] font-medium">{opt.label}</span>
-                  <span className="block text-[12.5px] leading-relaxed text-text-muted">{opt.hint}</span>
-                </span>
-                <span
-                  aria-hidden
-                  className={cn(
-                    "mt-0.5 grid h-5 w-5 shrink-0 place-items-center rounded-full",
-                    selected ? "bg-white text-violet-600" : "border border-[var(--line-strong)]"
-                  )}
-                >
-                  {selected && <Check size={12} />}
+                <span className={cn("mt-0.5", selected ? "text-lav-text" : "text-text-muted")}>{opt.icon}</span>
+                <span>
+                  <span className="block text-[13px] font-medium">{opt.label}</span>
+                  <span className="block text-[12px] leading-relaxed text-text-muted">{opt.hint}</span>
                 </span>
               </button>
             );
           })}
         </div>
+      </fieldset>
+
+      <div className="mt-auto space-y-4">
+        <div className="h-px bg-[var(--surface-line)]" />
+        <SwitchRow
+          id="settingsDebugLog"
+          icon={<Bug size={16} />}
+          title="Tampilkan proses debug"
+          description="Munculkan log langkah demi langkah (tahap, status, dan pesan error) di jendela deploy. Berlaku untuk semua animasi."
+          checked={prefs.showDebug}
+          onChange={(v) => updatePrefs({ showDebug: v })}
+        />
       </div>
-
-      <div className="h-px bg-[var(--surface-line)]" />
-
-      <SwitchRow
-        id="settingsDebugLog"
-        icon={<Bug size={16} />}
-        title="Tampilkan proses debug"
-        description="Munculkan log langkah demi langkah (tahap, status, dan pesan error) di jendela deploy. Berlaku untuk semua animasi."
-        checked={prefs.showDebug}
-        onChange={(v) => updatePrefs({ showDebug: v })}
-      />
     </Surface>
   );
 }
@@ -351,26 +314,11 @@ export function SettingsView() {
     showToast(`${label} dihapus.`);
   }
 
-  const dirty = ready && FORM_FIELDS.some((f) => (draft[f] ?? "") !== (tokens[f] ?? ""));
-
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!dirty) return;
-    // Gabungkan ke token tersimpan supaya izin konektor Claude (mcpDeployPlatforms) tidak ikut tertimpa.
-    setTokens({ ...tokens, ...Object.fromEntries(FORM_FIELDS.map((f) => [f, draft[f] ?? ""])) });
+    setTokens(draft);
     showToast("Perubahan berhasil disimpan!");
   }
-
-  function handleReset() {
-    setDraft((prev) => ({ ...prev, ...Object.fromEntries(FORM_FIELDS.map((f) => [f, tokens[f] ?? ""])) }));
-    setVercelCheck({ status: "idle" });
-    setCloudflareCheck({ status: "idle" });
-    setCloudflareAccounts([]);
-    setGithubCheck({ status: "idle" });
-    setRailwayCheck({ status: "idle" });
-  }
-
-  const savedHas = (f: keyof SettingsTokens) => typeof tokens[f] === "string" && (tokens[f] as string).trim().length > 0;
 
   async function testVercel() {
     setVercelCheck({ status: "checking" });
@@ -440,143 +388,103 @@ export function SettingsView() {
   return (
     <ViewFade>
       <div className="space-y-4 sm:space-y-5">
-        <PageTitle
-          title="Settings"
-          desc="Token global dipakai otomatis saat kamu deploy project baru. Isi sekali, lalu klik Test Koneksi untuk memastikan token valid ke akunmu."
-        />
+        <div>
+          <PageTitle title="Settings" desc={<>Token global ini dipakai sebagai default saat kamu deploy project baru. Klik{" "}
+            <span className="font-medium text-text">Test Koneksi</span> untuk memastikan token-nya benar-benar
+            valid ke akun kamu.</>} />
+        </div>
 
-        <div className="grid items-start gap-4 sm:gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
-          <Surface className="p-4 sm:p-6">
-            <div className="mb-4">
-              <h3 className="flex items-center gap-2 text-[16px] font-bold tracking-tight">
-                <KeyRound size={16} aria-hidden /> Token platform
-              </h3>
-              <p className="mt-0.5 text-[12.5px] text-text-muted">
-                Tersimpan di akunmu dan hanya dipakai untuk deploy atas namamu.
-              </p>
-            </div>
-
-            <form onSubmit={handleSubmit} className="grid gap-3 md:grid-cols-2">
-              <TokenField
-                id="settingsVercelToken"
-                label="Vercel Token"
-                icon={<VercelIcon size={16} />}
-                tokenUrl="https://vercel.com/account/tokens"
-                saved={savedHas("vercelToken")}
-                value={draft.vercelToken}
-                onChange={(v) => {
-                  setDraft((prev) => ({ ...prev, vercelToken: v }));
-                  setVercelCheck({ status: "idle" });
-                }}
-                check={vercelCheck}
-                onTest={testVercel}
-                onRemove={() => removeToken("vercelToken", "Vercel Token", () => setVercelCheck({ status: "idle" }))}
-              />
-              <TokenField
-                id="settingsCloudflareToken"
-                label="Cloudflare Token"
-                icon={<CloudflareIcon size={16} />}
-                tokenUrl="https://dash.cloudflare.com/profile/api-tokens"
-                saved={savedHas("cloudflareToken")}
-                value={draft.cloudflareToken}
-                onChange={(v) => {
-                  setDraft((prev) => ({ ...prev, cloudflareToken: v }));
+        <div className="grid items-stretch gap-4 sm:gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
+        <Surface className="flex flex-col p-4 sm:p-6">
+          <form onSubmit={handleSubmit} className="flex flex-1 flex-col gap-4">
+          <div className="grid gap-x-5 gap-y-4 md:grid-cols-2">
+            <TokenField
+              id="settingsVercelToken"
+              label="Vercel Token"
+              value={draft.vercelToken}
+              onChange={(v) => {
+                setDraft((prev) => ({ ...prev, vercelToken: v }));
+                setVercelCheck({ status: "idle" });
+              }}
+              check={vercelCheck}
+              onTest={testVercel}
+              onRemove={() => removeToken("vercelToken", "Vercel Token", () => setVercelCheck({ status: "idle" }))}
+            />
+            <TokenField
+              id="settingsCloudflareToken"
+              label="Cloudflare Token"
+              value={draft.cloudflareToken}
+              onChange={(v) => {
+                setDraft((prev) => ({ ...prev, cloudflareToken: v }));
+                setCloudflareCheck({ status: "idle" });
+                setCloudflareAccounts([]);
+              }}
+              check={cloudflareCheck}
+              onTest={testCloudflare}
+              onRemove={() =>
+                removeToken("cloudflareToken", "Cloudflare Token", () => {
                   setCloudflareCheck({ status: "idle" });
                   setCloudflareAccounts([]);
-                }}
-                check={cloudflareCheck}
-                onTest={testCloudflare}
-                onRemove={() =>
-                  removeToken("cloudflareToken", "Cloudflare Token", () => {
-                    setCloudflareCheck({ status: "idle" });
-                    setCloudflareAccounts([]);
-                  })
-                }
-              />
-              {cloudflareAccounts.length > 1 && (
-                <div className="rounded-2xl bg-[var(--surface-solid-2)] p-4 md:col-span-2">
-                  <label htmlFor="cloudflareAccount" className="mb-1.5 block text-[13px] font-medium">
-                    Akun Cloudflare aktif
-                  </label>
-                  <select
-                    id="cloudflareAccount"
-                    value={draft.cloudflareAccountId}
-                    onChange={(e) => setDraft((prev) => ({ ...prev, cloudflareAccountId: e.target.value }))}
-                    className="input-solid h-11 w-full px-3.5 text-[13px]"
-                  >
-                    {cloudflareAccounts.map((a) => (
-                      <option key={a.id} value={a.id}>
-                        {a.name} — {a.id}
-                      </option>
-                    ))}
-                  </select>
-                  <p className="mt-1.5 text-[12px] text-text-muted">
-                    Token ini memiliki akses ke beberapa akun — pilih satu untuk dipakai deploy Cloudflare Pages.
-                  </p>
-                </div>
-              )}
-              <TokenField
-                id="settingsGithubPat"
-                label="GitHub PAT"
-                icon={<KeyRound size={16} />}
-                tokenUrl="https://github.com/settings/tokens/new"
-                saved={savedHas("githubPat")}
-                value={draft.githubPat}
-                onChange={(v) => {
-                  setDraft((prev) => ({ ...prev, githubPat: v }));
-                  setGithubCheck({ status: "idle" });
-                }}
-                check={githubCheck}
-                onTest={testGithub}
-                onRemove={() => removeToken("githubPat", "GitHub PAT", () => setGithubCheck({ status: "idle" }))}
-              />
-              <TokenField
-                id="settingsRailwayToken"
-                label="Railway Token"
-                icon={<RailwayIcon size={16} />}
-                tokenUrl="https://railway.com/account/tokens"
-                saved={savedHas("railwayToken")}
-                value={draft.railwayToken}
-                onChange={(v) => {
-                  setDraft((prev) => ({ ...prev, railwayToken: v }));
-                  setRailwayCheck({ status: "idle" });
-                }}
-                check={railwayCheck}
-                onTest={testRailway}
-                onRemove={() => removeToken("railwayToken", "Railway Token", () => setRailwayCheck({ status: "idle" }))}
-              />
-
-              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-[var(--surface-line)] pt-4 md:col-span-2">
-                <p role="status" className={cn("inline-flex items-center gap-1.5 text-[12.5px]", dirty ? "text-warn-fg" : "text-text-muted")}>
-                  {dirty ? (
-                    "Ada perubahan yang belum disimpan."
-                  ) : (
-                    <>
-                      <Check size={14} aria-hidden /> Semua perubahan tersimpan.
-                    </>
-                  )}
+                })
+              }
+            />
+            {cloudflareAccounts.length > 1 && (
+              <div className="md:col-span-2">
+                <label htmlFor="cloudflareAccount" className="mb-1.5 block text-[12px] font-medium text-text-muted">
+                  Akun Cloudflare aktif
+                </label>
+                <select
+                  id="cloudflareAccount"
+                  value={draft.cloudflareAccountId}
+                  onChange={(e) => setDraft((prev) => ({ ...prev, cloudflareAccountId: e.target.value }))}
+                  className="input-solid h-11 w-full px-3.5 text-[13px]"
+                >
+                  {cloudflareAccounts.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name} — {a.id}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1.5 text-[12px] text-text-faint">
+                  Token ini memiliki akses ke beberapa akun — pilih satu untuk dipakai deploy Cloudflare Pages.
                 </p>
-                <div className="flex w-full items-center gap-2 sm:w-auto">
-                  {dirty && (
-                    <Btn onClick={handleReset} className="flex-1 sm:flex-none">
-                      Batalkan
-                    </Btn>
-                  )}
-                  <Btn
-                    type="submit"
-                    variant="primary"
-                    softDisabled
-                    disabled={!dirty}
-                    className="flex-1 px-5 py-2.5 text-[13px] sm:flex-none"
-                  >
-                    <Save size={15} /> Simpan
-                  </Btn>
-                </div>
               </div>
-            </form>
-          </Surface>
+            )}
+            <TokenField
+              id="settingsGithubPat"
+              label="GitHub PAT"
+              value={draft.githubPat}
+              onChange={(v) => {
+                setDraft((prev) => ({ ...prev, githubPat: v }));
+                setGithubCheck({ status: "idle" });
+              }}
+              check={githubCheck}
+              onTest={testGithub}
+              onRemove={() => removeToken("githubPat", "GitHub PAT", () => setGithubCheck({ status: "idle" }))}
+            />
+            <TokenField
+              id="settingsRailwayToken"
+              label="Railway Token"
+              value={draft.railwayToken}
+              onChange={(v) => {
+                setDraft((prev) => ({ ...prev, railwayToken: v }));
+                setRailwayCheck({ status: "idle" });
+              }}
+              check={railwayCheck}
+              onTest={testRailway}
+              onRemove={() => removeToken("railwayToken", "Railway Token", () => setRailwayCheck({ status: "idle" }))}
+            />
 
-          <DeploySettings />
+          </div>
+            <div className="mt-auto">
+              <button type="submit" className="btn-primary inline-flex w-full items-center justify-center gap-2 px-5 py-2.5 text-[13px] sm:w-auto">
+                <Save size={15} /> Simpan
+              </button>
+            </div>
+          </form>
+        </Surface>
+
+        <AppearanceSettings />
         </div>
 
         <ClaudeConnectCard
