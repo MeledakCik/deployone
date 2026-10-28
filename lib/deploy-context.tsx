@@ -333,6 +333,7 @@ const DASHBOARD_VIEWS: readonly DashboardView[] = [
   "docs",
   "settings",
   "donate",
+  "community",
   "upload",
   "hosting",
   "ai",

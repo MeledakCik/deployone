@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { LayoutDashboard, FolderKanban, Rocket, UploadCloud, Link2, Sparkles, Globe2, KeyRound, BookOpen, Database, Settings2, Heart, LogOut, ShieldCheck } from "@/components/ui/icons";
+import { LayoutDashboard, FolderKanban, Rocket, UploadCloud, Link2, Sparkles, Globe2, KeyRound, BookOpen, Database, Settings2, Heart, Users, LogOut, ShieldCheck } from "@/components/ui/icons";
 import { useAuth } from "@/lib/auth-context";
 import { useDeploy } from "@/lib/deploy-context";
 import { AppSidebar, SIDEBAR_LINK_CLASS, type NavGroup } from "@/components/ui/AppSidebar";
@@ -47,6 +47,7 @@ export function Sidebar() {
         label: "Lainnya",
         items: [
           { id: "docs", label: "Docs", icon: BookOpen },
+          { id: "community", label: "Komunitas", icon: Users },
           { id: "donate", label: "Donasi", icon: Heart },
         ],
       },

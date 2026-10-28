@@ -33,6 +33,7 @@ const TITLES: Record<string, string> = {
   "/m/env": "Environment",
   "/m/pengaturan": "Pengaturan",
   "/m/donasi": "Donasi",
+  "/m/komunitas": "Komunitas",
   "/m/docs": "Dokumentasi",
 };
 
@@ -45,6 +46,7 @@ const VIEW_ROUTE: Record<string, string> = {
   docs: "/m/docs",
   settings: "/m/pengaturan",
   donate: "/m/donasi",
+  community: "/m/komunitas",
   upload: "/m/upload",
   hosting: "/m/link-instan",
   ai: "/m/ai",

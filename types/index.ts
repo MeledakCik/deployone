@@ -108,6 +108,7 @@ export type DashboardView =
   | "docs"
   | "settings"
   | "donate"
+  | "community"
   | "upload"
   | "hosting"
   | "ai"

@@ -1,5 +1,6 @@
 import { DashboardLink } from "./DashboardLink";
 import { ArrowRight } from "@/components/ui/icons";
+import { WA_CHANNEL_URL } from "@/lib/community";
 
 /**
  * Kartu penutup berwarna Midnight: permukaan gelap yang sama dengan dashboard mode gelap,
@@ -35,6 +36,12 @@ export function FinalCTA() {
               Buka dashboard
               <ArrowRight size={18} />
             </DashboardLink>
+            <p className="mt-5 text-[14px] text-night-80">
+              Mau ikut kabar terbarunya?{" "}
+              <a href={WA_CHANNEL_URL} target="_blank" rel="noopener noreferrer" className="font-semibold text-white underline underline-offset-4">
+                Ikuti saluran WhatsApp
+              </a>
+            </p>
           </div>
 
           <ul className="flex w-full min-w-[260px] flex-col gap-3 lg:mt-24 lg:w-auto">

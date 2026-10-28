@@ -1,11 +1,12 @@
 "use client";
 
 import * as React from "react";
-import { Boxes, CheckCircle2, XCircle, Plus, Rocket, UploadCloud, AlertTriangle } from "@/components/ui/icons";
+import { Boxes, CheckCircle2, XCircle, Plus, Rocket, UploadCloud, AlertTriangle, X, Users } from "@/components/ui/icons";
 import { useDeploy } from "@/lib/deploy-context";
 import { useAuth } from "@/lib/auth-context";
 import { ViewFade } from "@/components/ui/ViewFade";
 import { Btn, Card, Empty, KpiCard, PageHead, Skeleton } from "@/components/ui/primitives";
+import { WA_COMMUNITY_URL, openExternal } from "@/lib/community";
 import { HistoryTable, HistoryTableSkeleton, type HistoryFilter } from "./HistoryTable";
 
 export function DashboardHomeView() {
@@ -13,6 +14,24 @@ export function DashboardHomeView() {
   const { user } = useAuth();
   const [filter, setFilter] = React.useState<HistoryFilter>("all");
   const tableRef = React.useRef<HTMLDivElement>(null);
+
+  // Ajakan gabung komunitas: tampil sekali setelah ada deploy yang berhasil, hilang selamanya bila ditutup.
+  const [communityHidden, setCommunityHidden] = React.useState(true);
+  React.useEffect(() => {
+    try {
+      setCommunityHidden(window.localStorage.getItem("depup:community-card") === "dismissed");
+    } catch {
+      setCommunityHidden(false);
+    }
+  }, []);
+  const dismissCommunity = React.useCallback(() => {
+    setCommunityHidden(true);
+    try {
+      window.localStorage.setItem("depup:community-card", "dismissed");
+    } catch {
+      /* storage tidak tersedia */
+    }
+  }, []);
 
   const firstName = user?.name?.trim().split(/\s+/)[0] ?? "Developer";
   const latest = history[0];
@@ -103,6 +122,47 @@ export function DashboardHomeView() {
                 </Btn>
               )}
               <Btn onClick={() => pick("failed")}>Lihat yang gagal</Btn>
+              <a
+                href={WA_COMMUNITY_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => openExternal(e, WA_COMMUNITY_URL)}
+                className="inline-flex items-center px-2 text-[13px] font-semibold underline underline-offset-4"
+              >
+                Tanya di komunitas
+              </a>
+            </div>
+          </div>
+        )}
+
+        {stats.ready > 0 && !communityHidden && (
+          <div className="notice notice-info flex-wrap items-center !rounded-[28px] !p-5" role="region" aria-label="Ajakan gabung komunitas">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[var(--tone-chip)]">
+              <Users size={20} />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[16px] font-bold tracking-tight">Deploy pertamamu sudah online 🎉</p>
+              <p className="mt-0.5 text-[13px]">Gabung komunitas DepUp untuk dapat kabar fitur baru dan bantuan dari sesama pengguna.</p>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <a
+                href={WA_COMMUNITY_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={(e) => {
+                  openExternal(e, WA_COMMUNITY_URL);
+                  dismissCommunity();
+                }}
+                className="btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-[13.5px]"
+              >
+                Gabung komunitas
+              </a>
+              <button type="button" onClick={() => setView("community")} className="px-2 text-[13px] font-semibold underline underline-offset-4">
+                Lihat semua
+              </button>
+              <button type="button" aria-label="Tutup ajakan" onClick={dismissCommunity} className="grid h-8 w-8 place-items-center rounded-full opacity-80 hover:opacity-100">
+                <X size={15} />
+              </button>
             </div>
           </div>
         )}

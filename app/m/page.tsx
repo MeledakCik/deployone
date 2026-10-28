@@ -3,7 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import {
-  Rocket, CloudUpload, Zap, Sparkles, Globe, KeyRound, BookOpen, Coffee, PlusCircle, Inbox,
+  Rocket, CloudUpload, Zap, Sparkles, Globe, KeyRound, BookOpen, Coffee, PlusCircle, Inbox, Users,
 } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useUserData } from "@/lib/m-data";
@@ -20,6 +20,7 @@ const ACTIONS = [
   { href: "/m/domain", label: "Domain", Icon: Globe, grad: "from-[#3B82F6] to-[#6366F1]" },
   { href: "/m/env", label: "Env Secret", Icon: KeyRound, grad: "from-[#A78BFA] to-[#8B5CF6]" },
   { href: "/m/panduan", label: "Panduan", Icon: BookOpen, grad: "from-[#059669] to-[#10B981]" },
+  { href: "/m/komunitas", label: "Komunitas", Icon: Users, grad: "from-[#22C55E] to-[#16A34A]" },
   { href: "/m/donasi", label: "Donasi", Icon: Coffee, grad: "from-[#F59E0B] to-[#F97316]" },
 ] as const;
 

@@ -1,16 +1,17 @@
+import * as React from "react";
 import Image from "next/image";
 import { DashboardLink } from "./DashboardLink";
-import { InstagramIcon, TikTokIcon, XIcon } from "./SocialIcons";
+import { InstagramIcon, LinkedInIcon, TikTokIcon, WhatsAppIcon } from "./SocialIcons";
+import { COMMUNITY_LINKS, type CommunityKey } from "@/lib/community";
 
-/**
- * Akun media sosial Depup. Ganti lewat env (NEXT_PUBLIC_*_URL) tanpa mengubah kode.
- * Nilai bawaan di bawah adalah tebakan dari handle @depup di metadata, sesuaikan kalau akunmu beda.
- */
-const SOCIALS = [
-  { label: "Instagram", href: process.env.NEXT_PUBLIC_INSTAGRAM_URL || "https://instagram.com/depup", Icon: InstagramIcon },
-  { label: "TikTok", href: process.env.NEXT_PUBLIC_TIKTOK_URL || "https://www.tiktok.com/@depup", Icon: TikTokIcon },
-  { label: "X (Twitter)", href: process.env.NEXT_PUBLIC_TWITTER_URL || "https://x.com/depup", Icon: XIcon },
-];
+/** Akun resmi DepUp. Daftar tautannya ada di lib/community.ts. */
+const ICONS: Record<CommunityKey, React.ComponentType<{ size?: number }>> = {
+  "wa-channel": WhatsAppIcon,
+  "wa-community": WhatsAppIcon,
+  instagram: InstagramIcon,
+  tiktok: TikTokIcon,
+  linkedin: LinkedInIcon,
+};
 
 /** Footer berada di atas kanvas ungu, jadi teksnya putih (token sidebar), bukan Ink. */
 export function Footer() {
@@ -26,8 +27,10 @@ export function Footer() {
             Dashboard untuk deploy dan kelola project di Vercel, Cloudflare Pages, dan Railway.
           </p>
           <ul className="mt-1 flex items-center gap-2" aria-label="Media sosial Depup">
-            {SOCIALS.map(({ label, href, Icon }) => (
-              <li key={label}>
+            {COMMUNITY_LINKS.map(({ key, label, href }) => {
+              const Icon = ICONS[key];
+              return (
+              <li key={key}>
                 <a
                   href={href}
                   target="_blank"
@@ -40,7 +43,8 @@ export function Footer() {
                   <Icon size={18} />
                 </a>
               </li>
-            ))}
+              );
+            })}
           </ul>
         </div>
 
