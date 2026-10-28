@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { consumeCode, getEpoch, isAccountBlocked, jsonCors, preflight } from "@/app/api/_lib/mcp-auth";
+import { consumeCode, getEpoch, isAccountBlocked, isClientCidRevoked, jsonCors, preflight } from "@/app/api/_lib/mcp-auth";
 import {
   ACCESS_TTL_SECONDS,
   MCP_SCOPE,
@@ -8,8 +8,9 @@ import {
   mcpResourceUrl,
   signAccessToken,
   signRefreshToken,
-  verifyClient,
+  verifyClientSecret,
   verifyCode,
+  verifyCustomClient,
   verifyPkce,
   verifyRefreshToken,
 } from "@/app/api/_lib/mcp-token";
@@ -22,6 +23,24 @@ export const OPTIONS = () => preflight();
 
 const oauthError = (error: string, description: string, status = 400) => jsonCors({ error, error_description: description }, status);
 
+/** Baca client_id & client_secret dari header Authorization: Basic (jika ada). */
+function readBasicAuth(req: NextRequest): { clientId?: string; clientSecret?: string } {
+  const auth = req.headers.get("authorization") ?? "";
+  const m = /^Basic\s+(\S+)$/i.exec(auth);
+  if (!m) return {};
+  try {
+    const decoded = Buffer.from(m[1], "base64").toString("utf-8");
+    const colon = decoded.indexOf(":");
+    if (colon === -1) return {};
+    return {
+      clientId: decodeURIComponent(decoded.slice(0, colon)),
+      clientSecret: decodeURIComponent(decoded.slice(colon + 1)),
+    };
+  } catch {
+    return {};
+  }
+}
+
 /** Body bisa form-urlencoded (standar OAuth) atau JSON (beberapa klien). */
 async function readParams(req: NextRequest): Promise<Record<string, string>> {
   const type = req.headers.get("content-type") ?? "";
@@ -33,24 +52,31 @@ async function readParams(req: NextRequest): Promise<Record<string, string>> {
     const form = new URLSearchParams(await req.text());
     form.forEach((v, k) => (out[k] = v));
   }
+  const basic = readBasicAuth(req);
+  if (!out.client_id && basic.clientId) out.client_id = basic.clientId;
+  if (!out.client_secret && basic.clientSecret) out.client_secret = basic.clientSecret;
   return out;
 }
 
 async function issue(email: string, clientId: string) {
   const ep = await getEpoch(email);
   const cid = clientFingerprint(clientId);
-  return { ep, cid, body: {
-    access_token: signAccessToken(email, cid, ep),
-    token_type: "Bearer",
-    expires_in: ACCESS_TTL_SECONDS,
-    refresh_token: signRefreshToken(email, cid, ep),
-    scope: MCP_SCOPE,
-  } };
+  return {
+    ep,
+    cid,
+    body: {
+      access_token: signAccessToken(email, cid, ep),
+      token_type: "Bearer",
+      expires_in: ACCESS_TTL_SECONDS,
+      refresh_token: signRefreshToken(email, cid, ep),
+      scope: MCP_SCOPE,
+    },
+  };
 }
 
 /**
- * POST /api/mcp/oauth/token — tukar kode otorisasi (+ PKCE) atau refresh token jadi access token.
- * Client publik: tanpa client_secret; keamanan bertumpu pada PKCE S256 dan redirect_uri yang terdaftar.
+ * POST /api/mcp/oauth/token — tukar kode otorisasi (+ PKCE), refresh token, atau client_credentials jadi access token.
+ * Mendukung baik public client (tanpa secret, wajib PKCE S256) maupun Custom OAuth Client (dengan client_secret).
  */
 export async function POST(req: NextRequest) {
   const rl = await rateLimit("mcp-token", `ip:${clientIp(req)}`, 60, 60);
@@ -64,9 +90,20 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const client = verifyClient(p.client_id);
+    const client = verifyCustomClient(p.client_id);
     if (!client) return oauthError("invalid_client", "client_id tidak dikenal.", 401);
     const cid = clientFingerprint(p.client_id);
+
+    if (await isClientCidRevoked(cid)) {
+      return oauthError("invalid_client", "OAuth client ini sudah dihapus atau dicabut.", 401);
+    }
+
+    // Jika client memiliki client_secret (sh) dan client_secret dikirim (atau grant_type=client_credentials), wajib cocok.
+    if (client.sh && p.client_secret !== undefined) {
+      if (!verifyClientSecret(p.client_secret, client.sh)) {
+        return oauthError("invalid_client", "client_secret tidak valid.", 401);
+      }
+    }
 
     if (p.resource) {
       const want = mcpResourceUrl(appOrigin(req.headers.get("host")));
@@ -97,7 +134,20 @@ export async function POST(req: NextRequest) {
       return jsonCors((await issue(rt.email, p.client_id)).body);
     }
 
-    return oauthError("unsupported_grant_type", "Gunakan authorization_code atau refresh_token.");
+    if (p.grant_type === "client_credentials") {
+      if (!client.custom || !client.owner || !client.sh) {
+        return oauthError("unauthorized_client", "grant_type client_credentials hanya didukung untuk Custom OAuth Client dengan client_secret.", 400);
+      }
+      if (!verifyClientSecret(p.client_secret, client.sh)) {
+        return oauthError("invalid_client", "client_secret wajib diisi dan harus valid untuk client_credentials.", 401);
+      }
+      if (await isAccountBlocked(client.owner)) {
+        return oauthError("access_denied", "Akun ini dinonaktifkan oleh admin Depup.", 403);
+      }
+      return jsonCors((await issue(client.owner, p.client_id)).body);
+    }
+
+    return oauthError("unsupported_grant_type", "Gunakan authorization_code, refresh_token, atau client_credentials.");
   } catch (e) {
     console.error("[mcp] token error", (e as Error)?.message);
     return oauthError("server_error", "Terjadi kesalahan di server. Coba lagi sebentar lagi.", 500);

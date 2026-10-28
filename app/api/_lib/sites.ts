@@ -256,6 +256,19 @@ const CHUNK_CACHE_TTL_MS = 60_000;
 const chunkCache = new Map<string, { buf: Buffer; until: number }>();
 let chunkCacheBytes = 0;
 
+/** Bersihkan cache memori (meta + chunk) saat situs diperbarui in-place atau dihapus. */
+export function invalidateSiteCache(id: string, maxChunks = 100): void {
+  siteCache.delete(id);
+  for (let i = 0; i < maxChunks; i++) {
+    const key = kSiteChunk(id, i);
+    const hit = chunkCache.get(key);
+    if (hit) {
+      chunkCache.delete(key);
+      chunkCacheBytes -= hit.buf.length;
+    }
+  }
+}
+
 function chunkCacheGet(key: string): Buffer | null {
   const hit = chunkCache.get(key);
   if (!hit) return null;
@@ -311,6 +324,7 @@ export async function readSiteFile(meta: SiteMeta, file: SiteFile): Promise<Buff
 }
 
 export async function deleteSiteData(meta: SiteMeta): Promise<void> {
+  invalidateSiteCache(meta.id, meta.chunkCount);
   const keys = [kSiteMeta(meta.id), kSiteStat(meta.id), kSiteVisitors(meta.id)];
   for (let i = 0; i < meta.chunkCount; i++) keys.push(kSiteChunk(meta.id, i));
   await kv.del(...keys);

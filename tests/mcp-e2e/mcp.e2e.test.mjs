@@ -1,8 +1,9 @@
-// Uji ujung-ke-ujung konektor MCP (OAuth + tools) dengan KV tiruan di memori — tanpa Redis/Supabase/jaringan.
+// Uji ujung-ke-ujung konektor MCP (OAuth, Custom OAuth + tools interaktif) dengan KV tiruan di memori — tanpa Redis/Supabase/jaringan.
 // Jalankan dari root project:
 //   node --experimental-strip-types --import ./tests/mcp-e2e/register.mjs --test tests/mcp-e2e/mcp.e2e.test.mjs
 import test from "node:test";
 import assert from "node:assert/strict";
+import zlib from "node:zlib";
 import { createHash, randomBytes } from "node:crypto";
 
 process.env.AUTH_SECRET = "test-secret-test-secret-123456";
@@ -25,7 +26,7 @@ const CB = "https://claude.ai/api/mcp/auth_callback";
 const sessionCookie = (email) => `depup_session=${signSession({ email, name: "T", picture: null, exp: Math.floor(Date.now() / 1000) + 600 })}`;
 const req = (path, init = {}) => new NextRequest(`https://${HOST}${path}`, { ...init, headers: { host: HOST, ...(init.headers || {}) } });
 const json = (path, body, headers = {}, method = "POST") => req(path, { method, body: JSON.stringify(body), headers: { "content-type": "application/json", ...headers } });
-const form = (path, obj) => req(path, { method: "POST", body: new URLSearchParams(obj).toString(), headers: { "content-type": "application/x-www-form-urlencoded" } });
+const form = (path, obj, headers = {}) => req(path, { method: "POST", body: new URLSearchParams(obj).toString(), headers: { "content-type": "application/x-www-form-urlencoded", ...headers } });
 const b64url = (b) => Buffer.from(b).toString("base64url");
 
 async function connect(email = "user@example.com") {
@@ -64,6 +65,7 @@ test("metadata OAuth benar", async () => {
   const a = await (await asm.GET(req("/.well-known/oauth-authorization-server"))).json();
   assert.equal(a.authorization_endpoint, "https://depup.cloud/connect/authorize");
   assert.deepEqual(a.code_challenge_methods_supported, ["S256"]);
+  assert.ok(a.grant_types_supported.includes("client_credentials"));
 });
 
 test("tanpa token -> 401 dengan WWW-Authenticate menunjuk metadata", async () => {
@@ -96,7 +98,10 @@ test("alur penuh: initialize, tools/list, deploy, list, delete", async () => {
   assert.equal(note.status, 202);
 
   const list = await (await rpc(t.access_token, "tools/list", {})).json();
-  assert.deepEqual(list.result.tools.map((x) => x.name), ["deploy_website", "list_websites", "delete_website", "connector_status", "deploy_project"]);
+  assert.deepEqual(
+    list.result.tools.map((x) => x.name),
+    ["deploy_website", "update_website", "inspect_website", "list_websites", "delete_website", "connector_status", "deploy_project"],
+  );
   for (const x of list.result.tools) assert.ok(x.annotations && x.inputSchema.type === "object");
 
   const html = "<!doctype html><title>Warung</title><link rel=stylesheet href=css/s.css><h1>Kopi</h1>";
@@ -133,6 +138,164 @@ test("alur penuh: initialize, tools/list, deploy, list, delete", async () => {
   assert.equal((await call(t.access_token, "list_websites", {})).structuredContent.sites.length, 0);
 });
 
+test("upload bertahap (append_files, multi-page files, patches) & inspect_website untuk index.html besar/banyak", async () => {
+  const { t } = await connect("staged@example.com");
+  const { loadSite, readSiteFile } = await import(`${R}/api/_lib/sites.ts`);
+
+  // 1) Deploy kerangka awal index.html yang belum selesai (simulasi file besar dibagi 2)
+  const part1 = "<!doctype html><html><head><title>Toko Besar</title><link rel=\"stylesheet\" href=\"css/main.css\"></head><body><h1>Judul Lama</h1>";
+  const d = await call(t.access_token, "deploy_website", {
+    name: "toko-besar",
+    files: [{ path: "index.html", content: part1 }],
+  });
+  assert.ok(!d.isError, JSON.stringify(d));
+  const siteId = d.structuredContent.id;
+  const originalUrl = d.structuredContent.url;
+  // Diagnostik memberi tahu bahwa css/main.css belum diupload
+  assert.ok(d.structuredContent.warnings.some((w) => w.includes("css/main.css")));
+
+  // 2) Sambung sisa index.html dengan append_files + tambahkan halaman kedua (tentang/index.html) & css/main.css
+  const part2 = "<p>Konten lanjutan yang sangat panjang</p><a href=\"tentang/index.html\">Tentang</a></body></html>";
+  const u1 = await call(t.access_token, "update_website", {
+    site_id: siteId,
+    append_files: [{ path: "index.html", content: part2 }],
+    files: [
+      { path: "css/main.css", content: "body{margin:0}" },
+      { path: "tentang/index.html", content: "<!doctype html><html><body><h1>Tentang Kami</h1></body></html>" },
+    ],
+  });
+  assert.ok(!u1.isError, JSON.stringify(u1));
+  assert.equal(u1.structuredContent.url, originalUrl, "URL tidak boleh berubah saat update_website");
+  assert.equal(u1.structuredContent.fileCount, 3);
+  assert.equal(u1.structuredContent.warnings.length, 0, "Semua link harus sudah valid setelah file ditambahkan");
+
+  // 3) Edit cepat (patches) pada index.html tanpa meng-upload ulang seluruh isi
+  const u2 = await call(t.access_token, "update_website", {
+    site_id: siteId,
+    patches: [{ path: "index.html", find: "<h1>Judul Lama</h1>", replace: "<h1>Judul Baru Interaktif</h1>" }],
+  });
+  assert.ok(!u2.isError, JSON.stringify(u2));
+
+  const meta = await loadSite(siteId);
+  const finalIndex = (await readSiteFile(meta, meta.files.find((f) => f.p === "index.html"))).toString("utf8");
+  assert.ok(finalIndex.includes("<h1>Judul Baru Interaktif</h1>"));
+  assert.ok(finalIndex.includes("<p>Konten lanjutan yang sangat panjang</p>"));
+
+  // 4) Inspect website + baca isi index.html
+  const insp = await call(t.access_token, "inspect_website", {
+    site_id: siteId,
+    read_path: "index.html",
+    start_line: 1,
+    end_line: 5,
+  });
+  assert.ok(!insp.isError, JSON.stringify(insp));
+  assert.equal(insp.structuredContent.fileCount, 3);
+  assert.ok(insp.structuredContent.fileContent.content.includes("Judul Baru Interaktif"));
+
+  // 5) Test kompresi gzip+base64 & auto_strip_prefix pada deploy_website
+  const gzContent = zlib.gzipSync(Buffer.from("<!doctype html><html><body>Gzipped HTML</body></html>")).toString("base64");
+  const dGz = await call(t.access_token, "deploy_website", {
+    auto_strip_prefix: true,
+    replace_site_id: siteId,
+    files: [{ path: "dist/index.html", content: gzContent, encoding: "gzip+base64" }],
+  });
+  assert.ok(!dGz.isError, JSON.stringify(dGz));
+  const metaGz = await loadSite(dGz.structuredContent.id);
+  assert.equal((await readSiteFile(metaGz, metaGz.files[0])).toString("utf8"), "<!doctype html><html><body>Gzipped HTML</body></html>");
+
+  await call(t.access_token, "delete_website", { site_id: dGz.structuredContent.id });
+});
+
+test("Custom OAuth di Settings: buat OAuth sendiri, tukar token dengan secret / client_credentials, dan cabut per-client", async () => {
+  const email = "oauth-owner@example.com";
+  const ck = { cookie: sessionCookie(email) };
+
+  // 1) Buat Custom OAuth Client lewat endpoint Settings (/api/mcp/connect action: create_oauth)
+  const createRes = await conn.POST(
+    json(
+      "/api/mcp/connect",
+      {
+        action: "create_oauth",
+        name: "Claude Custom Pribadi",
+        redirectUris: ["https://claude.ai/api/mcp/auth_callback", "https://my-agent.example.com/oauth/cb"],
+        withSecret: true,
+      },
+      ck,
+    ),
+  );
+  assert.equal(createRes.status, 200);
+  const created = (await createRes.json()).data;
+  assert.equal(created.client.name, "Claude Custom Pribadi");
+  assert.ok(created.client.clientId);
+  assert.ok(created.clientSecret && created.clientSecret.startsWith("depup_cs_"));
+
+  // 2) GET /api/mcp/connect mengembalikan daftar customClients
+  const listRes = await conn.GET(req("/api/mcp/connect", { headers: ck }));
+  assert.equal(listRes.status, 200);
+  const listData = (await listRes.json()).data;
+  assert.equal(listData.customClients.length, 1);
+  assert.equal(listData.customClients[0].id, created.client.id);
+
+  // 3) Alur authorization_code dengan Custom Redirect URI + client_secret
+  const customCb = "https://my-agent.example.com/oauth/cb";
+  const verifier = b64url(randomBytes(32));
+  const challenge = b64url(createHash("sha256").update(verifier).digest());
+  const authParams = {
+    client_id: created.client.clientId,
+    redirect_uri: customCb,
+    response_type: "code",
+    code_challenge: challenge,
+    code_challenge_method: "S256",
+    state: "custom-1",
+  };
+  const ap = await conn.POST(json("/api/mcp/connect", { action: "approve", params: authParams }, ck));
+  assert.equal(ap.status, 200);
+  const code = new URL((await ap.json()).data.redirectTo).searchParams.get("code");
+
+  // Secret salah harus ditolak 401
+  const badSec = await tok.POST(
+    form("/api/mcp/oauth/token", {
+      grant_type: "authorization_code",
+      code,
+      redirect_uri: customCb,
+      code_verifier: verifier,
+      client_id: created.client.clientId,
+      client_secret: "depup_cs_salah_sekali",
+    }),
+  );
+  assert.equal(badSec.status, 401);
+
+  // Secret benar lolos
+  const goodSec = await tok.POST(
+    form("/api/mcp/oauth/token", {
+      grant_type: "authorization_code",
+      code,
+      redirect_uri: customCb,
+      code_verifier: verifier,
+      client_id: created.client.clientId,
+      client_secret: created.clientSecret,
+    }),
+  );
+  assert.equal(goodSec.status, 200);
+  const tokenFromCode = await goodSec.json();
+  assert.equal((await rpc(tokenFromCode.access_token, "ping", {})).status, 200);
+
+  // 4) Alur grant_type=client_credentials (Basic Auth maupun body)
+  const basicHeader = Buffer.from(`${encodeURIComponent(created.client.clientId)}:${encodeURIComponent(created.clientSecret)}`).toString("base64");
+  const ccRes = await tok.POST(
+    form("/api/mcp/oauth/token", { grant_type: "client_credentials" }, { authorization: `Basic ${basicHeader}` }),
+  );
+  assert.equal(ccRes.status, 200);
+  const ccTok = await ccRes.json();
+  assert.equal((await rpc(ccTok.access_token, "ping", {})).status, 200);
+
+  // 5) Hapus Custom OAuth Client -> semua token dari client tersebut langsung dicabut (401)
+  const delRes = await conn.POST(json("/api/mcp/connect", { action: "delete_oauth", id: created.client.id }, ck));
+  assert.equal(delRes.status, 200);
+  assert.equal((await rpc(ccTok.access_token, "ping", {})).status, 401);
+  assert.equal((await rpc(tokenFromCode.access_token, "ping", {})).status, 401);
+});
+
 test("validasi file: pesan error jelas & tidak memakan kuota", async () => {
   const { t } = await connect("val@example.com");
   const run = (files, extra = {}) => call(t.access_token, "deploy_website", { files, ...extra });
@@ -157,11 +320,13 @@ test("kuota per akun ditegakkan (default 3)", async () => {
   assert.match(over.content[0].text, /maksimal 3/);
 });
 
-test("isolasi antar-user: tidak bisa hapus/ganti situs orang lain", async () => {
+test("isolasi antar-user: tidak bisa hapus/ganti/update situs orang lain", async () => {
   const a = (await connect("a@example.com")).t.access_token;
   const b = (await connect("b@example.com")).t.access_token;
   const site = (await call(a, "deploy_website", { files: [{ path: "index.html", content: "A" }] })).structuredContent.id;
   assert.ok((await call(b, "delete_website", { site_id: site })).isError);
+  assert.ok((await call(b, "update_website", { site_id: site, files: [{ path: "index.html", content: "HACK" }] })).isError);
+  assert.ok((await call(b, "inspect_website", { site_id: site })).isError);
   assert.ok((await call(b, "deploy_website", { files: [{ path: "index.html", content: "B" }], replace_site_id: site })).isError);
   assert.equal((await call(b, "list_websites", {})).structuredContent.sites.length, 0);
   assert.equal((await call(a, "list_websites", {})).structuredContent.sites.length, 1);
@@ -238,8 +403,13 @@ test("persetujuan menolak parameter berbahaya", async () => {
   assert.match((await deny.json()).data.redirectTo, /error=access_denied.*state=s|state=s.*error=access_denied/);
 });
 
-test("JSON-RPC: method asing, tool asing, JSON rusak, batch, GET", async () => {
+test("JSON-RPC: prompts interaktif, method asing, tool asing, JSON rusak, batch, GET", async () => {
   const { t } = await connect("rpc@example.com");
+  const prompts = await (await rpc(t.access_token, "prompts/list", {})).json();
+  assert.equal(prompts.result.prompts.length, 3);
+  const pGet = await (await rpc(t.access_token, "prompts/get", { name: "upload-website-besar", arguments: { topik: "Kopi" } })).json();
+  assert.ok(pGet.result.messages[0].content.text.includes("Kopi"));
+
   assert.equal((await (await rpc(t.access_token, "resources/list", {})).json()).error.code, -32601);
   assert.equal((await (await rpc(t.access_token, "tools/call", { name: "nope", arguments: {} })).json()).error.code, -32602);
   const broken = await mcp.POST(req("/api/mcp", { method: "POST", body: "{bukan json", headers: { authorization: `Bearer ${t.access_token}`, "content-type": "application/json" } }));
@@ -253,13 +423,14 @@ test("JSON-RPC: method asing, tool asing, JSON rusak, batch, GET", async () => {
   assert.equal(init.result.protocolVersion, "2025-06-18");
 });
 
-test("Origin: tanpa Origin / Claude / loopback diizinkan, selain itu 403 (syarat direktori Claude)", async () => {
+test("Origin: tanpa Origin / Claude / Depup sendiri / loopback diizinkan, selain itu 403 (syarat direktori Claude)", async () => {
   const { t } = await connect("origin@example.com");
   const at = { authorization: `Bearer ${t.access_token}` };
   const ping = (origin) => mcp.POST(json("/api/mcp", { jsonrpc: "2.0", id: 1, method: "ping" }, origin === undefined ? at : { ...at, origin }));
   assert.equal((await ping(undefined)).status, 200); // server Claude tidak mengirim Origin
   assert.equal((await ping("https://claude.ai")).status, 200);
   assert.equal((await ping("https://claude.com")).status, 200);
+  assert.equal((await ping("https://depup.cloud")).status, 200); // tombol Test Konektor di Settings
   assert.equal((await ping("http://localhost:6274")).status, 200); // MCP Inspector
   for (const bad of ["https://evil.example", "https://claude.ai.evil.example", "http://claude.ai", "null", "bukan-url"]) {
     const r = await ping(bad);

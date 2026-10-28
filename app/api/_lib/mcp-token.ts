@@ -1,30 +1,28 @@
 import crypto from "crypto";
 
 /**
- * Konektor MCP (Claude web & app HP -> Depup): token OAuth 2.1 tanpa-state.
+ * Konektor MCP (Claude, OpenCode, Cursor, Codex, Gemini & Custom OAuth -> Depup):
+ * token OAuth 2.1 tanpa-state + Custom OAuth Client + Long-Lived Bearer Token untuk konfigurasi CLI/IDE.
  *
  * Alur singkat:
- *  1. Claude mendaftar sebagai client (POST /api/mcp/oauth/register) -> `client_id` = token bertanda tangan
- *     yang membawa nama + redirect_uri (tidak ada yang disimpan di database).
+ *  1. Klien AI (Claude, Cursor, OpenCode, Codex, Gemini) mendaftar sebagai client (POST /api/mcp/oauth/register)
+ *     ATAU user membuat Custom OAuth Client / Bearer Token sendiri di Settings ("Buat OAuth Sendiri").
  *  2. User login Google di Depup lalu menekan "Izinkan" di /connect/authorize -> `code` sekali pakai (PKCE S256).
- *  3. Claude menukar code di /api/mcp/oauth/token -> access token (1 jam) + refresh token (30 hari).
- *  4. Claude memanggil /api/mcp dengan `Authorization: Bearer <access token>`.
- *
- * Pengamanan:
- *  - Kunci tanda tangan dipisah (domain separation, awalan "depup-mcp:") dari cookie session: token MCP TIDAK
- *    akan lolos verifySession(), dan cookie session TIDAK akan lolos verifyMcpToken().
- *  - Setiap token membawa `typ` (client/code/at/rt) sehingga tidak bisa ditukar peran.
- *  - Pencabutan akses = menaikkan "epoch" per-user di KV (lihat mcp-auth.ts); token dengan epoch lama mati.
- *
- * File ini sengaja hanya bergantung pada `crypto` supaya bisa dites langsung dengan node.
+ *  3. Klien menukar code di /api/mcp/oauth/token -> access token + refresh token.
+ *     Untuk Custom OAuth dengan client_secret, mendukung juga `client_secret_post`, `client_secret_basic`,
+ *     dan `grant_type=client_credentials`.
+ *  4. Klien memanggil /api/mcp dengan `Authorization: Bearer <access token>`.
  */
 
 export type McpTokenType = "client" | "code" | "at" | "rt";
 
 export const MCP_SCOPE = "sites";
-export const ACCESS_TTL_SECONDS = 60 * 60; // 1 jam
+export const ACCESS_TTL_SECONDS = 60 * 60; // 1 jam (default alur OAuth standar)
 export const REFRESH_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 hari
 export const CODE_TTL_SECONDS = 5 * 60; // 5 menit
+
+/** Pilihan durasi token langsung untuk konfigurasi OpenCode / Cursor / Codex / Gemini / Claude Code di Settings. */
+export const DIRECT_TOKEN_TTL_DAYS = [1, 7, 30, 90, 365] as const;
 
 function secret(): string {
   const s = process.env.AUTH_SECRET;
@@ -70,7 +68,7 @@ export function verifyMcpToken<T extends object>(typ: McpTokenType, token: unkno
 
 export const nowSec = () => Math.floor(Date.now() / 1000);
 
-/* ---------------- client (dynamic client registration tanpa-state) ---------------- */
+/* ---------------- client (dynamic client registration & custom OAuth client) ---------------- */
 
 export interface ClientInfo {
   /** nama tampilan */
@@ -79,14 +77,75 @@ export interface ClientInfo {
   u: string[];
 }
 
+export interface CustomClientInfo extends ClientInfo {
+  /** ID pendek untuk manajemen Custom OAuth di Settings */
+  kid?: string;
+  /** Email pemilik jika dibuat lewat Settings -> Buat OAuth Sendiri */
+  owner?: string;
+  /** HMAC hash dari client_secret (jika menggunakan client_secret) */
+  sh?: string;
+  /** Penanda bahwa client ini dibuat manual oleh user terautentikasi di Settings */
+  custom?: boolean;
+  iat?: number;
+}
+
+export function hashClientSecret(rawSecret: string): string {
+  return crypto.createHmac("sha256", secret()).update(`depup-mcp-cs:${rawSecret}`).digest("base64url");
+}
+
+export function verifyClientSecret(rawSecret: unknown, expectedHash: string | undefined): boolean {
+  if (!expectedHash) return true;
+  if (typeof rawSecret !== "string" || rawSecret.length < 8 || rawSecret.length > 512) return false;
+  const a = Buffer.from(hashClientSecret(rawSecret));
+  const b = Buffer.from(expectedHash);
+  return a.length === b.length && crypto.timingSafeEqual(a, b);
+}
+
+export function generateClientSecret(): string {
+  return `depup_cs_${crypto.randomBytes(24).toString("base64url")}`;
+}
+
 export function signClient(name: string, redirectUris: string[]): string {
   return signMcpToken<ClientInfo & { iat: number }>("client", { n: name, u: redirectUris, iat: nowSec() });
+}
+
+export function signCustomClient(opts: {
+  kid: string;
+  name: string;
+  redirectUris: string[];
+  owner: string;
+  clientSecret?: string;
+}): string {
+  const payload: CustomClientInfo = {
+    n: opts.name,
+    u: opts.redirectUris,
+    kid: opts.kid,
+    owner: opts.owner.trim().toLowerCase(),
+    custom: true,
+    iat: nowSec(),
+    ...(opts.clientSecret ? { sh: hashClientSecret(opts.clientSecret) } : {}),
+  };
+  return signMcpToken("client", payload);
 }
 
 export function verifyClient(clientId: unknown): ClientInfo | null {
   const c = verifyMcpToken<ClientInfo>("client", clientId);
   if (!c || typeof c.n !== "string" || !Array.isArray(c.u) || c.u.some((x) => typeof x !== "string")) return null;
   return { n: c.n, u: c.u };
+}
+
+export function verifyCustomClient(clientId: unknown): CustomClientInfo | null {
+  const c = verifyMcpToken<CustomClientInfo>("client", clientId);
+  if (!c || typeof c.n !== "string" || !Array.isArray(c.u) || c.u.some((x) => typeof x !== "string")) return null;
+  return {
+    n: c.n,
+    u: c.u,
+    ...(typeof c.kid === "string" ? { kid: c.kid } : {}),
+    ...(typeof c.owner === "string" ? { owner: c.owner } : {}),
+    ...(typeof c.sh === "string" ? { sh: c.sh } : {}),
+    ...(c.custom === true ? { custom: true } : {}),
+    ...(typeof c.iat === "number" ? { iat: c.iat } : {}),
+  };
 }
 
 /** Ringkasan pendek client_id untuk disematkan di code/token (client_id utuh bisa panjang). */
@@ -96,8 +155,43 @@ export function clientFingerprint(clientId: string): string {
 
 /* ---------------- redirect_uri ---------------- */
 
-/** Host Claude yang dipercaya. Tambahan lewat env MCP_REDIRECT_HOSTS="host1,host2" (mis. klien MCP lain). */
-const DEFAULT_REDIRECT_HOSTS = ["claude.ai", "claude.com", "www.claude.ai", "www.claude.com"];
+/**
+ * Host resmi yang dipercaya untuk alur OAuth MCP:
+ * - Claude (claude.ai, claude.com)
+ * - Cursor (cursor.com, cursor.sh)
+ * - OpenCode (opencode.ai)
+ * - Codex / OpenAI (chatgpt.com, platform.openai.com)
+ * - Gemini / Google (gemini.google.com, aistudio.google.com)
+ * Tambahan bisa diatur lewat env MCP_REDIRECT_HOSTS="host1,host2".
+ */
+const DEFAULT_REDIRECT_HOSTS = [
+  "claude.ai",
+  "claude.com",
+  "www.claude.ai",
+  "www.claude.com",
+  "cursor.com",
+  "www.cursor.com",
+  "cursor.sh",
+  "opencode.ai",
+  "www.opencode.ai",
+  "chatgpt.com",
+  "www.chatgpt.com",
+  "platform.openai.com",
+  "gemini.google.com",
+  "aistudio.google.com",
+];
+
+/** Deep-link URI scheme aplikasi AI desktop/IDE resmi (Cursor, OpenCode, Codex, Gemini, Claude, VS Code). */
+const ALLOWED_APP_SCHEMES = new Set([
+  "cursor:",
+  "opencode:",
+  "codex:",
+  "gemini:",
+  "claude:",
+  "vscode:",
+  "vscode-insiders:",
+  "windsurf:",
+]);
 
 function extraHosts(): string[] {
   return (process.env.MCP_REDIRECT_HOSTS ?? "")
@@ -107,7 +201,8 @@ function extraHosts(): string[] {
 }
 
 /**
- * https hanya ke host yang diizinkan; http hanya ke loopback (untuk MCP Inspector / uji lokal).
+ * https hanya ke host AI resmi yang diizinkan; http hanya ke loopback (untuk OpenCode / Codex / Gemini / Cursor / MCP Inspector lokal);
+ * atau skema deep-link aplikasi resmi (mis. cursor://anysphere.cursor-retrieval/oauth/callback).
  * Tanpa fragment, tanpa kredensial di URL.
  */
 export function isAllowedRedirectUri(raw: unknown): boolean {
@@ -125,6 +220,36 @@ export function isAllowedRedirectUri(raw: unknown): boolean {
   }
   if (u.protocol === "http:") {
     return host === "localhost" || host === "127.0.0.1" || host === "[::1]";
+  }
+  if (ALLOWED_APP_SCHEMES.has(u.protocol)) {
+    return (host.length > 0 || u.pathname.length > 1) && !raw.includes(" ");
+  }
+  return false;
+}
+
+/**
+ * Validasi redirect_uri untuk Custom OAuth yang dibuat langsung oleh user di Settings.
+ * Mengizinkan semua domain https:// yang valid (tanpa hash/kredensial), http:// loopback,
+ * atau custom URI scheme aplikasi desktop (cursor://, opencode://, codex://, gemini://, claude://, vscode://).
+ */
+export function isValidCustomRedirectUri(raw: unknown): boolean {
+  if (typeof raw !== "string" || raw.length === 0 || raw.length > 500) return false;
+  let u: URL;
+  try {
+    u = new URL(raw);
+  } catch {
+    return false;
+  }
+  if (u.hash || u.username || u.password) return false;
+  const host = u.hostname.toLowerCase();
+  if (u.protocol === "https:") {
+    return host.length > 0 && host.includes(".");
+  }
+  if (u.protocol === "http:") {
+    return host === "localhost" || host === "127.0.0.1" || host === "[::1]";
+  }
+  if (ALLOWED_APP_SCHEMES.has(u.protocol) || u.protocol === "depup:") {
+    return (host.length > 0 || u.pathname.length > 1) && !raw.includes(" ");
   }
   return false;
 }
@@ -175,8 +300,9 @@ export interface GrantPayload {
   exp: number;
 }
 
-export function signAccessToken(email: string, cid: string, ep: number): string {
-  return signMcpToken("at", { email, cid, ep, exp: nowSec() + ACCESS_TTL_SECONDS });
+export function signAccessToken(email: string, cid: string, ep: number, ttlSeconds = ACCESS_TTL_SECONDS): string {
+  const ttl = Number.isFinite(ttlSeconds) && ttlSeconds > 0 ? Math.min(Math.floor(ttlSeconds), 365 * 24 * 3600) : ACCESS_TTL_SECONDS;
+  return signMcpToken("at", { email, cid, ep, exp: nowSec() + ttl });
 }
 
 export function signRefreshToken(email: string, cid: string, ep: number): string {

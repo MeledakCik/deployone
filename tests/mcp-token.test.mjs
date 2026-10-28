@@ -43,9 +43,17 @@ test("client_id: bolak-balik utuh, dipalsukan ditolak", () => {
   assert.equal(verifyClient(undefined), null);
 });
 
-test("redirect_uri: hanya host Claude (https) dan loopback (http)", () => {
+test("redirect_uri: mendukung Claude, OpenCode, Cursor, Codex, Gemini, dan loopback", () => {
   assert.ok(isAllowedRedirectUri("https://claude.ai/api/mcp/auth_callback"));
   assert.ok(isAllowedRedirectUri("https://claude.com/api/mcp/auth_callback"));
+  assert.ok(isAllowedRedirectUri("https://cursor.com/api/mcp/callback"));
+  assert.ok(isAllowedRedirectUri("cursor://anysphere.cursor-retrieval/oauth/callback"));
+  assert.ok(isAllowedRedirectUri("https://opencode.ai/oauth/callback"));
+  assert.ok(isAllowedRedirectUri("opencode://oauth/callback"));
+  assert.ok(isAllowedRedirectUri("https://chatgpt.com/connector_platform_oauth_redirect"));
+  assert.ok(isAllowedRedirectUri("codex://oauth/callback"));
+  assert.ok(isAllowedRedirectUri("https://gemini.google.com/oauth/callback"));
+  assert.ok(isAllowedRedirectUri("gemini://oauth/callback"));
   assert.ok(isAllowedRedirectUri("http://localhost:6274/oauth/callback"));
   assert.ok(isAllowedRedirectUri("http://127.0.0.1:3000/cb"));
   assert.ok(!isAllowedRedirectUri("https://evil.example/cb"));

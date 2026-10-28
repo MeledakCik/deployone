@@ -1,3 +1,4 @@
+import zlib from "node:zlib";
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import { CORS_HEADERS, authenticateBearer, jsonCors, preflight, rejectDisallowedOrigin } from "@/app/api/_lib/mcp-auth";
@@ -8,9 +9,9 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 
-/** Body JSON-RPC kecil saja; isi situs besar dibatasi lagi di mcp-sites.ts. Vercel menolak >4,5 MB. */
-const MAX_BODY_BYTES = 4 * 1024 * 1024;
-const MAX_BATCH = 10;
+/** Batas body JSON-RPC (4,5 MB sesuai batas payload serverless Vercel). Mendukung juga Content-Encoding: gzip. */
+const MAX_BODY_BYTES = Math.floor(4.5 * 1024 * 1024);
+const MAX_BATCH = 20;
 
 export const OPTIONS = () => preflight();
 
@@ -27,12 +28,40 @@ export const GET = () =>
 /** Tidak ada session MCP yang perlu ditutup. */
 export const DELETE = GET;
 
+async function readJsonRpcBody(req: NextRequest): Promise<{ ok: true; body: unknown } | { ok: false; status: number; response: unknown }> {
+  const declared = Number(req.headers.get("content-length"));
+  if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) {
+    return { ok: false, status: 413, response: { jsonrpc: "2.0", id: null, error: { code: -32600, message: "Body terlalu besar. Gunakan `update_website` untuk meng-upload file secara bertahap." } } };
+  }
+
+  const contentEncoding = (req.headers.get("content-encoding") ?? "").toLowerCase();
+  try {
+    let rawText: string;
+    if (contentEncoding === "gzip" || contentEncoding === "x-gzip") {
+      const ab = await req.arrayBuffer();
+      if (ab.byteLength > MAX_BODY_BYTES) {
+        return { ok: false, status: 413, response: { jsonrpc: "2.0", id: null, error: { code: -32600, message: "Body terlalu besar." } } };
+      }
+      const unzipped = zlib.gunzipSync(Buffer.from(ab), { maxOutputLength: MAX_BODY_BYTES });
+      rawText = unzipped.toString("utf8");
+    } else {
+      rawText = await req.text();
+      if (rawText.length > MAX_BODY_BYTES) {
+        return { ok: false, status: 413, response: { jsonrpc: "2.0", id: null, error: { code: -32600, message: "Body terlalu besar. Gunakan `update_website` untuk meng-upload file secara bertahap." } } };
+      }
+    }
+    return { ok: true, body: JSON.parse(rawText) };
+  } catch {
+    return { ok: false, status: 400, response: PARSE_ERROR };
+  }
+}
+
 /**
  * POST /api/mcp — endpoint MCP (Streamable HTTP). Autentikasi Bearer access token dari alur OAuth Depup
  * (middleware melewatkan path ini karena tidak memakai cookie session).
  */
 export async function POST(req: NextRequest) {
-  // Syarat direktori Claude: tolak Origin yang bukan Claude/loopback (cegah DNS rebinding). Tanpa Origin = server Claude.
+  // Syarat direktori Claude: tolak Origin yang bukan Claude/Depup/loopback (cegah DNS rebinding). Tanpa Origin = server Claude.
   const badOrigin = rejectDisallowedOrigin(req);
   if (badOrigin) return badOrigin;
 
@@ -46,28 +75,16 @@ export async function POST(req: NextRequest) {
   const auth = await authenticateBearer(req);
   if (!auth.ok) return auth.response;
 
-  const rl = await rateLimit("mcp", `u:${auth.email}`, 120, 60);
+  const rl = await rateLimit("mcp", `u:${auth.email}`, 180, 60);
   if (!rl.allowed) {
     return jsonCors({ error: "rate_limited", error_description: "Terlalu banyak request. Coba lagi sebentar lagi." }, 429, {
       "Retry-After": String(rl.retryAfterSeconds),
     });
   }
 
-  const declared = Number(req.headers.get("content-length"));
-  if (Number.isFinite(declared) && declared > MAX_BODY_BYTES) {
-    return jsonCors({ jsonrpc: "2.0", id: null, error: { code: -32600, message: "Body terlalu besar." } }, 413);
-  }
-
-  let body: unknown;
-  try {
-    const raw = await req.text();
-    if (raw.length > MAX_BODY_BYTES) {
-      return jsonCors({ jsonrpc: "2.0", id: null, error: { code: -32600, message: "Body terlalu besar." } }, 413);
-    }
-    body = JSON.parse(raw);
-  } catch {
-    return jsonCors(PARSE_ERROR, 400);
-  }
+  const parsed = await readJsonRpcBody(req);
+  if (!parsed.ok) return jsonCors(parsed.response, parsed.status);
+  const { body } = parsed;
 
   const ctx = { email: auth.email, host: req.headers.get("host") };
 

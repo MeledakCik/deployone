@@ -7,6 +7,20 @@ import { appOrigin, isAllowedRedirectUri, verifyAccessToken } from "@/app/api/_l
 /** Epoch pencabutan per-user. Naik 1 = semua token/kode MCP lama milik user itu langsung mati. */
 const kEpoch = (email: string) => `mcp:epoch:${email}`;
 const kCodeUsed = (jti: string) => `mcp:code:${jti}`;
+const kClientRevoked = (cid: string) => `mcp:revoked:cid:${cid}`;
+const kCustomClients = (email: string) => `mcp:oauth:clients:${email.trim().toLowerCase()}`;
+
+export interface StoredCustomOAuthClient {
+  id: string;
+  name: string;
+  clientId: string;
+  redirectUris: string[];
+  hasSecret: boolean;
+  secretPreview: string | null;
+  createdAt: number;
+}
+
+export const MAX_CUSTOM_OAUTH_CLIENTS = 10;
 
 export async function getEpoch(email: string): Promise<number> {
   const v = await kv.get<number | string | null>(kEpoch(email));
@@ -16,6 +30,43 @@ export async function getEpoch(email: string): Promise<number> {
 
 export async function revokeAllAccess(email: string): Promise<void> {
   await kv.incr(kEpoch(email));
+}
+
+export async function revokeClientByCid(cid: string): Promise<void> {
+  await kv.set(kClientRevoked(cid), 1, { ex: 60 * 60 * 24 * 35 });
+}
+
+export async function isClientCidRevoked(cid: string | undefined): Promise<boolean> {
+  if (!cid) return false;
+  try {
+    return (await kv.exists(kClientRevoked(cid))) > 0;
+  } catch {
+    return false;
+  }
+}
+
+export async function listCustomOAuthClients(email: string): Promise<StoredCustomOAuthClient[]> {
+  try {
+    const raw = await kv.get<StoredCustomOAuthClient[] | string | null>(kCustomClients(email));
+    if (!raw) return [];
+    const parsed = typeof raw === "string" ? (JSON.parse(raw) as unknown) : raw;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter(
+      (c): c is StoredCustomOAuthClient =>
+        !!c &&
+        typeof c === "object" &&
+        typeof (c as StoredCustomOAuthClient).id === "string" &&
+        typeof (c as StoredCustomOAuthClient).name === "string" &&
+        typeof (c as StoredCustomOAuthClient).clientId === "string" &&
+        Array.isArray((c as StoredCustomOAuthClient).redirectUris),
+    );
+  } catch {
+    return [];
+  }
+}
+
+export async function saveCustomOAuthClients(email: string, list: StoredCustomOAuthClient[]): Promise<void> {
+  await kv.set(kCustomClients(email), JSON.stringify(list.slice(0, MAX_CUSTOM_OAUTH_CLIENTS)));
 }
 
 /** true = kode ini baru pertama kali dipakai. Dipakai untuk menolak replay authorization code. */
@@ -59,16 +110,18 @@ export function jsonCors(body: unknown, status = 200, extra: Record<string, stri
 
 /**
  * Request dari server Claude (cloud Anthropic) tidak membawa header Origin, jadi tanpa Origin = diizinkan.
- * Kalau Origin ada (klien berbasis browser), hanya host Claude (claude.ai / claude.com, plus MCP_REDIRECT_HOSTS)
- * dan loopback (MCP Inspector / uji lokal) yang diterima. Selain itu ditolak 403.
- * Memakai daftar host yang sama dengan redirect_uri OAuth supaya konfigurasinya satu tempat.
+ * Kalau Origin ada (klien berbasis browser), hanya host Claude (claude.ai / claude.com, plus MCP_REDIRECT_HOSTS),
+ * origin Depup sendiri (untuk tombol Test Koneksi di Settings), dan loopback (MCP Inspector / uji lokal) yang diterima.
+ * Selain itu ditolak 403.
  */
-export function isAllowedMcpOrigin(origin: string | null): boolean {
+export function isAllowedMcpOrigin(origin: string | null, hostHeader?: string | null): boolean {
   if (origin === null || origin === "") return true;
   if (origin === "null") return false;
   try {
     const u = new URL(origin);
     if (u.pathname !== "/" || u.search || u.hash) return false;
+    const selfOrigin = appOrigin(hostHeader);
+    if (`${u.protocol}//${u.host}` === selfOrigin) return true;
     // isAllowedRedirectUri menilai URL penuh; origin saja cukup dengan path "/" agar aturannya sama.
     return isAllowedRedirectUri(`${u.protocol}//${u.host}/`);
   } catch {
@@ -77,7 +130,7 @@ export function isAllowedMcpOrigin(origin: string | null): boolean {
 }
 
 export function rejectDisallowedOrigin(req: NextRequest): NextResponse | null {
-  if (isAllowedMcpOrigin(req.headers.get("origin"))) return null;
+  if (isAllowedMcpOrigin(req.headers.get("origin"), req.headers.get("host"))) return null;
   return jsonCors({ error: "forbidden_origin", error_description: "Origin tidak diizinkan untuk endpoint MCP Depup." }, 403);
 }
 
@@ -95,7 +148,7 @@ function unauthorized(req: NextRequest, description: string, invalid: boolean): 
   });
 }
 
-/** Baca Bearer token, cek tanda tangan, kedaluwarsa, epoch (pencabutan), dan blokir admin. */
+/** Baca Bearer token, cek tanda tangan, kedaluwarsa, epoch (pencabutan), pencabutan per-client, dan blokir admin. */
 export async function authenticateBearer(req: NextRequest): Promise<McpAuthResult> {
   const header = req.headers.get("authorization") ?? "";
   const m = /^Bearer\s+(\S+)$/i.exec(header);
@@ -113,6 +166,9 @@ export async function authenticateBearer(req: NextRequest): Promise<McpAuthResul
   try {
     if ((await getEpoch(email)) !== grant.ep) {
       return { ok: false, response: unauthorized(req, "Akses sudah dicabut. Hubungkan ulang konektor.", true) };
+    }
+    if (await isClientCidRevoked(grant.cid)) {
+      return { ok: false, response: unauthorized(req, "OAuth client ini sudah dihapus atau dicabut.", true) };
     }
   } catch {
     return { ok: false, response: jsonCors({ error: "server_error", error_description: "Penyimpanan sementara tidak bisa diakses." }, 503) };

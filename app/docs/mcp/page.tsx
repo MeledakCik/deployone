@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { PublicDoc } from "@/components/public/PublicDoc";
 
 export const metadata: Metadata = {
-  title: "Konektor Claude (MCP)",
-  description: "Hubungkan Depup ke Claude: publish website sebagai Link Instan atau deploy repo GitHub ke Vercel, Cloudflare Pages, dan Railway langsung dari chat.",
+  title: "Konektor MCP (Claude, OpenCode, Cursor, Codex & Gemini) + Custom OAuth",
+  description:
+    "Hubungkan Depup ke Claude, OpenCode, Cursor, OpenAI Codex, dan Google Gemini: publish website besar secara bertahap sebagai Link Instan, edit cepat tanpa ganti link, buat OAuth sendiri, atau deploy repo GitHub.",
   alternates: { canonical: "/docs/mcp" },
 };
 
@@ -12,62 +13,63 @@ const CONTACT = "depupdev@gmail.com";
 
 export default function McpDocsPage() {
   return (
-    <PublicDoc title="Konektor Claude (MCP) untuk Depup" updated="25 Oktober 2026">
+    <PublicDoc title="Konektor MCP (Claude, OpenCode, Cursor, Codex & Gemini) untuk Depup" updated="28 Oktober 2026">
       <p>
-        Konektor ini membuat Claude bisa menayangkan website statis sebagai <strong>Link Instan</strong> dan men-deploy repo GitHub ke
-        <strong> Vercel</strong>, <strong>Cloudflare Pages</strong>, dan <strong>Railway</strong>, semuanya dari chat. Halaman ini publik, tidak perlu login.
+        Konektor MCP Depup mendukung <strong>Claude</strong>, <strong>OpenCode</strong>, <strong>Cursor</strong>, <strong>Codex</strong>, dan <strong>Gemini</strong>. AI pilihanmu bisa menayangkan website statis sebagai <strong>Link Instan</strong> (termasuk website dengan file <code>index.html</code> yang besar atau banyak halaman secara bertahap), mengedit halaman secara instan tanpa mengubah URL, serta men-deploy repo GitHub ke
+        <strong> Vercel</strong>, <strong>Cloudflare Pages</strong>, dan <strong>Railway</strong>.
       </p>
 
-      <h2>Apa yang bisa dilakukan</h2>
+      <h2>Apa yang bisa dilakukan (Tools Interaktif)</h2>
       <ul>
-        <li><code>deploy_website</code> — menayangkan file HTML/CSS/JS sebagai link publik sementara (1 jam sampai 30 hari). Opsi <code>replace_site_id</code> mengganti situs lama.</li>
-        <li><code>list_websites</code> — melihat Link Instan aktif milikmu.</li>
+        <li><code>deploy_website</code> — menayangkan file HTML/CSS/JS sebagai link publik sementara (1 jam sampai 7 hari). Mendukung kompresi <code>gzip+base64</code>, <code>auto_strip_prefix</code>, dan <code>keep_existing_files</code>.</li>
+        <li><code>update_website</code> — memperbarui website aktif secara langsung (<em>in-place</em>) <strong>tanpa mengubah URL publiknya</strong>: menyambung potongan file <code>index.html</code> besar (<code>append_files</code>), menambah halaman/file secara bertahap (<code>files</code>), atau melakukan edit cari-dan-ganti instan (<code>patches</code>).</li>
+        <li><code>inspect_website</code> — melihat rincian interaktif website aktif: daftar semua file &amp; ukurannya, statistik kunjungan real-time, diagnostik link HTML yang rusak/terpotong, serta membaca isi file per rentang baris (<code>start_line</code>–<code>end_line</code>).</li>
+        <li><code>list_websites</code> — melihat semua Link Instan aktif beserta jumlah tayangan (views) dan daftar filenya.</li>
         <li><code>delete_website</code> — menghapus satu Link Instan.</li>
-        <li><code>connector_status</code> — melihat platform deploy mana yang sudah siap dipakai Claude (tanpa menampilkan token).</li>
+        <li><code>connector_status</code> — melihat platform deploy mana yang sudah siap dipakai (tanpa menampilkan token).</li>
         <li><code>deploy_project</code> — men-deploy repo GitHub ke Vercel, Cloudflare Pages, atau Railway memakai token yang kamu simpan di Settings.</li>
       </ul>
 
-      <h2>Persiapan</h2>
-      <ol>
-        <li>Punya akun Depup: masuk dengan Google di <a href={SITE}>{SITE}</a>.</li>
-        <li>Untuk deploy ke platform: buka <strong>Settings</strong> di dashboard, isi token Vercel, Cloudflare, dan/atau Railway, lalu klik <strong>Simpan</strong>. Untuk repo private, isi juga GitHub PAT.</li>
-        <li>Di bagian <strong>Konektor Claude</strong> pada Settings, nyalakan saklar untuk platform yang boleh dipakai Claude. Semua saklar mati secara default.</li>
-      </ol>
-
-      <h2>Memasang di Claude</h2>
-      <ol>
-        <li>Buka claude.ai, lalu <strong>Settings → Connectors</strong>, dan pilih konektor Depup (atau <strong>Add custom connector</strong>).</li>
-        <li>Jika memakai custom connector, isi URL berikut:<pre>{`${SITE}/api/mcp`}</pre></li>
-        <li>Klik <strong>Connect</strong>, masuk dengan Google di Depup, lalu tekan <strong>Izinkan</strong>.</li>
-        <li>Di chat, aktifkan konektor Depup. Konektor yang sama otomatis muncul di app Claude di HP pada akun yang sama.</li>
-      </ol>
-
-      <h2>Contoh prompt</h2>
-      <ol>
-        <li><em>“Buatkan landing page warung kopi satu halaman, lalu publish ke Depup selama 24 jam.”</em> → memakai <code>deploy_website</code>.</li>
-        <li><em>“Tampilkan semua website aktifku di Depup, lalu hapus yang paling lama.”</em> → memakai <code>list_websites</code> dan <code>delete_website</code>.</li>
-        <li><em>“Cek platform deploy mana yang sudah siap di Depup.”</em> → memakai <code>connector_status</code>.</li>
-        <li><em>“Deploy repo github.com/akun/toko ke Vercel dengan nama project toko-kopi.”</em> → memakai <code>deploy_project</code>.</li>
-        <li><em>“Deploy repo yang sama ke Railway.”</em> → <code>deploy_project</code> dengan <code>platform: railway</code>. Jika repo kekurangan file (mis. start script), Depup menampilkan daftarnya dan meminta persetujuanmu sebelum meng-commit apa pun.</li>
-      </ol>
-
-      <h2>Keamanan dan izin</h2>
+      <h2>Cara Memasang di Claude, OpenCode, Cursor, Codex &amp; Gemini</h2>
+      <p>
+        Buka <strong>Settings → Konektor AI (MCP)</strong> di dashboard Depup untuk membuat token otomatis dan menyalin konfigurasi siap pakai:
+      </p>
       <ul>
-        <li>Masuk memakai OAuth 2.0 + PKCE. Token akses berlaku 1 jam; kamu bisa mencabut semua akses di <strong>Settings → Konektor Claude → Cabut semua akses Claude</strong>.</li>
-        <li>Token Vercel, Cloudflare, Railway, dan GitHub disimpan terenkripsi dan dibaca hanya di server. Token tidak pernah dikirim lewat chat dan tidak dikembalikan ke Claude.</li>
-        <li>Claude hanya bisa memakai platform yang kamu nyalakan. Tool <code>deploy_project</code> menandai dirinya sebagai tindakan yang mengubah data, jadi Claude akan meminta konfirmasi sebelum menjalankannya.</li>
-        <li>Perubahan ke repo GitHub (khusus Railway) hanya terjadi setelah kamu menyetujuinya.</li>
-        <li>Batas: maksimal 3 Link Instan aktif per akun (bisa berbeda sesuai konfigurasi), 15 deploy platform per jam, dan 120 permintaan MCP per menit.</li>
+        <li>
+          <strong>Claude (Web, App HP &amp; Claude Code CLI)</strong>: Tambahkan URL <code>{`${SITE}/api/mcp`}</code> di <em>Settings → Connectors → Add custom connector</em> pada claude.ai, atau jalankan:
+          <pre>{`claude mcp add --transport http depup ${SITE}/api/mcp --header "Authorization: Bearer <TOKEN>"`}</pre>
+        </li>
+        <li>
+          <strong>OpenCode (<code>opencode.json</code>)</strong>: Tambahkan blok <code>mcp.depup</code> bertipe <code>remote</code> di <code>opencode.json</code> atau jalankan <code>opencode mcp auth depup</code>:
+          <pre>{`{\n  "$schema": "https://opencode.ai/config.json",\n  "mcp": {\n    "depup": {\n      "type": "remote",\n      "url": "${SITE}/api/mcp",\n      "enabled": true,\n      "headers": { "Authorization": "Bearer <TOKEN>" }\n    }\n  }\n}`}</pre>
+        </li>
+        <li>
+          <strong>Cursor (<code>.cursor/mcp.json</code>)</strong>: Klik tombol <strong>Pasang 1-Klik ke Cursor</strong> di Settings Depup, atau tambahkan ke <code>.cursor/mcp.json</code>:
+          <pre>{`{\n  "mcpServers": {\n    "depup": {\n      "url": "${SITE}/api/mcp",\n      "headers": { "Authorization": "Bearer <TOKEN>" }\n    }\n  }\n}`}</pre>
+        </li>
+        <li>
+          <strong>Codex (<code>~/.codex/config.toml</code>)</strong>: Jalankan <code>{`codex mcp add depup --url ${SITE}/api/mcp`}</code> atau tambahkan di <code>~/.codex/config.toml</code>:
+          <pre>{`[mcp_servers.depup]\nurl = "${SITE}/api/mcp"\nhttp_headers = { "Authorization" = "Bearer <TOKEN>" }`}</pre>
+        </li>
+        <li>
+          <strong>Gemini CLI / Code Assist (<code>~/.gemini/settings.json</code>)</strong>: Jalankan perintah CLI atau tambahkan di <code>~/.gemini/settings.json</code>:
+          <pre>{`gemini mcp add --transport http depup ${SITE}/api/mcp --header "Authorization: Bearer <TOKEN>"`}</pre>
+        </li>
       </ul>
 
-      <h2>Pemecahan masalah</h2>
-      <ul>
-        <li><strong>“Token … belum disimpan”</strong> — isi token platform di Settings, lalu klik Simpan.</li>
-        <li><strong>“Kamu belum mengizinkan Claude deploy ke …”</strong> — nyalakan saklar platform itu di Settings → Konektor Claude.</li>
-        <li><strong>“Token … ditolak”</strong> — token salah atau kedaluwarsa; buat token baru di platform dan simpan ulang.</li>
-        <li><strong>Cloudflare minta hubungkan GitHub</strong> — izinkan GitHub App Cloudflare Pages di dashboard Cloudflare, lalu ulangi.</li>
-        <li><strong>“Hubungkan ulang konektor”</strong> — akses sudah dicabut atau kedaluwarsa; sambungkan lagi dari Settings → Connectors di Claude.</li>
-      </ul>
+      <h2>Solusi untuk <code>index.html</code> Besar &amp; Banyak File</h2>
+      <ol>
+        <li>AI menayangkan kerangka awal <code>index.html</code> dengan <code>deploy_website</code> sehingga link langsung aktif dalam hitungan detik.</li>
+        <li>AI menyambung bagian <code>index.html</code> berikutnya memakai <code>update_website</code> (<code>append_files</code>) atau mencicil file tambahan (<code>files</code>) tanpa risiko terpotong batas token.</li>
+        <li>Saat kamu meminta revisi warna/teks/komponen, AI cukup memanggil <code>update_website</code> (<code>patches</code>) sehingga perubahan tayang dalam milidetik dengan URL yang tetap sama.</li>
+      </ol>
+
+      <h2>Buat OAuth Sendiri di Settings (Custom OAuth 2.1)</h2>
+      <ol>
+        <li>Buka <strong>Settings → Konektor AI (MCP)</strong> lalu pilih tab <strong>Buat OAuth Sendiri</strong>.</li>
+        <li>Isi nama aplikasi, pilih metode autentikasi (<strong>Client ID + Secret</strong> atau <strong>Public PKCE</strong>), dan centang preset Redirect URI untuk <strong>Claude</strong>, <strong>Cursor</strong>, <strong>OpenCode</strong>, <strong>Codex</strong>, <strong>Gemini</strong>, atau URL kustommu.</li>
+        <li>Klik <strong>Buat OAuth Sendiri</strong> untuk mendapatkan <code>Client ID</code> dan <code>Client Secret</code>, atau klik <strong>Buat Bearer Token Langsung</strong> (pilihan masa aktif 1–365 hari).</li>
+      </ol>
 
       <h2>Dukungan</h2>
       <p>

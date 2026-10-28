@@ -7,7 +7,7 @@ export const dynamic = "force-dynamic";
 
 export const OPTIONS = () => preflight();
 
-/** RFC 8414 — metadata server otorisasi (OAuth 2.1: kode + PKCE S256, client publik, registrasi dinamis). */
+/** RFC 8414 — metadata server otorisasi (OAuth 2.1: kode + PKCE S256, client publik & custom OAuth client). */
 export function GET(req: NextRequest) {
   const origin = appOrigin(req.headers.get("host"));
   return Response.json(
@@ -17,9 +17,9 @@ export function GET(req: NextRequest) {
       token_endpoint: `${origin}/api/mcp/oauth/token`,
       registration_endpoint: `${origin}/api/mcp/oauth/register`,
       response_types_supported: ["code"],
-      grant_types_supported: ["authorization_code", "refresh_token"],
+      grant_types_supported: ["authorization_code", "refresh_token", "client_credentials"],
       code_challenge_methods_supported: ["S256"],
-      token_endpoint_auth_methods_supported: ["none"],
+      token_endpoint_auth_methods_supported: ["none", "client_secret_post", "client_secret_basic"],
       scopes_supported: [MCP_SCOPE],
       authorization_response_iss_parameter_supported: true,
     },
