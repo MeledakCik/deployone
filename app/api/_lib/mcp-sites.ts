@@ -116,6 +116,16 @@ export type UpdateSiteResult =
     }
   | { ok: false; error: string };
 
+export interface InspectedFileContent {
+  path: string;
+  totalBytes: number;
+  totalLines: number;
+  startLine: number;
+  endLine: number;
+  content: string;
+  truncated: boolean;
+}
+
 export type InspectSiteResult =
   | {
       ok: true;
@@ -130,15 +140,7 @@ export type InspectSiteResult =
       files: { path: string; size: number; contentType: string }[];
       stats: SiteStats | null;
       warnings: string[];
-      fileContent?: {
-        path: string;
-        totalBytes: number;
-        totalLines: number;
-        startLine: number;
-        endLine: number;
-        content: string;
-        truncated: boolean;
-      };
+      fileContent?: InspectedFileContent;
     }
   | { ok: false; error: string };
 
@@ -759,7 +761,7 @@ export async function inspectSiteForUser(
     ? checkMcpSiteHealth([...fileMap.entries()].map(([path, buf]) => ({ path, buf })))
     : [];
 
-  let fileContent: InspectSiteResult extends { ok: true; fileContent?: infer F } ? F : never;
+  let fileContent: InspectedFileContent | undefined;
 
   if (typeof input.read_path === "string" && input.read_path.trim()) {
     const cleanP = cleanSitePath(input.read_path.trim().replace(/^\.\//, ""));
