@@ -451,3 +451,118 @@ test("Setiap tool punya title, annotations, nama <=64 karakter (gerbang portal d
     assert.ok(tool.description && tool.description.length > 30, `${tool.name} deskripsi terlalu pendek`);
   }
 });
+
+
+test("Gemini Web MCP connector: 6 redirect_uris oauth-redirect*.googleusercontent.com + client_secret_post + 1400-char state + Custom OAuth wildcard", async () => {
+  const email = "gemini-user@example.com";
+  const ck = { cookie: sessionCookie(email) };
+  const geminiUris = [
+    "https://oauth-redirect-sandbox.googleusercontent.com/r/user_bound_custom-mcp-123-depup",
+    "https://oauth-redirect-test.googleusercontent.com/r/user_bound_custom-mcp-123-depup",
+    "https://oauth-redirect.googleusercontent.com/r/user_bound_custom-mcp-123-depup",
+    "https://oauth-redirect-sandbox.googleusercontent.com/a/user_bound_custom-mcp-123-depup",
+    "https://oauth-redirect-test.googleusercontent.com/a/user_bound_custom-mcp-123-depup",
+    "https://oauth-redirect.googleusercontent.com/a/user_bound_custom-mcp-123-depup",
+  ];
+
+  // 1) Dynamic Client Registration persis seperti yang dikirim Gemini Web
+  const r = await reg.POST(
+    json("/api/mcp/oauth/register", {
+      client_name: "Google",
+      redirect_uris: geminiUris,
+      response_types: ["code"],
+      grant_types: ["authorization_code", "refresh_token"],
+      token_endpoint_auth_method: "client_secret_post",
+    }),
+  );
+  assert.equal(r.status, 201);
+  const regBody = await r.json();
+  assert.ok(regBody.client_id);
+  assert.ok(regBody.client_secret);
+  assert.equal(regBody.token_endpoint_auth_method, "client_secret_post");
+
+  // 2) Authorize dengan state sepanjang 1450 karakter seperti yang dikirim Gemini
+  const longState = "g".repeat(1450);
+  const verifier = b64url(randomBytes(32));
+  const challenge = b64url(createHash("sha256").update(verifier).digest());
+  const cb = geminiUris[2];
+  const ap = await conn.POST(
+    json(
+      "/api/mcp/connect",
+      {
+        action: "approve",
+        params: {
+          client_id: regBody.client_id,
+          redirect_uri: cb,
+          response_type: "code",
+          code_challenge: challenge,
+          code_challenge_method: "S256",
+          state: longState,
+        },
+      },
+      ck,
+    ),
+  );
+  assert.equal(ap.status, 200);
+  const redir = new URL((await ap.json()).data.redirectTo);
+  assert.equal(redir.searchParams.get("state"), longState);
+  const code = redir.searchParams.get("code");
+
+  const tr = await tok.POST(
+    form("/api/mcp/oauth/token", {
+      grant_type: "authorization_code",
+      code,
+      redirect_uri: cb,
+      code_verifier: verifier,
+      client_id: regBody.client_id,
+      client_secret: regBody.client_secret,
+    }),
+  );
+  assert.equal(tr.status, 200);
+  const t = await tr.json();
+  assert.equal((await rpc(t.access_token, "ping", {})).status, 200);
+
+  // 3) Custom OAuth Client dengan preset Gemini menerima path dinamis /r/user_bound_custom-mcp-... walaupun tanpa PKCE (confidential)
+  const customRes = await conn.POST(
+    json(
+      "/api/mcp/connect",
+      {
+        action: "create_oauth",
+        name: "Gemini Custom",
+        redirectUris: ["https://oauth-redirect.googleusercontent.com/r/callback"],
+        withSecret: true,
+      },
+      ck,
+    ),
+  );
+  assert.equal(customRes.status, 200);
+  const customData = (await customRes.json()).data;
+  const dynamicGeminiCb = "https://oauth-redirect.googleusercontent.com/r/user_bound_custom-mcp-999999-custom";
+  const apCustom = await conn.POST(
+    json(
+      "/api/mcp/connect",
+      {
+        action: "approve",
+        params: {
+          client_id: customData.client.clientId,
+          redirect_uri: dynamicGeminiCb,
+          response_type: "code",
+          state: longState,
+        },
+      },
+      ck,
+    ),
+  );
+  assert.equal(apCustom.status, 200);
+  const codeCustom = new URL((await apCustom.json()).data.redirectTo).searchParams.get("code");
+  const trCustom = await tok.POST(
+    form("/api/mcp/oauth/token", {
+      grant_type: "authorization_code",
+      code: codeCustom,
+      redirect_uri: dynamicGeminiCb,
+      client_id: customData.client.clientId,
+      client_secret: customData.clientSecret,
+    }),
+  );
+  assert.equal(trCustom.status, 200);
+});

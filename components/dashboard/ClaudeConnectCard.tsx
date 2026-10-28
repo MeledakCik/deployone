@@ -93,12 +93,14 @@ const OAUTH_URI_PRESETS: {
   {
     id: "gemini",
     label: "Gemini (Web & CLI)",
-    hint: "gemini.google.com, AI Studio & CLI",
+    hint: "oauth-redirect.googleusercontent.com & CLI",
     uris: [
+      "https://oauth-redirect.googleusercontent.com/r/callback",
+      "https://oauth-redirect-sandbox.googleusercontent.com/r/callback",
+      "https://oauth-redirect-test.googleusercontent.com/r/callback",
+      "https://vertexaisearch.cloud.google.com/oauth-redirect",
       "https://gemini.google.com/oauth/callback",
       "https://aistudio.google.com/oauth/callback",
-      "https://idx.google.com/oauth/callback",
-      "https://studio.firebase.google.com/oauth/callback",
       "gemini://oauth/callback",
     ],
     defaultOn: true,
@@ -800,16 +802,16 @@ export function ClaudeConnectCard({
             {/* Khusus Gemini: Langkah Gemini Web + Google AI Studio + Firebase Studio */}
             {selectedClient === "gemini" && (
               <div className="rounded-xl bg-[var(--pill-bg)] p-3.5 text-[12px]">
-                <p className="font-semibold">Cara 1: Pasang di Gemini Web (gemini.google.com / Google AI Studio / Firebase Studio)</p>
+                <p className="font-semibold">Cara 1: Pasang di Gemini Web (&ldquo;Terhubung ke server MCP&rdquo; di gemini.google.com)</p>
                 <ol className="mt-1.5 list-decimal space-y-1 pl-5 leading-relaxed text-text-muted">
                   <li>
-                    Di <strong>Gemini Web</strong> atau <strong>Google AI Studio</strong>, buka menu <strong>Extensions / Connectors / MCP Servers → Add MCP Server</strong>.
+                    Di <strong>Gemini Web</strong>, buka jendela <strong>Terhubung ke server MCP</strong> lalu tempel URL Server MCP: <code>{resolvedUrl}</code>.
                   </li>
                   <li>
-                    Masukkan nama <strong>Depup</strong> dan tempel URL endpoint MCP: <code>{resolvedUrl}</code>.
+                    <strong>Otomatis:</strong> Biarkan kolom <em>Client ID</em> dan <em>Rahasia klien</em> kosong — server Depup sudah mengizinkan ke-6 URL pengalihan Google (<code>oauth-redirect*.googleusercontent.com</code>) dan metode <code>client_secret_post</code> secara otomatis.
                   </li>
                   <li>
-                    Untuk autentikasi Web: pilih <strong>OAuth 2.0</strong> (otomatis terhubung ke layar izin Depup, atau masukkan <code>Client ID</code> &amp; <code>Client Secret</code> dari tab <strong>Buat OAuth Sendiri</strong>), atau pilih <strong>Bearer Token</strong> dan klik <strong>Buat &amp; Isi Token Otomatis</strong> di atas.
+                    <strong>Manual (Setelan tambahan):</strong> Jika ingin mengisi <em>Client ID</em> &amp; <em>Rahasia klien</em> sendiri, buka tab <strong>Buat OAuth Sendiri</strong> di samping (preset <strong>Gemini</strong> sudah otomatis mengizinkan semua URL <code>oauth-redirect.googleusercontent.com/r/...</code> atau kamu juga bisa menempelkan hasil tombol <strong>Salin URI pengalihan</strong> dari Gemini), lalu salin <code>Client ID</code> dan <code>Client Secret</code> ke Gemini.
                   </li>
                 </ol>
               </div>

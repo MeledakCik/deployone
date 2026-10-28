@@ -39,7 +39,7 @@ export function signMcpToken<T extends object>(typ: McpTokenType, payload: T): s
 
 /** Verifikasi tanda tangan, jenis token, dan kedaluwarsa. null kalau salah satunya gagal. */
 export function verifyMcpToken<T extends object>(typ: McpTokenType, token: unknown): (T & { typ: McpTokenType; exp?: number }) | null {
-  if (typeof token !== "string" || token.length > 4096) return null;
+  if (typeof token !== "string" || token.length > 8192) return null;
   const parts = token.split(".");
   if (parts.length !== 2 || !parts[0] || !parts[1]) return null;
   try {
@@ -100,6 +100,19 @@ export function signClient(name: string, redirectUris: string[]): string {
   return signMcpToken<ClientInfo & { iat: number }>("client", { n: name, u: redirectUris, iat: nowSec() });
 }
 
+/**
+ * Dipakai oleh Dynamic Client Registration (/api/mcp/oauth/register) ketika klien (seperti Google Gemini Web)
+ * meminta `token_endpoint_auth_method: "client_secret_post"` atau `"client_secret_basic"`.
+ */
+export function signDynamicClient(name: string, redirectUris: string[], clientSecret?: string): string {
+  return signMcpToken<CustomClientInfo>("client", {
+    n: name,
+    u: redirectUris,
+    iat: nowSec(),
+    ...(clientSecret ? { sh: hashClientSecret(clientSecret) } : {}),
+  });
+}
+
 export function signCustomClient(opts: {
   kid: string;
   name: string;
@@ -149,17 +162,34 @@ export function clientFingerprint(clientId: string): string {
 /**
  * Host resmi yang dipercaya untuk alur OAuth MCP (Web & Cloud):
  * - Claude (claude.ai, claude.com)
+ * - Google Gemini Connected Apps / Spark Relay (oauth-redirect.googleusercontent.com, oauth-redirect-sandbox.googleusercontent.com, oauth-redirect-test.googleusercontent.com)
+ * - Gemini Enterprise / Vertex AI Search (vertexaisearch.cloud.google.com)
+ * - Gemini Web / Google AI Studio / Firebase Studio (gemini.google.com, aistudio.google.com, makersuite.google.com, idx.google.com, studio.firebase.google.com, console.cloud.google.com, developers.google.com)
  * - Cursor (cursor.com, cursor.sh)
  * - OpenCode (opencode.ai)
  * - Codex / OpenAI (chatgpt.com, platform.openai.com)
- * - Gemini Web / Google AI Studio / Firebase Studio (gemini.google.com, aistudio.google.com, makersuite.google.com, idx.google.com, studio.firebase.google.com, console.cloud.google.com, developers.google.com)
  * Tambahan bisa diatur lewat env MCP_REDIRECT_HOSTS="host1,host2".
  */
+export const GOOGLE_OAUTH_RELAY_HOSTS = [
+  "oauth-redirect.googleusercontent.com",
+  "oauth-redirect-sandbox.googleusercontent.com",
+  "oauth-redirect-test.googleusercontent.com",
+  "vertexaisearch.cloud.google.com",
+] as const;
+
 const DEFAULT_REDIRECT_HOSTS = [
   "claude.ai",
   "claude.com",
   "www.claude.ai",
   "www.claude.com",
+  ...GOOGLE_OAUTH_RELAY_HOSTS,
+  "gemini.google.com",
+  "aistudio.google.com",
+  "makersuite.google.com",
+  "idx.google.com",
+  "studio.firebase.google.com",
+  "console.cloud.google.com",
+  "developers.google.com",
   "cursor.com",
   "www.cursor.com",
   "cursor.sh",
@@ -168,13 +198,6 @@ const DEFAULT_REDIRECT_HOSTS = [
   "chatgpt.com",
   "www.chatgpt.com",
   "platform.openai.com",
-  "gemini.google.com",
-  "aistudio.google.com",
-  "makersuite.google.com",
-  "idx.google.com",
-  "studio.firebase.google.com",
-  "console.cloud.google.com",
-  "developers.google.com",
 ];
 
 /** Deep-link URI scheme aplikasi AI desktop/IDE/CLI resmi (Cursor, OpenCode, Codex, Gemini, Claude, VS Code). */
@@ -246,6 +269,44 @@ export function isValidCustomRedirectUri(raw: unknown): boolean {
   }
   if (ALLOWED_APP_SCHEMES.has(u.protocol) || u.protocol === "depup:") {
     return (host.length > 0 || u.pathname.length > 1) && !raw.includes(" ");
+  }
+  return false;
+}
+
+/**
+ * Cek kecocokan `redirect_uri` terhadap daftar `client.u`:
+ * - Untuk client dinamis standar (`!client.custom`): wajib cocok persis (`client.u.includes(redirectUri)`).
+ * - Untuk Custom OAuth Client (`client.custom === true`): selain cocok persis, jika user mengaktifkan preset Google/Gemini
+ *   (yang mendaftarkan host `oauth-redirect*.googleusercontent.com` atau `gemini.google.com`), maka URL dinamis per-konektor
+ *   milik Google (`https://oauth-redirect*.googleusercontent.com/r/user_bound_custom-mcp-...` atau `/a/...`) otomatis diizinkan!
+ */
+export function matchesClientRedirectUri(client: CustomClientInfo, redirectUri: string): boolean {
+  if (client.u.includes(redirectUri)) return true;
+  if (!client.custom) return false;
+  try {
+    const incoming = new URL(redirectUri);
+    const incomingHost = incoming.hostname.toLowerCase();
+    // Jika incoming adalah relay resmi Google Gemini (oauth-redirect*.googleusercontent.com atau vertexaisearch.cloud.google.com)
+    // dan user sudah mencentang preset Gemini/Google di Custom OAuth-nya:
+    if ((GOOGLE_OAUTH_RELAY_HOSTS as readonly string[]).includes(incomingHost) && incoming.protocol === "https:") {
+      const hasGoogleInClient = client.u.some((u) => {
+        try {
+          const parsed = new URL(u);
+          const h = parsed.hostname.toLowerCase();
+          return (GOOGLE_OAUTH_RELAY_HOSTS as readonly string[]).includes(h) || h.endsWith(".google.com") || h.endsWith(".googleusercontent.com");
+        } catch {
+          return false;
+        }
+      });
+      if (hasGoogleInClient) return true;
+    }
+    // Untuk localhost dengan port dinamis (mis. Gemini CLI / OpenCode / Codex lokal) pada Custom OAuth:
+    if (incoming.protocol === "http:" && (incomingHost === "localhost" || incomingHost === "127.0.0.1")) {
+      const hasLocalInClient = client.u.some((u) => u.startsWith("http://localhost") || u.startsWith("http://127.0.0.1"));
+      if (hasLocalInClient) return true;
+    }
+  } catch {
+    return false;
   }
   return false;
 }

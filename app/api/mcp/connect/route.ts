@@ -22,6 +22,7 @@ import {
   generateClientSecret,
   isAllowedRedirectUri,
   isValidCustomRedirectUri,
+  matchesClientRedirectUri,
   mcpResourceUrl,
   signAccessToken,
   signCode,
@@ -44,15 +45,20 @@ interface AuthParams {
   code_challenge_method?: unknown;
   state?: unknown;
   resource?: unknown;
+  scope?: unknown;
 }
 
 const DEFAULT_CUSTOM_REDIRECT_URIS = [
   "https://claude.ai/api/mcp/auth_callback",
   "https://claude.com/api/mcp/auth_callback",
+  "https://oauth-redirect.googleusercontent.com/r/callback",
+  "https://oauth-redirect-sandbox.googleusercontent.com/r/callback",
+  "https://oauth-redirect-test.googleusercontent.com/r/callback",
+  "https://vertexaisearch.cloud.google.com/oauth-redirect",
+  "https://gemini.google.com/oauth/callback",
   "cursor://anysphere.cursor-retrieval/oauth/callback",
   "cursor://anysphere.cursor-mcp/oauth/callback",
   "https://chatgpt.com/connector_platform_oauth_redirect",
-  "https://gemini.google.com/oauth/callback",
   "http://localhost:6274/oauth/callback",
   "http://127.0.0.1:6274/oauth/callback",
 ];
@@ -80,14 +86,28 @@ async function validate(p: AuthParams, origin: string): Promise<Validated> {
 
   const redirectUri = typeof p.redirect_uri === "string" ? p.redirect_uri : "";
   const uriAllowed = client.custom === true ? isValidCustomRedirectUri(redirectUri) : isAllowedRedirectUri(redirectUri);
-  if (!client.u.includes(redirectUri) || !uriAllowed) {
+  if (!matchesClientRedirectUri(client, redirectUri) || !uriAllowed) {
     return { ok: false, error: "Alamat pengembalian (redirect_uri) tidak terdaftar atau tidak diizinkan." };
   }
   if (p.response_type !== "code") return { ok: false, error: 'response_type harus "code".' };
-  if (p.code_challenge_method !== "S256" || typeof p.code_challenge !== "string" || !CHALLENGE_RE.test(p.code_challenge)) {
-    return { ok: false, error: "PKCE (S256) wajib dipakai." };
+
+  // PKCE S256 wajib untuk public client; untuk confidential client (yang punya client_secret / `client.sh`)
+  // PKCE S256 tetap diverifikasi jika dikirim, atau diizinkan dengan penanda "CONFIDENTIAL" jika klien mengandalkan client_secret.
+  let challenge = "";
+  const hasPkceParams = p.code_challenge !== undefined || p.code_challenge_method !== undefined;
+  if (hasPkceParams || !client.sh) {
+    if (p.code_challenge_method !== "S256" || typeof p.code_challenge !== "string" || !CHALLENGE_RE.test(p.code_challenge)) {
+      return { ok: false, error: "PKCE (S256) wajib dipakai." };
+    }
+    challenge = p.code_challenge;
+  } else {
+    challenge = "CONFIDENTIAL";
   }
-  if (p.state !== undefined && (typeof p.state !== "string" || p.state.length > 512)) return { ok: false, error: "Parameter state tidak valid." };
+
+  // Gemini Web mengirim parameter `state` ~1.400 karakter, jadi batas dinaikkan ke 4.096 karakter.
+  if (p.state !== undefined && (typeof p.state !== "string" || p.state.length > 4096)) {
+    return { ok: false, error: "Parameter state tidak valid." };
+  }
   if (typeof p.resource === "string" && p.resource && p.resource.replace(/\/+$/, "") !== mcpResourceUrl(origin)) {
     return { ok: false, error: "resource tidak cocok dengan server MCP Depup." };
   }
@@ -96,7 +116,7 @@ async function validate(p: AuthParams, origin: string): Promise<Validated> {
     client,
     clientId: p.client_id as string,
     redirectUri,
-    challenge: p.code_challenge,
+    challenge,
     state: typeof p.state === "string" ? p.state : undefined,
   };
 }
@@ -148,13 +168,6 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
 
 /**
  * POST /api/mcp/connect
- *  - { action: "preview", params }               -> info aplikasi peminta untuk layar izin
- *  - { action: "approve", params }               -> terbitkan kode otorisasi, balas { redirectTo }
- *  - { action: "deny", params }                  -> balas { redirectTo } berisi error=access_denied
- *  - { action: "revoke" }                        -> cabut semua akses konektor milik user ini
- *  - { action: "create_oauth", ... }             -> buat Custom OAuth Client baru (Client ID + Client Secret)
- *  - { action: "delete_oauth", id }              -> hapus & cabut satu Custom OAuth Client
- *  - { action: "generate_oauth_token", id?, ttlDays?, clientLabel? } -> terbitkan Access Token & Refresh Token langsung untuk OpenCode / Cursor / Codex / Gemini / Claude
  */
 export const POST = withErrorHandling(async (req: NextRequest) => {
   const email = getSessionEmail(req);
@@ -198,8 +211,8 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
 
     const parsedUris = parseRedirectUrisInput(body.redirectUris);
     const redirectUris = Array.from(new Set(parsedUris.length > 0 ? parsedUris : DEFAULT_CUSTOM_REDIRECT_URIS));
-    if (redirectUris.length === 0 || redirectUris.length > 15) {
-      return fail("Masukkan antara 1 sampai 15 Redirect URI.", 400, "bad_request");
+    if (redirectUris.length === 0 || redirectUris.length > 25) {
+      return fail("Masukkan antara 1 sampai 25 Redirect URI.", 400, "bad_request");
     }
     const invalidUri = redirectUris.find((u) => !isValidCustomRedirectUri(u));
     if (invalidUri) {

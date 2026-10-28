@@ -76,7 +76,7 @@ async function issue(email: string, clientId: string) {
 
 /**
  * POST /api/mcp/oauth/token — tukar kode otorisasi (+ PKCE), refresh token, atau client_credentials jadi access token.
- * Mendukung baik public client (tanpa secret, wajib PKCE S256) maupun Custom OAuth Client (dengan client_secret).
+ * Mendukung baik public client (tanpa secret, wajib PKCE S256) maupun Confidential / Custom OAuth Client (dengan client_secret).
  */
 export async function POST(req: NextRequest) {
   const rl = await rateLimit("mcp-token", `ip:${clientIp(req)}`, 60, 60);
@@ -98,7 +98,7 @@ export async function POST(req: NextRequest) {
       return oauthError("invalid_client", "OAuth client ini sudah dihapus atau dicabut.", 401);
     }
 
-    // Jika client memiliki client_secret (sh) dan client_secret dikirim (atau grant_type=client_credentials), wajib cocok.
+    // Jika client memiliki client_secret (sh) dan client_secret dikirim, wajib cocok.
     if (client.sh && p.client_secret !== undefined) {
       if (!verifyClientSecret(p.client_secret, client.sh)) {
         return oauthError("invalid_client", "client_secret tidak valid.", 401);
@@ -115,7 +115,15 @@ export async function POST(req: NextRequest) {
       if (!code) return oauthError("invalid_grant", "Kode otorisasi tidak valid atau kedaluwarsa.");
       if (code.cid !== cid) return oauthError("invalid_grant", "Kode ini bukan untuk client tersebut.");
       if (code.ruri !== p.redirect_uri) return oauthError("invalid_grant", "redirect_uri tidak cocok.");
-      if (!verifyPkce(p.code_verifier, code.cc)) return oauthError("invalid_grant", "code_verifier salah.");
+
+      if (code.cc === "CONFIDENTIAL") {
+        if (!client.sh || !verifyClientSecret(p.client_secret, client.sh)) {
+          return oauthError("invalid_client", "client_secret wajib diisi untuk menukar kode otorisasi ini.", 401);
+        }
+      } else if (!verifyPkce(p.code_verifier, code.cc)) {
+        return oauthError("invalid_grant", "code_verifier salah.");
+      }
+
       // Satu kode hanya boleh ditukar sekali (cegah replay).
       if (!(await consumeCode(code.jti))) return oauthError("invalid_grant", "Kode otorisasi sudah dipakai.");
       if ((await getEpoch(code.email)) !== code.ep) return oauthError("invalid_grant", "Akses sudah dicabut.");
