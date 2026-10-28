@@ -1,17 +1,8 @@
 import crypto from "crypto";
 
 /**
- * Konektor MCP (Claude, OpenCode, Cursor, Codex, Gemini & Custom OAuth -> Depup):
- * token OAuth 2.1 tanpa-state + Custom OAuth Client + Long-Lived Bearer Token untuk konfigurasi CLI/IDE.
- *
- * Alur singkat:
- *  1. Klien AI (Claude, Cursor, OpenCode, Codex, Gemini) mendaftar sebagai client (POST /api/mcp/oauth/register)
- *     ATAU user membuat Custom OAuth Client / Bearer Token sendiri di Settings ("Buat OAuth Sendiri").
- *  2. User login Google di Depup lalu menekan "Izinkan" di /connect/authorize -> `code` sekali pakai (PKCE S256).
- *  3. Klien menukar code di /api/mcp/oauth/token -> access token + refresh token.
- *     Untuk Custom OAuth dengan client_secret, mendukung juga `client_secret_post`, `client_secret_basic`,
- *     dan `grant_type=client_credentials`.
- *  4. Klien memanggil /api/mcp dengan `Authorization: Bearer <access token>`.
+ * Konektor MCP (Claude, OpenCode, Cursor, Codex, Gemini Web & CLI, serta Custom OAuth -> Depup):
+ * token OAuth 2.1 tanpa-state + Custom OAuth Client + Long-Lived Bearer Token untuk konfigurasi CLI/IDE/Web.
  */
 
 export type McpTokenType = "client" | "code" | "at" | "rt";
@@ -156,12 +147,12 @@ export function clientFingerprint(clientId: string): string {
 /* ---------------- redirect_uri ---------------- */
 
 /**
- * Host resmi yang dipercaya untuk alur OAuth MCP:
+ * Host resmi yang dipercaya untuk alur OAuth MCP (Web & Cloud):
  * - Claude (claude.ai, claude.com)
  * - Cursor (cursor.com, cursor.sh)
  * - OpenCode (opencode.ai)
  * - Codex / OpenAI (chatgpt.com, platform.openai.com)
- * - Gemini / Google (gemini.google.com, aistudio.google.com)
+ * - Gemini Web / Google AI Studio / Firebase Studio (gemini.google.com, aistudio.google.com, makersuite.google.com, idx.google.com, studio.firebase.google.com, console.cloud.google.com, developers.google.com)
  * Tambahan bisa diatur lewat env MCP_REDIRECT_HOSTS="host1,host2".
  */
 const DEFAULT_REDIRECT_HOSTS = [
@@ -179,9 +170,14 @@ const DEFAULT_REDIRECT_HOSTS = [
   "platform.openai.com",
   "gemini.google.com",
   "aistudio.google.com",
+  "makersuite.google.com",
+  "idx.google.com",
+  "studio.firebase.google.com",
+  "console.cloud.google.com",
+  "developers.google.com",
 ];
 
-/** Deep-link URI scheme aplikasi AI desktop/IDE resmi (Cursor, OpenCode, Codex, Gemini, Claude, VS Code). */
+/** Deep-link URI scheme aplikasi AI desktop/IDE/CLI resmi (Cursor, OpenCode, Codex, Gemini, Claude, VS Code). */
 const ALLOWED_APP_SCHEMES = new Set([
   "cursor:",
   "opencode:",
@@ -201,8 +197,8 @@ function extraHosts(): string[] {
 }
 
 /**
- * https hanya ke host AI resmi yang diizinkan; http hanya ke loopback (untuk OpenCode / Codex / Gemini / Cursor / MCP Inspector lokal);
- * atau skema deep-link aplikasi resmi (mis. cursor://anysphere.cursor-retrieval/oauth/callback).
+ * https hanya ke host AI resmi yang diizinkan; http hanya ke loopback (untuk OpenCode / Codex / Gemini CLI / Cursor / MCP Inspector lokal);
+ * atau skema deep-link aplikasi resmi (mis. cursor://, gemini://, opencode://, codex://).
  * Tanpa fragment, tanpa kredensial di URL.
  */
 export function isAllowedRedirectUri(raw: unknown): boolean {
@@ -321,10 +317,6 @@ export function verifyRefreshToken(token: unknown): GrantPayload | null {
 
 /* ---------------- login lalu kembali ke halaman izin ---------------- */
 
-/**
- * Tujuan login yang boleh diingat: HANYA halaman izin konektor. Awalan literal "/connect/authorize?" memastikan
- * hasilnya selalu satu origin dengan Depup (tidak bisa jadi open redirect lewat "//host" atau "https://...").
- */
 const NEXT_AUTHORIZE_RE = /^\/connect\/authorize\?[A-Za-z0-9\-._~%=&+:/]{1,1800}$/;
 
 export function isMcpAuthorizeNext(value: unknown): value is string {
@@ -333,10 +325,6 @@ export function isMcpAuthorizeNext(value: unknown): value is string {
 
 /* ---------------- origin kanonik ---------------- */
 
-/**
- * Origin publik Depup (tanpa slash akhir). Urutan: env -> localhost (dari host request, untuk dev) -> depup.cloud.
- * Dipakai di metadata OAuth, jadi HARUS stabil: jangan percaya header Host untuk domain produksi.
- */
 export function appOrigin(hostHeader?: string | null): string {
   const env = (process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "").trim().replace(/\/+$/, "");
   if (env) return env;

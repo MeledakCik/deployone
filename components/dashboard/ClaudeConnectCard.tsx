@@ -63,16 +63,16 @@ const AI_CLIENTS: {
   {
     id: "codex",
     label: "Codex",
-    badge: "config.toml · CLI",
-    configPath: "~/.codex/config.toml",
-    summary: "Tambahkan ke `~/.codex/config.toml` pada blok `[mcp_servers.depup]` atau jalankan perintah `codex mcp add`.",
+    badge: "Web · config.toml · CLI",
+    configPath: "~/.codex/config.toml atau Konektor Web ChatGPT/Codex",
+    summary: "Bisa dihubungkan via OAuth Web atau ditambahkan ke `~/.codex/config.toml` & perintah `codex mcp add`.",
   },
   {
     id: "gemini",
     label: "Gemini",
-    badge: "settings.json · CLI",
-    configPath: "~/.gemini/settings.json atau .gemini/settings.json",
-    summary: "Tambahkan `httpUrl` di `~/.gemini/settings.json` untuk Gemini CLI / Code Assist atau jalankan `gemini mcp add`.",
+    badge: "Web · CLI · Code Assist",
+    configPath: "gemini.google.com / AI Studio / ~/.gemini/settings.json",
+    summary: "Bisa dipasang di Gemini Web / Google AI Studio (via URL MCP & OAuth) maupun di Gemini CLI & Code Assist (`settings.json` / `gemini mcp add`).",
   },
 ];
 
@@ -91,6 +91,19 @@ const OAUTH_URI_PRESETS: {
     defaultOn: true,
   },
   {
+    id: "gemini",
+    label: "Gemini (Web & CLI)",
+    hint: "gemini.google.com, AI Studio & CLI",
+    uris: [
+      "https://gemini.google.com/oauth/callback",
+      "https://aistudio.google.com/oauth/callback",
+      "https://idx.google.com/oauth/callback",
+      "https://studio.firebase.google.com/oauth/callback",
+      "gemini://oauth/callback",
+    ],
+    defaultOn: true,
+  },
+  {
     id: "cursor",
     label: "Cursor IDE",
     hint: "cursor:// callback",
@@ -100,28 +113,21 @@ const OAUTH_URI_PRESETS: {
   {
     id: "opencode",
     label: "OpenCode",
-    hint: "opencode:// & loopback",
-    uris: ["opencode://oauth/callback", "http://127.0.0.1:6274/oauth/callback"],
+    hint: "opencode.ai & loopback",
+    uris: ["https://opencode.ai/oauth/callback", "opencode://oauth/callback", "http://127.0.0.1:6274/oauth/callback"],
     defaultOn: true,
   },
   {
     id: "codex",
-    label: "Codex (OpenAI)",
+    label: "Codex (Web & CLI)",
     hint: "chatgpt.com & codex://",
     uris: ["https://chatgpt.com/connector_platform_oauth_redirect", "codex://oauth/callback"],
     defaultOn: true,
   },
   {
-    id: "gemini",
-    label: "Gemini (Google)",
-    hint: "gemini.google.com & gemini://",
-    uris: ["https://gemini.google.com/oauth/callback", "gemini://oauth/callback"],
-    defaultOn: true,
-  },
-  {
     id: "localhost",
-    label: "Localhost / Inspector",
-    hint: "http://localhost:6274",
+    label: "Localhost / CLI Callback",
+    hint: "http://localhost & 127.0.0.1",
     uris: ["http://localhost:6274/oauth/callback", "http://localhost:3000/oauth/callback"],
     defaultOn: true,
   },
@@ -207,7 +213,14 @@ function buildClientSnippets(
   client: AiClientId,
   mcpUrl: string,
   token: string,
-): { configTitle: string; configCode: string; cliTitle?: string; cliCode?: string } {
+): {
+  configTitle: string;
+  configCode: string;
+  cliTitle?: string;
+  cliCode?: string;
+  extraTitle?: string;
+  extraCode?: string;
+} {
   switch (client) {
     case "claude":
       return {
@@ -292,7 +305,7 @@ function buildClientSnippets(
       };
     case "gemini":
       return {
-        configTitle: "Konfigurasi Gemini CLI / Code Assist (~/.gemini/settings.json)",
+        configTitle: "Cara A (Gemini CLI / Code Assist — ~/.gemini/settings.json dengan Token)",
         configCode: JSON.stringify(
           {
             mcpServers: {
@@ -307,17 +320,29 @@ function buildClientSnippets(
           null,
           2,
         ),
-        cliTitle: "Perintah Terminal Gemini CLI",
+        cliTitle: "Cara B (Perintah Terminal Gemini CLI — 1 Baris)",
         cliCode: `gemini mcp add --transport http depup ${mcpUrl} --header "Authorization: Bearer ${token}"`,
+        extraTitle: "Cara C (Mode OAuth 2.1 Otomatis di Gemini CLI / Gemini Web tanpa Token Manual)",
+        extraCode: JSON.stringify(
+          {
+            mcpServers: {
+              depup: {
+                httpUrl: mcpUrl,
+                oauth: {
+                  enabled: true,
+                },
+              },
+            },
+          },
+          null,
+          2,
+        ),
       };
   }
 }
 
 /**
- * Kartu "Konektor AI (MCP) — Claude, OpenCode, Cursor, Codex & Gemini + Custom OAuth" di Settings:
- * - Panduan & generator konfigurasi otomatis siap salin untuk Claude, OpenCode, Cursor, Codex, dan Gemini.
- * - Dukungan upload bertahap (`update_website` chunked/append & surgical `patches`) untuk file `index.html` besar/banyak.
- * - Tab "Buat OAuth Sendiri" untuk membuat & mengelola OAuth Client ID + Client Secret maupun Bearer token berdurasi panjang.
+ * Kartu "Konektor AI (MCP) — Claude, OpenCode, Cursor, Codex & Gemini (Web & CLI) + Custom OAuth" di Settings.
  */
 export function ClaudeConnectCard({
   tokens,
@@ -447,7 +472,7 @@ export function ClaudeConnectCard({
       if (trimmed) uris.push(trimmed);
     }
     if (uris.length === 0) {
-      showToast("Pilih minimal satu Redirect URI (mis. Claude, Cursor, OpenCode, Codex, Gemini, atau Localhost).");
+      showToast("Pilih minimal satu Redirect URI (mis. Claude, Gemini, Cursor, OpenCode, Codex, atau Localhost).");
       return;
     }
 
@@ -583,7 +608,7 @@ export function ClaudeConnectCard({
             <Sparkles size={16} /> Konektor AI (MCP) — Claude, OpenCode, Cursor, Codex &amp; Gemini
           </h3>
           <p className="mt-1 text-[12.5px] text-text-muted">
-            Satu server MCP untuk semua AI: publish website (termasuk <code>index.html</code> besar &amp; banyak halaman secara bertahap), edit cepat tanpa ganti link, deploy GitHub, dan buat OAuth sendiri.
+            Satu server MCP untuk Web &amp; CLI: publish website (termasuk <code>index.html</code> besar &amp; banyak halaman secara bertahap), edit cepat tanpa ganti link, deploy GitHub, dan buat OAuth sendiri.
           </p>
         </div>
 
@@ -618,7 +643,7 @@ export function ClaudeConnectCard({
             <ShieldCheck size={14} /> Server MCP v{testState.version} Aktif · {testState.toolCount} Tool &amp; {testState.promptCount} Prompt Interaktif siap ({testState.latencyMs} ms)
           </span>
           <span className="text-[11.5px] opacity-90">
-            Siap untuk Claude, OpenCode, Cursor, Codex &amp; Gemini
+            Siap untuk Claude, OpenCode, Cursor, Codex &amp; Gemini (Web &amp; CLI)
           </span>
         </div>
       )}
@@ -715,7 +740,7 @@ export function ClaudeConnectCard({
                   Konfigurasi MCP untuk {currentClientMeta.label}
                 </h4>
                 <p className="mt-0.5 text-[12px] text-text-muted">
-                  {currentClientMeta.summary} File: <code>{currentClientMeta.configPath}</code>
+                  {currentClientMeta.summary} Target: <code>{currentClientMeta.configPath}</code>
                 </p>
               </div>
 
@@ -757,7 +782,7 @@ export function ClaudeConnectCard({
             {/* Khusus Claude: Langkah claude.ai Web + App HP */}
             {selectedClient === "claude" && (
               <div className="rounded-xl bg-[var(--pill-bg)] p-3.5 text-[12px]">
-                <p className="font-semibold">Cara 1: Pasang di Claude Web (claude.ai) &amp; App HP (Tanpa File Config)</p>
+                <p className="font-semibold">Cara 1: Pasang di Claude Web (claude.ai) &amp; App HP (OAuth Otomatis / Custom OAuth)</p>
                 <ol className="mt-1.5 list-decimal space-y-1 pl-5 leading-relaxed text-text-muted">
                   <li>
                     Buka <strong>claude.ai → Settings → Connectors → Add custom connector</strong>.
@@ -767,6 +792,24 @@ export function ClaudeConnectCard({
                   </li>
                   <li>
                     Klik <strong>Add</strong> lalu <strong>Connect</strong>, login Google di Depup, dan tekan <strong>Izinkan</strong>.
+                  </li>
+                </ol>
+              </div>
+            )}
+
+            {/* Khusus Gemini: Langkah Gemini Web + Google AI Studio + Firebase Studio */}
+            {selectedClient === "gemini" && (
+              <div className="rounded-xl bg-[var(--pill-bg)] p-3.5 text-[12px]">
+                <p className="font-semibold">Cara 1: Pasang di Gemini Web (gemini.google.com / Google AI Studio / Firebase Studio)</p>
+                <ol className="mt-1.5 list-decimal space-y-1 pl-5 leading-relaxed text-text-muted">
+                  <li>
+                    Di <strong>Gemini Web</strong> atau <strong>Google AI Studio</strong>, buka menu <strong>Extensions / Connectors / MCP Servers → Add MCP Server</strong>.
+                  </li>
+                  <li>
+                    Masukkan nama <strong>Depup</strong> dan tempel URL endpoint MCP: <code>{resolvedUrl}</code>.
+                  </li>
+                  <li>
+                    Untuk autentikasi Web: pilih <strong>OAuth 2.0</strong> (otomatis terhubung ke layar izin Depup, atau masukkan <code>Client ID</code> &amp; <code>Client Secret</code> dari tab <strong>Buat OAuth Sendiri</strong>), atau pilih <strong>Bearer Token</strong> dan klik <strong>Buat &amp; Isi Token Otomatis</strong> di atas.
                   </li>
                 </ol>
               </div>
@@ -822,6 +865,25 @@ export function ClaudeConnectCard({
                 </pre>
               </div>
             )}
+
+            {/* Blok Tambahan (Khusus Gemini OAuth Otomatis tanpa Token Manual) */}
+            {displaySnippets.extraCode && (
+              <div>
+                <div className="mb-1.5 flex items-center justify-between gap-2">
+                  <span className="text-[12px] font-medium text-text-muted">{displaySnippets.extraTitle}</span>
+                  <button
+                    type="button"
+                    onClick={() => void copyText(copySnippets.extraCode, `Konfigurasi OAuth ${currentClientMeta.label}`)}
+                    className="pill inline-flex items-center gap-1 px-2.5 py-1 text-[11.5px]"
+                  >
+                    <Copy size={12} /> Salin Konfigurasi OAuth
+                  </button>
+                </div>
+                <pre className="overflow-x-auto rounded-xl border border-[var(--line)] bg-[var(--pill-bg)] p-3 font-mono text-[11.5px] leading-relaxed">
+                  {displaySnippets.extraCode}
+                </pre>
+              </div>
+            )}
           </div>
 
           {/* Info Upload Cepat File index.html Besar */}
@@ -830,7 +892,7 @@ export function ClaudeConnectCard({
               <Zap size={14} className="text-lav-text" /> Mode Cepat untuk <code>index.html</code> Besar &amp; Banyak File
             </h4>
             <p className="mt-1 text-[12px] leading-relaxed text-text-muted">
-              Semua klien AI (Claude, OpenCode, Cursor, Codex, Gemini) otomatis mendapatkan 3 tool interaktif untuk website besar:
+              Semua klien AI (Claude, OpenCode, Cursor, Codex, Gemini Web &amp; CLI) otomatis mendapatkan 3 tool interaktif untuk website besar:
             </p>
             <ul className="mt-2.5 grid gap-2 sm:grid-cols-3 text-[12px]">
               <li className="rounded-xl bg-[var(--pill-bg)] p-3">
@@ -891,7 +953,7 @@ export function ClaudeConnectCard({
               <KeyRound size={15} /> Buat OAuth Client Sendiri (Custom OAuth 2.1)
             </h4>
             <p className="mt-1 text-[12px] leading-relaxed text-text-muted">
-              Buat <strong>OAuth Client ID</strong> dan <strong>OAuth Client Secret</strong> milikmu sendiri untuk dipakai di <strong>Claude</strong>, <strong>OpenCode</strong>, <strong>Cursor</strong>, <strong>Codex</strong>, <strong>Gemini</strong>, atau agen AI kustom.
+              Buat <strong>OAuth Client ID</strong> dan <strong>OAuth Client Secret</strong> milikmu sendiri untuk dipakai di <strong>Claude</strong>, <strong>Gemini (Web &amp; CLI)</strong>, <strong>OpenCode</strong>, <strong>Cursor</strong>, <strong>Codex</strong>, atau agen AI kustom.
             </p>
 
             <form onSubmit={handleCreateOAuth} className="mt-3.5 space-y-3.5">
@@ -906,7 +968,7 @@ export function ClaudeConnectCard({
                     maxLength={60}
                     value={oauthName}
                     onChange={(e) => setOauthName(e.target.value)}
-                    placeholder="mis. Claude / Cursor / OpenCode / Codex / Gemini"
+                    placeholder="mis. Claude / Gemini Web & CLI / Cursor / OpenCode"
                     className="input-solid h-10 w-full px-3 text-[12.5px]"
                   />
                 </div>
@@ -989,7 +1051,7 @@ export function ClaudeConnectCard({
                 </button>
                 <button
                   type="button"
-                  onClick={() => void handleGenerateToken(undefined, "Multi-AI CLI")}
+                  onClick={() => void handleGenerateToken(undefined, "Multi-AI Web & CLI")}
                   disabled={busyClientId === "personal"}
                   className="pill inline-flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-medium hover:brightness-95 disabled:opacity-50"
                 >

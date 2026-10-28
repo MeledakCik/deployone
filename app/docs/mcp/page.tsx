@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { PublicDoc } from "@/components/public/PublicDoc";
 
 export const metadata: Metadata = {
-  title: "Konektor MCP (Claude, OpenCode, Cursor, Codex & Gemini) + Custom OAuth",
+  title: "Konektor MCP (Claude, OpenCode, Cursor, Codex & Gemini Web/CLI) + Custom OAuth",
   description:
-    "Hubungkan Depup ke Claude, OpenCode, Cursor, OpenAI Codex, dan Google Gemini: publish website besar secara bertahap sebagai Link Instan, edit cepat tanpa ganti link, buat OAuth sendiri, atau deploy repo GitHub.",
+    "Hubungkan Depup ke Claude, OpenCode, Cursor, OpenAI Codex, dan Google Gemini (Web & CLI): publish website besar secara bertahap sebagai Link Instan, edit cepat tanpa ganti link, buat OAuth sendiri, atau deploy repo GitHub.",
   alternates: { canonical: "/docs/mcp" },
 };
 
@@ -13,9 +13,9 @@ const CONTACT = "depupdev@gmail.com";
 
 export default function McpDocsPage() {
   return (
-    <PublicDoc title="Konektor MCP (Claude, OpenCode, Cursor, Codex & Gemini) untuk Depup" updated="28 Oktober 2026">
+    <PublicDoc title="Konektor MCP (Claude, OpenCode, Cursor, Codex & Gemini Web/CLI) untuk Depup" updated="28 Oktober 2026">
       <p>
-        Konektor MCP Depup mendukung <strong>Claude</strong>, <strong>OpenCode</strong>, <strong>Cursor</strong>, <strong>Codex</strong>, dan <strong>Gemini</strong>. AI pilihanmu bisa menayangkan website statis sebagai <strong>Link Instan</strong> (termasuk website dengan file <code>index.html</code> yang besar atau banyak halaman secara bertahap), mengedit halaman secara instan tanpa mengubah URL, serta men-deploy repo GitHub ke
+        Konektor MCP Depup mendukung <strong>Claude</strong>, <strong>OpenCode</strong>, <strong>Cursor</strong>, <strong>Codex</strong>, serta <strong>Gemini (Web &amp; CLI)</strong>. AI pilihanmu bisa menayangkan website statis sebagai <strong>Link Instan</strong> (termasuk website dengan file <code>index.html</code> yang besar atau banyak halaman secara bertahap), mengedit halaman secara instan tanpa mengubah URL, serta men-deploy repo GitHub ke
         <strong> Vercel</strong>, <strong>Cloudflare Pages</strong>, dan <strong>Railway</strong>.
       </p>
 
@@ -30,7 +30,7 @@ export default function McpDocsPage() {
         <li><code>deploy_project</code> — men-deploy repo GitHub ke Vercel, Cloudflare Pages, atau Railway memakai token yang kamu simpan di Settings.</li>
       </ul>
 
-      <h2>Cara Memasang di Claude, OpenCode, Cursor, Codex &amp; Gemini</h2>
+      <h2>Cara Memasang di Claude, OpenCode, Cursor, Codex &amp; Gemini (Web &amp; CLI)</h2>
       <p>
         Buka <strong>Settings → Konektor AI (MCP)</strong> di dashboard Depup untuk membuat token otomatis dan menyalin konfigurasi siap pakai:
       </p>
@@ -38,6 +38,14 @@ export default function McpDocsPage() {
         <li>
           <strong>Claude (Web, App HP &amp; Claude Code CLI)</strong>: Tambahkan URL <code>{`${SITE}/api/mcp`}</code> di <em>Settings → Connectors → Add custom connector</em> pada claude.ai, atau jalankan:
           <pre>{`claude mcp add --transport http depup ${SITE}/api/mcp --header "Authorization: Bearer <TOKEN>"`}</pre>
+        </li>
+        <li>
+          <strong>Gemini (Web, Google AI Studio, Firebase Studio &amp; Gemini CLI)</strong>:
+          <ul>
+            <li><strong>Gemini Web / AI Studio</strong>: Tambahkan server MCP dengan URL <code>{`${SITE}/api/mcp`}</code> dan gunakan OAuth 2.0 (otomatis atau dengan Custom OAuth Client ID &amp; Secret dari Settings Depup) maupun Bearer Token.</li>
+            <li><strong>Gemini CLI / Code Assist</strong>: Jalankan perintah CLI atau tempel ke <code>~/.gemini/settings.json</code>:</li>
+          </ul>
+          <pre>{`gemini mcp add --transport http depup ${SITE}/api/mcp --header "Authorization: Bearer <TOKEN>"`}</pre>
         </li>
         <li>
           <strong>OpenCode (<code>opencode.json</code>)</strong>: Tambahkan blok <code>mcp.depup</code> bertipe <code>remote</code> di <code>opencode.json</code> atau jalankan <code>opencode mcp auth depup</code>:
@@ -51,10 +59,6 @@ export default function McpDocsPage() {
           <strong>Codex (<code>~/.codex/config.toml</code>)</strong>: Jalankan <code>{`codex mcp add depup --url ${SITE}/api/mcp`}</code> atau tambahkan di <code>~/.codex/config.toml</code>:
           <pre>{`[mcp_servers.depup]\nurl = "${SITE}/api/mcp"\nhttp_headers = { "Authorization" = "Bearer <TOKEN>" }`}</pre>
         </li>
-        <li>
-          <strong>Gemini CLI / Code Assist (<code>~/.gemini/settings.json</code>)</strong>: Jalankan perintah CLI atau tambahkan di <code>~/.gemini/settings.json</code>:
-          <pre>{`gemini mcp add --transport http depup ${SITE}/api/mcp --header "Authorization: Bearer <TOKEN>"`}</pre>
-        </li>
       </ul>
 
       <h2>Solusi untuk <code>index.html</code> Besar &amp; Banyak File</h2>
@@ -67,7 +71,7 @@ export default function McpDocsPage() {
       <h2>Buat OAuth Sendiri di Settings (Custom OAuth 2.1)</h2>
       <ol>
         <li>Buka <strong>Settings → Konektor AI (MCP)</strong> lalu pilih tab <strong>Buat OAuth Sendiri</strong>.</li>
-        <li>Isi nama aplikasi, pilih metode autentikasi (<strong>Client ID + Secret</strong> atau <strong>Public PKCE</strong>), dan centang preset Redirect URI untuk <strong>Claude</strong>, <strong>Cursor</strong>, <strong>OpenCode</strong>, <strong>Codex</strong>, <strong>Gemini</strong>, atau URL kustommu.</li>
+        <li>Isi nama aplikasi, pilih metode autentikasi (<strong>Client ID + Secret</strong> atau <strong>Public PKCE</strong>), dan centang preset Redirect URI untuk <strong>Claude</strong>, <strong>Gemini (Web &amp; CLI)</strong>, <strong>Cursor</strong>, <strong>OpenCode</strong>, <strong>Codex</strong>, atau URL kustommu.</li>
         <li>Klik <strong>Buat OAuth Sendiri</strong> untuk mendapatkan <code>Client ID</code> dan <code>Client Secret</code>, atau klik <strong>Buat Bearer Token Langsung</strong> (pilihan masa aktif 1–365 hari).</li>
       </ol>
 
