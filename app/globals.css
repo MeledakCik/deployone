@@ -453,34 +453,60 @@ textarea {
     line-height: 1.5;
   }
 
-  /* Toggle tema: berada di sidebar berwarna, jadi warnanya tetap */
-  .theme-toggle {
-    width: 52px;
-    height: 30px;
-    border-radius: 9999px;
-    background: rgba(255, 255, 255, 0.18);
-    border: 0;
-    position: relative;
-    display: inline-flex;
+  /* ---------- Loading layar penuh (refresh / pindah halaman) ---------- */
+  .brand-loader {
+    display: flex;
+    flex-direction: column;
     align-items: center;
-    padding: 3px;
-    cursor: pointer;
+    gap: 22px;
   }
-  .theme-toggle-knob {
-    width: 24px;
-    height: 24px;
-    border-radius: 9999px;
-    background: #ffffff;
-    color: #5a39c0;
+  .brand-loader-tile {
+    position: relative;
     display: grid;
     place-items: center;
-    transition: transform var(--theme-duration) var(--theme-ease);
+    width: 68px;
+    height: 68px;
+    border-radius: 22px;
+    background: var(--sidebar-bg);
+    box-shadow: var(--surface-shadow);
+    animation: loader-breathe 1.8s ease-in-out infinite;
   }
-  [data-theme="light"] .theme-toggle-knob {
-    transform: translateX(22px);
+  .brand-loader-ring {
+    position: absolute;
+    inset: -9px;
+    border-radius: 29px;
+    border: 2px solid transparent;
+    border-top-color: var(--accent);
+    border-right-color: color-mix(in srgb, var(--accent) 35%, transparent);
+    animation: loader-spin 0.9s linear infinite;
   }
-  [data-theme="dark"] .theme-toggle-knob {
-    transform: translateX(0px);
+  .brand-loader-bar {
+    position: relative;
+    width: 120px;
+    height: 4px;
+    overflow: hidden;
+    border-radius: 9999px;
+    background: var(--pill-bg);
+  }
+  .brand-loader-bar::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    width: 40%;
+    border-radius: inherit;
+    background: var(--ink-fill);
+    animation: loader-slide 1.2s var(--ease-out) infinite;
+  }
+  @keyframes loader-spin {
+    to { transform: rotate(360deg); }
+  }
+  @keyframes loader-breathe {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(0.96); }
+  }
+  @keyframes loader-slide {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(250%); }
   }
 
   .stat-icon {
@@ -1178,8 +1204,15 @@ textarea {
   .btn-primary {
     transition: none !important;
   }
-  .theme-icon-swap {
+  .theme-icon-swap,
+  .brand-loader-tile,
+  .brand-loader-ring,
+  .brand-loader-bar::after {
     animation: none !important;
+  }
+  .brand-loader-bar::after {
+    width: 100%;
+    opacity: 0.5;
   }
   .nav:active {
     transform: none !important;

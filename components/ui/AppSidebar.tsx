@@ -3,7 +3,6 @@
 import * as React from "react";
 import Image from "next/image";
 import { Menu, X } from "@/components/ui/icons";
-import { ThemeToggle } from "@/components/ui/ThemeToggle";
 import { lockBodyScroll } from "@/lib/scroll-lock";
 
 export interface NavItem {
@@ -141,9 +140,7 @@ export function AppSidebar({
           <span className="text-[15px] font-bold tracking-tight">Depup</span>
           {tagShort && <span className="rounded-full bg-[var(--lime)] px-2 py-0.5 text-[12px] font-bold text-[var(--lime-text)]">{tagShort}</span>}
         </div>
-        <div className="justify-self-end">
-          <ThemeToggle />
-        </div>
+        <div aria-hidden />
       </div>
 
       {open && <div className="anim-fade fixed inset-0 z-40 bg-midnight/60 md:hidden" onClick={() => setOpen(false)} aria-hidden />}
@@ -216,9 +213,6 @@ export function AppSidebar({
         </nav>
 
         <div className="space-y-2 border-t border-[var(--sidebar-line)] pt-3">
-          <div className="mb-1 hidden justify-end md:flex">
-            <ThemeToggle />
-          </div>
           {footer}
         </div>
       </aside>

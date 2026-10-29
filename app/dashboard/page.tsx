@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth-context";
 import { SESSION_EXPIRED_EVENT } from "@/lib/session-expired";
 import { useToast } from "@/components/ui/Toast";
 import { useDeploy } from "@/lib/deploy-context";
+import { BrandLoader } from "@/components/ui/BrandLoader";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { DashboardHomeView } from "@/components/dashboard/DashboardHomeView";
 import { DeployFormView } from "@/components/dashboard/DeployFormView";
@@ -60,11 +61,7 @@ export default function DashboardPage() {
   }, [ready, user, router]);
 
   if (!ready || !user) {
-    return (
-      <div className="flex min-h-[100dvh] items-center justify-center text-[13px] text-text-muted">
-        Memuat dashboard…
-      </div>
-    );
+    return <BrandLoader />;
   }
 
   return (

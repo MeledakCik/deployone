@@ -49,6 +49,43 @@ export function Card({ title, action, children, className }: { title?: string; a
   );
 }
 
+/**
+ * Kepala kartu bagian (mis. di Settings): ikon dalam kotak lilac, judul, deskripsi singkat,
+ * dan aksi opsional di kanan. Satu bentuk supaya semua kartu pengaturan terlihat sama.
+ */
+export function SectionHead({
+  icon: Icon,
+  title,
+  desc,
+  action,
+  id,
+}: {
+  icon?: React.ElementType;
+  title: string;
+  desc?: React.ReactNode;
+  action?: React.ReactNode;
+  id?: string;
+}) {
+  return (
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+      <div className="flex min-w-0 items-start gap-3">
+        {Icon && (
+          <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[14px] bg-tone-lilac text-lav-text">
+            <Icon size={18} />
+          </span>
+        )}
+        <div className="min-w-0">
+          <h3 id={id} className="text-[16px] font-bold tracking-tight">
+            {title}
+          </h3>
+          {desc && <p className="mt-0.5 text-[12.5px] leading-relaxed text-text-muted">{desc}</p>}
+        </div>
+      </div>
+      {action}
+    </div>
+  );
+}
+
 /* ---------- Badge ---------- */
 
 const TONES = {

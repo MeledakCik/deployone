@@ -1,13 +1,14 @@
 "use client";
 
-import { PageTitle } from "@/components/ui/primitives";
+import { PageTitle, SectionHead } from "@/components/ui/primitives";
 import { notifySessionExpired } from "@/lib/session-expired";
 import * as React from "react";
 import { useTheme } from "next-themes";
 import { HardHat } from "lucide-react";
-import { Eye, EyeOff, Save, ShieldCheck, ShieldAlert, Loader2, Trash2, Moon, Sun, Bug, Rocket, Network as SpiderIcon } from "@/components/ui/icons";
+import { Eye, EyeOff, Save, ShieldCheck, ShieldAlert, Loader2, Trash2, Moon, Sun, Bug, Rocket, KeyRound, Network as SpiderIcon } from "@/components/ui/icons";
 import { Surface } from "@/components/ui/Surface";
 import { ClaudeConnectCard } from "@/components/dashboard/ClaudeConnectCard";
+import { CliShareCard } from "@/components/dashboard/CliShareCard";
 import { ViewFade } from "@/components/ui/ViewFade";
 import { useCloudStorage } from "@/lib/useCloudStorage";
 import { useToast } from "@/components/ui/Toast";
@@ -221,11 +222,12 @@ function AppearanceSettings() {
   const isLight = mounted && resolvedTheme === "light";
 
   return (
-    <Surface className="flex flex-col gap-4 p-4 sm:p-6">
-      <div>
-        <h3 className="text-[16px] font-bold tracking-tight">Tampilan</h3>
-        <p className="text-[12px] text-text-muted">Pengaturan ini tersimpan di perangkat ini.</p>
-      </div>
+    <Surface className="flex flex-col gap-5 p-4 sm:p-6">
+      <SectionHead
+        icon={isLight ? Sun : Moon}
+        title="Tampilan"
+        desc="Pengaturan ini tersimpan di perangkat ini."
+      />
 
       <SwitchRow
         id="settingsLightMode"
@@ -240,7 +242,7 @@ function AppearanceSettings() {
 
       <fieldset>
         <legend className="mb-2 text-[13.5px] font-medium">Animasi loading deploy</legend>
-        <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-1" role="radiogroup" aria-label="Animasi loading deploy">
+        <div className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Animasi loading deploy">
           {ANIMATION_OPTIONS.map((opt) => {
             const selected = prefs.deployAnimation === opt.value;
             return (
@@ -268,17 +270,16 @@ function AppearanceSettings() {
         </div>
       </fieldset>
 
-      <div className="mt-auto space-y-4">
-        <div className="h-px bg-[var(--surface-line)]" />
-        <SwitchRow
-          id="settingsDebugLog"
-          icon={<Bug size={16} />}
-          title="Tampilkan proses debug"
-          description="Munculkan log langkah demi langkah (tahap, status, dan pesan error) di jendela deploy. Berlaku untuk semua animasi."
-          checked={prefs.showDebug}
-          onChange={(v) => updatePrefs({ showDebug: v })}
-        />
-      </div>
+      <div className="h-px bg-[var(--surface-line)]" />
+
+      <SwitchRow
+        id="settingsDebugLog"
+        icon={<Bug size={16} />}
+        title="Tampilkan proses debug"
+        description="Munculkan log langkah demi langkah (tahap, status, dan pesan error) di jendela deploy. Berlaku untuk semua animasi."
+        checked={prefs.showDebug}
+        onChange={(v) => updatePrefs({ showDebug: v })}
+      />
     </Surface>
   );
 }
@@ -387,96 +388,100 @@ export function SettingsView() {
 
   return (
     <ViewFade>
-      <div className="space-y-4 sm:space-y-5">
+      <div className="mx-auto max-w-3xl space-y-4 sm:space-y-5">
         <div>
           <PageTitle title="Settings" desc={<>Token global ini dipakai sebagai default saat kamu deploy project baru. Klik{" "}
             <span className="font-medium text-text">Test Koneksi</span> untuk memastikan token-nya benar-benar
             valid ke akun kamu.</>} />
         </div>
 
-        <div className="grid items-stretch gap-4 sm:gap-5 xl:grid-cols-[minmax(0,1fr)_380px]">
-        <Surface className="flex flex-col p-4 sm:p-6">
-          <form onSubmit={handleSubmit} className="flex flex-1 flex-col gap-4">
-          <div className="grid gap-x-5 gap-y-4 md:grid-cols-2">
-            <TokenField
-              id="settingsVercelToken"
-              label="Vercel Token"
-              value={draft.vercelToken}
-              onChange={(v) => {
-                setDraft((prev) => ({ ...prev, vercelToken: v }));
-                setVercelCheck({ status: "idle" });
-              }}
-              check={vercelCheck}
-              onTest={testVercel}
-              onRemove={() => removeToken("vercelToken", "Vercel Token", () => setVercelCheck({ status: "idle" }))}
+        {/* 1. Token platform */}
+        <Surface className="p-4 sm:p-6">
+          <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+            <SectionHead
+              icon={KeyRound}
+              title="Token platform"
+              desc="Vercel, Cloudflare, GitHub, dan Railway. Disimpan di akun Depup-mu."
             />
-            <TokenField
-              id="settingsCloudflareToken"
-              label="Cloudflare Token"
-              value={draft.cloudflareToken}
-              onChange={(v) => {
-                setDraft((prev) => ({ ...prev, cloudflareToken: v }));
-                setCloudflareCheck({ status: "idle" });
-                setCloudflareAccounts([]);
-              }}
-              check={cloudflareCheck}
-              onTest={testCloudflare}
-              onRemove={() =>
-                removeToken("cloudflareToken", "Cloudflare Token", () => {
+            <div className="grid gap-4">
+              <TokenField
+                id="settingsVercelToken"
+                label="Vercel Token"
+                value={draft.vercelToken}
+                onChange={(v) => {
+                  setDraft((prev) => ({ ...prev, vercelToken: v }));
+                  setVercelCheck({ status: "idle" });
+                }}
+                check={vercelCheck}
+                onTest={testVercel}
+                onRemove={() => removeToken("vercelToken", "Vercel Token", () => setVercelCheck({ status: "idle" }))}
+              />
+              <TokenField
+                id="settingsCloudflareToken"
+                label="Cloudflare Token"
+                value={draft.cloudflareToken}
+                onChange={(v) => {
+                  setDraft((prev) => ({ ...prev, cloudflareToken: v }));
                   setCloudflareCheck({ status: "idle" });
                   setCloudflareAccounts([]);
-                })
-              }
-            />
-            {cloudflareAccounts.length > 1 && (
-              <div className="md:col-span-2">
-                <label htmlFor="cloudflareAccount" className="mb-1.5 block text-[12px] font-medium text-text-muted">
-                  Akun Cloudflare aktif
-                </label>
-                <select
-                  id="cloudflareAccount"
-                  value={draft.cloudflareAccountId}
-                  onChange={(e) => setDraft((prev) => ({ ...prev, cloudflareAccountId: e.target.value }))}
-                  className="input-solid h-11 w-full px-3.5 text-[13px]"
-                >
-                  {cloudflareAccounts.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.name} — {a.id}
-                    </option>
-                  ))}
-                </select>
-                <p className="mt-1.5 text-[12px] text-text-faint">
-                  Token ini memiliki akses ke beberapa akun — pilih satu untuk dipakai deploy Cloudflare Pages.
-                </p>
-              </div>
-            )}
-            <TokenField
-              id="settingsGithubPat"
-              label="GitHub PAT"
-              value={draft.githubPat}
-              onChange={(v) => {
-                setDraft((prev) => ({ ...prev, githubPat: v }));
-                setGithubCheck({ status: "idle" });
-              }}
-              check={githubCheck}
-              onTest={testGithub}
-              onRemove={() => removeToken("githubPat", "GitHub PAT", () => setGithubCheck({ status: "idle" }))}
-            />
-            <TokenField
-              id="settingsRailwayToken"
-              label="Railway Token"
-              value={draft.railwayToken}
-              onChange={(v) => {
-                setDraft((prev) => ({ ...prev, railwayToken: v }));
-                setRailwayCheck({ status: "idle" });
-              }}
-              check={railwayCheck}
-              onTest={testRailway}
-              onRemove={() => removeToken("railwayToken", "Railway Token", () => setRailwayCheck({ status: "idle" }))}
-            />
-
-          </div>
-            <div className="mt-auto">
+                }}
+                check={cloudflareCheck}
+                onTest={testCloudflare}
+                onRemove={() =>
+                  removeToken("cloudflareToken", "Cloudflare Token", () => {
+                    setCloudflareCheck({ status: "idle" });
+                    setCloudflareAccounts([]);
+                  })
+                }
+              />
+              {cloudflareAccounts.length > 1 && (
+                <div>
+                  <label htmlFor="cloudflareAccount" className="mb-1.5 block text-[12px] font-medium text-text-muted">
+                    Akun Cloudflare aktif
+                  </label>
+                  <select
+                    id="cloudflareAccount"
+                    value={draft.cloudflareAccountId}
+                    onChange={(e) => setDraft((prev) => ({ ...prev, cloudflareAccountId: e.target.value }))}
+                    className="input-solid h-11 w-full px-3.5 text-[13px]"
+                  >
+                    {cloudflareAccounts.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        {a.name} — {a.id}
+                      </option>
+                    ))}
+                  </select>
+                  <p className="mt-1.5 text-[12px] text-text-faint">
+                    Token ini memiliki akses ke beberapa akun — pilih satu untuk dipakai deploy Cloudflare Pages.
+                  </p>
+                </div>
+              )}
+              <TokenField
+                id="settingsGithubPat"
+                label="GitHub PAT"
+                value={draft.githubPat}
+                onChange={(v) => {
+                  setDraft((prev) => ({ ...prev, githubPat: v }));
+                  setGithubCheck({ status: "idle" });
+                }}
+                check={githubCheck}
+                onTest={testGithub}
+                onRemove={() => removeToken("githubPat", "GitHub PAT", () => setGithubCheck({ status: "idle" }))}
+              />
+              <TokenField
+                id="settingsRailwayToken"
+                label="Railway Token"
+                value={draft.railwayToken}
+                onChange={(v) => {
+                  setDraft((prev) => ({ ...prev, railwayToken: v }));
+                  setRailwayCheck({ status: "idle" });
+                }}
+                check={railwayCheck}
+                onTest={testRailway}
+                onRemove={() => removeToken("railwayToken", "Railway Token", () => setRailwayCheck({ status: "idle" }))}
+              />
+            </div>
+            <div>
               <button type="submit" className="btn-primary inline-flex w-full items-center justify-center gap-2 px-5 py-2.5 text-[13px] sm:w-auto">
                 <Save size={15} /> Simpan
               </button>
@@ -484,9 +489,10 @@ export function SettingsView() {
           </form>
         </Surface>
 
+        {/* 2. Tampilan */}
         <AppearanceSettings />
-        </div>
 
+        {/* 3. MCP dan depup-cli share: satu kelompok "konektor" */}
         <ClaudeConnectCard
           tokens={tokens}
           onTokensChange={(next) => {
@@ -495,6 +501,7 @@ export function SettingsView() {
             showToast("Izin konektor Claude disimpan.");
           }}
         />
+        <CliShareCard />
       </div>
     </ViewFade>
   );

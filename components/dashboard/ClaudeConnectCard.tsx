@@ -26,6 +26,7 @@ import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/confirm";
 import { useDeploy } from "@/lib/deploy-context";
 import { api } from "@/components/db/ui";
+import { SectionHead } from "@/components/ui/primitives";
 
 const DEPLOY_TARGETS: { platform: Platform; label: string; tokenField: keyof SettingsTokens }[] = [
   { platform: "vercel", label: "Vercel", tokenField: "vercelToken" },
@@ -370,7 +371,7 @@ function Section({
 }
 
 /** Blok kode + tombol salin. Kode di-scroll ke samping, tidak melebarkan halaman. */
-function CodeBlock({ title, code, onCopy }: { title: string; code: string; onCopy: () => void }) {
+export function CodeBlock({ title, code, onCopy }: { title: string; code: string; onCopy: () => void }) {
   return (
     <div>
       <div className="mb-1.5 flex items-center justify-between gap-2">
@@ -651,30 +652,32 @@ export function ClaudeConnectCard({
   const toggleSection = (id: "install" | "oauth" | "deploy") => setOpenSection((cur) => (cur === id ? null : id));
 
   return (
-    <section className="surface-solid rounded-3xl p-4 sm:p-6" aria-labelledby="claude-connect-title">
+    <section className="surface-solid p-4 sm:p-6" aria-labelledby="claude-connect-title">
       {/* Header */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-        <div className="min-w-0">
-          <h3 id="claude-connect-title" className="flex items-center gap-2 text-[15px] font-semibold">
-            <Sparkles size={16} /> Konektor AI (MCP)
-          </h3>
-          <p className="mt-1 text-[12.5px] leading-relaxed text-text-muted">
+      <SectionHead
+        id="claude-connect-title"
+        icon={Sparkles}
+        title="Konektor AI (MCP)"
+        desc={
+          <>
             Hubungkan Claude, Gemini, Cursor, OpenCode, Codex, atau DeepSeek ke Depup.{" "}
             <DocsLink className="inline-flex items-center gap-1 font-medium text-lav-text underline-offset-4 hover:underline">
               <BookOpen size={12} /> Lihat panduan lengkap
             </DocsLink>
-          </p>
-        </div>
-        <button
-          type="button"
-          onClick={() => void testMcpEndpoint()}
-          disabled={testState.status === "testing"}
-          className="pill inline-flex shrink-0 items-center justify-center gap-1.5 px-3.5 py-2 text-[12px] font-medium hover:brightness-95 disabled:opacity-50"
-        >
-          {testState.status === "testing" ? <Loader2 size={13} className="animate-spin" /> : <Zap size={13} />}
-          Test Konektor
-        </button>
-      </div>
+          </>
+        }
+        action={
+          <button
+            type="button"
+            onClick={() => void testMcpEndpoint()}
+            disabled={testState.status === "testing"}
+            className="pill inline-flex shrink-0 items-center justify-center gap-1.5 px-3.5 py-2 text-[12px] font-medium disabled:opacity-50"
+          >
+            {testState.status === "testing" ? <Loader2 size={13} className="animate-spin" /> : <Zap size={13} />}
+            Test Konektor
+          </button>
+        }
+      />
 
       {testState.status === "ok" && (
         <div className="mt-3 flex items-start gap-2 rounded-2xl bg-[var(--ok-bg)] px-3.5 py-2.5 text-[12px] text-ok-fg">
