@@ -10,6 +10,16 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { useDeploy } from "@/lib/deploy-context";
 import { useToast } from "@/components/ui/Toast";
 
+type EnvName = "Production" | "Preview";
+type EnvFilter = "all" | EnvName;
+
+/** Opsi filter environment: Production saja, Preview saja, atau keduanya. */
+const ENV_FILTER_OPTIONS: { value: EnvFilter; label: string }[] = [
+  { value: "all", label: "Keduanya" },
+  { value: "Production", label: "Production" },
+  { value: "Preview", label: "Preview" },
+];
+
 /** All projects the user has ever deployed (any platform) — env vars can be scoped to any of these. */
 function useProjectNames() {
   const { history } = useDeploy();
@@ -30,10 +40,12 @@ function AddSecretModal({
   open,
   onClose,
   defaultProject,
+  defaultEnvironment,
 }: {
   open: boolean;
   onClose: () => void;
   defaultProject?: string;
+  defaultEnvironment?: EnvName;
 }) {
   const { addEnvVar, vercelToken, savedCloudflareToken, savedRailwayToken } = useDeploy();
   const { showToast } = useToast();
@@ -41,13 +53,17 @@ function AddSecretModal({
   const projectPlatforms = useProjectPlatforms();
   const [key, setKey] = React.useState("");
   const [value, setValue] = React.useState("");
-  const [environment, setEnvironment] = React.useState<"Production" | "Preview">("Production");
+  const [environment, setEnvironment] = React.useState<EnvName>(defaultEnvironment ?? "Production");
   const [project, setProject] = React.useState(defaultProject ?? projectNames[0] ?? "");
   const [pushToRemote, setPushToRemote] = React.useState(true);
 
   React.useEffect(() => {
     if (open) setProject(defaultProject ?? projectNames[0] ?? "");
   }, [open, defaultProject, projectNames]);
+
+  React.useEffect(() => {
+    if (open) setEnvironment(defaultEnvironment ?? "Production");
+  }, [open, defaultEnvironment]);
 
   if (!open) return null;
 
@@ -149,7 +165,7 @@ function AddSecretModal({
           </div>
           <div>
             <label className="block text-[12px] font-medium text-text-muted mb-1.5">Environment</label>
-            <Select value={environment} onValueChange={(v) => setEnvironment(v as "Production" | "Preview")}>
+            <Select value={environment} onValueChange={(v) => setEnvironment(v as EnvName)}>
               <SelectTrigger>
                 <SelectValue placeholder="Pilih Environment" />
               </SelectTrigger>
@@ -207,6 +223,7 @@ export function EnvironmentView() {
   const projectNames = useProjectNames();
   const [modalOpen, setModalOpen] = React.useState(false);
   const [activeProject, setActiveProject] = React.useState<string>("all");
+  const [activeEnv, setActiveEnv] = React.useState<EnvFilter>("all");
   const didAutoSync = React.useRef(false);
 
   // Depup has no webhook for it, so we don't find out on our own when a
@@ -225,12 +242,24 @@ export function EnvironmentView() {
     }
   }, [activeProject, projectNames]);
 
+  // Filter project dulu, supaya hitungan di tombol Production/Preview ikut project yang dipilih.
+  const projectEnvVars = React.useMemo(() => {
+    const safeEnvVars = Array.isArray(envVars) ? envVars : [];
+    return activeProject === "all" ? safeEnvVars : safeEnvVars.filter((v) => v.project === activeProject);
+  }, [envVars, activeProject]);
+
+  const envCounts = React.useMemo(
+    () => ({
+      all: projectEnvVars.length,
+      Production: projectEnvVars.filter((v) => v.environment === "Production").length,
+      Preview: projectEnvVars.filter((v) => v.environment === "Preview").length,
+    }),
+    [projectEnvVars]
+  );
+
   const filteredEnvVars = React.useMemo(
-    () => {
-      const safeEnvVars = Array.isArray(envVars) ? envVars : [];
-      return activeProject === "all" ? safeEnvVars : safeEnvVars.filter((v) => v.project === activeProject);
-    },
-    [envVars, activeProject]
+    () => (activeEnv === "all" ? projectEnvVars : projectEnvVars.filter((v) => v.environment === activeEnv)),
+    [projectEnvVars, activeEnv]
   );
 
   // Stable-sort by project so rows from the same project sit together, then
@@ -290,33 +319,68 @@ export function EnvironmentView() {
           </p>
         </Surface>
 
-        {projectNames.length > 0 && (
-          <div className="w-full max-w-xs">
-            <label className="mb-1.5 block text-[12px] font-medium text-text-muted">Filter berdasarkan project</label>
-            <Select value={activeProject} onValueChange={setActiveProject}>
-              <SelectTrigger>
-                <SelectValue placeholder="Semua project" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Semua project</SelectItem>
-                {projectNames.map((name) => (
-                  <SelectItem key={name} value={name}>
-                    {name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+        <div className="flex flex-wrap items-end gap-4">
+          {projectNames.length > 0 && (
+            <div className="w-full max-w-xs">
+              <label className="mb-1.5 block text-[12px] font-medium text-text-muted">Filter berdasarkan project</label>
+              <Select value={activeProject} onValueChange={setActiveProject}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Semua project" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Semua project</SelectItem>
+                  {projectNames.map((name) => (
+                    <SelectItem key={name} value={name}>
+                      {name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          <div>
+            <span id="env-filter-label" className="mb-1.5 block text-[12px] font-medium text-text-muted">
+              Filter berdasarkan environment
+            </span>
+            <div role="group" aria-labelledby="env-filter-label" className="flex flex-wrap items-center gap-2">
+              {ENV_FILTER_OPTIONS.map((opt) => {
+                const selected = activeEnv === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    aria-pressed={selected}
+                    onClick={() => setActiveEnv(opt.value)}
+                    className={`pill inline-flex items-center gap-1.5 px-3.5 text-[13px] font-medium hover:brightness-110 ${
+                      selected ? "!bg-[var(--accent)] !text-white" : ""
+                    }`}
+                  >
+                    {opt.label}
+                    <span className={`text-[11px] ${selected ? "opacity-90" : "text-text-faint"}`}>
+                      {envCounts[opt.value]}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        )}
+        </div>
 
         {filteredEnvVars.length === 0 ? (
           <Surface className="flex flex-col items-center justify-center gap-3 px-6 py-24 text-center">
             <KeyRound size={52} className="text-text-faint" strokeWidth={1.5} />
-            <h3 className="text-[16px] font-semibold">Belum ada secret</h3>
+            <h3 className="text-[16px] font-semibold">
+              {activeEnv === "all" ? "Belum ada secret" : `Belum ada secret ${activeEnv}`}
+            </h3>
             <p className="max-w-xs text-[13px] text-text-muted">
-              {activeProject === "all"
+              {activeProject === "all" && activeEnv === "all"
                 ? "Tambahkan environment variable pertamamu untuk digunakan saat deploy."
-                : `Belum ada secret untuk project "${activeProject}".`}
+                : activeProject === "all"
+                  ? `Tidak ada secret dengan environment ${activeEnv}.`
+                  : activeEnv === "all"
+                    ? `Belum ada secret untuk project "${activeProject}".`
+                    : `Belum ada secret ${activeEnv} untuk project "${activeProject}".`}
             </p>
           </Surface>
         ) : (
@@ -421,6 +485,7 @@ export function EnvironmentView() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         defaultProject={activeProject !== "all" ? activeProject : undefined}
+        defaultEnvironment={activeEnv !== "all" ? activeEnv : undefined}
       />
     </ViewFade>
   );
