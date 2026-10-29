@@ -1,7 +1,7 @@
 import type * as React from "react";
 import { isNativeApp } from "@/lib/native-auth";
 
-export type CommunityKey = "wa-channel" | "wa-community" | "instagram" | "tiktok" | "linkedin";
+export type CommunityKey = "wa-channel" | "wa-community" | "x" | "instagram" | "tiktok" | "linkedin";
 
 export interface CommunityLink {
   key: CommunityKey;
@@ -24,6 +24,7 @@ export const COMMUNITY_LINKS: readonly CommunityLink[] = [
     desc: "Ngobrol, tanya jawab, dan tukar tips dengan sesama pengguna.",
     href: "https://chat.whatsapp.com/CCNAdECQy5BD3aVC53fTma",
   },
+  { key: "x", label: "X (Twitter)", desc: "@DepUp_Web", href: "https://x.com/DepUp_Web" },
   { key: "instagram", label: "Instagram", desc: "@depup.web", href: "https://www.instagram.com/depup.web/" },
   { key: "tiktok", label: "TikTok", desc: "@depup.web", href: "https://www.tiktok.com/@depup.web" },
   { key: "linkedin", label: "LinkedIn", desc: "DepUp Developer", href: "https://www.linkedin.com/in/depup-developer" },

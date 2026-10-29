@@ -4,12 +4,13 @@ import * as React from "react";
 import { ArrowUpRight } from "@/components/ui/icons";
 import { ViewFade } from "@/components/ui/ViewFade";
 import { Card, PageHead } from "@/components/ui/primitives";
-import { InstagramIcon, LinkedInIcon, TikTokIcon, WhatsAppIcon } from "@/components/landing/SocialIcons";
+import { InstagramIcon, LinkedInIcon, TikTokIcon, WhatsAppIcon, XIcon } from "@/components/landing/SocialIcons";
 import { COMMUNITY_LINKS, openExternal, type CommunityKey } from "@/lib/community";
 
 const ICONS: Record<CommunityKey, React.ComponentType<{ size?: number }>> = {
   "wa-channel": WhatsAppIcon,
   "wa-community": WhatsAppIcon,
+  x: XIcon,
   instagram: InstagramIcon,
   tiktok: TikTokIcon,
   linkedin: LinkedInIcon,

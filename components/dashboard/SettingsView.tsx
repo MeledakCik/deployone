@@ -388,7 +388,7 @@ export function SettingsView() {
 
   return (
     <ViewFade>
-      <div className="mx-auto max-w-3xl space-y-4 sm:space-y-5">
+      <div className="space-y-4 sm:space-y-5">
         <div>
           <PageTitle title="Settings" desc={<>Token global ini dipakai sebagai default saat kamu deploy project baru. Klik{" "}
             <span className="font-medium text-text">Test Koneksi</span> untuk memastikan token-nya benar-benar

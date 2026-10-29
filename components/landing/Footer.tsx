@@ -1,13 +1,14 @@
 import * as React from "react";
 import Image from "next/image";
 import { DashboardLink } from "./DashboardLink";
-import { InstagramIcon, LinkedInIcon, TikTokIcon, WhatsAppIcon } from "./SocialIcons";
+import { InstagramIcon, LinkedInIcon, TikTokIcon, WhatsAppIcon, XIcon } from "./SocialIcons";
 import { COMMUNITY_LINKS, type CommunityKey } from "@/lib/community";
 
 /** Akun resmi DepUp. Daftar tautannya ada di lib/community.ts. */
 const ICONS: Record<CommunityKey, React.ComponentType<{ size?: number }>> = {
   "wa-channel": WhatsAppIcon,
   "wa-community": WhatsAppIcon,
+  x: XIcon,
   instagram: InstagramIcon,
   tiktok: TikTokIcon,
   linkedin: LinkedInIcon,
