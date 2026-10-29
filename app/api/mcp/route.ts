@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 import { CORS_HEADERS, authenticateBearer, jsonCors, preflight, rejectDisallowedOrigin } from "@/app/api/_lib/mcp-auth";
 import { INVALID_REQUEST, PARSE_ERROR, handleRpc, type RpcRequest, type RpcResponse } from "@/app/api/_lib/mcp-server";
 import { clientIp, rateLimit } from "@/app/api/_lib/rate-limit";
+import { recordMcpUse, summarizeRpcBody } from "@/app/api/_lib/mcp-usage";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -85,6 +86,9 @@ export async function POST(req: NextRequest) {
   const parsed = await readJsonRpcBody(req);
   if (!parsed.ok) return jsonCors(parsed.response, parsed.status);
   const { body } = parsed;
+
+  // Catat siapa & lewat aplikasi apa (untuk panel admin). Best-effort, tidak pernah menggagalkan request.
+  await recordMcpUse(auth.email, auth.cid, summarizeRpcBody(body));
 
   const ctx = { email: auth.email, host: req.headers.get("host") };
 

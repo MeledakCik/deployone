@@ -136,7 +136,7 @@ export function rejectDisallowedOrigin(req: NextRequest): NextResponse | null {
 
 /* ---------------- autentikasi request /api/mcp ---------------- */
 
-export type McpAuthResult = { ok: true; email: string } | { ok: false; response: NextResponse };
+export type McpAuthResult = { ok: true; email: string; cid: string } | { ok: false; response: NextResponse };
 
 function unauthorized(req: NextRequest, description: string, invalid: boolean): NextResponse {
   const origin = appOrigin(req.headers.get("host"));
@@ -176,5 +176,5 @@ export async function authenticateBearer(req: NextRequest): Promise<McpAuthResul
   if (await isAccountBlocked(email)) {
     return { ok: false, response: jsonCors({ error: "access_denied", error_description: "Akun ini dinonaktifkan oleh admin Depup." }, 403) };
   }
-  return { ok: true, email };
+  return { ok: true, email, cid: grant.cid };
 }

@@ -8,12 +8,14 @@ import {
   mcpResourceUrl,
   signAccessToken,
   signRefreshToken,
+  verifyClient,
   verifyClientSecret,
   verifyCode,
   verifyCustomClient,
   verifyPkce,
   verifyRefreshToken,
 } from "@/app/api/_lib/mcp-token";
+import { registerMcpClient } from "@/app/api/_lib/mcp-usage";
 import { clientIp, rateLimit } from "@/app/api/_lib/rate-limit";
 
 export const runtime = "nodejs";
@@ -61,6 +63,7 @@ async function readParams(req: NextRequest): Promise<Record<string, string>> {
 async function issue(email: string, clientId: string) {
   const ep = await getEpoch(email);
   const cid = clientFingerprint(clientId);
+  await registerMcpClient(cid, { name: verifyClient(clientId)?.n ?? "OAuth client", via: "oauth" });
   return {
     ep,
     cid,

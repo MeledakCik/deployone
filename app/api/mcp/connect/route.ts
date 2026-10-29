@@ -2,6 +2,7 @@ import crypto from "crypto";
 import type { NextRequest } from "next/server";
 import { fail, ok, withErrorHandling } from "@/app/api/_lib/response";
 import { getSessionEmail } from "@/app/api/_lib/session";
+import { registerMcpClient } from "@/app/api/_lib/mcp-usage";
 import {
   MAX_CUSTOM_OAUTH_CLIENTS,
   getEpoch,
@@ -289,6 +290,7 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
 
     const ep = await getEpoch(email);
     const cid = clientFingerprint(clientIdForToken);
+    await registerMcpClient(cid, { name: clientName, via: "token" });
     const accessToken = signAccessToken(email, cid, ep, ttlSeconds);
     const refreshToken = signRefreshToken(email, cid, ep);
     return ok({
