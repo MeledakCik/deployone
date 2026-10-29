@@ -471,15 +471,6 @@ textarea {
     box-shadow: var(--surface-shadow);
     animation: loader-breathe 1.8s ease-in-out infinite;
   }
-  .brand-loader-ring {
-    position: absolute;
-    inset: -9px;
-    border-radius: 29px;
-    border: 2px solid transparent;
-    border-top-color: var(--accent);
-    border-right-color: color-mix(in srgb, var(--accent) 35%, transparent);
-    animation: loader-spin 0.9s linear infinite;
-  }
   .brand-loader-bar {
     position: relative;
     width: 120px;
@@ -496,9 +487,6 @@ textarea {
     border-radius: inherit;
     background: var(--ink-fill);
     animation: loader-slide 1.2s var(--ease-out) infinite;
-  }
-  @keyframes loader-spin {
-    to { transform: rotate(360deg); }
   }
   @keyframes loader-breathe {
     0%, 100% { transform: scale(1); }
@@ -1206,7 +1194,6 @@ textarea {
   }
   .theme-icon-swap,
   .brand-loader-tile,
-  .brand-loader-ring,
   .brand-loader-bar::after {
     animation: none !important;
   }
