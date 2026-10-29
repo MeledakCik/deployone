@@ -1,7 +1,9 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 import crypto from "crypto";
-import { OAUTH_NEXT_COOKIE, OAUTH_STATE_COOKIE } from "@/app/api/_lib/session";
+import { OAUTH_NEXT_COOKIE, OAUTH_STATE_COOKIE, SESSION_COOKIE, signSession } from "@/app/api/_lib/session";
+import { isDevAutoLogin, devUser, DEV_SESSION_SECONDS } from "@/app/api/_lib/dev-login";
+import { isAdminEmail } from "@/app/api/_lib/admin-config";
 import { OAUTH_APP_COOKIE, isValidChallenge } from "@/app/api/_lib/app-handoff";
 import { isMcpAuthorizeNext } from "@/app/api/_lib/mcp-token";
 
@@ -13,6 +15,23 @@ export const runtime = "nodejs";
  * create one and which redirect URI to register.
  */
 export async function GET(req: NextRequest) {
+  // Dev lokal: lewati Google, langsung buat session (lihat _lib/dev-login.ts untuk syarat keamanannya).
+  if (isDevAutoLogin(req) && req.nextUrl.searchParams.get("app") !== "1") {
+    const user = devUser();
+    const nextParam = req.nextUrl.searchParams.get("next");
+    const dest =
+      nextParam === "/admin" && isAdminEmail(user.email) ? "/admin" : isMcpAuthorizeNext(nextParam) ? nextParam : "/dashboard";
+    const maxAge = DEV_SESSION_SECONDS; // 8 jam (sengaja pendek)
+    const res = NextResponse.redirect(new URL(dest, req.url));
+    res.cookies.set(
+      SESSION_COOKIE,
+      signSession({ ...user, exp: Math.floor(Date.now() / 1000) + maxAge }),
+      { httpOnly: true, secure: false, sameSite: "lax", path: "/", maxAge } // secure:false supaya jalan di http://localhost (Safari)
+    );
+    res.headers.set("Cache-Control", "no-store");
+    return res;
+  }
+
   const clientId = process.env.GOOGLE_CLIENT_ID;
 
   // Mode app mobile: dibuka dari Chrome Custom Tab, hasilnya dikembalikan lewat deep link.

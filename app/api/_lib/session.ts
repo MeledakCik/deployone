@@ -7,7 +7,12 @@ export interface SessionPayload {
   picture: string | null;
   /** unix seconds */
   exp: number;
+  /** Penanda sesi dari auto-login dev (lihat dev-login.ts). Ditolak di luar NODE_ENV=development. */
+  dev?: true;
 }
+
+/** Batas keras panjang cookie sesi (cookie browser maksimal ~4096 byte). */
+const MAX_TOKEN_LEN = 4096;
 
 /**
  * AUTH_SECRET must be set as a real environment variable (random string,
@@ -37,8 +42,10 @@ export function signSession(payload: SessionPayload): string {
 
 /** Verifies and decodes a session cookie value. Returns null if missing/invalid/expired. */
 export function verifySession(token: string | undefined | null): SessionPayload | null {
-  if (!token) return null;
-  const [body, sig] = token.split(".");
+  if (!token || token.length > MAX_TOKEN_LEN) return null;
+  const parts = token.split(".");
+  if (parts.length !== 2) return null;
+  const [body, sig] = parts;
   if (!body || !sig) return null;
 
   try {
@@ -50,6 +57,8 @@ export function verifySession(token: string | undefined | null): SessionPayload 
     }
     const payload = JSON.parse(Buffer.from(body, "base64url").toString("utf-8")) as SessionPayload;
     if (typeof payload.exp !== "number" || payload.exp < Math.floor(Date.now() / 1000)) return null;
+    if (typeof payload.email !== "string") return null;
+    if (payload.dev === true && process.env.NODE_ENV !== "development") return null;
     return payload;
   } catch {
     return null;

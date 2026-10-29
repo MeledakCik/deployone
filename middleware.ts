@@ -98,11 +98,13 @@ function safeEqual(a: string, b: string): boolean {
 }
 
 async function verifySessionEdge(token: string | undefined): Promise<string | null> {
-  if (!token) return null;
+  if (!token || token.length > 4096) return null;
   const secret = process.env.AUTH_SECRET;
   if (!secret || secret.length < 16) return null;
 
-  const [body, sig] = token.split(".");
+  const parts = token.split(".");
+  if (parts.length !== 2) return null;
+  const [body, sig] = parts;
   if (!body || !sig) return null;
 
   try {
@@ -118,9 +120,10 @@ async function verifySessionEdge(token: string | undefined): Promise<string | nu
     );
     if (!safeEqual(sig, expected)) return null;
 
-    const payload = JSON.parse(fromBase64Url(body)) as { email?: string; exp?: number };
+    const payload = JSON.parse(fromBase64Url(body)) as { email?: string; exp?: number; dev?: boolean };
     if (typeof payload.exp !== "number" || payload.exp < Math.floor(Date.now() / 1000)) return null;
-    if (!payload.email) return null;
+    if (typeof payload.email !== "string" || !payload.email) return null;
+    if (payload.dev === true && process.env.NODE_ENV !== "development") return null;
     return payload.email.trim().toLowerCase();
   } catch {
     return null;
