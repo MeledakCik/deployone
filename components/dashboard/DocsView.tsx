@@ -379,7 +379,7 @@ const GUIDES: Guide[] = [
       <>
         Isi token lewat variabel lingkungan, bukan di file YAML. Di macOS atau Linux:
         <Pre>{`export DEPUP_MCP_AUTH="Bearer <TOKEN>"`}</Pre>
-        Di Windows PowerShell: <code>$env:DEPUP_MCP_AUTH = "Bearer &lt;TOKEN&gt;"</code>
+        Di Windows PowerShell: <code>$env:DEPUP_MCP_AUTH = &quot;Bearer &lt;TOKEN&gt;&quot;</code>
       </>,
       <>
         Tempel blok ini ke ~/.dsh/profiles/web/cordis.patch.yml (ganti web dengan nama profilmu). Kalau file sudah berisi - insert:, tambahkan blok - id: mcp-depup di bawahnya.
