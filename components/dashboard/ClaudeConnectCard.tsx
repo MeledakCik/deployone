@@ -1,8 +1,11 @@
 "use client";
 
 import * as React from "react";
+import { usePathname, useRouter } from "next/navigation";
 import {
+  BookOpen,
   Check,
+  ChevronDown,
   Copy,
   ExternalLink,
   Eye,
@@ -13,7 +16,6 @@ import {
   RefreshCw,
   ShieldCheck,
   Sparkles,
-  Terminal,
   Trash2,
   Unplug,
   Zap,
@@ -22,6 +24,7 @@ import { cn } from "@/lib/utils";
 import type { Platform, SettingsTokens } from "@/types";
 import { useToast } from "@/components/ui/Toast";
 import { useConfirm } from "@/components/ui/confirm";
+import { useDeploy } from "@/lib/deploy-context";
 import { api } from "@/components/db/ui";
 
 const DEPLOY_TARGETS: { platform: Platform; label: string; tokenField: keyof SettingsTokens }[] = [
@@ -32,48 +35,12 @@ const DEPLOY_TARGETS: { platform: Platform; label: string; tokenField: keyof Set
 
 type AiClientId = "claude" | "opencode" | "cursor" | "codex" | "gemini";
 
-const AI_CLIENTS: {
-  id: AiClientId;
-  label: string;
-  badge: string;
-  configPath: string;
-  summary: string;
-}[] = [
-  {
-    id: "claude",
-    label: "Claude",
-    badge: "Web · App · Code CLI",
-    configPath: "claude.ai → Settings → Connectors / claude mcp add",
-    summary: "Mendukung OAuth 2.1 otomatis di claude.ai & app HP, atau via CLI Claude Code dengan Bearer token.",
-  },
-  {
-    id: "opencode",
-    label: "OpenCode",
-    badge: "opencode.json · CLI",
-    configPath: "opencode.json atau ~/.config/opencode/opencode.json",
-    summary: "Tempel konfigurasi remote MCP ke opencode.json (mendukung Bearer token maupun `opencode mcp auth depup`).",
-  },
-  {
-    id: "cursor",
-    label: "Cursor",
-    badge: ".cursor/mcp.json · 1-Click",
-    configPath: ".cursor/mcp.json atau ~/.cursor/mcp.json",
-    summary: "Pasang otomatis lewat tombol 1-Klik Install ke Cursor, OAuth langsung, atau tempel `.cursor/mcp.json`.",
-  },
-  {
-    id: "codex",
-    label: "Codex",
-    badge: "Web · config.toml · CLI",
-    configPath: "~/.codex/config.toml atau Konektor Web ChatGPT/Codex",
-    summary: "Bisa dihubungkan via OAuth Web atau ditambahkan ke `~/.codex/config.toml` & perintah `codex mcp add`.",
-  },
-  {
-    id: "gemini",
-    label: "Gemini",
-    badge: "Web · CLI · Code Assist",
-    configPath: "gemini.google.com / AI Studio / ~/.gemini/settings.json",
-    summary: "Bisa dipasang di Gemini Web / Google AI Studio (via URL MCP & OAuth) maupun di Gemini CLI & Code Assist (`settings.json` / `gemini mcp add`).",
-  },
+const AI_CLIENTS: { id: AiClientId; label: string; hint: string }[] = [
+  { id: "claude", label: "Claude", hint: "Web, App & Code CLI" },
+  { id: "gemini", label: "Gemini", hint: "Web & CLI" },
+  { id: "cursor", label: "Cursor", hint: "1-Klik / mcp.json" },
+  { id: "opencode", label: "OpenCode", hint: "opencode.json" },
+  { id: "codex", label: "Codex", hint: "config.toml" },
 ];
 
 const OAUTH_URI_PRESETS: {
@@ -189,27 +156,6 @@ function parsePlatforms(v: string | undefined): Platform[] {
   const list = (v ?? "").split(",").map((x) => x.trim());
   return DEPLOY_TARGETS.map((t) => t.platform).filter((p) => list.includes(p));
 }
-
-const QUICK_PROMPTS: { title: string; badge: string; prompt: string }[] = [
-  {
-    title: "Website Besar / Multi-Halaman (Bertahap & Cepat)",
-    badge: "Anti-Timeout",
-    prompt:
-      "Buatkan website landing page modern lengkap dengan katalog produk dan halaman tentang kami. Gunakan deploy_website untuk mengupload kerangka awal index.html, lalu gunakan update_website (append_files / files) secara bertahap agar upload cepat dan tidak terpotong.",
-  },
-  {
-    title: "Edit Cepat index.html Tanpa Ganti Link",
-    badge: "In-Place Patch",
-    prompt:
-      "Cek website aktifku di Depup memakai list_websites dan inspect_website, lalu ubah tampilan bagian hero di index.html menggunakan update_website (patches) supaya link publiknya tetap sama.",
-  },
-  {
-    title: "Cek Status & Deploy Repo GitHub",
-    badge: "Platform Deploy",
-    prompt:
-      "Cek platform deploy mana yang sudah siap di Depup dengan connector_status, lalu bantu saya deploy repo GitHub saya.",
-  },
-];
 
 function buildClientSnippets(
   client: AiClientId,
@@ -343,8 +289,80 @@ function buildClientSnippets(
   }
 }
 
+/** Pindah ke grup "Konektor AI (MCP)" di halaman Docs, baik di web maupun di app mobile. */
+function DocsLink({ className, children }: { className?: string; children: React.ReactNode }) {
+  const router = useRouter();
+  const pathname = usePathname();
+  const { setView } = useDeploy();
+  function go() {
+    if (pathname?.startsWith("/m")) {
+      router.push("/m/docs#docs-mcp");
+      return;
+    }
+    window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}#docs-mcp`);
+    setView("docs");
+  }
+  return (
+    <button type="button" onClick={go} className={className}>
+      {children}
+    </button>
+  );
+}
+
+/** Bagian yang bisa dilipat, supaya kartu tidak menumpuk panjang ke bawah. */
+function Section({
+  title,
+  summary,
+  open,
+  onToggle,
+  children,
+}: {
+  title: string;
+  summary?: React.ReactNode;
+  open: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-[var(--line)]">
+      <button
+        type="button"
+        onClick={onToggle}
+        aria-expanded={open}
+        className="flex w-full items-center justify-between gap-3 bg-[var(--surface-solid-2)] px-4 py-3 text-left"
+      >
+        <span className="min-w-0">
+          <span className="block text-[13.5px] font-semibold">{title}</span>
+          {summary && <span className="mt-0.5 block truncate text-[12px] text-text-muted">{summary}</span>}
+        </span>
+        <ChevronDown size={16} className={cn("shrink-0 text-text-faint transition-transform", open && "rotate-180")} />
+      </button>
+      {open && <div className="space-y-4 border-t border-[var(--line)] p-4">{children}</div>}
+    </div>
+  );
+}
+
+/** Blok kode + tombol salin. Kode di-scroll ke samping, tidak melebarkan halaman. */
+function CodeBlock({ title, code, onCopy }: { title: string; code: string; onCopy: () => void }) {
+  return (
+    <div>
+      <div className="mb-1.5 flex items-center justify-between gap-2">
+        <span className="min-w-0 truncate text-[12px] font-medium text-text-muted">{title}</span>
+        <button type="button" onClick={onCopy} className="pill inline-flex shrink-0 items-center gap-1 px-2.5 py-1 text-[11.5px]">
+          <Copy size={12} /> Salin
+        </button>
+      </div>
+      <pre className="max-w-full overflow-x-auto rounded-xl border border-[var(--line)] bg-[var(--pill-bg)] p-3 font-mono text-[11.5px] leading-relaxed">
+        {code}
+      </pre>
+    </div>
+  );
+}
+
 /**
- * Kartu "Konektor AI (MCP) — Claude, OpenCode, Cursor, Codex & Gemini (Web & CLI) + Custom OAuth" di Settings.
+ * Kartu "Konektor AI (MCP)" di Settings.
+ * Hanya berisi yang dipakai langsung: URL, token, konfigurasi, OAuth, dan izin deploy.
+ * Penjelasan, tutorial per aplikasi, dan contoh prompt ada di Docs → "Konektor AI (MCP)".
  */
 export function ClaudeConnectCard({
   tokens,
@@ -367,7 +385,8 @@ export function ClaudeConnectCard({
   const [endpoints, setEndpoints] = React.useState<OAuthEndpoints | null>(null);
   const [customClients, setCustomClients] = React.useState<CustomOAuthClientItem[]>([]);
   const [siteQuota, setSiteQuota] = React.useState<{ active: number; max: number } | null>(null);
-  const [activeTab, setActiveTab] = React.useState<"clients" | "oauth">("clients");
+  const [openSection, setOpenSection] = React.useState<"install" | "oauth" | "deploy" | null>("install");
+  const [showMoreSnippets, setShowMoreSnippets] = React.useState(false);
   const [selectedClient, setSelectedClient] = React.useState<AiClientId>("claude");
   const [ttlDays, setTtlDays] = React.useState<number>(30);
   const [busy, setBusy] = React.useState(false);
@@ -583,7 +602,7 @@ export function ClaudeConnectCard({
   }).length;
 
   const resolvedUrl = mcpUrl ?? "https://depup.cloud/api/mcp";
-  const realToken = generatedToken?.accessToken ?? "<KLIK_BUAT_TOKEN_OTOMATIS_DI_ATAS>";
+  const realToken = generatedToken?.accessToken ?? "<KLIK_BUAT_TOKEN_DI_ATAS>";
   const displayToken =
     generatedToken?.accessToken && !showBearer
       ? `${generatedToken.accessToken.slice(0, 14)}••••••••••••••••${generatedToken.accessToken.slice(-6)}`
@@ -592,6 +611,7 @@ export function ClaudeConnectCard({
   const currentClientMeta = AI_CLIENTS.find((c) => c.id === selectedClient) ?? AI_CLIENTS[0];
   const displaySnippets = buildClientSnippets(selectedClient, resolvedUrl, displayToken);
   const copySnippets = buildClientSnippets(selectedClient, resolvedUrl, realToken);
+  const hasMoreSnippets = Boolean(displaySnippets.cliCode || displaySnippets.extraCode);
 
   const cursorDeepLink = React.useMemo(() => {
     const cfg = generatedToken?.accessToken
@@ -601,51 +621,39 @@ export function ClaudeConnectCard({
     return `cursor://anysphere.cursor-deeplink/mcp/install?name=depup&config=${encodeURIComponent(b64)}`;
   }, [resolvedUrl, generatedToken?.accessToken]);
 
+  const toggleSection = (id: "install" | "oauth" | "deploy") => setOpenSection((cur) => (cur === id ? null : id));
+
   return (
-    <section className="surface-solid rounded-3xl p-5 sm:p-6" aria-labelledby="claude-connect-title">
-      {/* Header & Status Bar Interaktif */}
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
+    <section className="surface-solid rounded-3xl p-4 sm:p-6" aria-labelledby="claude-connect-title">
+      {/* Header */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="min-w-0">
           <h3 id="claude-connect-title" className="flex items-center gap-2 text-[15px] font-semibold">
-            <Sparkles size={16} /> Konektor AI (MCP) — Claude, OpenCode, Cursor, Codex &amp; Gemini
+            <Sparkles size={16} /> Konektor AI (MCP)
           </h3>
-          <p className="mt-1 text-[12.5px] text-text-muted">
-            Satu server MCP untuk Web &amp; CLI: publish website (termasuk <code>index.html</code> besar &amp; banyak halaman secara bertahap), edit cepat tanpa ganti link, deploy GitHub, dan buat OAuth sendiri.
+          <p className="mt-1 text-[12.5px] leading-relaxed text-text-muted">
+            Hubungkan Claude, Gemini, Cursor, OpenCode, atau Codex ke Depup.{" "}
+            <DocsLink className="inline-flex items-center gap-1 font-medium text-lav-text underline-offset-4 hover:underline">
+              <BookOpen size={12} /> Lihat panduan lengkap
+            </DocsLink>
           </p>
         </div>
-
-        <div className="flex flex-wrap items-center gap-2">
-          {siteQuota && (
-            <span className="rounded-full bg-[var(--pill-bg)] px-2.5 py-1 text-[11.5px] font-medium text-text-muted">
-              Link Instan: <strong className="text-text">{siteQuota.active}/{siteQuota.max}</strong>
-            </span>
-          )}
-          <span className="rounded-full bg-[var(--pill-bg)] px-2.5 py-1 text-[11.5px] font-medium text-text-muted">
-            Platform Siap: <strong className="text-text">{readyPlatformsCount}/3</strong>
-          </span>
-          <span className="rounded-full bg-[var(--pill-bg)] px-2.5 py-1 text-[11.5px] font-medium text-text-muted">
-            Custom OAuth: <strong className="text-text">{customClients.length}</strong>
-          </span>
-          <button
-            type="button"
-            onClick={() => void testMcpEndpoint()}
-            disabled={testState.status === "testing"}
-            className="pill inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium hover:brightness-95 disabled:opacity-50"
-          >
-            {testState.status === "testing" ? <Loader2 size={13} className="animate-spin" /> : <Zap size={13} />}
-            Test Konektor MCP
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => void testMcpEndpoint()}
+          disabled={testState.status === "testing"}
+          className="pill inline-flex shrink-0 items-center justify-center gap-1.5 px-3.5 py-2 text-[12px] font-medium hover:brightness-95 disabled:opacity-50"
+        >
+          {testState.status === "testing" ? <Loader2 size={13} className="animate-spin" /> : <Zap size={13} />}
+          Test Konektor
+        </button>
       </div>
 
-      {/* Hasil Test Konektor MCP Interaktif */}
       {testState.status === "ok" && (
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-[var(--ok-bg)] px-3.5 py-2.5 text-[12px] text-ok-fg">
-          <span className="inline-flex items-center gap-1.5 font-medium">
-            <ShieldCheck size={14} /> Server MCP v{testState.version} Aktif · {testState.toolCount} Tool &amp; {testState.promptCount} Prompt Interaktif siap ({testState.latencyMs} ms)
-          </span>
-          <span className="text-[11.5px] opacity-90">
-            Siap untuk Claude, OpenCode, Cursor, Codex &amp; Gemini (Web &amp; CLI)
+        <div className="mt-3 flex items-start gap-2 rounded-2xl bg-[var(--ok-bg)] px-3.5 py-2.5 text-[12px] text-ok-fg">
+          <ShieldCheck size={14} className="mt-0.5 shrink-0" />
+          <span>
+            Server MCP v{testState.version} aktif · {testState.toolCount} tool, {testState.promptCount} prompt · {testState.latencyMs} ms
           </span>
         </div>
       )}
@@ -655,8 +663,8 @@ export function ClaudeConnectCard({
         </div>
       )}
 
-      {/* Kotak URL Server MCP Utama */}
-      <div className="mt-4 flex flex-wrap items-center gap-2">
+      {/* URL Server MCP */}
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
         <input
           readOnly
           value={mcpUrl ?? "Memuat…"}
@@ -668,49 +676,29 @@ export function ClaudeConnectCard({
           type="button"
           onClick={() => void copyText(mcpUrl, "URL konektor MCP")}
           disabled={!mcpUrl}
-          className="pill inline-flex items-center gap-1.5 px-3.5 py-2.5 text-[12px] font-medium disabled:opacity-50"
+          className="pill inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-[12px] font-medium disabled:opacity-50"
         >
-          <Copy size={13} /> Salin URL MCP
+          <Copy size={13} /> Salin URL
         </button>
       </div>
+      <p className="mt-2 text-[11.5px] text-text-faint">
+        {siteQuota ? `Link Instan ${siteQuota.active}/${siteQuota.max} · ` : ""}Platform siap {readyPlatformsCount}/3 · OAuth sendiri {customClients.length}
+      </p>
 
-      {/* Navigasi Tab Utama */}
-      <div className="mt-5 flex flex-wrap gap-2 border-b border-[var(--line)] pb-3" role="tablist" aria-label="Mode Konektor MCP">
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === "clients"}
-          onClick={() => setActiveTab("clients")}
-          className={cn(
-            "inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-[12.5px] font-medium transition",
-            activeTab === "clients"
-              ? "bg-violet-500 text-white"
-              : "bg-[var(--pill-bg)] text-text-muted hover:text-text",
-          )}
+      <div className="mt-4 space-y-3">
+        {/* ── 1. Pasang di aplikasi AI ── */}
+        <Section
+          title="Pasang di aplikasi AI"
+          summary={`${currentClientMeta.label} · ${currentClientMeta.hint}`}
+          open={openSection === "install"}
+          onToggle={() => toggleSection("install")}
         >
-          <Terminal size={13} /> Pasang di Claude · OpenCode · Cursor · Codex · Gemini
-        </button>
-        <button
-          type="button"
-          role="tab"
-          aria-selected={activeTab === "oauth"}
-          onClick={() => setActiveTab("oauth")}
-          className={cn(
-            "inline-flex items-center gap-1.5 rounded-xl px-3.5 py-2 text-[12.5px] font-medium transition",
-            activeTab === "oauth"
-              ? "bg-violet-500 text-white"
-              : "bg-[var(--pill-bg)] text-text-muted hover:text-text",
-          )}
-        >
-          <KeyRound size={13} /> Buat OAuth Sendiri ({customClients.length})
-        </button>
-      </div>
-
-      {/* TAB 1: Multi-Client Setup (Claude, OpenCode, Cursor, Codex, Gemini) */}
-      {activeTab === "clients" && (
-        <div className="mt-4 space-y-4">
-          {/* Pemilih Klien AI (5 Tab Interaktif) */}
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-5" role="tablist" aria-label="Pilih Aplikasi AI">
+          {/* Pemilih aplikasi: scroll ke samping di HP, sejajar rapi di desktop */}
+          <div
+            className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] sm:grid sm:grid-cols-5 sm:overflow-visible [&::-webkit-scrollbar]:hidden"
+            role="tablist"
+            aria-label="Pilih aplikasi AI"
+          >
             {AI_CLIENTS.map((c) => {
               const active = selectedClient === c.id;
               return (
@@ -719,528 +707,360 @@ export function ClaudeConnectCard({
                   type="button"
                   role="tab"
                   aria-selected={active}
-                  onClick={() => setSelectedClient(c.id)}
+                  onClick={() => {
+                    setSelectedClient(c.id);
+                    setShowMoreSnippets(false);
+                  }}
                   className={cn(
-                    "flex flex-col items-start rounded-2xl border p-3 text-left transition",
+                    "shrink-0 rounded-xl border px-3.5 py-2 text-left text-[12.5px] font-semibold transition sm:shrink",
                     active
                       ? "border-violet-500 bg-violet-500/15 text-text"
                       : "border-[var(--line)] bg-[var(--pill-bg)] text-text-muted hover:border-[var(--line-strong)] hover:text-text",
                   )}
                 >
-                  <span className="text-[13px] font-semibold text-text">{c.label}</span>
-                  <span className="mt-0.5 text-[10.5px] text-lav-text">{c.badge}</span>
+                  {c.label}
                 </button>
               );
             })}
           </div>
 
-          {/* Generator Token & Konfigurasi Siap Pakai */}
-          <div className="rounded-2xl border border-[var(--line)] bg-[var(--surface-solid-2)] p-4 space-y-3.5">
-            <div className="flex flex-wrap items-center justify-between gap-3">
-              <div>
-                <h4 className="text-[13.5px] font-semibold">
-                  Konfigurasi MCP untuk {currentClientMeta.label}
-                </h4>
-                <p className="mt-0.5 text-[12px] text-text-muted">
-                  {currentClientMeta.summary} Target: <code>{currentClientMeta.configPath}</code>
-                </p>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                <select
-                  aria-label="Durasi Token MCP"
-                  value={ttlDays}
-                  onChange={(e) => setTtlDays(Number(e.target.value))}
-                  className="input-solid h-9 rounded-xl px-2.5 text-[12px]"
-                >
-                  {TOKEN_TTL_OPTIONS.map((o) => (
-                    <option key={o.days} value={o.days}>
-                      Aktif {o.label}
-                    </option>
-                  ))}
-                </select>
-                <button
-                  type="button"
-                  onClick={() => void handleGenerateToken(undefined, currentClientMeta.label)}
-                  disabled={busyClientId === "personal"}
-                  className="btn-primary inline-flex items-center gap-1.5 px-3.5 py-2 text-[12px] disabled:opacity-50"
-                >
-                  {busyClientId === "personal" ? <Loader2 size={13} className="animate-spin" /> : <KeyRound size={13} />}
-                  {generatedToken ? "Buat Ulang Token" : "Buat & Isi Token Otomatis"}
-                </button>
-                {generatedToken && (
-                  <button
-                    type="button"
-                    onClick={() => setShowBearer((v) => !v)}
-                    className="pill inline-flex items-center gap-1 px-2.5 py-2 text-[11.5px]"
-                  >
-                    {showBearer ? <EyeOff size={12} /> : <Eye size={12} />}
-                    {showBearer ? "Sembunyikan Token" : "Tampilkan Token"}
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {/* Khusus Claude: Langkah claude.ai Web + App HP */}
-            {selectedClient === "claude" && (
-              <div className="rounded-xl bg-[var(--pill-bg)] p-3.5 text-[12px]">
-                <p className="font-semibold">Cara 1: Pasang di Claude Web (claude.ai) &amp; App HP (OAuth Otomatis / Custom OAuth)</p>
-                <ol className="mt-1.5 list-decimal space-y-1 pl-5 leading-relaxed text-text-muted">
-                  <li>
-                    Buka <strong>claude.ai → Settings → Connectors → Add custom connector</strong>.
-                  </li>
-                  <li>
-                    Isi nama <strong>Depup</strong> dan tempel URL <code>{resolvedUrl}</code>. <em>(Jika ingin memakai Client ID &amp; Secret sendiri, buat di tab <strong>Buat OAuth Sendiri</strong>).</em>
-                  </li>
-                  <li>
-                    Klik <strong>Add</strong> lalu <strong>Connect</strong>, login Google di Depup, dan tekan <strong>Izinkan</strong>.
-                  </li>
-                </ol>
-              </div>
-            )}
-
-            {/* Khusus Gemini: Langkah Gemini Web + Google AI Studio + Firebase Studio */}
-            {selectedClient === "gemini" && (
-              <div className="rounded-xl bg-[var(--pill-bg)] p-3.5 text-[12px]">
-                <p className="font-semibold">Cara 1: Pasang di Gemini Web (&ldquo;Terhubung ke server MCP&rdquo; di gemini.google.com)</p>
-                <ol className="mt-1.5 list-decimal space-y-1 pl-5 leading-relaxed text-text-muted">
-                  <li>
-                    Di <strong>Gemini Web</strong>, buka jendela <strong>Terhubung ke server MCP</strong> lalu tempel URL Server MCP: <code>{resolvedUrl}</code>.
-                  </li>
-                  <li>
-                    <strong>Otomatis:</strong> Biarkan kolom <em>Client ID</em> dan <em>Rahasia klien</em> kosong — server Depup sudah mengizinkan ke-6 URL pengalihan Google (<code>oauth-redirect*.googleusercontent.com</code>) dan metode <code>client_secret_post</code> secara otomatis.
-                  </li>
-                  <li>
-                    <strong>Manual (Setelan tambahan):</strong> Jika ingin mengisi <em>Client ID</em> &amp; <em>Rahasia klien</em> sendiri, buka tab <strong>Buat OAuth Sendiri</strong> di samping (preset <strong>Gemini</strong> sudah otomatis mengizinkan semua URL <code>oauth-redirect.googleusercontent.com/r/...</code> atau kamu juga bisa menempelkan hasil tombol <strong>Salin URI pengalihan</strong> dari Gemini), lalu salin <code>Client ID</code> dan <code>Client Secret</code> ke Gemini.
-                  </li>
-                </ol>
-              </div>
-            )}
-
-            {/* Khusus Cursor: Tombol 1-Click Deep Link Install */}
-            {selectedClient === "cursor" && (
-              <div className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[var(--pill-bg)] px-3.5 py-2.5 text-[12px]">
-                <span>
-                  Ingin langsung memasang ke aplikasi <strong>Cursor</strong> tanpa mengedit file manual?
-                </span>
-                <a
-                  href={cursorDeepLink}
-                  className="pill inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] font-medium text-lav-text hover:brightness-110"
-                >
-                  <ExternalLink size={13} /> Pasang 1-Klik ke Cursor
-                </a>
-              </div>
-            )}
-
-            {/* Blok Kode Konfigurasi Utama */}
-            <div>
-              <div className="mb-1.5 flex items-center justify-between gap-2">
-                <span className="text-[12px] font-medium text-text-muted">{displaySnippets.configTitle}</span>
-                <button
-                  type="button"
-                  onClick={() => void copyText(copySnippets.configCode, `Konfigurasi ${currentClientMeta.label}`)}
-                  className="pill inline-flex items-center gap-1 px-2.5 py-1 text-[11.5px]"
-                >
-                  <Copy size={12} /> Salin Konfigurasi
-                </button>
-              </div>
-              <pre className="overflow-x-auto rounded-xl border border-[var(--line)] bg-[var(--pill-bg)] p-3 font-mono text-[11.5px] leading-relaxed">
-                {displaySnippets.configCode}
-              </pre>
-            </div>
-
-            {/* Blok Perintah CLI / OAuth Alternatif */}
-            {displaySnippets.cliCode && (
-              <div>
-                <div className="mb-1.5 flex items-center justify-between gap-2">
-                  <span className="text-[12px] font-medium text-text-muted">{displaySnippets.cliTitle}</span>
-                  <button
-                    type="button"
-                    onClick={() => void copyText(copySnippets.cliCode, `Perintah ${currentClientMeta.label}`)}
-                    className="pill inline-flex items-center gap-1 px-2.5 py-1 text-[11.5px]"
-                  >
-                    <Copy size={12} /> Salin Perintah
-                  </button>
-                </div>
-                <pre className="overflow-x-auto rounded-xl border border-[var(--line)] bg-[var(--pill-bg)] p-3 font-mono text-[11.5px] leading-relaxed">
-                  {displaySnippets.cliCode}
-                </pre>
-              </div>
-            )}
-
-            {/* Blok Tambahan (Khusus Gemini OAuth Otomatis tanpa Token Manual) */}
-            {displaySnippets.extraCode && (
-              <div>
-                <div className="mb-1.5 flex items-center justify-between gap-2">
-                  <span className="text-[12px] font-medium text-text-muted">{displaySnippets.extraTitle}</span>
-                  <button
-                    type="button"
-                    onClick={() => void copyText(copySnippets.extraCode, `Konfigurasi OAuth ${currentClientMeta.label}`)}
-                    className="pill inline-flex items-center gap-1 px-2.5 py-1 text-[11.5px]"
-                  >
-                    <Copy size={12} /> Salin Konfigurasi OAuth
-                  </button>
-                </div>
-                <pre className="overflow-x-auto rounded-xl border border-[var(--line)] bg-[var(--pill-bg)] p-3 font-mono text-[11.5px] leading-relaxed">
-                  {displaySnippets.extraCode}
-                </pre>
-              </div>
-            )}
-          </div>
-
-          {/* Info Upload Cepat File index.html Besar */}
-          <div className="rounded-2xl bg-[var(--surface-solid-2)] p-4">
-            <h4 className="flex items-center gap-1.5 text-[13px] font-semibold">
-              <Zap size={14} className="text-lav-text" /> Mode Cepat untuk <code>index.html</code> Besar &amp; Banyak File
-            </h4>
-            <p className="mt-1 text-[12px] leading-relaxed text-text-muted">
-              Semua klien AI (Claude, OpenCode, Cursor, Codex, Gemini Web &amp; CLI) otomatis mendapatkan 3 tool interaktif untuk website besar:
+          {(selectedClient === "claude" || selectedClient === "gemini") && (
+            <p className="rounded-xl bg-[var(--pill-bg)] px-3.5 py-2.5 text-[12px] leading-relaxed text-text-muted">
+              {currentClientMeta.label} Web memakai OAuth otomatis: cukup tempel URL MCP di atas, tanpa token.
+              Token di bawah hanya untuk CLI atau file konfigurasi.{" "}
+              <DocsLink className="font-medium text-lav-text underline-offset-4 hover:underline">Langkah lengkap</DocsLink>
             </p>
-            <ul className="mt-2.5 grid gap-2 text-[12px] sm:grid-cols-3 md:grid-cols-1 lg:grid-cols-3">
-              <li className="rounded-xl bg-[var(--pill-bg)] p-3">
-                <strong className="block font-mono text-[11.5px] text-text">1. deploy_website</strong>
-                <span className="mt-1 block text-text-muted">
-                  Tayangkan kerangka awal <code>index.html</code> (mendukung kompresi <code>gzip+base64</code> &amp; auto-strip folder <code>dist/</code>).
-                </span>
-              </li>
-              <li className="rounded-xl bg-[var(--pill-bg)] p-3">
-                <strong className="block font-mono text-[11.5px] text-text">2. update_website</strong>
-                <span className="mt-1 block text-text-muted">
-                  Sambung potongan <code>index.html</code> besar (<code>append_files</code>), cicil halaman lain (<code>files</code>), atau edit cepat (<code>patches</code>) tanpa ganti link!
-                </span>
-              </li>
-              <li className="rounded-xl bg-[var(--pill-bg)] p-3">
-                <strong className="block font-mono text-[11.5px] text-text">3. inspect_website</strong>
-                <span className="mt-1 block text-text-muted">
-                  Cek struktur file, statistik pengunjung live, diagnostik link HTML rusak, &amp; baca isi <code>index.html</code> per baris.
-                </span>
-              </li>
-            </ul>
-          </div>
+          )}
 
-          {/* Contoh Prompt Interaktif 1-Klik */}
-          <div>
-            <h4 className="text-[13px] font-semibold">Contoh Prompt Interaktif (Klik untuk Salin)</h4>
-            <div className="mt-2 grid gap-2.5 sm:grid-cols-3 md:grid-cols-1 lg:grid-cols-3">
-              {QUICK_PROMPTS.map((item) => (
-                <button
-                  key={item.title}
-                  type="button"
-                  onClick={() => void copyText(item.prompt, `Prompt "${item.title}"`)}
-                  className="group flex flex-col justify-between rounded-2xl border border-[var(--line)] bg-[var(--pill-bg)] p-3 text-left transition hover:border-[var(--line-strong)]"
-                >
-                  <div>
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="rounded-md bg-[var(--surface-solid-2)] px-2 py-0.5 text-[10.5px] font-medium text-lav-text">
-                        {item.badge}
-                      </span>
-                      <Copy size={12} className="text-text-muted opacity-70 group-hover:opacity-100" />
-                    </div>
-                    <p className="mt-1.5 text-[12.5px] font-semibold">{item.title}</p>
-                    <p className="mt-1 line-clamp-3 text-[11.5px] leading-relaxed text-text-muted">&ldquo;{item.prompt}&rdquo;</p>
-                  </div>
-                  <span className="mt-2 inline-block text-[11px] font-medium text-lav-text">Salin prompt →</span>
-                </button>
+          {/* Token */}
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+            <select
+              aria-label="Durasi Token MCP"
+              value={ttlDays}
+              onChange={(e) => setTtlDays(Number(e.target.value))}
+              className="input-solid h-10 rounded-xl px-2.5 text-[12px] sm:w-auto"
+            >
+              {TOKEN_TTL_OPTIONS.map((o) => (
+                <option key={o.days} value={o.days}>
+                  Aktif {o.label}
+                </option>
               ))}
-            </div>
+            </select>
+            <button
+              type="button"
+              onClick={() => void handleGenerateToken(undefined, currentClientMeta.label)}
+              disabled={busyClientId === "personal"}
+              className="btn-primary inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-[12px] disabled:opacity-50"
+            >
+              {busyClientId === "personal" ? <Loader2 size={13} className="animate-spin" /> : <KeyRound size={13} />}
+              {generatedToken ? "Buat Ulang Token" : "Buat Token"}
+            </button>
+            {generatedToken && (
+              <button
+                type="button"
+                onClick={() => setShowBearer((v) => !v)}
+                className="pill inline-flex items-center justify-center gap-1 px-3 py-2.5 text-[11.5px]"
+              >
+                {showBearer ? <EyeOff size={12} /> : <Eye size={12} />}
+                {showBearer ? "Sembunyikan" : "Tampilkan"}
+              </button>
+            )}
           </div>
-        </div>
-      )}
 
-      {/* TAB 2: Buat OAuth Sendiri (Custom OAuth Client & Token Manager) */}
-      {activeTab === "oauth" && (
-        <div className="mt-4 space-y-5">
-          <div className="rounded-2xl bg-[var(--surface-solid-2)] p-4">
-            <h4 className="flex items-center gap-1.5 text-[13.5px] font-semibold">
-              <KeyRound size={15} /> Buat OAuth Client Sendiri (Custom OAuth 2.1)
-            </h4>
-            <p className="mt-1 text-[12px] leading-relaxed text-text-muted">
-              Buat <strong>OAuth Client ID</strong> dan <strong>OAuth Client Secret</strong> milikmu sendiri untuk dipakai di <strong>Claude</strong>, <strong>Gemini (Web &amp; CLI)</strong>, <strong>OpenCode</strong>, <strong>Cursor</strong>, <strong>Codex</strong>, atau agen AI kustom.
-            </p>
+          {selectedClient === "cursor" && (
+            <a
+              href={cursorDeepLink}
+              className="pill inline-flex w-full items-center justify-center gap-1.5 px-3.5 py-2.5 text-[12px] font-medium text-lav-text hover:brightness-110 sm:w-auto"
+            >
+              <ExternalLink size={13} /> Pasang 1-Klik ke Cursor
+            </a>
+          )}
 
-            <form onSubmit={handleCreateOAuth} className="mt-3.5 space-y-3.5">
-              <div className="grid gap-3.5 sm:grid-cols-2">
-                <div>
-                  <label htmlFor="custom-oauth-name" className="mb-1 block text-[12px] font-medium">
-                    Nama Aplikasi / OAuth Client
-                  </label>
-                  <input
-                    id="custom-oauth-name"
-                    type="text"
-                    maxLength={60}
-                    value={oauthName}
-                    onChange={(e) => setOauthName(e.target.value)}
-                    placeholder="mis. Claude / Gemini Web & CLI / Cursor / OpenCode"
-                    className="input-solid h-10 w-full px-3 text-[12.5px]"
-                  />
+          <CodeBlock
+            title={displaySnippets.configTitle}
+            code={displaySnippets.configCode}
+            onCopy={() => void copyText(copySnippets.configCode, `Konfigurasi ${currentClientMeta.label}`)}
+          />
+
+          {hasMoreSnippets && (
+            <>
+              <button
+                type="button"
+                onClick={() => setShowMoreSnippets((v) => !v)}
+                className="inline-flex items-center gap-1 text-[12px] font-medium text-lav-text"
+              >
+                <ChevronDown size={13} className={cn("transition-transform", showMoreSnippets && "rotate-180")} />
+                {showMoreSnippets ? "Sembunyikan cara lain" : "Cara lain (perintah terminal / OAuth)"}
+              </button>
+              {showMoreSnippets && (
+                <div className="space-y-4">
+                  {displaySnippets.cliCode && (
+                    <CodeBlock
+                      title={displaySnippets.cliTitle ?? "Perintah terminal"}
+                      code={displaySnippets.cliCode}
+                      onCopy={() => void copyText(copySnippets.cliCode, `Perintah ${currentClientMeta.label}`)}
+                    />
+                  )}
+                  {displaySnippets.extraCode && (
+                    <CodeBlock
+                      title={displaySnippets.extraTitle ?? "Konfigurasi OAuth"}
+                      code={displaySnippets.extraCode}
+                      onCopy={() => void copyText(copySnippets.extraCode, `Konfigurasi OAuth ${currentClientMeta.label}`)}
+                    />
+                  )}
                 </div>
+              )}
+            </>
+          )}
+        </Section>
 
-                <div>
-                  <span className="mb-1 block text-[12px] font-medium">Metode Autentikasi OAuth</span>
-                  <div className="grid grid-cols-2 gap-2">
+        {/* ── 2. OAuth sendiri ── */}
+        <Section
+          title="Buat OAuth sendiri"
+          summary={customClients.length ? `${customClients.length} OAuth client dibuat` : "Client ID & Secret untuk aplikasi AI kustom"}
+          open={openSection === "oauth"}
+          onToggle={() => toggleSection("oauth")}
+        >
+          <form onSubmit={handleCreateOAuth} className="space-y-4">
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div>
+                <label htmlFor="custom-oauth-name" className="mb-1 block text-[12px] font-medium">
+                  Nama OAuth Client
+                </label>
+                <input
+                  id="custom-oauth-name"
+                  type="text"
+                  maxLength={60}
+                  value={oauthName}
+                  onChange={(e) => setOauthName(e.target.value)}
+                  className="input-solid h-10 w-full px-3 text-[12.5px]"
+                />
+              </div>
+              <div>
+                <span className="mb-1 block text-[12px] font-medium">Metode</span>
+                <div className="grid grid-cols-2 gap-2">
+                  {[
+                    { on: true, title: "ID + Secret" },
+                    { on: false, title: "Public (PKCE)" },
+                  ].map((m) => (
                     <button
+                      key={m.title}
                       type="button"
-                      onClick={() => setWithSecret(true)}
+                      onClick={() => setWithSecret(m.on)}
                       className={cn(
-                        "rounded-xl px-3 py-2 text-left text-[12px] transition",
-                        withSecret
-                          ? "bg-violet-500 text-white"
-                          : "bg-[var(--pill-bg)] text-text-muted hover:text-text",
+                        "h-10 rounded-xl px-2 text-[12px] font-semibold transition",
+                        withSecret === m.on ? "bg-violet-500 text-white" : "bg-[var(--pill-bg)] text-text-muted hover:text-text",
                       )}
                     >
-                      <span className="block font-semibold">Client ID + Secret</span>
-                      <span className="block text-[10.5px] opacity-85">Advanced OAuth / Confidential</span>
+                      {m.title}
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => setWithSecret(false)}
-                      className={cn(
-                        "rounded-xl px-3 py-2 text-left text-[12px] transition",
-                        !withSecret
-                          ? "bg-violet-500 text-white"
-                          : "bg-[var(--pill-bg)] text-text-muted hover:text-text",
-                      )}
-                    >
-                      <span className="block font-semibold">Public (PKCE S256)</span>
-                      <span className="block text-[10.5px] opacity-85">Tanpa Client Secret</span>
-                    </button>
-                  </div>
+                  ))}
                 </div>
               </div>
+            </div>
 
-              <div>
-                <span className="mb-1.5 block text-[12px] font-medium">
-                  Preset Redirect URI untuk Klien AI (Centang yang Ingin Diizinkan)
-                </span>
-                <div className="grid gap-2 sm:grid-cols-3 md:grid-cols-1 lg:grid-cols-3">
-                  {OAUTH_URI_PRESETS.map((preset) => (
+            <div>
+              <span className="mb-1.5 block text-[12px] font-medium">Redirect URI yang diizinkan</span>
+              <div className="flex flex-wrap gap-2">
+                {OAUTH_URI_PRESETS.map((preset) => {
+                  const on = !!selectedPresets[preset.id];
+                  return (
                     <label
                       key={preset.id}
-                      className="flex cursor-pointer items-start gap-2 rounded-xl bg-[var(--pill-bg)] px-3 py-2 text-[12px]"
+                      className={cn(
+                        "inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] transition",
+                        on
+                          ? "border-violet-500 bg-violet-500/15 text-text"
+                          : "border-[var(--line)] bg-[var(--pill-bg)] text-text-muted",
+                      )}
                     >
                       <input
                         type="checkbox"
-                        checked={!!selectedPresets[preset.id]}
-                        onChange={(e) =>
-                          setSelectedPresets((prev) => ({ ...prev, [preset.id]: e.target.checked }))
-                        }
-                        className="mt-0.5"
+                        checked={on}
+                        onChange={(e) => setSelectedPresets((prev) => ({ ...prev, [preset.id]: e.target.checked }))}
+                        className="sr-only"
                       />
-                      <span className="min-w-0">
-                        <strong className="block text-[12px]">{preset.label}</strong>
-                        <code className="block truncate text-[10.5px] text-text-muted">{preset.hint}</code>
-                      </span>
+                      {on && <Check size={12} />}
+                      {preset.label}
                     </label>
-                  ))}
-                </div>
-                <input
-                  type="text"
-                  value={extraRedirectUris}
-                  onChange={(e) => setExtraRedirectUris(e.target.value)}
-                  placeholder="Redirect URI tambahan (opsional, pisahkan koma — mis. https://app.domainmu.com/oauth/callback)"
-                  className="input-solid mono mt-2 h-10 w-full px-3 text-[12px]"
-                />
+                  );
+                })}
               </div>
+              <input
+                type="text"
+                value={extraRedirectUris}
+                onChange={(e) => setExtraRedirectUris(e.target.value)}
+                placeholder="Redirect URI tambahan (opsional, pisahkan koma)"
+                className="input-solid mono mt-2 h-10 w-full px-3 text-[12px]"
+              />
+            </div>
 
-              <div className="flex flex-wrap items-center gap-2.5 pt-1">
-                <button
-                  type="submit"
-                  disabled={creatingOauth}
-                  className="btn-primary inline-flex items-center gap-1.5 px-4 py-2 text-[12.5px] disabled:opacity-50"
-                >
-                  {creatingOauth ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
-                  Buat OAuth Sendiri
-                </button>
-                <button
-                  type="button"
-                  onClick={() => void handleGenerateToken(undefined, "Multi-AI Web & CLI")}
-                  disabled={busyClientId === "personal"}
-                  className="pill inline-flex items-center gap-1.5 px-3.5 py-2 text-[12px] font-medium hover:brightness-95 disabled:opacity-50"
-                >
-                  {busyClientId === "personal" ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
-                  Buat Bearer Token Langsung ({ttlDays} Hari)
-                </button>
-              </div>
-            </form>
-          </div>
+            <div className="flex flex-col gap-2 sm:flex-row">
+              <button
+                type="submit"
+                disabled={creatingOauth}
+                className="btn-primary inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-[12.5px] disabled:opacity-50"
+              >
+                {creatingOauth ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
+                Buat OAuth
+              </button>
+              <button
+                type="button"
+                onClick={() => void handleGenerateToken(undefined, "Multi-AI Web & CLI")}
+                disabled={busyClientId === "personal"}
+                className="pill inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-[12px] font-medium hover:brightness-95 disabled:opacity-50"
+              >
+                {busyClientId === "personal" ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
+                Bearer Token ({ttlDays} hari)
+              </button>
+            </div>
+          </form>
 
-          {/* Kredensial OAuth Baru yang Baru Saja Dibuat */}
           {newlyCreated && (
-            <div className="rounded-2xl border border-violet-500/40 bg-violet-500/10 p-4 space-y-3">
-              <div className="flex items-center justify-between gap-2">
-                <p className="flex items-center gap-1.5 text-[13px] font-semibold">
-                  <Check size={15} /> OAuth &ldquo;{newlyCreated.client.name}&rdquo; Siap Dipakai
-                </p>
-                <span className="text-[11px] text-text-muted">Simpan Client Secret sekarang (hanya ditampilkan sekali)</span>
+            <div className="space-y-3 rounded-2xl border border-violet-500/40 bg-violet-500/10 p-3.5 text-[12px]">
+              <p className="flex items-center gap-1.5 text-[13px] font-semibold">
+                <Check size={15} /> &ldquo;{newlyCreated.client.name}&rdquo; siap dipakai
+              </p>
+              <p className="text-[11.5px] text-text-muted">Simpan Client Secret sekarang, hanya ditampilkan sekali.</p>
+              <div>
+                <span className="mb-1 block font-medium text-text-muted">Client ID</span>
+                <div className="flex gap-2">
+                  <input
+                    readOnly
+                    value={newlyCreated.client.clientId}
+                    onFocus={(e) => e.currentTarget.select()}
+                    className="input-solid mono h-9 min-w-0 flex-1 px-3 text-[11.5px]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => void copyText(newlyCreated.client.clientId, "OAuth Client ID")}
+                    className="pill inline-flex shrink-0 items-center gap-1 px-3 py-1.5 text-[11.5px]"
+                  >
+                    <Copy size={12} /> Salin
+                  </button>
+                </div>
               </div>
-
-              <div className="space-y-2.5 text-[12px]">
+              {newlyCreated.clientSecret && (
                 <div>
-                  <span className="mb-1 block font-medium text-text-muted">OAuth Client ID</span>
-                  <div className="flex items-center gap-2">
+                  <span className="mb-1 block font-medium text-text-muted">Client Secret</span>
+                  <div className="flex gap-2">
                     <input
                       readOnly
-                      value={newlyCreated.client.clientId}
+                      type={showSecret ? "text" : "password"}
+                      value={newlyCreated.clientSecret}
                       onFocus={(e) => e.currentTarget.select()}
                       className="input-solid mono h-9 min-w-0 flex-1 px-3 text-[11.5px]"
                     />
                     <button
                       type="button"
-                      onClick={() => void copyText(newlyCreated.client.clientId, "OAuth Client ID")}
-                      className="pill inline-flex items-center gap-1 px-3 py-1.5 text-[11.5px]"
+                      onClick={() => setShowSecret((v) => !v)}
+                      className="pill inline-flex shrink-0 items-center px-2.5 py-1.5"
+                      aria-label={showSecret ? "Sembunyikan Secret" : "Tampilkan Secret"}
                     >
-                      <Copy size={12} /> Salin ID
+                      {showSecret ? <EyeOff size={12} /> : <Eye size={12} />}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => void copyText(newlyCreated.clientSecret, "OAuth Client Secret")}
+                      className="pill inline-flex shrink-0 items-center gap-1 px-3 py-1.5 text-[11.5px]"
+                    >
+                      <Copy size={12} /> Salin
                     </button>
                   </div>
                 </div>
-
-                {newlyCreated.clientSecret && (
-                  <div>
-                    <span className="mb-1 block font-medium text-text-muted">OAuth Client Secret</span>
-                    <div className="flex items-center gap-2">
-                      <input
-                        readOnly
-                        type={showSecret ? "text" : "password"}
-                        value={newlyCreated.clientSecret}
-                        onFocus={(e) => e.currentTarget.select()}
-                        className="input-solid mono h-9 min-w-0 flex-1 px-3 text-[11.5px]"
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowSecret((v) => !v)}
-                        className="pill inline-flex items-center gap-1 px-2.5 py-1.5 text-[11.5px]"
-                        aria-label={showSecret ? "Sembunyikan Secret" : "Tampilkan Secret"}
-                      >
-                        {showSecret ? <EyeOff size={12} /> : <Eye size={12} />}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => void copyText(newlyCreated.clientSecret, "OAuth Client Secret")}
-                        className="pill inline-flex items-center gap-1 px-3 py-1.5 text-[11.5px]"
-                      >
-                        <Copy size={12} /> Salin Secret
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
+              )}
             </div>
           )}
 
-          {/* Panel Bearer Token Langsung (Jika Digenerate) */}
           {generatedToken && (
-            <div className="rounded-2xl border border-[var(--line-strong)] bg-[var(--surface-solid-2)] p-4 space-y-2.5 text-[12px]">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <span className="font-semibold">
-                  Bearer Access Token ({generatedToken.clientName}) · Aktif {Math.round(generatedToken.expiresIn / 86400) || 1} Hari
-                </span>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowBearer((v) => !v)}
-                    className="pill inline-flex items-center gap-1 px-2.5 py-1 text-[11.5px]"
-                  >
-                    {showBearer ? <EyeOff size={12} /> : <Eye size={12} />} {showBearer ? "Sembunyikan" : "Tampilkan"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void copyText(generatedToken.accessToken, "Access Token")}
-                    className="pill inline-flex items-center gap-1 px-3 py-1 text-[11.5px]"
-                  >
-                    <Copy size={12} /> Salin Access Token
-                  </button>
-                </div>
+            <div className="space-y-2 rounded-2xl border border-[var(--line-strong)] bg-[var(--pill-bg)] p-3.5 text-[12px]">
+              <span className="block font-semibold">
+                Bearer Token ({generatedToken.clientName}) · aktif {Math.round(generatedToken.expiresIn / 86400) || 1} hari
+              </span>
+              <div className="flex gap-2">
+                <input
+                  readOnly
+                  type={showBearer ? "text" : "password"}
+                  value={generatedToken.accessToken}
+                  onFocus={(e) => e.currentTarget.select()}
+                  className="input-solid mono h-9 min-w-0 flex-1 px-3 text-[11.5px]"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowBearer((v) => !v)}
+                  className="pill inline-flex shrink-0 items-center px-2.5 py-1.5"
+                  aria-label={showBearer ? "Sembunyikan token" : "Tampilkan token"}
+                >
+                  {showBearer ? <EyeOff size={12} /> : <Eye size={12} />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void copyText(generatedToken.accessToken, "Access Token")}
+                  className="pill inline-flex shrink-0 items-center gap-1 px-3 py-1.5 text-[11.5px]"
+                >
+                  <Copy size={12} /> Salin
+                </button>
               </div>
-              <input
-                readOnly
-                type={showBearer ? "text" : "password"}
-                value={generatedToken.accessToken}
-                onFocus={(e) => e.currentTarget.select()}
-                className="input-solid mono h-9 w-full px-3 text-[11.5px]"
-              />
             </div>
           )}
 
-          {/* Informasi Endpoint OAuth Server Depup */}
           {endpoints && (
-            <div className="rounded-2xl border border-[var(--line)] bg-[var(--pill-bg)] p-3.5 text-[12px]">
-              <p className="font-semibold">Endpoint OAuth 2.1 Server Depup</p>
-              <div className="mt-2 grid gap-2 sm:grid-cols-2">
-                <div className="flex items-center justify-between gap-2 rounded-xl bg-[var(--surface-solid-2)] px-3 py-2">
+            <div className="grid gap-2 sm:grid-cols-2">
+              {[
+                { label: "Authorization URL", value: endpoints.authorizationEndpoint },
+                { label: "Token URL", value: endpoints.tokenEndpoint },
+              ].map((e) => (
+                <div key={e.label} className="flex items-center justify-between gap-2 rounded-xl bg-[var(--pill-bg)] px-3 py-2">
                   <div className="min-w-0">
-                    <span className="block text-[10.5px] text-text-muted">Authorization URL</span>
-                    <code className="block truncate text-[11.5px]">{endpoints.authorizationEndpoint}</code>
+                    <span className="block text-[10.5px] text-text-muted">{e.label}</span>
+                    <code className="block truncate text-[11.5px]">{e.value}</code>
                   </div>
                   <button
                     type="button"
-                    onClick={() => void copyText(endpoints.authorizationEndpoint, "Authorization URL")}
-                    className="shrink-0 text-text-muted hover:text-text"
-                    aria-label="Salin Authorization URL"
+                    onClick={() => void copyText(e.value, e.label)}
+                    className="shrink-0 p-1 text-text-muted hover:text-text"
+                    aria-label={`Salin ${e.label}`}
                   >
-                    <Copy size={13} />
+                    <Copy size={14} />
                   </button>
                 </div>
-                <div className="flex items-center justify-between gap-2 rounded-xl bg-[var(--surface-solid-2)] px-3 py-2">
-                  <div className="min-w-0">
-                    <span className="block text-[10.5px] text-text-muted">Token URL</span>
-                    <code className="block truncate text-[11.5px]">{endpoints.tokenEndpoint}</code>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => void copyText(endpoints.tokenEndpoint, "Token URL")}
-                    className="shrink-0 text-text-muted hover:text-text"
-                    aria-label="Salin Token URL"
-                  >
-                    <Copy size={13} />
-                  </button>
-                </div>
-              </div>
+              ))}
             </div>
           )}
 
-          {/* Daftar Custom OAuth Client Milik User */}
           <div>
-            <h4 className="text-[13px] font-semibold">
-              Daftar OAuth Client Buatanmu ({customClients.length})
-            </h4>
+            <h4 className="text-[13px] font-semibold">OAuth client buatanmu ({customClients.length})</h4>
             {customClients.length === 0 ? (
-              <p className="mt-1.5 text-[12px] text-text-muted">
-                Belum ada Custom OAuth yang dibuat. Gunakan form di atas jika ingin membuat Client ID &amp; Secret sendiri.
-              </p>
+              <p className="mt-1.5 text-[12px] text-text-muted">Belum ada. Pakai form di atas untuk membuatnya.</p>
             ) : (
               <ul className="mt-2.5 space-y-2.5">
                 {customClients.map((c) => (
-                  <li
-                    key={c.id}
-                    className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-[var(--line)] bg-[var(--pill-bg)] p-3.5 text-[12px]"
-                  >
-                    <div className="min-w-0 flex-1 space-y-1">
+                  <li key={c.id} className="space-y-2.5 rounded-2xl border border-[var(--line)] bg-[var(--pill-bg)] p-3.5 text-[12px]">
+                    <div className="min-w-0 space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <strong className="text-[13px]">{c.name}</strong>
                         <span className="rounded-md bg-[var(--surface-solid-2)] px-2 py-0.5 text-[10.5px] font-medium text-lav-text">
-                          {c.hasSecret ? "Client ID + Secret" : "Public PKCE"}
+                          {c.hasSecret ? "ID + Secret" : "Public PKCE"}
                         </span>
-                        {c.secretPreview && (
-                          <code className="text-[11px] text-text-muted">Secret: {c.secretPreview}</code>
-                        )}
+                        {c.secretPreview && <code className="text-[11px] text-text-muted">Secret: {c.secretPreview}</code>}
                       </div>
-                      <p className="truncate font-mono text-[11px] text-text-muted">
-                        Redirect: {c.redirectUris.join(", ")}
+                      <p className="truncate font-mono text-[11px] text-text-muted" title={c.redirectUris.join(", ")}>
+                        {c.redirectUris.length} Redirect URI · {c.redirectUris[0]}
                       </p>
                     </div>
-                    <div className="flex flex-wrap items-center gap-2">
+                    <div className="grid grid-cols-3 gap-2">
                       <button
                         type="button"
                         onClick={() => void copyText(c.clientId, `Client ID "${c.name}"`)}
-                        className="pill inline-flex items-center gap-1 px-2.5 py-1.5 text-[11.5px]"
+                        className="pill inline-flex items-center justify-center gap-1 px-2 py-2 text-[11.5px]"
                       >
-                        <Copy size={12} /> Salin Client ID
+                        <Copy size={12} /> ID
                       </button>
                       <button
                         type="button"
                         onClick={() => void handleGenerateToken(c)}
                         disabled={busyClientId === c.id}
-                        className="pill inline-flex items-center gap-1 px-2.5 py-1.5 text-[11.5px]"
+                        className="pill inline-flex items-center justify-center gap-1 px-2 py-2 text-[11.5px]"
                       >
                         {busyClientId === c.id ? <Loader2 size={12} className="animate-spin" /> : <KeyRound size={12} />}
                         Token
@@ -1249,7 +1069,7 @@ export function ClaudeConnectCard({
                         type="button"
                         onClick={() => void handleDeleteOAuth(c)}
                         disabled={busyClientId === c.id}
-                        className="pill inline-flex items-center gap-1 px-2.5 py-1.5 text-[11.5px] text-bad-fg"
+                        className="pill inline-flex items-center justify-center gap-1 px-2 py-2 text-[11.5px] text-bad-fg"
                       >
                         <Trash2 size={12} /> Hapus
                       </button>
@@ -1259,65 +1079,66 @@ export function ClaudeConnectCard({
               </ul>
             )}
           </div>
-        </div>
-      )}
+        </Section>
 
-      {/* Bagian Izin Platform Deploy */}
-      <div className="mt-5 border-t border-[var(--line)] pt-4">
-        <h4 className="text-[13.5px] font-semibold">Izinkan Konektor AI (MCP) deploy ke</h4>
-        <p className="mt-1 text-[12px] text-text-muted">
-          Claude, OpenCode, Cursor, Codex, dan Gemini memakai token yang kamu simpan di form Settings di atas, langsung dari server — token tidak pernah dikirim lewat chat. Platform yang dimatikan tidak bisa dipakai untuk deploy.
-        </p>
-        <ul className="mt-3 space-y-2.5">
-          {DEPLOY_TARGETS.map((t) => {
-            const hasToken = typeof tokens[t.tokenField] === "string" && (tokens[t.tokenField] as string).trim().length > 0;
-            const on = allowed.includes(t.platform);
-            const id = `mcpAllow-${t.platform}`;
-            return (
-              <li key={t.platform} className="flex items-center justify-between gap-4">
-                <div className="min-w-0">
-                  <label htmlFor={id} className="block cursor-pointer text-[13px] font-medium">
-                    {t.label}
-                  </label>
-                  <p className="text-[12px] text-text-muted">
-                    {hasToken ? "Token tersimpan." : "Isi token " + t.label + " di form Settings dulu, lalu klik Simpan."}
-                  </p>
-                </div>
-                <button
-                  id={id}
-                  type="button"
-                  role="switch"
-                  aria-checked={on}
-                  disabled={!hasToken}
-                  onClick={() => togglePlatform(t.platform, !on)}
-                  className={cn(
-                    "relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-40",
-                    on ? "bg-[var(--ink-fill)]" : "bg-[var(--line-strong)]",
-                  )}
-                >
-                  <span
+        {/* ── 3. Izin deploy ── */}
+        <Section
+          title="Izin deploy"
+          summary={`${readyPlatformsCount} dari ${DEPLOY_TARGETS.length} platform aktif untuk AI`}
+          open={openSection === "deploy"}
+          onToggle={() => toggleSection("deploy")}
+        >
+          <ul className="space-y-3">
+            {DEPLOY_TARGETS.map((t) => {
+              const hasToken = typeof tokens[t.tokenField] === "string" && (tokens[t.tokenField] as string).trim().length > 0;
+              const on = allowed.includes(t.platform);
+              const id = `mcpAllow-${t.platform}`;
+              return (
+                <li key={t.platform} className="flex items-center justify-between gap-4">
+                  <div className="min-w-0">
+                    <label htmlFor={id} className="block cursor-pointer text-[13px] font-medium">
+                      {t.label}
+                    </label>
+                    <p className="text-[12px] text-text-muted">
+                      {hasToken ? "Token tersimpan." : `Isi token ${t.label} di form di atas, lalu Simpan.`}
+                    </p>
+                  </div>
+                  <button
+                    id={id}
+                    type="button"
+                    role="switch"
+                    aria-checked={on}
+                    disabled={!hasToken}
+                    onClick={() => togglePlatform(t.platform, !on)}
                     className={cn(
-                      "absolute left-1 top-1 h-5 w-5 rounded-full bg-white shadow transition-transform duration-300 [transition-timing-function:var(--ease-soft)]",
-                      on ? "translate-x-5" : "translate-x-0",
+                      "relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-40",
+                      on ? "bg-[var(--ink-fill)]" : "bg-[var(--line-strong)]",
                     )}
-                  />
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-        <p className="mt-2.5 text-[12px] text-text-muted">
-          Untuk repo private, isi juga GitHub PAT. Di chat/IDE, minta misalnya: <em>&quot;Deploy repo github.com/aku/toko ke Vercel.&quot;</em>
-        </p>
+                  >
+                    <span
+                      className={cn(
+                        "absolute left-1 top-1 h-5 w-5 rounded-full bg-white shadow transition-transform duration-300 [transition-timing-function:var(--ease-soft)]",
+                        on ? "translate-x-5" : "translate-x-0",
+                      )}
+                    />
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+          <p className="text-[12px] text-text-muted">
+            AI memakai token tersimpan langsung dari server, tidak lewat chat. Platform yang dimatikan tidak bisa dipakai untuk deploy.
+          </p>
+        </Section>
       </div>
 
       <button
         type="button"
         onClick={revoke}
         disabled={busy}
-        className="pill mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px] text-bad-fg disabled:opacity-50"
+        className="pill mt-4 inline-flex w-full items-center justify-center gap-1.5 px-3 py-2 text-[12px] text-bad-fg disabled:opacity-50 sm:w-auto"
       >
-        <Unplug size={13} /> Cabut semua akses MCP &amp; OAuth
+        <Unplug size={13} /> Cabut semua akses MCP
       </button>
     </section>
   );

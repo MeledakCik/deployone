@@ -19,14 +19,16 @@ import {
   Search,
   Settings2,
   ShieldCheck,
+  Sparkles,
+  Terminal,
   UploadCloud,
   X,
 } from "@/components/ui/icons";
-import { Github } from "lucide-react";
+import { Github, Zap } from "lucide-react";
 import { ViewFade } from "@/components/ui/ViewFade";
 import { Surface } from "@/components/ui/Surface";
 
-type CategoryId = "start" | "features" | "tokens" | "trouble" | "more" | "admin";
+type CategoryId = "start" | "features" | "mcp" | "tokens" | "trouble" | "more" | "admin";
 
 interface Guide {
   icon: React.ElementType;
@@ -41,11 +43,23 @@ interface Guide {
 const CATEGORIES: { id: CategoryId; label: string; desc: string }[] = [
   { id: "start", label: "Mulai di sini", desc: "Baru pertama kali? Mulai dari panduan ini." },
   { id: "features", label: "Fitur Depup", desc: "Cara memakai tiap menu di dashboard." },
+  { id: "mcp", label: "Konektor AI (MCP)", desc: "Hubungkan Claude, Gemini, Cursor, OpenCode, atau Codex ke Depup." },
   { id: "tokens", label: "Token dan keamanan", desc: "Cara mendapatkan token dan menjaga datamu tetap aman." },
   { id: "trouble", label: "Masalah dan error", desc: "Deploy gagal, situs kosong, atau muncul pesan error." },
   { id: "more", label: "Lainnya", desc: "Pertanyaan umum dan cara melapor." },
   { id: "admin", label: "Untuk admin Depup", desc: "Hanya relevan kalau kamu menjalankan Depup sendiri." },
 ];
+
+const MCP_URL = `${(process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://depup.cloud").replace(/\/+$/, "")}/api/mcp`;
+
+/** Blok kode untuk dipakai di dalam langkah panduan. Bisa di-scroll ke samping di layar kecil. */
+function Pre({ children }: { children: string }) {
+  return (
+    <pre className="mt-2 max-w-full overflow-x-auto rounded-xl border border-[var(--line)] bg-[var(--pill-bg)] p-3 font-mono text-[11.5px] leading-relaxed text-[var(--text)]">
+      {children}
+    </pre>
+  );
+}
 
 const GUIDES: Guide[] = [
   // ─────────────────────────── Mulai di sini ───────────────────────────
@@ -268,6 +282,138 @@ const GUIDES: Guide[] = [
       'Mode terang mengganti tampilan dashboard antara terang dan gelap.',
       '"Tampilkan proses debug" memunculkan log tahap, status, dan pesan error di jendela deploy. Nyalakan kalau kamu perlu melaporkan masalah.',
       "Token kedaluwarsa atau dicabut di platform? Buat yang baru, tempel di Settings, lalu Test Koneksi lagi.",
+    ],
+  },
+
+  // ─────────────────────────── Konektor AI (MCP) ───────────────────────────
+  {
+    icon: Sparkles,
+    category: "mcp",
+    title: "Konektor AI (MCP) — apa itu dan tool apa saja yang tersedia",
+    desc: "Satu server MCP Depup untuk Claude, Gemini, Cursor, OpenCode, dan Codex (Web maupun CLI).",
+    steps: [
+      "MCP membuat AI pilihanmu bisa memakai Depup atas namamu: menayangkan website, mengeditnya, sampai men-deploy repo GitHub, tanpa kamu pindah-pindah halaman. Pengaturannya ada di Settings → Konektor AI (MCP).",
+      "deploy_website: menayangkan file HTML/CSS/JS sebagai Link Instan (aktif 1 jam sampai 7 hari). Mendukung kompresi gzip+base64 dan merapikan folder dist/ otomatis.",
+      "update_website: memperbarui website yang sudah tayang tanpa mengubah linknya. Bisa menyambung index.html besar (append_files), menambah halaman bertahap (files), atau edit cari-dan-ganti cepat (patches).",
+      "inspect_website: melihat daftar file beserta ukurannya, statistik kunjungan, diagnostik link HTML yang rusak, dan membaca isi file per rentang baris.",
+      "list_websites dan delete_website: melihat semua Link Instan yang aktif beserta jumlah views-nya, atau menghapus salah satunya.",
+      "connector_status: melihat platform deploy mana yang sudah siap dipakai. Token tidak pernah ditampilkan.",
+      "deploy_project: men-deploy repo GitHub ke Vercel, Cloudflare Pages, atau Railway memakai token yang kamu simpan di Settings.",
+      "Pasang di aplikasi AI-mu lewat panduan di bawah ini. Cara tercepat: buka Settings, tekan Buat Token, lalu salin konfigurasinya.",
+    ],
+  },
+  {
+    icon: Sparkles,
+    category: "mcp",
+    title: "Pasang di Claude (Web, App HP, dan Claude Code)",
+    desc: "Claude Web memakai OAuth otomatis, jadi tidak perlu menyalin token. Claude Code CLI memakai Bearer token.",
+    link: { label: "Buka Connectors di claude.ai", href: "https://claude.ai/settings/connectors" },
+    steps: [
+      "Buka claude.ai → Settings → Connectors → Add custom connector.",
+      "Isi nama Depup, lalu tempel URL MCP. Salin dari Settings → Konektor AI (MCP), atau pakai: " + MCP_URL,
+      "Klik Add, lalu Connect. Login dengan Google di Depup dan tekan Izinkan.",
+      "Ingin memakai Client ID dan Secret sendiri? Ikuti panduan \"Buat OAuth sendiri\" di grup ini.",
+      <>
+        Claude Code CLI: jalankan perintah ini, ganti {"<TOKEN>"} dengan token dari Settings.
+        <Pre>{`claude mcp add --transport http depup ${MCP_URL} --header "Authorization: Bearer <TOKEN>"`}</Pre>
+      </>,
+      <>
+        Claude Desktop atau file .mcp.json: tambahkan blok ini.
+        <Pre>{`{\n  "mcpServers": {\n    "depup": {\n      "type": "http",\n      "url": "${MCP_URL}",\n      "headers": { "Authorization": "Bearer <TOKEN>" }\n    }\n  }\n}`}</Pre>
+      </>,
+    ],
+  },
+  {
+    icon: Sparkles,
+    category: "mcp",
+    title: "Pasang di Gemini (Web, AI Studio, dan CLI)",
+    desc: "Gemini Web memakai OAuth otomatis. Gemini CLI bisa memakai token atau OAuth.",
+    steps: [
+      "Gemini Web: buka jendela Terhubung ke server MCP di gemini.google.com, lalu tempel URL MCP Depup: " + MCP_URL,
+      "Biarkan kolom Client ID dan Rahasia klien kosong. Depup sudah mengizinkan URL pengalihan Google dan metode client_secret_post secara otomatis.",
+      "Mau mengisi Client ID dan Secret sendiri? Buat di Settings dengan preset Gemini, lalu salin ke Gemini. Lihat panduan \"Buat OAuth sendiri\".",
+      <>
+        Gemini CLI dengan token (satu baris):
+        <Pre>{`gemini mcp add --transport http depup ${MCP_URL} --header "Authorization: Bearer <TOKEN>"`}</Pre>
+      </>,
+      <>
+        Gemini CLI tanpa token manual: tempel ke ~/.gemini/settings.json, lalu login OAuth saat diminta.
+        <Pre>{`{\n  "mcpServers": {\n    "depup": {\n      "httpUrl": "${MCP_URL}",\n      "oauth": { "enabled": true }\n    }\n  }\n}`}</Pre>
+      </>,
+    ],
+  },
+  {
+    icon: Terminal,
+    category: "mcp",
+    title: "Pasang di Cursor, OpenCode, dan Codex",
+    desc: "Tiga alat ini sama-sama memakai file konfigurasi. Settings Depup membuatkan isinya lengkap dengan tokenmu.",
+    steps: [
+      "Di Settings → Konektor AI (MCP), pilih aplikasinya, tekan Buat Token, lalu Salin Konfigurasi. Token otomatis masuk ke isi konfigurasi.",
+      <>
+        Cursor: tekan tombol Pasang 1-Klik ke Cursor di Settings, atau tempel ke .cursor/mcp.json.
+        <Pre>{`{\n  "mcpServers": {\n    "depup": {\n      "url": "${MCP_URL}",\n      "headers": { "Authorization": "Bearer <TOKEN>" }\n    }\n  }\n}`}</Pre>
+      </>,
+      "Cursor tanpa token: cukup isi url saja tanpa headers, lalu Cursor menjalankan login OAuth sendiri.",
+      <>
+        OpenCode: tempel ke opencode.json atau ~/.config/opencode/opencode.json. Alternatifnya, jalankan opencode mcp auth depup untuk login OAuth.
+        <Pre>{`{\n  "$schema": "https://opencode.ai/config.json",\n  "mcp": {\n    "depup": {\n      "type": "remote",\n      "url": "${MCP_URL}",\n      "enabled": true,\n      "headers": { "Authorization": "Bearer <TOKEN>" }\n    }\n  }\n}`}</Pre>
+      </>,
+      <>
+        Codex: tempel ke ~/.codex/config.toml, atau jalankan codex mcp add depup --url {MCP_URL}.
+        <Pre>{`[mcp_servers.depup]\nurl = "${MCP_URL}"\nhttp_headers = { "Authorization" = "Bearer <TOKEN>" }`}</Pre>
+      </>,
+    ],
+  },
+  {
+    icon: Zap,
+    category: "mcp",
+    title: "Website besar atau banyak halaman lewat MCP (anti terpotong)",
+    desc: "Cara AI menayangkan index.html yang panjang tanpa kena batas token.",
+    steps: [
+      "AI menayangkan kerangka awal index.html dengan deploy_website, jadi link langsung aktif dalam hitungan detik.",
+      "Bagian berikutnya disambung dengan update_website (append_files). Halaman lain bisa dicicil lewat files, tanpa risiko terpotong.",
+      "Saat kamu minta revisi warna, teks, atau komponen, AI cukup memakai update_website (patches). Perubahan tayang cepat dan link-nya tetap sama.",
+      "Pakai inspect_website kalau ingin AI memeriksa struktur file, statistik kunjungan, atau link HTML yang rusak sebelum mengedit.",
+      "Contoh prompt siap pakai ada di panduan \"Contoh prompt untuk AI\".",
+    ],
+  },
+  {
+    icon: KeyRound,
+    category: "mcp",
+    title: "Buat OAuth sendiri (Client ID dan Secret)",
+    desc: "Untuk aplikasi AI yang meminta Client ID dan Secret, atau kalau kamu ingin mengatur Redirect URI sendiri.",
+    steps: [
+      "Buka Settings → Konektor AI (MCP), lalu buka bagian Buat OAuth sendiri.",
+      "Isi nama aplikasi dan pilih metode: Client ID + Secret (confidential) atau Public (PKCE S256, tanpa secret).",
+      "Centang preset Redirect URI sesuai aplikasi yang dipakai: Claude, Gemini, Cursor, OpenCode, Codex, atau Localhost. Redirect URI tambahan bisa diisi di kolom bawahnya.",
+      "Tekan Buat OAuth Sendiri. Client ID dan Secret muncul. Secret hanya ditampilkan sekali, jadi langsung simpan.",
+      "Tempel Client ID dan Secret ke aplikasi AI-mu, bersama URL MCP. Endpoint Authorization dan Token tersedia di bagian yang sama dengan tombol salin.",
+      "Tidak mau OAuth? Tekan Buat Token (masa aktif 1 sampai 365 hari) untuk mendapat Bearer token langsung.",
+      "Menghapus OAuth langsung mencabut Client ID, Secret, dan semua token dari OAuth itu.",
+    ],
+  },
+  {
+    icon: ShieldCheck,
+    category: "mcp",
+    title: "Izin deploy lewat MCP dan cara mencabut akses",
+    desc: "Atur platform mana yang boleh dipakai AI untuk deploy, dan putuskan semua koneksi kalau perlu.",
+    steps: [
+      "Di Settings → Konektor AI (MCP), buka bagian Izin deploy. Nyalakan saklar untuk Vercel, Cloudflare Pages, atau Railway.",
+      "Saklar hanya bisa dinyalakan kalau token platform itu sudah tersimpan di form Settings. Platform yang dimatikan tidak bisa dipakai AI untuk deploy.",
+      "AI memakai token yang tersimpan langsung dari server. Token tidak pernah dikirim lewat chat.",
+      "Untuk repo private, isi juga GitHub PAT di Settings.",
+      "Tombol Cabut semua akses MCP memutus semua koneksi dan token OAuth aktif. Link dan deployment yang sudah jalan tetap aktif. Kamu bisa menghubungkan ulang kapan saja.",
+    ],
+  },
+  {
+    icon: MessageCircle,
+    category: "mcp",
+    title: "Contoh prompt untuk AI",
+    desc: "Tempel ke chat AI yang sudah terhubung ke Depup.",
+    steps: [
+      "Website besar bertahap: \"Buatkan website landing page modern lengkap dengan katalog produk dan halaman tentang kami. Gunakan deploy_website untuk mengupload kerangka awal index.html, lalu gunakan update_website (append_files / files) secara bertahap agar upload cepat dan tidak terpotong.\"",
+      "Edit cepat tanpa ganti link: \"Cek website aktifku di Depup memakai list_websites dan inspect_website, lalu ubah tampilan bagian hero di index.html menggunakan update_website (patches) supaya link publiknya tetap sama.\"",
+      "Cek platform dan deploy GitHub: \"Cek platform deploy mana yang sudah siap di Depup dengan connector_status, lalu bantu saya deploy repo GitHub saya.\"",
     ],
   },
 
@@ -657,6 +803,14 @@ function GuideCard({ guide }: { guide: Guide }) {
 export function DocsView() {
   const [query, setQuery] = React.useState("");
 
+  // Buka langsung ke grup tertentu, mis. /docs#docs-mcp atau dari tombol "Panduan" di Settings.
+  React.useEffect(() => {
+    const id = window.location.hash.replace("#", "");
+    if (!id.startsWith("docs-")) return;
+    const t = window.setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: "smooth", block: "start" }), 250);
+    return () => window.clearTimeout(t);
+  }, []);
+
   // Teks pencarian dihitung sekali; GUIDES tidak berubah selama aplikasi jalan.
   const searchable = React.useMemo(() => GUIDES.map((g) => ({ guide: g, text: guideText(g) })), []);
 
@@ -703,7 +857,7 @@ export function DocsView() {
 
           {/* Navigasi Cepat per Kategori */}
           {visibleCategories.length > 0 && (
-            <div className="flex flex-wrap gap-2 pt-1 pb-2">
+            <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-2 pt-1 [scrollbar-width:none] sm:flex-wrap sm:overflow-visible [&::-webkit-scrollbar]:hidden">
               {visibleCategories.map((cat) => (
                 <a
                   key={cat.id}
