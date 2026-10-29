@@ -149,14 +149,14 @@ export function HeroMockup() {
             </div>
 
             {/* Pilih contoh repo */}
-            <div role="tablist" aria-label="Contoh repo" className="flex flex-wrap gap-2 self-start">
+            <div role="tablist" aria-label="Contoh repo" className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:self-start">
               {SAMPLES.map((x, idx) => (
                 <button
                   key={x.tab}
                   role="tab"
                   aria-selected={idx === i}
                   onClick={() => setI(idx)}
-                  className={`press rounded-full px-4 py-2 text-[12.5px] font-medium transition-colors ${
+                  className={`press whitespace-nowrap rounded-full px-4 py-2 text-center text-[12.5px] font-medium transition-colors ${
                     idx === i ? "chip-on" : "pill"
                   }`}
                 >
@@ -199,7 +199,7 @@ export function HeroMockup() {
             {/* Daftar deploy (contoh): baris yang sama dengan HistoryTable */}
             <div className="surface-solid overflow-hidden text-left">
               <div className="flex items-center justify-between gap-3 px-5 py-4 sm:px-6">
-                <div className="flex items-center gap-2.5">
+                <div className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1.5">
                   <span className="text-[16px] font-bold tracking-tight">Deploy terakhir</span>
                   <Badge tone="violet">Contoh data</Badge>
                 </div>
@@ -213,23 +213,29 @@ export function HeroMockup() {
                   return (
                     <li
                       key={d.name}
-                      className="grid grid-cols-12 items-center gap-2 border-t border-[var(--surface-line)] px-5 py-3.5 sm:px-6"
+                      className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-3 gap-y-2 border-t border-[var(--surface-line)] px-5 py-3.5 sm:px-6 md:grid-cols-12 md:gap-2"
                     >
-                      <div className="col-span-12 flex items-center gap-3 md:col-span-4">
+                      {/* Mobile: [nama | status] / [platform · cabang · waktu] / [link]. Desktop: satu baris 4 kolom. */}
+                      <div className="flex min-w-0 items-center gap-3 md:col-span-4">
                         <span className="truncate font-mono text-[13px] font-semibold">{d.name}</span>
-                        <Badge>{d.platform}</Badge>
+                        <span className="hidden md:inline-flex">
+                          <Badge>{d.platform}</Badge>
+                        </span>
                       </div>
-                      <div className="col-span-7 flex min-w-0 flex-wrap items-center gap-x-1.5 text-text-muted md:col-span-3">
-                        {d.ref === "main" ? <GitCommitHorizontal size={15} aria-hidden="true" /> : <GitBranch size={15} aria-hidden="true" />}
-                        <span className="min-w-0 break-all font-mono text-[12.5px]">{d.ref}</span>
-                        <span className="text-[12.5px]">· {d.when}</span>
-                      </div>
-                      <div className="col-span-5 md:col-span-3">
+                      <div className="order-2 md:order-3 md:col-span-3">
                         <Badge tone={st.tone} dot>
                           {st.label}
                         </Badge>
                       </div>
-                      <div className="col-span-12 truncate font-mono text-[12px] text-text-muted md:col-span-2 md:text-right">{d.link}</div>
+                      <div className="order-3 col-span-2 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-text-muted md:order-2 md:col-span-3">
+                        <span className="mr-1 inline-flex md:hidden">
+                          <Badge>{d.platform}</Badge>
+                        </span>
+                        {d.ref === "main" ? <GitCommitHorizontal size={15} aria-hidden="true" /> : <GitBranch size={15} aria-hidden="true" />}
+                        <span className="min-w-0 break-all font-mono text-[12.5px]">{d.ref}</span>
+                        <span className="text-[12.5px]">· {d.when}</span>
+                      </div>
+                      <div className="order-4 col-span-2 truncate font-mono text-[12px] text-text-muted md:col-span-2 md:text-right">{d.link}</div>
                     </li>
                   );
                 })}

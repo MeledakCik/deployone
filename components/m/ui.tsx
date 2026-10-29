@@ -90,9 +90,9 @@ export function Chip({ active, onClick, children }: { active: boolean; onClick: 
 export function SectionTitle({ children, action }: { children: React.ReactNode; action?: { href: string; label: string } }) {
   return (
     <div className="flex items-end justify-between px-1">
-      <h2 className="text-[17px] font-extrabold tracking-[-0.02em] text-[#141B2B]">{children}</h2>
+      <h2 className="min-w-0 text-[17px] font-extrabold tracking-[-0.02em] text-[#141B2B]">{children}</h2>
       {action && (
-        <Link href={action.href} className="text-[13px] font-bold text-[#7C3AED]">
+        <Link href={action.href} className="shrink-0 whitespace-nowrap pl-3 text-[13px] font-bold text-[#7C3AED]">
           {action.label}
         </Link>
       )}
@@ -107,7 +107,7 @@ export function EmptyState({ icon, title, hint, cta }: { icon: React.ReactNode; 
       <p className="mt-4 text-[16px] font-bold text-[#141B2B]">{title}</p>
       <p className="mt-1 text-[13px] leading-snug text-[#64748B]">{hint}</p>
       {cta && (
-        <Link href={cta.href} className="mt-5 inline-flex h-11 items-center rounded-full bg-[#7C3AED] px-6 text-[14px] font-bold text-white shadow-[0_8px_16px_-4px_rgba(124,58,237,0.4)] active:scale-95">
+        <Link href={cta.href} className="mt-5 inline-flex h-11 items-center whitespace-nowrap rounded-full bg-[#7C3AED] px-6 text-[14px] font-bold text-white shadow-[0_8px_16px_-4px_rgba(124,58,237,0.4)] active:scale-95">
           {cta.label}
         </Link>
       )}
@@ -172,15 +172,18 @@ export function MiniButton({
   onClick,
   href,
   primary,
+  full,
 }: {
   children: React.ReactNode;
   onClick?: () => void;
   href?: string;
   primary?: boolean;
+  /** Lebar penuh sel induknya (dipakai di grid tombol agar simetris). */
+  full?: boolean;
 }) {
-  const cls = `inline-flex h-9 items-center gap-1.5 rounded-full px-3.5 text-[12.5px] font-bold transition active:scale-95 ${
-    primary ? "bg-[#7C3AED] text-white" : "bg-[#F5F3FF] text-[#6D28D9] ring-1 ring-[#DDD6FE]"
-  }`;
+  const cls = `inline-flex h-9 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3.5 text-[12.5px] font-bold transition active:scale-95 ${
+    full ? "w-full" : ""
+  } ${primary ? "bg-[#7C3AED] text-white" : "bg-[#F5F3FF] text-[#6D28D9] ring-1 ring-[#DDD6FE]"}`;
   if (href)
     return (
       <a href={href} target="_blank" rel="noreferrer" className={cls}>
@@ -201,7 +204,7 @@ export function OpenLink({ domain }: { domain: string }) {
       target="_blank"
       rel="noreferrer"
       aria-label={`Buka ${hostOf(domain)}`}
-      className="ml-auto flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F5F3FF] text-[#7C3AED] active:scale-90"
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F5F3FF] text-[#7C3AED] active:scale-90"
     >
       <ArrowUpRight className="h-4 w-4" />
     </a>

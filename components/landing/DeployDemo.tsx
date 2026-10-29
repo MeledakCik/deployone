@@ -149,12 +149,12 @@ export function DeployDemo() {
           <div className="overflow-hidden rounded-[26px] bg-[var(--surface-solid)] sm:rounded-[30px]">
             {/* Bar judul + tahap */}
             <div className="flex items-center justify-between gap-3 border-b border-[var(--surface-line)] px-4 py-3 sm:px-6">
-              <div className="flex items-center gap-1.5" aria-hidden="true">
+              <div className="hidden items-center gap-1.5 sm:flex" aria-hidden="true">
                 <span className="h-2.5 w-2.5 rounded-full bg-tone-peach" />
                 <span className="h-2.5 w-2.5 rounded-full bg-tone-lemon" />
                 <span className="h-2.5 w-2.5 rounded-full bg-tone-mint" />
               </div>
-              <ol className="flex items-center gap-1 sm:gap-2" aria-label="Tahap deploy">
+              <ol className="flex min-w-0 items-center gap-1 sm:gap-2" aria-label="Tahap deploy">
                 {STEPS.map((label, i) => {
                   const done = i < phase;
                   const active = i === phase;
@@ -176,7 +176,7 @@ export function DeployDemo() {
                         >
                           {done ? <Check size={11} /> : i + 1}
                         </span>
-                        <span className="hidden min-[420px]:inline">{label}</span>
+                        <span className="hidden md:inline">{label}</span>
                       </button>
                       {i < STEPS.length - 1 && <span className="hidden h-px w-3 bg-[var(--line)] sm:block" aria-hidden="true" />}
                     </li>
@@ -215,10 +215,10 @@ export function DeployDemo() {
                     <span className="truncate font-semibold text-text">{s.repo.slice(0, typed)}</span>
                     <span className="dd-caret h-[18px] w-[2px] shrink-0" style={{ background: "var(--ink-fill)" }} />
                   </div>
-                  <div className="mt-4 flex items-center justify-between gap-3">
-                    <span className="text-[12.5px] text-text-muted">Repo private? Tambahkan GitHub Token di Settings.</span>
+                  <div className="mt-4 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
+                    <span className="text-[12.5px] leading-snug text-text-muted">Repo private? Tambahkan GitHub Token di Settings.</span>
                     <span
-                      className={`rounded-full px-5 py-2.5 text-[13px] font-semibold transition-transform ${typingDone ? "dd-press" : "opacity-60"}`}
+                      className={`shrink-0 whitespace-nowrap rounded-full px-5 py-2.5 text-center text-[13px] font-semibold transition-transform ${typingDone ? "dd-press" : "opacity-60"}`}
                       style={{ background: "var(--ink-fill)", color: "var(--ink-fill-text)" }}
                     >
                       Periksa repo

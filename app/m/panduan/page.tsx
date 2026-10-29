@@ -56,24 +56,24 @@ export default function MobileGuide() {
       {GUIDES.map(({ Icon, title, steps, link }) => (
         <article key={title} className={`${CARD} p-4`}>
           <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-[12px] bg-[#F5F3FF] text-[#7C3AED]"><Icon className="h-5 w-5" /></span>
-            <h2 className="text-[15.5px] font-extrabold tracking-[-0.01em]">{title}</h2>
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#F5F3FF] text-[#7C3AED]"><Icon className="h-5 w-5" /></span>
+            <h2 className="min-w-0 text-[15.5px] font-extrabold tracking-[-0.01em]">{title}</h2>
           </div>
           <ol className="mt-3 space-y-2">
             {steps.map((s, i) => (
-              <li key={s} className="flex gap-2.5 text-[13px] leading-snug text-[#334155]">
+              <li key={s} className="flex gap-2.5 text-[13px] leading-snug text-[#334155] [&>:last-child]:min-w-0">
                 <span className="mt-[1px] flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#EDE9FE] text-[11px] font-extrabold text-[#6D28D9]">{i + 1}</span>
                 {s}
               </li>
             ))}
           </ol>
           {"internal" in link ? (
-            <Link href={link.href} className="mt-3 inline-flex h-9 items-center gap-1 rounded-full bg-[#7C3AED] px-4 text-[12.5px] font-bold text-white active:scale-95">
-              {link.label} <ChevronRight className="h-4 w-4" />
+            <Link href={link.href} className="mt-3 inline-flex h-9 max-w-full items-center gap-1 rounded-full bg-[#7C3AED] px-4 text-[12.5px] font-bold text-white active:scale-95">
+              <span className="min-w-0 truncate">{link.label}</span> <ChevronRight className="h-4 w-4 shrink-0" />
             </Link>
           ) : (
-            <a href={link.href} target="_blank" rel="noreferrer" className="mt-3 inline-flex h-9 items-center gap-1.5 rounded-full bg-[#F5F3FF] px-4 text-[12.5px] font-bold text-[#6D28D9] ring-1 ring-[#DDD6FE] active:scale-95">
-              {link.label} <ExternalLink className="h-3.5 w-3.5" />
+            <a href={link.href} target="_blank" rel="noreferrer" className="mt-3 inline-flex h-9 max-w-full items-center gap-1.5 rounded-full bg-[#F5F3FF] px-4 text-[12.5px] font-bold text-[#6D28D9] ring-1 ring-[#DDD6FE] active:scale-95">
+              <span className="min-w-0 truncate">{link.label}</span> <ExternalLink className="h-3.5 w-3.5 shrink-0" />
             </a>
           )}
         </article>

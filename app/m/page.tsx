@@ -51,7 +51,7 @@ export default function MobileHome() {
   return (
     <div className="space-y-6 pt-2">
       <div>
-        <h2 className="text-[22px] font-extrabold leading-tight tracking-[-0.025em]">
+        <h2 className="break-words text-[22px] font-extrabold leading-tight tracking-[-0.025em]">
           {greeting()}, {first} 👋
         </h2>
         <p className="mt-0.5 text-[13px] text-[#64748B]">Semua deploy-mu ada di sini.</p>
@@ -62,7 +62,7 @@ export default function MobileHome() {
         <div className="pointer-events-none absolute -bottom-12 -right-10 h-44 w-44 rounded-full bg-[#6366F1]/40 blur-2xl" />
         <div className="pointer-events-none absolute -left-8 -top-8 h-32 w-32 rounded-full bg-white/15 blur-xl" />
         <div className="relative flex items-start justify-between gap-3">
-          <div>
+          <div className="min-w-0">
             <p className="text-[11.5px] font-bold uppercase tracking-[0.08em] text-[#EDE0FF]">Project Aktif</p>
             <p className="mt-1 flex items-baseline gap-1.5">
               <span className="text-[44px] font-extrabold leading-none tracking-[-0.04em] tabular-nums">{loading ? "–" : projects.length}</span>
@@ -71,7 +71,7 @@ export default function MobileHome() {
           </div>
           <Link
             href="/m/deploy"
-            className="flex h-10 items-center gap-1.5 rounded-full bg-white pl-3 pr-4 text-[13px] font-extrabold text-[#6D28D9] shadow-lg active:scale-95"
+            className="flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-white pl-3 pr-4 text-[13px] font-extrabold text-[#6D28D9] shadow-lg active:scale-95"
           >
             <PlusCircle className="h-[18px] w-[18px]" />
             Deploy Baru
@@ -87,9 +87,9 @@ export default function MobileHome() {
       {/* Layanan */}
       <section className="space-y-3">
         <SectionTitle>Layanan Kilat</SectionTitle>
-        <div className="grid grid-cols-4 gap-x-2 gap-y-4">
+        <div className="grid grid-cols-3 gap-x-2 gap-y-5">
           {ACTIONS.map(({ href, label, Icon, grad, ...rest }) => (
-            <Link key={label} href={href} className="group flex flex-col items-center gap-1.5 active:scale-95">
+            <Link key={label} href={href} className="group flex min-w-0 flex-col items-center gap-2 active:scale-95">
               <span className={`relative flex h-14 w-14 items-center justify-center rounded-[18px] bg-gradient-to-br ${grad} text-white shadow-[0_8px_16px_-6px_rgba(99,102,241,0.55)]`}>
                 <Icon className="h-6 w-6" strokeWidth={2.1} />
                 {"badge" in rest && (
@@ -98,7 +98,7 @@ export default function MobileHome() {
                   </span>
                 )}
               </span>
-              <span className="text-center text-[11.5px] font-semibold leading-tight text-[#334155]">{label}</span>
+              <span className="w-full truncate text-center text-[12.5px] font-semibold leading-tight text-[#334155]">{label}</span>
             </Link>
           ))}
         </div>
@@ -135,8 +135,8 @@ export default function MobileHome() {
 
 function Stat({ label, value, dot }: { label: string; value: string; dot?: boolean }) {
   return (
-    <div className="rounded-[14px] bg-black/15 p-2.5 backdrop-blur-sm">
-      <p className="flex items-center gap-1.5 text-[11px] font-bold text-[#EDE0FF]">
+    <div className="min-w-0 rounded-[14px] bg-black/15 p-2.5 backdrop-blur-sm">
+      <p className="flex items-center gap-1.5 whitespace-nowrap text-[11px] font-bold text-[#EDE0FF]">
         {dot && <span className="h-2 w-2 animate-pulse rounded-full bg-[#4EDEA3]" />}
         {label}
       </p>

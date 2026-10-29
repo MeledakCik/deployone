@@ -55,11 +55,11 @@ export default function MobileProjects() {
         <p className="relative mt-1 text-[22px] font-extrabold leading-tight tracking-[-0.025em]">
           {loading ? "Memuat…" : `${online} dari ${projects.length} project online`}
         </p>
-        <div className="relative mt-4 flex gap-2">
-          <Link href="/m/kelola" className="flex h-10 items-center gap-1.5 rounded-full bg-white px-4 text-[13px] font-extrabold text-[#6D28D9] active:scale-95">
+        <div className="relative mt-4 grid grid-cols-2 gap-2">
+          <Link href="/m/kelola" className="flex h-10 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-white px-4 text-[13px] font-extrabold text-[#6D28D9] active:scale-95">
             <Download className="h-4 w-4" /> Import
           </Link>
-          <button onClick={sync} disabled={syncing} className="flex h-10 items-center gap-1.5 rounded-full bg-white/20 px-4 text-[13px] font-extrabold text-white backdrop-blur-sm active:scale-95 disabled:opacity-60">
+          <button onClick={sync} disabled={syncing} className="flex h-10 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-white/20 px-4 text-[13px] font-extrabold text-white backdrop-blur-sm active:scale-95 disabled:opacity-60">
             <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} /> Sinkronkan
           </button>
         </div>
@@ -95,20 +95,20 @@ export default function MobileProjects() {
               <p className="mt-2.5 flex items-center gap-1.5 text-[11.5px] text-[#64748B]">
                 <Clock className="h-3.5 w-3.5" /> Deploy terakhir {prettyDate(p.date)}
               </p>
-              <div className="mt-3 flex flex-wrap gap-2">
+              <div className="mt-3 grid grid-cols-2 gap-2">
                 {p.domain && (
-                  <MiniButton primary href={hrefOf(p.domain)}>Buka situs</MiniButton>
+                  <MiniButton full primary href={hrefOf(p.domain)}>Buka situs</MiniButton>
                 )}
                 {p.domain && (
-                  <MiniButton onClick={() => copy(p.id, hrefOf(p.domain))}>
+                  <MiniButton full onClick={() => copy(p.id, hrefOf(p.domain))}>
                     {copied === p.id ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                     {copied === p.id ? "Tersalin" : "Salin"}
                   </MiniButton>
                 )}
-                <MiniButton onClick={() => redeploy(p.name)}>
+                <MiniButton full onClick={() => redeploy(p.name)}>
                   <RotateCw className="h-3.5 w-3.5" /> Deploy ulang
                 </MiniButton>
-                <Link href="/m/kelola" className="ml-auto inline-flex h-9 items-center gap-1.5 rounded-full bg-[#F5F3FF] px-3.5 text-[12.5px] font-bold text-[#6D28D9] ring-1 ring-[#DDD6FE] active:scale-95">
+                <Link href="/m/kelola" className="inline-flex h-9 w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-[#F5F3FF] px-3.5 text-[12.5px] font-bold text-[#6D28D9] ring-1 ring-[#DDD6FE] active:scale-95">
                   <Settings2 className="h-3.5 w-3.5" /> Kelola
                 </Link>
               </div>

@@ -1640,3 +1640,45 @@ html:has(.app-canvas) #toast {
 .glass {
   overflow-wrap: break-word;
 }
+
+/* =========================================================
+   Penyempurnaan tata letak mobile (rata, simetris, tanpa teks bertumpuk)
+   ========================================================= */
+
+/* Judul & paragraf pembuka: baris dibagi rata, tidak ada satu kata yatim di baris terakhir */
+.lp-h2,
+.page-title {
+  text-wrap: balance;
+}
+.lp-lead {
+  text-wrap: pretty;
+}
+
+/* Toast di layar kecil: di tengah, bukan menempel ke sudut kanan */
+@media (max-width: 639px) {
+  #toast {
+    left: max(16px, env(safe-area-inset-left));
+    right: max(16px, env(safe-area-inset-right));
+    width: fit-content;
+    margin-inline: auto;
+    text-align: center;
+  }
+}
+
+/* Judul bagian landing di layar sempit sedikit lebih kecil agar tidak patah 4-5 baris */
+@media (max-width: 479px) {
+  .lp-h2 {
+    font-size: 27px;
+  }
+  .lp-lead {
+    font-size: 16px;
+  }
+}
+
+/* Tombol di layar sentuh: label tidak pernah patah ke dua baris di dalam tombol */
+.btn-primary,
+.btn-lime,
+.btn-lav,
+.pill {
+  text-align: center;
+}

@@ -126,22 +126,24 @@ export function AppSidebar({
   return (
     <>
       {/* Top bar mobile */}
-      <div className="sidebar sidebar-topbar sticky top-2 z-30 mb-3 flex items-center justify-between px-3 py-2.5 md:hidden">
+      <div className="sidebar sidebar-topbar sticky top-2 z-30 mb-3 grid grid-cols-[1fr_auto_1fr] items-center px-3 py-2.5 md:hidden">
         <button
           type="button"
           onClick={() => setOpen(true)}
           aria-label="Buka menu"
-          className="relative grid h-10 w-10 place-items-center rounded-xl text-[var(--sidebar-muted)] transition hover:bg-[var(--sidebar-hover)] hover:text-white"
+          className="relative grid h-10 w-10 place-items-center justify-self-start rounded-xl text-[var(--sidebar-muted)] transition hover:bg-[var(--sidebar-hover)] hover:text-white"
         >
           <Menu size={19} />
           {mobileDot && <span className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-bad ring-2 ring-[var(--sidebar-bg)]" role="img" aria-label={mobileDotLabel} />}
         </button>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center justify-center gap-2">
           <BrandMark size={28} className="h-7 w-7 rounded-lg" />
           <span className="text-[15px] font-bold tracking-tight">Depup</span>
           {tagShort && <span className="rounded-full bg-[var(--lime)] px-2 py-0.5 text-[12px] font-bold text-[var(--lime-text)]">{tagShort}</span>}
         </div>
-        <ThemeToggle />
+        <div className="justify-self-end">
+          <ThemeToggle />
+        </div>
       </div>
 
       {open && <div className="anim-fade fixed inset-0 z-40 bg-midnight/60 md:hidden" onClick={() => setOpen(false)} aria-hidden />}

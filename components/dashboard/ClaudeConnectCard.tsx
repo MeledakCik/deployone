@@ -896,7 +896,7 @@ export function ClaudeConnectCard({
             <p className="mt-1 text-[12px] leading-relaxed text-text-muted">
               Semua klien AI (Claude, OpenCode, Cursor, Codex, Gemini Web &amp; CLI) otomatis mendapatkan 3 tool interaktif untuk website besar:
             </p>
-            <ul className="mt-2.5 grid gap-2 sm:grid-cols-3 text-[12px]">
+            <ul className="mt-2.5 grid gap-2 text-[12px] sm:grid-cols-3 md:grid-cols-1 lg:grid-cols-3">
               <li className="rounded-xl bg-[var(--pill-bg)] p-3">
                 <strong className="block font-mono text-[11.5px] text-text">1. deploy_website</strong>
                 <span className="mt-1 block text-text-muted">
@@ -921,7 +921,7 @@ export function ClaudeConnectCard({
           {/* Contoh Prompt Interaktif 1-Klik */}
           <div>
             <h4 className="text-[13px] font-semibold">Contoh Prompt Interaktif (Klik untuk Salin)</h4>
-            <div className="mt-2 grid gap-2.5 sm:grid-cols-3">
+            <div className="mt-2 grid gap-2.5 sm:grid-cols-3 md:grid-cols-1 lg:grid-cols-3">
               {QUICK_PROMPTS.map((item) => (
                 <button
                   key={item.title}
@@ -1012,7 +1012,7 @@ export function ClaudeConnectCard({
                 <span className="mb-1.5 block text-[12px] font-medium">
                   Preset Redirect URI untuk Klien AI (Centang yang Ingin Diizinkan)
                 </span>
-                <div className="grid gap-2 sm:grid-cols-3">
+                <div className="grid gap-2 sm:grid-cols-3 md:grid-cols-1 lg:grid-cols-3">
                   {OAUTH_URI_PRESETS.map((preset) => (
                     <label
                       key={preset.id}

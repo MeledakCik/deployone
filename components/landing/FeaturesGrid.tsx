@@ -52,7 +52,7 @@ export function FeaturesGrid() {
             <Icon dark>
               <Layers size={22} />
             </Icon>
-            <h3 className="mb-3 text-[26px] font-bold tracking-[-0.03em] text-white">Satu dashboard, tiga platform</h3>
+            <h3 className="mb-3 text-balance text-[24px] font-bold tracking-[-0.03em] text-white sm:text-[26px]">Satu dashboard, tiga platform</h3>
             <p className="mb-7 max-w-xl text-[15px] leading-relaxed text-night-80">
               Project dari Vercel, Cloudflare Pages, dan Railway tampil dalam satu daftar, lengkap dengan status dan tombol
               redeploy.
@@ -126,11 +126,11 @@ export function FeaturesGrid() {
             <p className={P}>Simpan per project, lalu kirim ke platform tujuan. Variabel yang dibutuhkan repo terdeteksi otomatis.</p>
           </div>
           <Mini className="flex flex-col gap-1 text-text-muted">
-            <div className="flex justify-between gap-3">
+            <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
               <span>DATABASE_URL</span>
               <span className="text-ok-fg">••••••••••</span>
             </div>
-            <div className="flex justify-between gap-3">
+            <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
               <span>NEXT_PUBLIC_API</span>
               <span className="text-lav-text">https://api…</span>
             </div>

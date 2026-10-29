@@ -43,7 +43,7 @@ export function DashboardHomeView() {
   }, []);
 
   const deployButton = (
-    <button type="button" onClick={() => setView("deploy")} className="btn-lime inline-flex items-center gap-2 px-5 py-2.5 text-[13.5px]">
+    <button type="button" onClick={() => setView("deploy")} className="btn-lime inline-flex items-center gap-2 whitespace-nowrap px-5 py-2.5 text-[13.5px]">
       <Plus size={16} /> Deploy baru
     </button>
   );
@@ -54,7 +54,7 @@ export function DashboardHomeView() {
       <ViewFade>
         <div className="space-y-5">
           <PageHead title={`Halo, ${firstName}`} desc="Memuat riwayat deploy kamu…" />
-          <div className="grid gap-4 sm:grid-cols-3" aria-hidden>
+          <div className="grid gap-4 sm:grid-cols-3 md:grid-cols-1 lg:grid-cols-3" aria-hidden>
             {[0, 1, 2].map((i) => (
               <Skeleton key={i} className="h-[148px] !rounded-[26px]" />
             ))}
@@ -115,7 +115,7 @@ export function DashboardHomeView() {
                 {latestFailed ? "Coba deploy ulang, atau periksa log di Projects bila gagal lagi." : "Lihat daftarnya, lalu coba deploy ulang yang masih dibutuhkan."}
               </p>
             </div>
-            <div className="flex flex-wrap gap-2">
+            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
               {latestFailed && (
                 <Btn variant="primary" onClick={() => redeploy(latestFailed.name)}>
                   Coba lagi
@@ -144,7 +144,7 @@ export function DashboardHomeView() {
               <p className="text-[16px] font-bold tracking-tight">Deploy pertamamu sudah online 🎉</p>
               <p className="mt-0.5 text-[13px]">Gabung komunitas DepUp untuk dapat kabar fitur baru dan bantuan dari sesama pengguna.</p>
             </div>
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
               <a
                 href={WA_COMMUNITY_URL}
                 target="_blank"
@@ -167,7 +167,7 @@ export function DashboardHomeView() {
           </div>
         )}
 
-        <div className="grid gap-4 sm:grid-cols-3">
+        <div className="grid gap-4 sm:grid-cols-3 md:grid-cols-1 lg:grid-cols-3">
           <KpiCard icon={Boxes} label="Deploy terakhir" value={stats.total} sub="Maksimal 10 riwayat disimpan" onClick={() => pick("all")} selected={filter === "all"} />
           <KpiCard icon={CheckCircle2} label="Berhasil" value={stats.ready} sub={`${readyPct}% dari riwayat`} onClick={() => pick("ready")} selected={filter === "ready"} />
           <KpiCard

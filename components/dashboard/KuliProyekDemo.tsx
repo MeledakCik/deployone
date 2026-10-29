@@ -113,18 +113,20 @@ export function KuliProyekDemo({ className }: { className?: string }) {
           })}
         </ol>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
           <Btn variant="primary" className="min-h-[36px]" onClick={start} disabled={running || stage !== "idle"} aria-label="Mulai simulasi deploy">
             <Play size={13} aria-hidden="true" /> Mulai
           </Btn>
           <Btn className="min-h-[36px]" onClick={start} disabled={stage === "idle"} aria-label="Ulangi simulasi dari awal">
             <RotateCcw size={13} aria-hidden="true" /> Ulangi
           </Btn>
-          <Btn variant="danger" className="min-h-[36px]" onClick={fail} disabled={!running} aria-label="Gagalkan simulasi deploy">
+          <Btn variant="danger" className="col-span-2 min-h-[36px] sm:col-span-1" onClick={fail} disabled={!running} aria-label="Gagalkan simulasi deploy">
             <AlertTriangle size={13} aria-hidden="true" /> Gagalkan
           </Btn>
+          </div>
 
-          <div role="group" aria-label="Kecepatan animasi" className="ml-auto flex items-center gap-1.5">
+          <div role="group" aria-label="Kecepatan animasi" className="flex items-center justify-between gap-1.5 sm:ml-auto sm:justify-end">
             <span className="text-[12px] text-[var(--text-muted)]" aria-hidden="true">
               Kecepatan
             </span>

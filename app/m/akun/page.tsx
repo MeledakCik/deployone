@@ -51,7 +51,7 @@ export default function MobileAccount() {
         <p className="text-[13px] font-extrabold">Koneksi platform</p>
         <ul className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2.5">
           {conns.map((c) => (
-            <li key={c.name} className="flex items-center gap-2 text-[13px] font-semibold">
+            <li key={c.name} className="flex min-w-0 items-center gap-2 text-[13px] font-semibold [&>svg]:shrink-0">
               {c.ok ? <CheckCircle2 className="h-[18px] w-[18px] text-[#10B981]" /> : <Circle className="h-[18px] w-[18px] text-[#CBD5E1]" />}
               <span className={c.ok ? "text-[#141B2B]" : "text-[#94A3B8]"}>{c.name}</span>
             </li>

@@ -236,7 +236,7 @@ export function DomainsView() {
           : `Domain sudah ditambahkan ke ${remoteLabel ?? "platform"} — tinggal pasang record ini di DNS provider (Cloudflare, Niagahoster, Domainesia, dll):`}
       </p>
       {d.dns && (
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+        <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 md:grid-cols-1 lg:grid-cols-3">
           <DnsField label="Type" value={d.dns.type} />
           <DnsField label="Name" value={d.dns.name} />
           <DnsField label="Value" value={d.dns.value} />
@@ -247,7 +247,7 @@ export function DomainsView() {
           <p className="text-[12px] text-text-faint pt-1">
             Railway juga butuh record TXT ini untuk verifikasi kepemilikan domain:
           </p>
-          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 md:grid-cols-1 lg:grid-cols-3">
             <DnsField label="Type" value={d.verificationDns.type} />
             <DnsField label="Name" value={d.verificationDns.name} />
             <DnsField label="Value" value={d.verificationDns.value} />

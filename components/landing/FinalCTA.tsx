@@ -10,7 +10,7 @@ import { WA_CHANNEL_URL } from "@/lib/community";
 export function FinalCTA() {
   return (
     <section className="mx-auto w-full max-w-6xl px-3 py-16 sm:px-8">
-      <div className="relative overflow-hidden rounded-[32px] bg-midnight p-8 text-white sm:rounded-[40px] sm:p-14">
+      <div className="relative overflow-hidden rounded-[32px] bg-midnight p-6 text-white sm:rounded-[40px] sm:p-14">
         <svg
           aria-hidden="true"
           viewBox="0 0 200 90"
@@ -26,13 +26,13 @@ export function FinalCTA() {
 
         <div className="relative z-10 flex flex-col items-start justify-between gap-12 lg:flex-row lg:items-end">
           <div className="max-w-2xl">
-            <h2 className="text-[32px] font-bold leading-[1.06] tracking-[-0.03em] sm:text-[48px]">
+            <h2 className="text-balance text-[30px] font-bold leading-[1.08] tracking-[-0.03em] sm:text-[48px]">
               Coba dengan repo yang sudah kamu miliki.
             </h2>
             <p className="mb-8 mt-4 text-[17px] leading-relaxed text-night-80">
               Masuk dengan Google, tempel link GitHub, dan lihat hasil pemeriksaannya dalam hitungan detik.
             </p>
-            <DashboardLink href="/dashboard" className="btn-lime inline-flex items-center gap-2 px-8 py-4 text-[16px]">
+            <DashboardLink href="/dashboard" className="btn-lime inline-flex w-full items-center justify-center gap-2 whitespace-nowrap px-8 py-4 text-[16px] sm:w-auto">
               Buka dashboard
               <ArrowRight size={18} />
             </DashboardLink>
@@ -44,15 +44,15 @@ export function FinalCTA() {
             </p>
           </div>
 
-          <ul className="flex w-full min-w-[260px] flex-col gap-3 lg:mt-24 lg:w-auto">
+          <ul className="flex w-full flex-col gap-3 lg:mt-24 lg:w-auto lg:min-w-[260px]">
             {[
               ["3", "platform dalam satu dashboard"],
               ["Private", "repo pun bisa, lewat GitHub Token"],
               ["Google", "masuk tanpa membuat akun baru"],
             ].map(([big, small]) => (
-              <li key={big} className="flex items-center justify-between gap-6 rounded-2xl bg-night-15 p-4">
-                <span className="text-[22px] font-bold tracking-[-0.02em]">{big}</span>
-                <span className="text-right text-[13px] text-night-80">{small}</span>
+              <li key={big} className="flex items-center justify-between gap-4 rounded-2xl bg-night-15 p-4 sm:gap-6">
+                <span className="shrink-0 text-[22px] font-bold tracking-[-0.02em]">{big}</span>
+                <span className="min-w-0 text-right text-[13px] leading-snug text-night-80">{small}</span>
               </li>
             ))}
           </ul>
