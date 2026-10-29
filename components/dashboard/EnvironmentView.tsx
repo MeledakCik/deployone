@@ -367,18 +367,19 @@ export function EnvironmentView() {
                                 <td className="px-4 py-3.5 text-[12px] text-text-muted break-words sm:px-5">{item.project}</td>
                               )}
                               <td className="px-4 py-3.5 sm:px-5">
-                                <div className="flex flex-wrap items-center gap-1.5">
-                                  <span className="pill px-2.5 py-0.5 text-[12px] font-medium">{item.environment}</span>
+                                <div className="flex flex-col items-start gap-1.5 sm:flex-row sm:flex-wrap sm:items-center">
+                                  {/* Label, bukan tombol: pakai .chip (bukan .pill) supaya tidak kena min-height 40px layar sentuh */}
+                                  <span className="chip min-w-[92px] justify-center !bg-[var(--pill-bg)]">{item.environment}</span>
                                   {item.syncedToVercel && (
-                                    <span className="chip !text-[12px] !text-ok-fg"><InlineIcon name="check" /> Vercel</span>
+                                    <span className="chip min-w-[92px] justify-center !text-[12px] !text-ok-fg"><InlineIcon name="check" /> Vercel</span>
                                   )}
                                   {item.syncedToCloudflare && (
-                                    <span className="chip !text-[12px] !text-ok-fg">
+                                    <span className="chip min-w-[92px] justify-center !text-[12px] !text-ok-fg">
                                       <InlineIcon name="check" /> Cloudflare
                                     </span>
                                   )}
                                   {item.syncedToRailway && (
-                                    <span className="chip !text-[12px] !text-ok-fg"><InlineIcon name="check" /> Railway</span>
+                                    <span className="chip min-w-[92px] justify-center !text-[12px] !text-ok-fg"><InlineIcon name="check" /> Railway</span>
                                   )}
                                 </div>
                               </td>
