@@ -110,7 +110,7 @@ export function HeroMockup() {
   return (
     <section className="relative mx-auto mb-8 w-full max-w-6xl px-3 sm:px-8" id="dashboard" aria-label="Contoh tampilan dashboard">
       <div className="lp-window isolate overflow-hidden">
-        <div className="flex gap-3 p-2.5 sm:gap-4 sm:p-4">
+        <div className="flex gap-3 p-4 sm:gap-4 sm:p-5">
           {/* Sidebar ungu mini (hanya hiasan) */}
           <div
             className="hidden w-[68px] shrink-0 flex-col items-center gap-3 rounded-[26px] py-5 md:flex"
