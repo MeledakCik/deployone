@@ -65,7 +65,7 @@ export default function FeaturePage({ params }: { params: { slug: string } }) {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50 dark:bg-zinc-950">
+    <div className="flex min-h-[100dvh] flex-col bg-slate-50 dark:bg-zinc-950">
       <JsonLd data={ld} />
       <PublicHeader />
       <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-10 sm:px-6 lg:px-8">

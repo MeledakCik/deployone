@@ -137,7 +137,7 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
                   </>
                 )}
               </button>
-              <p className="mx-auto mt-3 text-balance text-center text-[10.5px] leading-[1.4] text-white/75">
+              <p className="mx-auto mt-3 text-balance text-center text-[11px] leading-[1.4] text-white/75">
                 Kamu akan diarahkan ke halaman masuk Google yang asli, lalu otomatis kembali ke Depup.
               </p>
             </div>
@@ -203,7 +203,7 @@ function MobileShell({ user, children }: { user: AuthUser; children: React.React
               <img src="/logo.png" alt="" width={36} height={36} className="h-9 w-9 shrink-0 rounded-[11px] shadow-[0_6px_14px_-6px_rgba(124,58,237,0.6)]" />
             )}
             <div className="flex min-w-0 flex-col leading-none">
-              <span className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#7B7487]">Depup Cloud</span>
+              <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#7B7487]">Depup Cloud</span>
               <h1 className="mt-1 truncate text-[17px] font-extrabold tracking-[-0.02em]">{title}</h1>
             </div>
           </div>

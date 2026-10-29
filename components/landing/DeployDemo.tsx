@@ -167,7 +167,7 @@ export function DeployDemo() {
                         className={`dd-step flex items-center gap-1.5 rounded-full py-1 pl-1 pr-2.5 text-[11.5px] font-semibold sm:text-[12.5px] ${active ? "bg-tone-lilac text-text" : "text-text-faint"}`}
                       >
                         <span
-                          className="grid h-5 w-5 place-items-center rounded-full text-[10.5px] font-bold tabular-nums transition-colors"
+                          className="grid h-5 w-5 place-items-center rounded-full text-[11px] font-bold tabular-nums transition-colors"
                           style={
                             active || done
                               ? { background: "var(--ink-fill)", color: "var(--ink-fill-text)" }

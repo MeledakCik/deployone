@@ -15,7 +15,7 @@ export default function DocsPage() {
   return (
     // PERUBAHAN: bg-[var(--bg)] diganti jadi bg-slate-50 (abu-abu sangat muda)
     // Ini bikin teks hitam dan kartu putih jadi jauh lebih menonjol dan bersih.
-    <div className="flex min-h-screen flex-col bg-slate-50 dark:bg-zinc-950">
+    <div className="flex min-h-[100dvh] flex-col bg-slate-50 dark:bg-zinc-950">
       <JsonLd data={breadcrumbLd([{ name: "Depup", path: "/" }, { name: "Dokumentasi", path: "/docs" }])} />
       <PublicHeader />
 

@@ -199,8 +199,8 @@ export function PageHeader({ title, subtitle, children }: { title: ReactNode; su
 }
 
 export function renderCell(c: unknown): ReactNode {
-  if (c === null || c === undefined) return <span className="rounded bg-violet-50 px-1.5 py-0.5 text-[10px] font-medium italic text-slate-400 dark:bg-white/10">NULL</span>;
-  if (typeof c === "object") return <span className="rounded bg-violet-50 px-1.5 py-0.5 text-[10px] font-medium text-slate-400 dark:bg-white/10">BLOB</span>;
+  if (c === null || c === undefined) return <span className="rounded bg-violet-50 px-1.5 py-0.5 text-[11px] font-medium italic text-slate-400 dark:bg-white/10">NULL</span>;
+  if (typeof c === "object") return <span className="rounded bg-violet-50 px-1.5 py-0.5 text-[11px] font-medium text-slate-400 dark:bg-white/10">BLOB</span>;
   const s = String(c);
   return <span title={s.length > 120 ? s : undefined}>{s.length > 120 ? s.slice(0, 120) + "…" : s}</span>;
 }

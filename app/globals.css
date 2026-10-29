@@ -273,15 +273,11 @@ textarea {
 
   /* ---------- Judul halaman ---------- */
   .page-title {
-    font-size: 28px;
+    /* Fluid: halus dari HP kecil (24px) ke desktop (34px), tanpa lompatan di tablet */
+    font-size: clamp(24px, 1.2rem + 1.6vw, 34px);
     line-height: 1.1;
     font-weight: 700;
     letter-spacing: -0.03em;
-  }
-  @media (min-width: 640px) {
-    .page-title {
-      font-size: 34px;
-    }
   }
 
   /* ---------- Sidebar (ungu brand / midnight di tema gelap, melayang) ---------- */
@@ -1701,4 +1697,29 @@ html:has(.app-canvas) #toast {
 .btn-lav,
 .pill {
   text-align: center;
+}
+
+
+/* =========================================================
+   Penyempurnaan lintas perangkat
+   ========================================================= */
+
+/* Hilangkan jeda 300ms & zoom dobel-tap pada kontrol interaktif (iOS/Android) */
+a,
+button,
+[role="button"],
+input,
+select,
+textarea,
+label,
+summary {
+  touch-action: manipulation;
+}
+
+/* Mode kontras tinggi (Windows): kartu tetap punya batas yang terlihat */
+@media (forced-colors: active) {
+  .surface-solid,
+  .glass {
+    border: 1px solid CanvasText;
+  }
 }

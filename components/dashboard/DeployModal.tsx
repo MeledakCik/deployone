@@ -223,7 +223,7 @@ export function DeployModal() {
           <div className="h-[1px] bg-[var(--dm-line)] mx-7 md:mx-8 shrink-0" />
 
           {/* ================= BODY ================= */}
-          <div className="px-7 md:px-8 py-6 min-h-[300px] overflow-y-auto flex-1">
+          <div className="px-7 md:px-8 py-6 min-h-[min(300px,40dvh)] overflow-y-auto flex-1">
             {/* ---------- LOADING ---------- */}
             {isDeploying && (
               <div

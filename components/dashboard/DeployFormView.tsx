@@ -880,7 +880,7 @@ export function DeployFormView() {
                     );
                   })}
                 </div>
-                <div className="mt-1.5 sm:mt-2 flex justify-between text-[9px] sm:text-[12px] tracking-wide text-[var(--dc-text-faint)] uppercase">
+                <div className="mt-1.5 sm:mt-2 flex justify-between text-[11px] sm:text-[12px] tracking-wide text-[var(--dc-text-faint)] uppercase">
                   <span>1. Mulai</span>
                   <span className="hidden xs:inline">2. Input + Penjelasan</span>
                   <span className="xs:hidden">2. Input</span>
@@ -909,7 +909,7 @@ export function DeployFormView() {
                         <h3 className="text-[15px] sm:text-[17px] font-semibold tracking-tight leading-tight flex items-center gap-2 flex-wrap text-[var(--dc-text)]">
                           {step.title}
                           {step.optional && (
-                            <span className="text-[9.5px] sm:text-[12px] px-1.5 sm:px-2 py-0.5 rounded-full bg-[var(--dc-pill)] text-[var(--dc-text-faint)] font-medium tracking-wide uppercase">
+                            <span className="text-[11px] sm:text-[12px] px-1.5 sm:px-2 py-0.5 rounded-full bg-[var(--dc-pill)] text-[var(--dc-text-faint)] font-medium tracking-wide uppercase">
                               Opsional
                             </span>
                           )}

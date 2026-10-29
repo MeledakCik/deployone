@@ -115,9 +115,9 @@ export default function MobileDeploy() {
                 <div className="flex flex-wrap items-center gap-2">
                   <p className="text-[16px] font-extrabold">{p.name}</p>
                   {connected ? (
-                    <span className="rounded-full bg-[#ECFDF5] px-2 py-0.5 text-[10.5px] font-bold text-[#065F46]">Terhubung</span>
+                    <span className="rounded-full bg-[#ECFDF5] px-2 py-0.5 text-[11px] font-bold text-[#065F46]">Terhubung</span>
                   ) : historyReady ? (
-                    <span className="rounded-full bg-[#F1F5F9] px-2 py-0.5 text-[10.5px] font-bold text-[#64748B]">Belum ada token</span>
+                    <span className="rounded-full bg-[#F1F5F9] px-2 py-0.5 text-[11px] font-bold text-[#64748B]">Belum ada token</span>
                   ) : null}
                 </div>
                 <p className="mt-0.5 text-[12.5px] leading-snug text-[#64748B]">{p.desc}</p>

@@ -126,7 +126,7 @@ export default function StructureTab({ id, schema, table, setTable, onChanged }:
                     <li key={i.name} className="flex items-center justify-between gap-2 py-2">
                       <div className="min-w-0">
                         <div className="font-medium text-slate-900 dark:text-slate-100">
-                          {i.name} {i.unique && <span className="ml-1 rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-medium text-violet-700 dark:bg-white/10 dark:text-violet-200">unique</span>}
+                          {i.name} {i.unique && <span className="ml-1 rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700 dark:bg-white/10 dark:text-violet-200">unique</span>}
                         </div>
                         <code className="block truncate font-mono text-xs text-slate-500 dark:text-slate-400">{i.sql ?? `auto (${i.origin})`}</code>
                       </div>

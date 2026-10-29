@@ -1054,7 +1054,7 @@ export function ClaudeConnectCard({
               ].map((e) => (
                 <div key={e.label} className="flex items-center justify-between gap-2 rounded-xl bg-[var(--pill-bg)] px-3 py-2">
                   <div className="min-w-0">
-                    <span className="block text-[10.5px] text-text-muted">{e.label}</span>
+                    <span className="block text-[11px] text-text-muted">{e.label}</span>
                     <code className="block truncate text-[11.5px]">{e.value}</code>
                   </div>
                   <button
@@ -1081,7 +1081,7 @@ export function ClaudeConnectCard({
                     <div className="min-w-0 space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <strong className="text-[13px]">{c.name}</strong>
-                        <span className="rounded-md bg-[var(--surface-solid-2)] px-2 py-0.5 text-[10.5px] font-medium text-lav-text">
+                        <span className="rounded-md bg-[var(--surface-solid-2)] px-2 py-0.5 text-[11px] font-medium text-lav-text">
                           {c.hasSecret ? "ID + Secret" : "Public PKCE"}
                         </span>
                         {c.secretPreview && <code className="text-[11px] text-text-muted">Secret: {c.secretPreview}</code>}

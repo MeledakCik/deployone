@@ -93,7 +93,7 @@ function ApiCard({ id }: { id: string }) {
           <li key={k.id} className="flex items-center justify-between gap-3 py-2.5">
             <div className="min-w-0">
               <div className="truncate font-medium text-slate-900 dark:text-slate-100">
-                {k.label} <span className="ml-1 rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-medium text-violet-700 dark:bg-white/10 dark:text-violet-200">({k.mode === "ro" ? "read-only" : "read-write"})</span>
+                {k.label} <span className="ml-1 rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700 dark:bg-white/10 dark:text-violet-200">({k.mode === "ro" ? "read-only" : "read-write"})</span>
               </div>
               <div className="truncate text-xs text-slate-500 dark:text-slate-400">
                 {k.prefix}… · {fmtDate(k.createdAt)} {k.revokedAt && "· dicabut"}

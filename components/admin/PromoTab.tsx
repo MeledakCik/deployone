@@ -421,7 +421,7 @@ function PreviewPanel({
 
         {/* Baris kotak masuk: begini email terlihat sebelum dibuka */}
         <div className="mx-4 rounded-2xl bg-white/[0.07] p-3.5">
-          <p className="mb-2 text-[10.5px] font-semibold uppercase tracking-[0.14em] text-[#9a94b0]">Di kotak masuk</p>
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#9a94b0]">Di kotak masuk</p>
           <div className="flex items-start gap-3">
             <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#7b50ff] text-[16px] font-black leading-none" aria-hidden>
               ↑
@@ -460,7 +460,7 @@ function PreviewPanel({
                 <span className="h-2 w-2 rounded-full bg-[#d6455d]/70" />
                 <span className="h-2 w-2 rounded-full bg-[#fbbf24]/80" />
                 <span className="h-2 w-2 rounded-full bg-[#34d399]/80" />
-                <span className="ml-2 truncate rounded-full bg-white px-3 py-0.5 text-[10.5px] text-[#5a39c0]">{sender.addr} → kamu</span>
+                <span className="ml-2 truncate rounded-full bg-white px-3 py-0.5 text-[11px] text-[#5a39c0]">{sender.addr} → kamu</span>
               </div>
             )}
             <div ref={stageRef} className="relative w-full overflow-hidden bg-white" style={{ height: frameH }}>

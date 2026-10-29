@@ -60,7 +60,7 @@ export default function AuthorizeClient() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md items-center px-4 py-10">
+    <main className="mx-auto flex min-h-[100dvh] max-w-md items-center px-4 py-10">
       <div className={`${surface} w-full space-y-4 p-5 sm:p-6`}>
         <h1 className="text-lg font-semibold tracking-tight text-slate-900 dark:text-slate-100">Hubungkan Depup</h1>
 

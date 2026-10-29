@@ -93,7 +93,7 @@ export default function MobileHome() {
               <span className={`relative flex h-14 w-14 items-center justify-center rounded-[18px] bg-gradient-to-br ${grad} text-white shadow-[0_8px_16px_-6px_rgba(99,102,241,0.55)]`}>
                 <Icon className="h-6 w-6" strokeWidth={2.1} />
                 {"badge" in rest && (
-                  <span className="absolute -right-1.5 -top-1.5 rounded-full bg-[#EF4444] px-1.5 py-[1px] text-[8.5px] font-extrabold tracking-wide text-white ring-2 ring-[#F9F9FF]">
+                  <span className="absolute -right-1.5 -top-1.5 rounded-full bg-[#EF4444] px-1.5 py-[1px] text-[10px] font-extrabold tracking-wide text-white ring-2 ring-[#F9F9FF]">
                     {rest.badge}
                   </span>
                 )}
