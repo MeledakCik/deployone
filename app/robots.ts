@@ -1,11 +1,16 @@
 import type { MetadataRoute } from "next";
+import { SITE_URL } from "@/lib/site-content";
 
-const BASE = (process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://depup.cloud").replace(/\/$/, "");
+const BASE = SITE_URL;
 
-// Aturan per-bot TIDAK mewarisi aturan "*" — jadi daftar disallow harus diulang untuk tiap bot.
-const PRIVATE = ["/api/", "/dashboard", "/admin", "/laporkan", "/demo/", "/t/", "/connect/"];
+// Aturan per-bot TIDAK mewarisi aturan "*", jadi daftar disallow harus diulang untuk tiap bot.
+// "/m$" memblokir persis "/m" (beranda app mobile) tanpa ikut memblokir "/manifest.webmanifest";
+// "/m/" memblokir semua halaman di bawahnya. Halaman ini juga diberi header X-Robots-Tag: noindex
+// di next.config.js sebagai lapis kedua.
+const PRIVATE = ["/api/", "/dashboard", "/admin", "/laporkan", "/demo/", "/t/", "/connect/", "/m/", "/m$", "/db/"];
 
-// Crawler pencarian & ringkasan AI yang kita inginkan membaca halaman publik.
+// Crawler pencarian & ringkasan AI yang kita inginkan membaca halaman publik
+// (termasuk /fitur, /llms.txt, dan /llms-full.txt).
 const BOTS = [
   "Googlebot", "Bingbot", "Applebot", "DuckDuckBot",
   "GPTBot", "OAI-SearchBot", "ChatGPT-User",

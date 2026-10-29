@@ -6,7 +6,7 @@ import { isAdminEmail } from "@/app/api/_lib/admin-config";
 import { kv } from "@vercel/kv";
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon\\.ico|robots\\.txt|sitemap\\.xml|manifest\\.webmanifest|apple-touch-icon\\.png|icon-128\\.png|icon-192\\.png|icon-512\\.png|icon-maskable-512\\.png|logo\\.png|email/|glassmorphic_dashboard_hero\\.svg).*)",
+    "/((?!_next/static|_next/image|favicon\\.ico|robots\\.txt|sitemap\\.xml|manifest\\.webmanifest|apple-touch-icon\\.png|icon-128\\.png|icon-192\\.png|icon-512\\.png|icon-maskable-512\\.png|logo\\.png|logo-lime\\.png|logo-white\\.png|og-image\\.png|email/|glassmorphic_dashboard_hero\\.svg).*)",
     {
       source: "/:path*",
       has: [{ type: "host", value: "[a-z0-9-]*-[a-hj-km-np-z2-9]{5}\\..+" }],

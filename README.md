@@ -245,6 +245,32 @@ Dashboard menyimpan 10 deploy terakhir. Yang paling lama otomatis tergeser.
 
 ---
 
+## SEO dan ringkasan AI
+
+Semua konten publik tentang fitur ada di satu file: **`lib/site-content.ts`**. Dari file itu otomatis dibuat:
+
+| Keluaran | Sumber |
+|---|---|
+| Halaman `/fitur` dan `/fitur/<slug>` (satu halaman per fitur, lengkap dengan JSON-LD) | `app/fitur/` |
+| `/llms.txt` (ringkas) dan `/llms-full.txt` (lengkap) untuk asisten AI dan mesin jawaban | `app/llms.txt/`, `app/llms-full.txt/` |
+| FAQ beranda dan `FAQPage` JSON-LD | `components/landing/FAQ.tsx` |
+| `featureList` di JSON-LD `SoftwareApplication` | `app/layout.tsx` |
+| Blok "Depup sekilas" di beranda | `components/landing/AtAGlance.tsx` |
+| Entri `/fitur/*` di `sitemap.xml` | `app/sitemap.ts` |
+
+**Menambah atau mengubah fitur:** edit `FEATURES` di `lib/site-content.ts`, lalu jalankan
+`node --experimental-strip-types --test tests/site-content.test.mjs` (memeriksa slug unik, panjang judul dan deskripsi,
+serta tautan fitur terkait). Tulis hanya hal yang benar-benar ada di kode, termasuk angka batasnya.
+
+**Halaman publik baru:** pakai `pageMeta()` dari `lib/seo.ts` untuk `metadata`. Jangan menulis `openGraph` sendiri di halaman,
+karena di Next.js objek itu *menggantikan* `openGraph` dari layout (og:image dan og:title ikut hilang).
+Tambahkan URL-nya di `app/sitemap.ts` dan perbarui tanggal `UPDATED` hanya bila isinya benar-benar berubah.
+
+**Area privat** (`/dashboard`, `/m`, `/db`, `/connect`, `/demo`, `/admin`, `/api`) diberi `X-Robots-Tag: noindex` di `next.config.js`
+dan juga diblokir di `app/robots.ts`.
+
+---
+
 ## Butuh bantuan?
 
 - Klik **Bantuan** di dalam aplikasi, atau buka menu **Docs**.

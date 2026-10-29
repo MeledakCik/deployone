@@ -10,12 +10,19 @@ import { KuliSection } from "@/components/landing/KuliSection";
 import { SupportMatrix } from "@/components/landing/SupportMatrix";
 import { FAQ } from "@/components/landing/FAQ";
 import { FinalCTA } from "@/components/landing/FinalCTA";
+import { AtAGlance } from "@/components/landing/AtAGlance";
 import { Footer } from "@/components/landing/Footer";
+import { pageMeta } from "@/lib/seo";
+import { HOME_TITLE, SITE_DESCRIPTION } from "@/lib/site-content";
 
-export const metadata: Metadata = {
-  alternates: { canonical: "/", languages: { "id-ID": "/" } },
-  openGraph: { url: "/" },
-};
+// Memakai pageMeta agar og:title, og:description, dan og:image tidak hilang
+// (openGraph di halaman menggantikan, bukan menggabung dengan, openGraph di layout).
+export const metadata: Metadata = pageMeta({
+  title: HOME_TITLE,
+  description: SITE_DESCRIPTION,
+  path: "/",
+  absoluteTitle: true,
+});
 
 export default function LandingPage() {
   return (
@@ -34,6 +41,7 @@ export default function LandingPage() {
         <DeployDemo />
         <KuliSection />
         <SupportMatrix />
+        <AtAGlance />
         <FAQ />
       </div>
 

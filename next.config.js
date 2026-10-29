@@ -57,6 +57,13 @@ const nextConfig = {
         ],
       },
       {
+        // Area privat (butuh login) tidak boleh diindeks. robots.txt saja tidak cukup: URL yang diblokir
+        // di robots.txt tetap bisa muncul di hasil pencarian bila ada yang menautkannya.
+        source: "/:section(dashboard|m|db|connect|demo|admin|api)/:rest*",
+        missing: notTunnelHost,
+        headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+      },
+      {
         // Response API berisi data per-user: jangan pernah disimpan cache bersama (CDN/proxy).
         source: "/api/:path*",
         missing: notTunnelHost,

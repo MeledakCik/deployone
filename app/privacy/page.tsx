@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import { PublicDoc } from "@/components/public/PublicDoc";
+import { pageMeta } from "@/lib/seo";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = pageMeta({
   title: "Kebijakan Privasi",
-  description: "Data apa yang dikumpulkan Depup, bagaimana disimpan dan dipakai, siapa saja pihak ketiganya, dan berapa lama disimpan — termasuk untuk konektor Claude (MCP).",
-  alternates: { canonical: "/privacy" },
-};
+  description: "Data apa yang dikumpulkan Depup, bagaimana disimpan dan dipakai, siapa saja pihak ketiganya, dan berapa lama disimpan, termasuk untuk konektor Claude (MCP).",
+  path: "/privacy",
+});
 
 const CONTACT = "depupdev@gmail.com";
 

@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
 import { PublicDoc } from "@/components/public/PublicDoc";
+import { JsonLd } from "@/components/seo/JsonLd";
+import { breadcrumbLd, pageMeta } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Konektor MCP (Claude, OpenCode, Cursor, Codex & Gemini Web/CLI) + Custom OAuth",
+export const metadata: Metadata = pageMeta({
+  title: "Konektor MCP untuk Claude, Cursor, Codex & Gemini",
   description:
-    "Hubungkan Depup ke Claude, OpenCode, Cursor, OpenAI Codex, dan Google Gemini (Web & CLI): publish website besar secara bertahap sebagai Link Instan, edit cepat tanpa ganti link, buat OAuth sendiri, atau deploy repo GitHub.",
-  alternates: { canonical: "/docs/mcp" },
-};
+    "Hubungkan Depup ke Claude, OpenCode, Cursor, Codex, dan Gemini lewat MCP: publish website sebagai Link Instan, edit tanpa ganti link, atau deploy repo GitHub.",
+  path: "/docs/mcp",
+  type: "article",
+});
 
 const SITE = (process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_APP_URL || "https://depup.cloud").replace(/\/+$/, "");
 const CONTACT = "depupdev@gmail.com";
@@ -14,6 +17,25 @@ const CONTACT = "depupdev@gmail.com";
 export default function McpDocsPage() {
   return (
     <PublicDoc title="Konektor MCP (Claude, OpenCode, Cursor, Codex & Gemini Web/CLI) untuk Depup" updated="28 Oktober 2026">
+      <JsonLd
+        data={[
+          breadcrumbLd([
+            { name: "Depup", path: "/" },
+            { name: "Dokumentasi", path: "/docs" },
+            { name: "Konektor MCP", path: "/docs/mcp" },
+          ]),
+          {
+            "@context": "https://schema.org",
+            "@type": "TechArticle",
+            headline: "Konektor MCP untuk Claude, Cursor, Codex & Gemini",
+            inLanguage: "id-ID",
+            dateModified: "2026-10-28",
+            mainEntityOfPage: `${SITE}/docs/mcp`,
+            author: { "@type": "Organization", name: "Depup", url: SITE },
+            publisher: { "@type": "Organization", name: "Depup", url: SITE },
+          },
+        ]}
+      />
       <p>
         Konektor MCP Depup mendukung <strong>Claude</strong>, <strong>OpenCode</strong>, <strong>Cursor</strong>, <strong>Codex</strong>, serta <strong>Gemini (Web &amp; CLI)</strong>. AI pilihanmu bisa menayangkan website statis sebagai <strong>Link Instan</strong> (termasuk website dengan file <code>index.html</code> yang besar atau banyak halaman secara bertahap), mengedit halaman secara instan tanpa mengubah URL, serta men-deploy repo GitHub ke
         <strong> Vercel</strong>, <strong>Cloudflare Pages</strong>, dan <strong>Railway</strong>.

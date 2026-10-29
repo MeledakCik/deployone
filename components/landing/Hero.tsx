@@ -16,7 +16,7 @@ export function Hero() {
         </a>
 
         <h1 className="max-w-4xl text-balance text-[clamp(1.75rem,8.4vw,4.75rem)] font-bold leading-[1.06] tracking-[-0.03em] text-text">
-          <span className="sr-only">Depup: dashboard deploy Indonesia. </span>
+          <span className="sr-only">Depup: dashboard deploy Indonesia untuk Vercel, Cloudflare Pages, dan Railway. </span>
           Deploy without the
           <br />
           hassle.

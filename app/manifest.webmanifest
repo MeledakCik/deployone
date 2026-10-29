@@ -1,30 +1,24 @@
 {
-  "name": "Depup — Deploy without the hassle",
+  "id": "/",
+  "name": "Depup: Dashboard Deploy Indonesia",
   "short_name": "Depup",
-  "description": "Dashboard deploy untuk Vercel, Cloudflare, Railway, Render",
+  "description": "Dashboard deploy buatan Indonesia untuk Vercel, Cloudflare Pages, dan Railway, plus Link Instan, AI Web Builder, dan Database.",
+  "lang": "id",
+  "dir": "ltr",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#7B50FF",
   "theme_color": "#7B50FF",
-  "orientation": "portrait-primary",
+  "categories": ["developer tools", "productivity", "utilities"],
   "icons": [
-    {
-      "src": "/icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "any"
-    },
-    {
-      "src": "/icon-maskable-512.png",
-      "sizes": "512x512",
-      "type": "image/png",
-      "purpose": "maskable"
-    }
+    { "src": "/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/icon-maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Deploy", "short_name": "Deploy", "url": "/dashboard", "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }] },
+    { "name": "Dokumentasi", "short_name": "Docs", "url": "/docs", "icons": [{ "src": "/icon-192.png", "sizes": "192x192", "type": "image/png" }] }
   ]
 }

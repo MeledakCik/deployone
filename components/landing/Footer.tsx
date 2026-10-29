@@ -49,10 +49,11 @@ export function Footer() {
         </div>
 
         <nav aria-label="Footer" className="flex flex-wrap items-center gap-x-7 gap-y-2 text-[13px] font-medium">
+          <a href="/fitur" className="underline-offset-4 transition-colors hover:underline">Fitur</a>
           <a href="/#faq" className="underline-offset-4 transition-colors hover:underline">FAQ</a>
           <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="underline-offset-4 transition-colors hover:underline">GitHub</a>
           <a href="/docs/mcp" className="underline-offset-4 transition-colors hover:underline">Konektor Claude</a>
-          <a href="/docs" className="underline-offset-4 transition-colors hover:underline">Documentasi</a>
+          <a href="/docs" className="underline-offset-4 transition-colors hover:underline">Dokumentasi</a>
           <a href="/privacy" className="underline-offset-4 transition-colors hover:underline">Privasi</a>
           <a href="/donate" target="_blank" rel="noopener noreferrer" className="underline-offset-4 transition-colors hover:underline">Dukung lewat Saweria</a>
         </nav>

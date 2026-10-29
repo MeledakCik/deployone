@@ -6,24 +6,23 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import { AuthProvider } from "@/lib/auth-context";
 import { ToastProvider } from "@/components/ui/Toast";
-
-// OTOMATIS GANTI DOMAIN - sekarang web.id, nanti app
-const SITE_URL = (
-  process.env.NEXT_PUBLIC_SITE_URL ??
-  process.env.NEXT_PUBLIC_APP_URL ??
-  "https://depup.cloud"
-).replace(/\/$/, "");
-
-const SITE_NAME = "Depup";
-const SITE_TAGLINE = "Deploy Dashboard Indonesia untuk Vercel & Cloudflare";
-const SITE_DESCRIPTION =
-  "Depup (depup.cloud) adalah dashboard deploy buatan Indonesia untuk mengelola Vercel, Cloudflare Pages, dan Railway dalam satu tempat. Tempel link GitHub, deploy, atur domain dan environment variables, plus Link Instan untuk menjadikan file HTML sebagai link publik dalam hitungan detik.";
+import { COMMUNITY_LINKS } from "@/lib/community";
+import { OG_IMAGE, jsonLdString } from "@/lib/seo";
+import {
+  CONTACT_EMAIL,
+  FEATURE_LIST_SCHEMA,
+  HOME_TITLE,
+  SITE_DESCRIPTION,
+  SITE_NAME,
+  SITE_TAGLINE,
+  SITE_URL,
+} from "@/lib/site-content";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: `Depup — Deploy Dashboard Indonesia | Vercel, Cloudflare Pages & Railway`,
-    template: `%s | Depup - Deploy Dashboard Indonesia`,
+    default: HOME_TITLE,
+    template: `%s | Depup`,
   },
   description: SITE_DESCRIPTION,
   keywords: [
@@ -37,6 +36,10 @@ export const metadata: Metadata = {
     "link instan html",
     "hosting html gratis",
     "kelola deployment",
+    "ai web builder indonesia",
+    "database sqlite gratis",
+    "mcp claude deploy",
+    "bagikan localhost",
   ],
   applicationName: SITE_NAME,
   authors: [{ name: SITE_NAME, url: SITE_URL }],
@@ -59,24 +62,16 @@ export const metadata: Metadata = {
     locale: "id_ID",
     alternateLocale: ["en_US"],
     siteName: SITE_NAME,
-    title: `${SITE_NAME} — ${SITE_TAGLINE}`,
+    url: SITE_URL,
+    title: `${SITE_NAME}: ${SITE_TAGLINE}`,
     description: SITE_DESCRIPTION,
-    images: [
-      {
-        url: "/og-image.png?v=2",
-        secureUrl: "/og-image.png",
-        width: 1200,
-        height: 630,
-        alt: `${SITE_NAME} — Dashboard Deploy Vercel, Cloudflare & Railway`,
-        type: "image/png",
-      },
-    ],
+    images: [OG_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
-    title: `${SITE_NAME} — ${SITE_TAGLINE}`,
+    title: `${SITE_NAME}: ${SITE_TAGLINE}`,
     description: SITE_DESCRIPTION,
-    images: ["/og-image.png"],
+    images: [OG_IMAGE.url],
   },
   robots: {
     index: true,
@@ -123,6 +118,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       alternateName: "Depup Indonesia",
       url: SITE_URL,
       logo: `${SITE_URL}/logo.png`,
+      // Hanya profil sosial publik (tautan WhatsApp bukan profil, jadi dilewati).
+      sameAs: COMMUNITY_LINKS.filter((l) => !l.key.startsWith("wa-")).map((l) => l.href),
+      contactPoint: {
+        "@type": "ContactPoint",
+        contactType: "customer support",
+        email: CONTACT_EMAIL,
+        availableLanguage: ["Indonesian"],
+      },
     },
     {
       "@context": "https://schema.org",
@@ -137,16 +140,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       url: SITE_URL,
       image: `${SITE_URL}/og-image.png`,
       publisher: { "@id": `${SITE_URL}/#organization` },
+      isAccessibleForFree: true,
       offers: { "@type": "Offer", price: "0", priceCurrency: "IDR" },
-      featureList: [
-        "Deploy ke Vercel dalam satu klik",
-        "Deploy ke Cloudflare Pages",
-        "Deploy ke Railway",
-        "Link Instan: upload HTML/CSS/JS jadi link publik sementara",
-        "Link Gaib: bagikan localhost ke internet",
-        "Kelola domain kustom",
-        "Environment variables terpusat",
-      ],
+      // Diambil dari lib/site-content.ts (sumber tunggal fitur), jadi selalu sama dengan halaman /fitur.
+      featureList: FEATURE_LIST_SCHEMA,
     },
     // FAQPage sengaja TIDAK di sini: sudah dirender dari isi FAQ yang tampil di halaman (components/landing/FAQ.tsx).
     // Dua FAQPage dengan jawaban berbeda = data terstruktur bentrok.
@@ -158,7 +155,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <script
             key={item["@id"] ?? item["@type"]}
             type="application/ld+json"
-            dangerouslySetInnerHTML={{ __html: JSON.stringify(item) }}
+            dangerouslySetInnerHTML={{ __html: jsonLdString(item) }}
           />
         ))}
       </head>
