@@ -1,5 +1,5 @@
 {
-  "name": "depup-cli",
+  "name": "depup-share",
   "version": "0.1.0",
   "description": "Depup Share — bagikan localhost kamu lewat link HTTPS sementara. Tanpa deploy.",
   "bin": { "depup": "bin/depup.js" },

@@ -196,8 +196,8 @@ const GUIDES: Guide[] = [
     link: { label: "Unduh Node.js (butuh versi 18+)", href: "https://nodejs.org/en/download" },
     steps: [
       "Jalankan project-mu seperti biasa, misalnya di localhost:8000 (npm run dev, php -S, python -m http.server, dst).",
-      "Buka terminal baru, lalu ketik: npx depup-cli share — atau npx depup-cli share 8000 kalau mau menyebut port-nya.",
-      "Tanpa menyebut port, Depup mencoba mencari server di port yang umum dipakai. Kalau gagal, ulangi dengan menyebut port-nya, misalnya npx depup-cli share 8000.",
+      "Buka terminal baru, lalu ketik: npx depup-share share — atau npx depup-share share 8000 kalau mau menyebut port-nya.",
+      "Tanpa menyebut port, Depup mencoba mencari server di port yang umum dipakai. Kalau gagal, ulangi dengan menyebut port-nya, misalnya npx depup-share share 8000.",
       "Link HTTPS muncul di terminal (contoh: https://cantik-depup-x7k2m.domain-depup). Kirim ke dosen atau client.",
       "Selama perintah itu jalan, setiap kunjungan tampil di terminal. Tekan Ctrl+C untuk mematikan link seketika; kalau lupa, link mati sendiri setelah 2 jam.",
       "Opsi: --name skripsi (awalan nama link) dan --ttl 240 (masa aktif dalam menit, maksimal 480).",

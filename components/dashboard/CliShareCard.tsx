@@ -8,9 +8,9 @@ import { CodeBlock } from "@/components/dashboard/ClaudeConnectCard";
 import { useToast } from "@/components/ui/Toast";
 import { useDeploy } from "@/lib/deploy-context";
 
-const COMMANDS = `npx depup-cli share          # deteksi otomatis port yang sedang jalan
-npx depup-cli share 8000     # atau sebutkan port-nya
-npx depup-cli share 5173 --name skripsi --ttl 240`;
+const COMMANDS = `npx depup-share share          # deteksi otomatis port yang sedang jalan
+npx depup-share share 8000     # atau sebutkan port-nya
+npx depup-share share 5173 --name skripsi --ttl 240`;
 
 const STEPS = [
   "Jalankan project-mu seperti biasa di komputer, misalnya npm run dev di localhost:5173.",
