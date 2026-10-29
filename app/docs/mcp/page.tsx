@@ -4,9 +4,9 @@ import { JsonLd } from "@/components/seo/JsonLd";
 import { breadcrumbLd, pageMeta } from "@/lib/seo";
 
 export const metadata: Metadata = pageMeta({
-  title: "Konektor MCP untuk Claude, Cursor, Codex & Gemini",
+  title: "Konektor MCP: Claude, Cursor, Codex, Gemini, DeepSeek",
   description:
-    "Hubungkan Depup ke Claude, OpenCode, Cursor, Codex, dan Gemini lewat MCP: publish website sebagai Link Instan, edit tanpa ganti link, atau deploy repo GitHub.",
+    "Hubungkan Depup ke Claude, Cursor, Codex, Gemini, OpenCode, dan DeepSeek Harness lewat MCP: publish website sebagai Link Instan atau deploy repo GitHub.",
   path: "/docs/mcp",
   type: "article",
 });
@@ -16,7 +16,7 @@ const CONTACT = "depupdev@gmail.com";
 
 export default function McpDocsPage() {
   return (
-    <PublicDoc title="Konektor MCP (Claude, OpenCode, Cursor, Codex & Gemini Web/CLI) untuk Depup" updated="28 Oktober 2026">
+    <PublicDoc title="Konektor MCP (Claude, OpenCode, Cursor, Codex, Gemini & DeepSeek) untuk Depup" updated="28 Oktober 2026">
       <JsonLd
         data={[
           breadcrumbLd([
@@ -27,7 +27,7 @@ export default function McpDocsPage() {
           {
             "@context": "https://schema.org",
             "@type": "TechArticle",
-            headline: "Konektor MCP untuk Claude, Cursor, Codex & Gemini",
+            headline: "Konektor MCP untuk Claude, Cursor, Codex, Gemini & DeepSeek",
             inLanguage: "id-ID",
             dateModified: "2026-10-28",
             mainEntityOfPage: `${SITE}/docs/mcp`,
@@ -37,7 +37,7 @@ export default function McpDocsPage() {
         ]}
       />
       <p>
-        Konektor MCP Depup mendukung <strong>Claude</strong>, <strong>OpenCode</strong>, <strong>Cursor</strong>, <strong>Codex</strong>, serta <strong>Gemini (Web &amp; CLI)</strong>. AI pilihanmu bisa menayangkan website statis sebagai <strong>Link Instan</strong> (termasuk website dengan file <code>index.html</code> yang besar atau banyak halaman secara bertahap), mengedit halaman secara instan tanpa mengubah URL, serta men-deploy repo GitHub ke
+        Konektor MCP Depup mendukung <strong>Claude</strong>, <strong>OpenCode</strong>, <strong>Cursor</strong>, <strong>Codex</strong>, <strong>Gemini (Web &amp; CLI)</strong>, serta <strong>DeepSeek Harness</strong>. AI pilihanmu bisa menayangkan website statis sebagai <strong>Link Instan</strong> (termasuk website dengan file <code>index.html</code> yang besar atau banyak halaman secara bertahap), mengedit halaman secara instan tanpa mengubah URL, serta men-deploy repo GitHub ke
         <strong> Vercel</strong>, <strong>Cloudflare Pages</strong>, dan <strong>Railway</strong>.
       </p>
 
@@ -52,7 +52,7 @@ export default function McpDocsPage() {
         <li><code>deploy_project</code> — men-deploy repo GitHub ke Vercel, Cloudflare Pages, atau Railway memakai token yang kamu simpan di Settings.</li>
       </ul>
 
-      <h2>Cara Memasang di Claude, OpenCode, Cursor, Codex &amp; Gemini (Web &amp; CLI)</h2>
+      <h2>Cara Memasang di Claude, OpenCode, Cursor, Codex, Gemini &amp; DeepSeek</h2>
       <p>
         Buka <strong>Settings → Konektor AI (MCP)</strong> di dashboard Depup untuk membuat token otomatis dan menyalin konfigurasi siap pakai:
       </p>
@@ -80,6 +80,13 @@ export default function McpDocsPage() {
         <li>
           <strong>Codex (<code>~/.codex/config.toml</code>)</strong>: Jalankan <code>{`codex mcp add depup --url ${SITE}/api/mcp`}</code> atau tambahkan di <code>~/.codex/config.toml</code>:
           <pre>{`[mcp_servers.depup]\nurl = "${SITE}/api/mcp"\nhttp_headers = { "Authorization" = "Bearer <TOKEN>" }`}</pre>
+        </li>
+        <li>
+          <strong>DeepSeek Harness (<code>dsh</code>)</strong>: memakai paket resmi <code>@deepseek-ai/dsh-mcp-client</code> dan Bearer Token (bukan OAuth otomatis). Buat token di <em>Settings → Konektor AI (MCP) → DeepSeek</em>. DeepSeek Harness masih <em>developer preview</em>, jadi format konfigurasinya bisa berubah antar rilis. Urutannya: pasang paket dulu, baru tulis konfigurasi.
+          <pre>{`# 1) Pasang paket (ganti VERSI_DSH dengan hasil: dsh --version)\ndsh plugin --profile web add @deepseek-ai/dsh-mcp-client@VERSI_DSH\n\n# 2) Isi token lewat variabel lingkungan, bukan di file YAML\nexport DEPUP_MCP_AUTH="Bearer <TOKEN>"`}</pre>
+          Lalu tambahkan ke <code>~/.dsh/profiles/web/cordis.patch.yml</code> (ganti <code>web</code> dengan nama profilmu), dan restart <code>dsh web</code>:
+          <pre>{`- insert:\n    - id: mcp-depup\n      name: '@deepseek-ai/dsh-mcp-client'\n      config:\n        serverName: 'depup'\n        transport: streamable-http\n        url: '${SITE}/api/mcp'\n        headers:\n          Authorization: !!js process.env.DEPUP_MCP_AUTH`}</pre>
+          Cek hasilnya dengan <code>dsh --profile web --dump-config | grep mcp-</code>. Tool Depup muncul dengan nama seperti <code>mcp__depup__deploy_website</code>.
         </li>
       </ul>
 

@@ -376,22 +376,23 @@ export const FEATURES: Feature[] = [
     slug: "konektor-mcp",
     name: "Konektor MCP untuk AI",
     summary:
-      "Hubungkan Depup ke Claude, Cursor, Codex, Gemini, atau OpenCode agar AI bisa mempublikasikan website dan men-deploy repo atas permintaanmu.",
+      "Hubungkan Depup ke Claude, Cursor, Codex, Gemini, OpenCode, atau DeepSeek Harness agar AI bisa mempublikasikan website dan men-deploy repo atas permintaanmu.",
     seoTitle: "Konektor MCP: Publish Website dari Claude & Cursor",
     seoDescription:
-      "Hubungkan Depup ke Claude, Cursor, Codex, Gemini, dan OpenCode lewat MCP. Minta AI publish website jadi link publik atau deploy repo GitHub ke Vercel.",
+      "Hubungkan Depup ke Claude, Cursor, Codex, Gemini, OpenCode, dan DeepSeek lewat MCP. Minta AI publish website jadi link publik atau deploy repo GitHub.",
     tldr:
       "Dengan konektor MCP, kamu cukup berkata \"publish ke Depup\" di chat AI dan mendapat link publik. Depup menyediakan tool untuk menayangkan, memperbarui, memeriksa, dan menghapus Link Instan, serta men-deploy repo GitHub. Akses memakai OAuth 2.1 dengan PKCE dan bisa dicabut kapan saja.",
     audience: "Pengguna AI yang ingin hasil website langsung online tanpa download dan upload manual.",
     points: [
       "Tool: deploy_website, update_website, inspect_website, list_websites, delete_website, connector_status, dan deploy_project.",
-      "Mendukung Claude (web, app HP, Claude Code), Cursor, Codex, Gemini (web dan CLI), serta OpenCode.",
+      "Mendukung Claude (web, app HP, Claude Code), Cursor, Codex, Gemini (web dan CLI), OpenCode, serta DeepSeek Harness (dsh).",
       "Website besar dapat dicicil bertahap dan diedit cepat dengan URL tetap sama.",
       "OAuth 2.1 dengan PKCE, atau Bearer Token dengan masa aktif 1 sampai 365 hari, serta opsi membuat OAuth client sendiri.",
       "Akses dapat dicabut kapan saja lewat tombol Cabut semua akses.",
       "Konektor tidak menampilkan token platformmu ke AI.",
     ],
     limits: [
+      "DeepSeek Harness memakai Bearer Token lewat paket resmi @deepseek-ai/dsh-mcp-client (bukan OAuth otomatis) dan masih developer preview, jadi format konfigurasinya bisa berubah.",
       "Aturan Link Instan berlaku: situs statis, link sementara, kuota per akun.",
       "Deploy repo lewat konektor memakai token platform yang kamu simpan di Settings.",
     ],
@@ -403,7 +404,11 @@ export const FEATURES: Feature[] = [
     faqs: [
       {
         q: "Klien AI apa saja yang didukung konektor MCP Depup?",
-        a: "Claude (web, app HP, dan Claude Code), Cursor, OpenAI Codex, Google Gemini (web dan CLI), serta OpenCode.",
+        a: "Claude (web, app HP, dan Claude Code), Cursor, OpenAI Codex, Google Gemini (web dan CLI), OpenCode, serta DeepSeek Harness (dsh).",
+      },
+      {
+        q: "Bagaimana menghubungkan DeepSeek Harness ke Depup?",
+        a: "Buat Bearer Token di Settings, Konektor AI (MCP), pilih DeepSeek. Pasang paket @deepseek-ai/dsh-mcp-client ke profil dsh, isi token lewat variabel lingkungan, lalu tambahkan blok konfigurasi streamable-http ke cordis.patch.yml. DeepSeek Harness masih developer preview, jadi ikuti panduan terbaru di /docs/mcp.",
       },
       {
         q: "Apakah AI bisa melihat token platform saya?",
@@ -501,7 +506,7 @@ export const HOME_FAQS: FeatureFaq[] = [
   },
   {
     q: "Bisakah Claude atau AI lain memakai Depup?",
-    a: "Bisa lewat konektor MCP. Claude, Cursor, Codex, Gemini, dan OpenCode dapat mempublikasikan website sebagai Link Instan atau men-deploy repo GitHub atas permintaanmu. Akses memakai OAuth 2.1 dan bisa dicabut kapan saja.",
+    a: "Bisa lewat konektor MCP. Claude, Cursor, Codex, Gemini, OpenCode, dan DeepSeek Harness dapat mempublikasikan website sebagai Link Instan atau men-deploy repo GitHub atas permintaanmu. Akses memakai OAuth 2.1 dan bisa dicabut kapan saja.",
   },
   {
     q: "Apakah token dan environment variable saya aman?",
@@ -544,7 +549,7 @@ export function buildLlmsTxt(): string {
   lines.push(`- [Beranda](${SITE_URL}/): Penjelasan fitur, cara kerja, platform yang didukung, dan FAQ`);
   lines.push(`- [Ringkasan semua fitur](${SITE_URL}/fitur): Daftar lengkap fitur Depup`);
   lines.push(`- [Dokumentasi](${SITE_URL}/docs): Panduan token, deploy, dan pemecahan masalah`);
-  lines.push(`- [Dokumentasi konektor MCP](${SITE_URL}/docs/mcp): Memasang Depup di Claude, Cursor, Codex, Gemini, OpenCode`);
+  lines.push(`- [Dokumentasi konektor MCP](${SITE_URL}/docs/mcp): Memasang Depup di Claude, Cursor, Codex, Gemini, OpenCode, DeepSeek Harness`);
   lines.push(`- [Kebijakan privasi](${SITE_URL}/privacy)`);
   lines.push(`- [Versi lengkap untuk AI](${SITE_URL}/llms-full.txt): Seluruh fitur, batas, dan FAQ dalam satu berkas`, "");
   lines.push("## Fitur");

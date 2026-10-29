@@ -43,7 +43,7 @@ interface Guide {
 const CATEGORIES: { id: CategoryId; label: string; desc: string }[] = [
   { id: "start", label: "Mulai di sini", desc: "Baru pertama kali? Mulai dari panduan ini." },
   { id: "features", label: "Fitur Depup", desc: "Cara memakai tiap menu di dashboard." },
-  { id: "mcp", label: "Konektor AI (MCP)", desc: "Hubungkan Claude, Gemini, Cursor, OpenCode, atau Codex ke Depup." },
+  { id: "mcp", label: "Konektor AI (MCP)", desc: "Hubungkan Claude, Gemini, Cursor, OpenCode, Codex, atau DeepSeek ke Depup." },
   { id: "tokens", label: "Token dan keamanan", desc: "Cara mendapatkan token dan menjaga datamu tetap aman." },
   { id: "trouble", label: "Masalah dan error", desc: "Deploy gagal, situs kosong, atau muncul pesan error." },
   { id: "more", label: "Lainnya", desc: "Pertanyaan umum dan cara melapor." },
@@ -290,7 +290,7 @@ const GUIDES: Guide[] = [
     icon: Sparkles,
     category: "mcp",
     title: "Konektor AI (MCP) — apa itu dan tool apa saja yang tersedia",
-    desc: "Satu server MCP Depup untuk Claude, Gemini, Cursor, OpenCode, dan Codex (Web maupun CLI).",
+    desc: "Satu server MCP Depup untuk Claude, Gemini, Cursor, OpenCode, Codex, dan DeepSeek (Web maupun CLI).",
     steps: [
       "MCP membuat AI pilihanmu bisa memakai Depup atas namamu: menayangkan website, mengeditnya, sampai men-deploy repo GitHub, tanpa kamu pindah-pindah halaman. Pengaturannya ada di Settings → Konektor AI (MCP).",
       "deploy_website: menayangkan file HTML/CSS/JS sebagai Link Instan (aktif 1 jam sampai 7 hari). Mendukung kompresi gzip+base64 dan merapikan folder dist/ otomatis.",
@@ -365,6 +365,34 @@ const GUIDES: Guide[] = [
     ],
   },
   {
+    icon: Terminal,
+    category: "mcp",
+    title: "Pasang di DeepSeek Harness (dsh)",
+    desc: "DeepSeek Harness memasang MCP lewat paket resmi dsh-mcp-client dan Bearer Token dari Settings Depup.",
+    steps: [
+      "Di Settings → Konektor AI (MCP), pilih DeepSeek, tekan Buat Token, lalu salin konfigurasi dan langkah terminalnya. DeepSeek Harness masih developer preview, jadi format konfigurasinya bisa berubah antar rilis.",
+      <>
+        Pasang paket MCP client ke profil dsh-mu. Ganti VERSI_DSH dengan hasil dsh --version, karena tag npm bawaan paket ini bisa tertinggal dari versi dsh.
+        <Pre>{`dsh --version\ndsh plugin --profile web add @deepseek-ai/dsh-mcp-client@VERSI_DSH`}</Pre>
+        Peringatan bahwa paket tidak mendeklarasikan dsh.bundle itu normal.
+      </>,
+      <>
+        Isi token lewat variabel lingkungan, bukan di file YAML. Di macOS atau Linux:
+        <Pre>{`export DEPUP_MCP_AUTH="Bearer <TOKEN>"`}</Pre>
+        Di Windows PowerShell: <code>$env:DEPUP_MCP_AUTH = "Bearer &lt;TOKEN&gt;"</code>
+      </>,
+      <>
+        Tempel blok ini ke ~/.dsh/profiles/web/cordis.patch.yml (ganti web dengan nama profilmu). Kalau file sudah berisi - insert:, tambahkan blok - id: mcp-depup di bawahnya.
+        <Pre>{`- insert:\n    - id: mcp-depup\n      name: '@deepseek-ai/dsh-mcp-client'\n      config:\n        serverName: 'depup'\n        transport: streamable-http\n        url: '${MCP_URL}'\n        headers:\n          Authorization: !!js process.env.DEPUP_MCP_AUTH`}</Pre>
+      </>,
+      <>
+        Restart dsh web, lalu cek konfigurasinya terbaca. Tool Depup muncul dengan nama seperti mcp__depup__deploy_website.
+        <Pre>{`dsh --profile web --dump-config | grep mcp-`}</Pre>
+      </>,
+      "Urutan penting: pasang paketnya dulu baru tulis YAML-nya. Kalau paket belum terpasang di profil, dsh gagal start. serverName dan id harus unik di antara server MCP-mu.",
+    ],
+  },
+  {
     icon: Zap,
     category: "mcp",
     title: "Website besar atau banyak halaman lewat MCP (anti terpotong)",
@@ -385,7 +413,7 @@ const GUIDES: Guide[] = [
     steps: [
       "Buka Settings → Konektor AI (MCP), lalu buka bagian Buat OAuth sendiri.",
       "Isi nama aplikasi dan pilih metode: Client ID + Secret (confidential) atau Public (PKCE S256, tanpa secret).",
-      "Centang preset Redirect URI sesuai aplikasi yang dipakai: Claude, Gemini, Cursor, OpenCode, Codex, atau Localhost. Redirect URI tambahan bisa diisi di kolom bawahnya.",
+      "Centang preset Redirect URI sesuai aplikasi yang dipakai: Claude, Gemini, Cursor, OpenCode, Codex, atau Localhost (DeepSeek Harness memakai token, bukan OAuth). Redirect URI tambahan bisa diisi di kolom bawahnya.",
       "Tekan Buat OAuth Sendiri. Client ID dan Secret muncul. Secret hanya ditampilkan sekali, jadi langsung simpan.",
       "Tempel Client ID dan Secret ke aplikasi AI-mu, bersama URL MCP. Endpoint Authorization dan Token tersedia di bagian yang sama dengan tombol salin.",
       "Tidak mau OAuth? Tekan Buat Token (masa aktif 1 sampai 365 hari) untuk mendapat Bearer token langsung.",

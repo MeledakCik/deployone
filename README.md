@@ -129,6 +129,12 @@ bilang *"publish ke Depup"* — Claude langsung memberi **link publik** (Link In
 
 Di **app Claude (HP)**, konektor yang kamu tambahkan di claude.ai ikut tersedia di akun yang sama — aktifkan dari menu konektor di chat.
 
+**Klien AI lain:** konektor yang sama juga bisa dipakai Cursor, Codex, Gemini, OpenCode, dan **DeepSeek Harness (`dsh`)**.
+Untuk DeepSeek Harness, buat token di *Settings → Konektor AI (MCP) → DeepSeek*, pasang paket resmi
+`@deepseek-ai/dsh-mcp-client` ke profil dsh, isi token lewat variabel lingkungan `DEPUP_MCP_AUTH`, lalu tambahkan blok
+`streamable-http` ke `cordis.patch.yml`. Langkah lengkap ada di `/docs/mcp`. DeepSeek Harness masih developer preview,
+jadi format konfigurasinya bisa berubah.
+
 **Yang bisa dilakukan Claude** (hanya itu; tidak bisa menyentuh token platform, env, atau database-mu):
 
 | Tool | Fungsi |

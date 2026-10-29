@@ -36,6 +36,7 @@ const FAMILIES: { key: string; label: string; re: RegExp }[] = [
   { key: "cursor", label: "Cursor", re: /cursor/i },
   { key: "opencode", label: "OpenCode", re: /opencode/i },
   { key: "codex", label: "Codex", re: /codex|openai|chatgpt/i },
+  { key: "deepseek", label: "DeepSeek", re: /deepseek|\bdsh\b|dsh-mcp/i },
 ];
 
 /** Kelompokkan nama aplikasi (dari OAuth client, label token, atau clientInfo MCP) ke satu keluarga. */

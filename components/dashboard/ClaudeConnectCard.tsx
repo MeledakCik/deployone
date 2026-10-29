@@ -33,7 +33,7 @@ const DEPLOY_TARGETS: { platform: Platform; label: string; tokenField: keyof Set
   { platform: "railway", label: "Railway", tokenField: "railwayToken" },
 ];
 
-type AiClientId = "claude" | "opencode" | "cursor" | "codex" | "gemini";
+type AiClientId = "claude" | "opencode" | "cursor" | "codex" | "gemini" | "deepseek";
 
 const AI_CLIENTS: { id: AiClientId; label: string; hint: string }[] = [
   { id: "claude", label: "Claude", hint: "Web, App & Code CLI" },
@@ -41,6 +41,7 @@ const AI_CLIENTS: { id: AiClientId; label: string; hint: string }[] = [
   { id: "cursor", label: "Cursor", hint: "1-Klik / mcp.json" },
   { id: "opencode", label: "OpenCode", hint: "opencode.json" },
   { id: "codex", label: "Codex", hint: "config.toml" },
+  { id: "deepseek", label: "DeepSeek", hint: "Harness (dsh)" },
 ];
 
 const OAUTH_URI_PRESETS: {
@@ -250,6 +251,32 @@ function buildClientSnippets(
         configCode: `[mcp_servers.depup]\nurl = "${mcpUrl}"\nhttp_headers = { "Authorization" = "Bearer ${token}" }`,
         cliTitle: "Perintah Terminal Codex CLI",
         cliCode: `codex mcp add depup --url ${mcpUrl}`,
+      };
+    case "deepseek":
+      // DeepSeek Harness memasang MCP lewat paket resmi @deepseek-ai/dsh-mcp-client (transport streamable-http).
+      // Token TIDAK ditulis di YAML: header dibaca dari variabel lingkungan lewat !!js process.env.*.
+      return {
+        configTitle: "DeepSeek Harness (dsh): ~/.dsh/profiles/web/cordis.patch.yml",
+        configCode: [
+          "- insert:",
+          "    - id: mcp-depup",
+          "      name: '@deepseek-ai/dsh-mcp-client'",
+          "      config:",
+          "        serverName: 'depup'",
+          "        transport: streamable-http",
+          `        url: '${mcpUrl}'`,
+          "        headers:",
+          "          Authorization: !!js process.env.DEPUP_MCP_AUTH",
+        ].join("\n"),
+        cliTitle: "Langkah terminal (urutan: pasang paket, isi token, lalu jalankan)",
+        cliCode: [
+          "dsh --version",
+          "dsh plugin --profile web add @deepseek-ai/dsh-mcp-client@<VERSI_DSH>",
+          `export DEPUP_MCP_AUTH="Bearer ${token}"`,
+          "dsh web",
+        ].join("\n"),
+        extraTitle: "Cek konfigurasi sudah terbaca",
+        extraCode: "dsh --profile web --dump-config | grep mcp-",
       };
     case "gemini":
       return {
@@ -493,7 +520,7 @@ export function ClaudeConnectCard({
       if (trimmed) uris.push(trimmed);
     }
     if (uris.length === 0) {
-      showToast("Pilih minimal satu Redirect URI (mis. Claude, Gemini, Cursor, OpenCode, Codex, atau Localhost).");
+      showToast("Pilih minimal satu Redirect URI (mis. Claude, Gemini, Cursor, OpenCode, Codex, atau Localhost; DeepSeek memakai token, bukan OAuth).");
       return;
     }
 
@@ -529,7 +556,7 @@ export function ClaudeConnectCard({
       title: `Hapus OAuth "${client.name}"?`,
       description: "Client ID, Client Secret, dan semua token akses dari OAuth ini akan langsung dicabut.",
       impact: [
-        "Konektor di Claude, OpenCode, Cursor, Codex, atau Gemini yang memakai Client ID ini akan berhenti bekerja.",
+        "Konektor di Claude, OpenCode, Cursor, Codex, Gemini, atau DeepSeek yang memakai Client ID ini akan berhenti bekerja.",
         "Kamu bisa membuat OAuth baru kapan saja.",
       ],
       confirmLabel: "Ya, hapus OAuth",
@@ -575,10 +602,10 @@ export function ClaudeConnectCard({
 
   async function revoke() {
     const { ok } = await confirm({
-      title: "Cabut semua akses MCP (Claude, OpenCode, Cursor, Codex, Gemini)?",
+      title: "Cabut semua akses MCP (Claude, OpenCode, Cursor, Codex, Gemini, DeepSeek)?",
       description: "Semua koneksi MCP dan token OAuth aktif ke akun Depup-mu akan diputus seketika.",
       impact: [
-        "Claude, OpenCode, Cursor, Codex, dan Gemini tidak bisa lagi menayangkan website atau deploy atas namamu sampai kamu menghubungkannya ulang.",
+        "Claude, OpenCode, Cursor, Codex, Gemini, dan DeepSeek tidak bisa lagi menayangkan website atau deploy atas namamu sampai kamu menghubungkannya ulang.",
         "Link dan deployment yang sudah jalan tetap aktif.",
       ],
       confirmLabel: "Ya, cabut semua akses",
@@ -632,7 +659,7 @@ export function ClaudeConnectCard({
             <Sparkles size={16} /> Konektor AI (MCP)
           </h3>
           <p className="mt-1 text-[12.5px] leading-relaxed text-text-muted">
-            Hubungkan Claude, Gemini, Cursor, OpenCode, atau Codex ke Depup.{" "}
+            Hubungkan Claude, Gemini, Cursor, OpenCode, Codex, atau DeepSeek ke Depup.{" "}
             <DocsLink className="inline-flex items-center gap-1 font-medium text-lav-text underline-offset-4 hover:underline">
               <BookOpen size={12} /> Lihat panduan lengkap
             </DocsLink>
@@ -695,7 +722,7 @@ export function ClaudeConnectCard({
         >
           {/* Pemilih aplikasi: scroll ke samping di HP, sejajar rapi di desktop */}
           <div
-            className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] sm:grid sm:grid-cols-5 sm:overflow-visible [&::-webkit-scrollbar]:hidden"
+            className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] sm:grid sm:grid-cols-3 sm:overflow-visible lg:grid-cols-6 [&::-webkit-scrollbar]:hidden"
             role="tablist"
             aria-label="Pilih aplikasi AI"
           >
@@ -728,6 +755,18 @@ export function ClaudeConnectCard({
             <p className="rounded-xl bg-[var(--pill-bg)] px-3.5 py-2.5 text-[12px] leading-relaxed text-text-muted">
               {currentClientMeta.label} Web memakai OAuth otomatis: cukup tempel URL MCP di atas, tanpa token.
               Token di bawah hanya untuk CLI atau file konfigurasi.{" "}
+              <DocsLink className="font-medium text-lav-text underline-offset-4 hover:underline">Langkah lengkap</DocsLink>
+            </p>
+          )}
+
+          {selectedClient === "deepseek" && (
+            <p className="rounded-xl bg-[var(--pill-bg)] px-3.5 py-2.5 text-[12px] leading-relaxed text-text-muted">
+              DeepSeek Harness memakai Bearer Token (bukan login OAuth otomatis). Urutannya: buat token di bawah,
+              jalankan langkah terminal di &quot;Cara lain&quot; (ganti &lt;VERSI_DSH&gt; dengan hasil <code>dsh --version</code>),
+              tempel YAML ini ke <code>cordis.patch.yml</code> (kalau sudah ada <code>- insert:</code>, tambahkan blok
+              <code> - id: mcp-depup</code> di bawahnya), lalu restart <code>dsh web</code>. Token disimpan di variabel
+              lingkungan <code>DEPUP_MCP_AUTH</code>, bukan di file YAML. DeepSeek Harness masih developer preview, jadi
+              formatnya bisa berubah.{" "}
               <DocsLink className="font-medium text-lav-text underline-offset-4 hover:underline">Langkah lengkap</DocsLink>
             </p>
           )}
