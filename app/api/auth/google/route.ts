@@ -22,10 +22,20 @@ export async function GET(req: NextRequest) {
     const dest =
       nextParam === "/admin" && isAdminEmail(user.email) ? "/admin" : isMcpAuthorizeNext(nextParam) ? nextParam : "/dashboard";
     const maxAge = DEV_SESSION_SECONDS; // 8 jam (sengaja pendek)
+    let token: string;
+    try {
+      token = signSession({ ...user, exp: Math.floor(Date.now() / 1000) + maxAge });
+    } catch (e) {
+      // Paling sering: AUTH_SECRET belum diisi di .env.local. Tampilkan alasannya, jangan 500 polos.
+      console.error("[dev-login] gagal membuat sesi:", e instanceof Error ? e.message : e);
+      const url = new URL("/", req.url);
+      url.searchParams.set("login_error", "Auto-login dev gagal: isi AUTH_SECRET (min. 16 karakter) di .env.local lalu restart npm run dev.");
+      return NextResponse.redirect(url);
+    }
     const res = NextResponse.redirect(new URL(dest, req.url));
     res.cookies.set(
       SESSION_COOKIE,
-      signSession({ ...user, exp: Math.floor(Date.now() / 1000) + maxAge }),
+      token,
       { httpOnly: true, secure: false, sameSite: "lax", path: "/", maxAge } // secure:false supaya jalan di http://localhost (Safari)
     );
     res.headers.set("Cache-Control", "no-store");
