@@ -17,6 +17,7 @@ import {
   TEMPLATES,
   HERO_LAYOUTS,
   FEAT_LAYOUTS,
+  FONT_OPTIONS,
   KIND_LABEL,
   KIND_OPTIONS,
   MAX_PALETTE,
@@ -31,6 +32,7 @@ import {
   type TemplateId,
   type HeroLayout,
   type FeatLayout,
+  type FontId,
   type RenderOpts,
 } from "@/lib/ai-site-templates";
 import { downloadZip, downloadHtml, downloadJson, copyHtml } from "@/lib/ai-site-export";
@@ -52,6 +54,7 @@ import { PreviewFrame } from "./ai-site/ScaledFrame";
 import { PaletteEditor } from "./ai-site/PaletteEditor";
 import { PhotoPool } from "./ai-site/PhotoPool";
 import { TemplatePicker } from "./ai-site/TemplatePicker";
+import { FontPicker } from "./ai-site/FontPicker";
 
 interface KeyStatus {
   hasKey: boolean;
@@ -100,6 +103,8 @@ interface Draft {
   palette: unknown;
   heroOpt: unknown;
   featOpt: unknown;
+  fontOpt: unknown;
+  tampilanMode: unknown;
   shopOn: boolean;
   variant: number;
   hadImages: boolean;
@@ -119,6 +124,7 @@ function readDraft(): Draft | null {
 const validTpl = (v: unknown): v is TemplateId => TEMPLATES.some((t) => t.id === v);
 const validHero = (v: unknown): v is HeroLayout => HERO_LAYOUTS.some((l) => l.id === v);
 const validFeat = (v: unknown): v is FeatLayout => FEAT_LAYOUTS.some((l) => l.id === v);
+const validFont = (v: unknown): v is FontId => FONT_OPTIONS.some((f) => f.id === v);
 const validPalette = (v: unknown): v is string[] =>
   Array.isArray(v) && v.length >= 2 && v.length <= MAX_PALETTE && v.every((x) => typeof x === "string" && isHex(x));
 
@@ -130,6 +136,7 @@ interface Snapshot {
   palette: string[] | null;
   heroOpt: HeroLayout | null;
   featOpt: FeatLayout | null;
+  fontOpt: FontId | null;
   variant: number;
   shopOn: boolean;
 }
@@ -204,6 +211,11 @@ export function AiSiteView() {
   const [palette, setPalette] = React.useState<string[] | null>(null);
   const [heroOpt, setHeroOpt] = React.useState<HeroLayout | null>(null);
   const [featOpt, setFeatOpt] = React.useState<FeatLayout | null>(null);
+  // null = ikut huruf bawaan Template; nilai terisi = pilihan manual pengguna
+  const [fontOpt, setFontOpt] = React.useState<FontId | null>(null);
+  // Cara menampilkan kartu "2. Tampilan": "ai" = ringkas (Gaya + Warna, tata letak disembunyikan),
+  // "manual" = Gaya, Tata letak, Warna, dan Huruf sejajar dan terbuka semua.
+  const [tampilanMode, setTampilanMode] = React.useState<"ai" | "manual">("ai");
   const [shopOn, setShopOn] = React.useState(true);
   const [device, setDevice] = React.useState<"desktop" | "mobile">("desktop");
   const [variant, setVariant] = React.useState(0);
@@ -279,6 +291,8 @@ export function AiSiteView() {
             if (validPalette(d.palette)) setPalette(d.palette);
             if (validHero(d.heroOpt)) setHeroOpt(d.heroOpt);
             if (validFeat(d.featOpt)) setFeatOpt(d.featOpt);
+            if (validFont(d.fontOpt)) setFontOpt(d.fontOpt);
+            if (d.tampilanMode === "ai" || d.tampilanMode === "manual") setTampilanMode(d.tampilanMode);
             if (typeof d.shopOn === "boolean") setShopOn(d.shopOn);
             if (typeof d.variant === "number") setVariant(d.variant);
             showToast(d.hadImages ? "Draf terakhir dipulihkan. Gambar perlu diunggah lagi." : "Draf terakhir dipulihkan.");
@@ -317,8 +331,8 @@ export function AiSiteView() {
   const heroEff = heroOpt ?? content?.hero ?? "center";
   const featEff = featOpt ?? content?.feat ?? "grid";
   const renderOpts = React.useMemo<RenderOpts>(
-    () => ({ hero: heroEff, feat: featEff, shop: shopOn, palette: palette ?? undefined, images }),
-    [heroEff, featEff, shopOn, palette, images],
+    () => ({ hero: heroEff, feat: featEff, shop: shopOn, palette: palette ?? undefined, font: fontOpt ?? undefined, images }),
+    [heroEff, featEff, shopOn, palette, fontOpt, images],
   );
   const html = React.useMemo(
     () => renderSite(previewContent, tplId, accentEff, renderOpts),
@@ -334,7 +348,13 @@ export function AiSiteView() {
 
   const hasWork =
     !!content &&
-    (history.length > 0 || Object.keys(images).length > 0 || template !== null || palette !== null || heroOpt !== null || featOpt !== null);
+    (history.length > 0 ||
+      Object.keys(images).length > 0 ||
+      template !== null ||
+      palette !== null ||
+      heroOpt !== null ||
+      featOpt !== null ||
+      fontOpt !== null);
   const dirtyMedia = !!content && html !== savedHtml && (Object.keys(images).length > 0 || photos.length > 0);
 
   const noAiMsg = "Jatah gratis hari ini habis. Pasang token Groq di kartu di atas untuk lanjut.";
@@ -366,7 +386,7 @@ export function AiSiteView() {
           return;
         }
         const d: Draft = {
-          v: 1, prompt, kindPick, content, template, palette, heroOpt, featOpt, shopOn, variant,
+          v: 1, prompt, kindPick, content, template, palette, heroOpt, featOpt, fontOpt, tampilanMode, shopOn, variant,
           hadImages: Object.keys(images).length > 0,
         };
         localStorage.setItem(DRAFT_KEY, JSON.stringify(d));
@@ -375,7 +395,7 @@ export function AiSiteView() {
       }
     }, 600);
     return () => window.clearTimeout(t);
-  }, [hydrated, prompt, kindPick, content, template, palette, heroOpt, featOpt, shopOn, variant, images]);
+  }, [hydrated, prompt, kindPick, content, template, palette, heroOpt, featOpt, fontOpt, tampilanMode, shopOn, variant, images]);
 
   // Peringatkan sebelum menutup halaman bila ada gambar/foto yang belum disimpan (tidak ikut draf).
   React.useEffect(() => {
@@ -425,7 +445,7 @@ export function AiSiteView() {
   /* ---------- riwayat / urungkan ---------- */
 
   function snapshot(): Snapshot | null {
-    return content ? { content, images, template, palette, heroOpt, featOpt, variant, shopOn } : null;
+    return content ? { content, images, template, palette, heroOpt, featOpt, fontOpt, variant, shopOn } : null;
   }
 
   function pushHistory() {
@@ -443,6 +463,7 @@ export function AiSiteView() {
     setPalette(last.palette);
     setHeroOpt(last.heroOpt);
     setFeatOpt(last.featOpt);
+    setFontOpt(last.fontOpt);
     setVariant(last.variant);
     setShopOn(last.shopOn);
     setPublished(null);
@@ -665,6 +686,7 @@ export function AiSiteView() {
         setPalette(null);
         setHeroOpt(null);
         setFeatOpt(null);
+        setFontOpt(null);
       }
       pendingFocusRef.current = true;
       say("Website selesai dibuat. Pratinjau sudah diperbarui.");
@@ -680,6 +702,7 @@ export function AiSiteView() {
             feat: (again ? null : featOpt) ?? r.content.feat,
             shop: shopOn,
             palette: pal ?? undefined,
+            font: (again ? null : fontOpt) ?? undefined,
             images: nextImages,
           }),
         );
@@ -777,6 +800,8 @@ export function AiSiteView() {
     setPalette(null);
     setHeroOpt(null);
     setFeatOpt(null);
+    setFontOpt(null);
+    setTampilanMode("ai");
     setShopOn(true);
     setVariant(0);
     setHistory([]);
@@ -855,6 +880,7 @@ export function AiSiteView() {
   const kindNote = content ? KIND_LABEL[content.kind].match(/\((.*)\)/)?.[1] ?? "" : "";
   const heroName = HERO_LAYOUTS.find((l) => l.id === heroEff)?.name ?? heroEff;
   const featName = FEAT_LAYOUTS.find((l) => l.id === featEff)?.name ?? featEff;
+  const fontName = fontOpt ? FONT_OPTIONS.find((f) => f.id === fontOpt)?.name ?? fontOpt : null;
 
   const tokenForm = (
     <>
@@ -1321,9 +1347,33 @@ export function AiSiteView() {
 
           <Card title="2. Tampilan" action={isSample ? <span className={hintCls}>Pratinjau memakai isi contoh</span> : undefined}>
             <div className="space-y-5 px-6 py-5">
+              <div role="radiogroup" aria-label="Cara mengatur tampilan" className="flex items-center gap-2">
+                <Btn
+                  variant={tampilanMode === "ai" ? "primary" : "ghost"}
+                  aria-pressed={tampilanMode === "ai"}
+                  onClick={() => setTampilanMode("ai")}
+                  className="flex-1"
+                >
+                  Ikuti saran AI
+                </Btn>
+                <Btn
+                  variant={tampilanMode === "manual" ? "primary" : "ghost"}
+                  aria-pressed={tampilanMode === "manual"}
+                  onClick={() => setTampilanMode("manual")}
+                  className="flex-1"
+                >
+                  Atur manual
+                </Btn>
+              </div>
+              <p className={`leading-relaxed ${hintCls}`}>
+                {tampilanMode === "ai"
+                  ? "AI menyarankan gaya yang serasi. Tata letak & huruf ikut gaya terpilih, bisa diubah di \u201cAtur manual\u201d."
+                  : "Atur gaya, tata letak, warna, dan huruf satu per satu. Pratinjau di samping langsung berubah tiap pilihan diganti."}
+              </p>
+
               <div>
                 <div className="mb-2 flex items-center justify-between gap-2">
-                  <span className="text-[13px] font-medium text-text-muted">Template</span>
+                  <span className="text-[13px] font-medium text-text-muted">Gaya desain</span>
                   {template && (
                     <button type="button" onClick={() => setTemplate(null)} className="min-h-[32px] text-[12.5px] text-text-muted underline">
                       {content ? "Ikuti saran AI" : "Atur ulang"}
@@ -1342,6 +1392,73 @@ export function AiSiteView() {
                 </p>
               </div>
 
+              {tampilanMode === "manual" ? (
+                <div className="rounded-2xl bg-[var(--pill-bg)] p-3.5">
+                  <div className="mb-3 text-[13px] font-medium text-text-muted">Tata letak</div>
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    <Field label="Bagian paling atas" htmlFor="ai-hero" hint="Judul besar dan tombol di awal halaman.">
+                      <Select value={heroEff} onValueChange={(v) => setHeroOpt(v as HeroLayout)}>
+                        <SelectTrigger id="ai-hero">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {HERO_LAYOUTS.map((l) => (
+                            <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                    <Field label="Bagian keunggulan" htmlFor="ai-feat" hint="Daftar kelebihan di bawah bagian atas.">
+                      <Select value={featEff} onValueChange={(v) => setFeatOpt(v as FeatLayout)}>
+                        <SelectTrigger id="ai-feat">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {FEAT_LAYOUTS.map((l) => (
+                            <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                  </div>
+                </div>
+              ) : (
+                <details className="group rounded-2xl bg-[var(--pill-bg)]">
+                  <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-3.5 py-2.5 text-[13.5px] font-medium [&::-webkit-details-marker]:hidden">
+                    <span className="min-w-0">
+                      Atur tata letak <span className="font-normal text-text-muted">· {heroName}, {featName}</span>
+                    </span>
+                    <ChevronDown size={16} className="shrink-0 transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden />
+                  </summary>
+                  <div className="grid gap-3 px-3.5 pb-3.5 sm:grid-cols-2">
+                    <Field label="Bagian paling atas" htmlFor="ai-hero-c" hint="Judul besar dan tombol di awal halaman.">
+                      <Select value={heroEff} onValueChange={(v) => setHeroOpt(v as HeroLayout)}>
+                        <SelectTrigger id="ai-hero-c">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {HERO_LAYOUTS.map((l) => (
+                            <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                    <Field label="Bagian keunggulan" htmlFor="ai-feat-c" hint="Daftar kelebihan di bawah bagian atas.">
+                      <Select value={featEff} onValueChange={(v) => setFeatOpt(v as FeatLayout)}>
+                        <SelectTrigger id="ai-feat-c">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {FEAT_LAYOUTS.map((l) => (
+                            <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </Field>
+                  </div>
+                </details>
+              )}
+
               <div>
                 <div className="mb-2 flex items-center gap-1.5 text-[13px] font-medium text-text-muted">
                   <Palette size={13} aria-hidden /> Warna
@@ -1349,40 +1466,28 @@ export function AiSiteView() {
                 <PaletteEditor colors={colors} custom={palette !== null} pageBg={tpl.swatch[0]} onChange={setPalette} onReset={() => setPalette(null)} />
               </div>
 
-              <details className="group rounded-2xl bg-[var(--pill-bg)]">
-                <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-3.5 py-2.5 text-[13.5px] font-medium [&::-webkit-details-marker]:hidden">
-                  <span className="min-w-0">
-                    Atur tata letak <span className="font-normal text-text-muted">· {heroName}, {featName}</span>
-                  </span>
-                  <ChevronDown size={16} className="shrink-0 transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden />
-                </summary>
-                <div className="grid gap-3 px-3.5 pb-3.5 sm:grid-cols-2">
-                  <Field label="Bagian paling atas" htmlFor="ai-hero" hint="Judul besar dan tombol di awal halaman.">
-                    <Select value={heroEff} onValueChange={(v) => setHeroOpt(v as HeroLayout)}>
-                      <SelectTrigger id="ai-hero">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {HERO_LAYOUTS.map((l) => (
-                          <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </Field>
-                  <Field label="Bagian keunggulan" htmlFor="ai-feat" hint="Daftar kelebihan di bawah bagian atas.">
-                    <Select value={featEff} onValueChange={(v) => setFeatOpt(v as FeatLayout)}>
-                      <SelectTrigger id="ai-feat">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {FEAT_LAYOUTS.map((l) => (
-                          <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </Field>
+              {tampilanMode === "manual" && (
+                <div>
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <span className="text-[13px] font-medium text-text-muted">Jenis huruf</span>
+                    {fontOpt && (
+                      <button type="button" onClick={() => setFontOpt(null)} className="min-h-[32px] text-[12.5px] text-text-muted underline">
+                        Ikuti gaya desain
+                      </button>
+                    )}
+                  </div>
+                  <FontPicker value={fontOpt} template={tplId} accent={accentEff} palette={palette} preview={previewContent} onPick={setFontOpt} />
+                  <p className={`mt-2.5 rounded-2xl bg-[var(--pill-bg)] px-3.5 py-2.5 leading-relaxed ${hintCls}`}>
+                    {fontOpt ? (
+                      <>
+                        <b className="font-semibold text-text">{fontName}</b> · {FONT_OPTIONS.find((f) => f.id === fontOpt)?.desc}
+                      </>
+                    ) : (
+                      "Belum diubah, masih mengikuti huruf bawaan Gaya desain di atas."
+                    )}
+                  </p>
                 </div>
-              </details>
+              )}
 
               {content && hasShop(content) && (
                 <label className="flex min-h-[44px] items-start gap-2.5 rounded-2xl bg-[var(--pill-bg)] p-3.5 text-[13.5px]">

@@ -14,6 +14,8 @@ import { SHOP_RUNTIME_JS } from "@/lib/ai-site-runtime";
 
 export type TemplateId = "bersih" | "gelap" | "hangat" | "tegas" | "segar" | "elegan" | "pastel" | "neon" | "bakso" | "kue" | "barber" | "tech" | "majalah" | "jurnal";
 export type SiteKind = "umkm" | "jasa" | "portofolio" | "event" | "profil" | "artikel";
+/** Pilihan huruf untuk mode "Atur manual". null di state pemanggil = ikut huruf bawaan Gaya desain (Template). */
+export type FontId = "modern" | "hangat" | "elegan" | "tegas" | "digital";
 /** center/left/split = lawas; split-bold (60/40 + tumpukan kartu), asymmetric (1 kartu besar + 2 kecil), editorial (headline raksasa) = baru. */
 export type HeroLayout = "center" | "left" | "split" | "split-bold" | "asymmetric" | "editorial";
 export type FeatLayout = "grid" | "bento" | "list" | "editorial";
@@ -576,6 +578,19 @@ const SANS = `"Inter","Segoe UI",system-ui,-apple-system,Roboto,"Helvetica Neue"
 const SERIF = `Georgia,"Iowan Old Style","Palatino Linotype",serif`;
 const MONO = `ui-monospace,"JetBrains Mono",SFMono-Regular,Menlo,Consolas,monospace`;
 
+/**
+ * Pilihan huruf untuk mode "Atur manual" (lepas dari Template). Dikurasi dari kombinasi yang sudah
+ * terbukti cocok di THEMES di atas — cuma paket huruf, warna/bentuk/tebal tetap ikut Template/Warna,
+ * supaya kombinasi yang dipilih bebas tidak bisa bentrok. Font sistem saja, tanpa request ke luar.
+ */
+export const FONT_OPTIONS: { id: FontId; name: string; desc: string; display: string; body: string; mono: string }[] = [
+  { id: "modern", name: "Rapi & Modern", desc: "Tanpa serif, bersih dan gampang dibaca. Cocok untuk hampir semua jenis usaha.", display: SANS, body: SANS, mono: SANS },
+  { id: "hangat", name: "Hangat & Personal", desc: "Judul berhuruf serif yang akrab, isi tetap rapi. Cocok untuk kuliner dan cerita personal.", display: SERIF, body: SANS, mono: SANS },
+  { id: "elegan", name: "Elegan & Mewah", desc: "Serif tipis dari judul sampai isi, terasa premium. Cocok untuk butik dan jasa eksklusif.", display: SERIF, body: SERIF, mono: SERIF },
+  { id: "tegas", name: "Tegas & Berani", desc: "Huruf besar dan tebal, menonjol dari jauh. Cocok untuk promo dan event.", display: `"Arial Black",Impact,"Helvetica Neue",Arial,sans-serif`, body: SANS, mono: SANS },
+  { id: "digital", name: "Teknis & Digital", desc: "Sentuhan monospace ala kode, terasa modern. Cocok untuk produk digital dan teknologi.", display: MONO, body: SANS, mono: MONO },
+];
+
 const THEMES: Record<TemplateId, Theme> = {
   bersih: {
     bg: "#f7f9fd", fg: "#0b1220", muted: "#526078", card: "#ffffff", line: "#e5eaf3", navBg: "247,249,253",
@@ -670,6 +685,8 @@ export interface RenderOpts {
   shop?: boolean;
   /** Palet kustom: [utama, kedua, ...tambahan]. Kosong = ikuti template. */
   palette?: string[];
+  /** Jenis huruf kustom (mode "Atur manual"). Kosong = ikuti huruf bawaan template. */
+  font?: FontId;
   /** Gambar unggahan (data URL). */
   images?: SiteImages;
   /** "inline" (default) = data URL tertanam di HTML; "files" = berkas terpisah di assets/img (untuk ZIP). */
@@ -1036,7 +1053,10 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
     custom[0] ??
     (isHexColor(accent) ? accent : isHexColor(content.accent) && content.accent ? content.accent : TEMPLATES.find((x) => x.id === template)!.accent);
   // Palet kustom: warna ke-2 menggantikan aksen kedua template; warna ke-3 dst. menjadi warna tambahan (ikon bergantian + sorot hero).
-  const t: Theme = custom.length >= 2 ? { ...base, acc2: custom[1], ib: tint(custom[1], base.dark) } : base;
+  let t: Theme = custom.length >= 2 ? { ...base, acc2: custom[1], ib: tint(custom[1], base.dark) } : base;
+  // Huruf kustom (mode "Atur manual"): ganti paket huruf saja, bentuk/warna/tebal tetap ikut template.
+  const fontPick = FONT_OPTIONS.find((f) => f.id === opts.font);
+  if (fontPick) t = { ...t, display: fontPick.display, body: fontPick.body, mono: fontPick.mono };
   const extra = custom.slice(2);
   const cyc = custom.length >= 3 ? custom.slice(1) : [];
   const toneStyle = (i: number): string => {
