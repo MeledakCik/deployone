@@ -14,8 +14,6 @@ import { SHOP_RUNTIME_JS } from "@/lib/ai-site-runtime";
 
 export type TemplateId = "bersih" | "gelap" | "hangat" | "tegas" | "segar" | "elegan" | "pastel" | "neon" | "bakso" | "kue" | "barber" | "tech" | "majalah" | "jurnal";
 export type SiteKind = "umkm" | "jasa" | "portofolio" | "event" | "profil" | "artikel";
-/** Pilihan huruf untuk mode "Atur manual". null di state pemanggil = ikut huruf bawaan Gaya desain (Template). */
-export type FontId = "modern" | "hangat" | "elegan" | "tegas" | "digital";
 /** center/left/split = lawas; split-bold (60/40 + tumpukan kartu), asymmetric (1 kartu besar + 2 kecil), editorial (headline raksasa) = baru. */
 export type HeroLayout = "center" | "left" | "split" | "split-bold" | "asymmetric" | "editorial";
 export type FeatLayout = "grid" | "bento" | "list" | "editorial";
@@ -562,6 +560,8 @@ interface Theme {
   card: string; line: string; navBg: string;
   radius: string; shadow: string;
   display: string; body: string; mono: string;
+  /** Huruf sub-judul (h2/h3: judul bagian, judul kartu). Kosong = ikut `display`. */
+  sub?: string;
   headWeight: number; upper: boolean; gradientHead: boolean; brutal: boolean; dark: boolean;
   deco: Deco; pill: string;
   /** Warna aksen kedua (palet kurasi): latar kotak ikon & sorot hero. */
@@ -576,19 +576,53 @@ interface Theme {
 
 const SANS = `"Inter","Segoe UI",system-ui,-apple-system,Roboto,"Helvetica Neue",Arial,sans-serif`;
 const SERIF = `Georgia,"Iowan Old Style","Palatino Linotype",serif`;
+const SLAB = `"Roboto Slab","Rockwell","Arvo",Georgia,serif`;
 const MONO = `ui-monospace,"JetBrains Mono",SFMono-Regular,Menlo,Consolas,monospace`;
+const DISPLAY = `"Arial Black",Impact,"Helvetica Neue",Arial,sans-serif`;
+
+/** Kategori huruf per peran (Judul / Sub-judul / Isi), mode "Atur manual". Font sistem saja — SLAB
+ *  jatuh ke Georgia di banyak perangkat karena "Roboto Slab"/"Arvo" jarang terpasang bawaan; tetap
+ *  disediakan karena perangkat yang punya salah satunya akan menampilkannya. */
+export type FontRoleId = "sans" | "serif" | "slab" | "mono" | "display";
+export const FONT_ROLES: { id: FontRoleId; name: string; desc: string; stack: string }[] = [
+  { id: "sans", name: "Sans-serif", desc: "Tanpa serif, bersih — Inter/Helvetica.", stack: SANS },
+  { id: "serif", name: "Serif", desc: "Berkait klasik — Georgia.", stack: SERIF },
+  { id: "slab", name: "Slab Serif", desc: "Kait tebal kotak. Fallback ke serif biasa bila tak terpasang.", stack: SLAB },
+  { id: "mono", name: "Monospace", desc: "Lebar sama rata, kesan teknis/kode.", stack: MONO },
+  { id: "display", name: "Display Tebal", desc: "Besar, tebal, menonjol — Arial Black/Impact.", stack: DISPLAY },
+];
 
 /**
- * Pilihan huruf untuk mode "Atur manual" (lepas dari Template). Dikurasi dari kombinasi yang sudah
- * terbukti cocok di THEMES di atas — cuma paket huruf, warna/bentuk/tebal tetap ikut Template/Warna,
- * supaya kombinasi yang dipilih bebas tidak bisa bentrok. Font sistem saja, tanpa request ke luar.
+ * Gaya desain (gerakan visual) untuk mode "Atur manual". Independen dari Template: cuma menimpa
+ * bentuk/bayangan/dekorasi di atas warna Template/Warna yang sedang aktif, warna & huruf tidak disentuh.
+ * Didekati dari token yang sudah ada di mesin render (radius, shadow, pill, brutal, glass, noise, deco,
+ * gradientHead, upper, headWeight) — bukan CSS baru per gaya, supaya tetap aman dipadukan dengan Template apa pun.
  */
-export const FONT_OPTIONS: { id: FontId; name: string; desc: string; display: string; body: string; mono: string }[] = [
-  { id: "modern", name: "Rapi & Modern", desc: "Tanpa serif, bersih dan gampang dibaca. Cocok untuk hampir semua jenis usaha.", display: SANS, body: SANS, mono: SANS },
-  { id: "hangat", name: "Hangat & Personal", desc: "Judul berhuruf serif yang akrab, isi tetap rapi. Cocok untuk kuliner dan cerita personal.", display: SERIF, body: SANS, mono: SANS },
-  { id: "elegan", name: "Elegan & Mewah", desc: "Serif tipis dari judul sampai isi, terasa premium. Cocok untuk butik dan jasa eksklusif.", display: SERIF, body: SERIF, mono: SERIF },
-  { id: "tegas", name: "Tegas & Berani", desc: "Huruf besar dan tebal, menonjol dari jauh. Cocok untuk promo dan event.", display: `"Arial Black",Impact,"Helvetica Neue",Arial,sans-serif`, body: SANS, mono: SANS },
-  { id: "digital", name: "Teknis & Digital", desc: "Sentuhan monospace ala kode, terasa modern. Cocok untuk produk digital dan teknologi.", display: MONO, body: SANS, mono: MONO },
+export type DesignStyleId =
+  | "brutalism" | "neo-brutalism" | "swiss" | "bauhaus" | "y2k"
+  | "glassmorphism" | "neumorphism" | "futurism" | "minimalist" | "experimental";
+
+export const DESIGN_STYLES: { id: DesignStyleId; name: string; desc: string; patch: Partial<Theme> }[] = [
+  { id: "brutalism", name: "Brutalism", desc: "Mentah: sudut tajam, garis tebal, tanpa bayangan halus.",
+    patch: { radius: "0px", pill: "0px", shadow: "none", brutal: true, glass: false, noise: false, deco: "none", gradientHead: false, upper: true, headWeight: 900 } },
+  { id: "neo-brutalism", name: "Neo-Brutalism", desc: "Brutalism yang lebih ramah: warna cerah, bayangan kotak geser, sudut membulat.",
+    patch: { radius: "14px", pill: "999px", shadow: "6px 6px 0 #0a0a0a", brutal: true, glass: false, noise: false, deco: "none", gradientHead: false, upper: false, headWeight: 900 } },
+  { id: "swiss", name: "Swiss / Grid", desc: "Grid ketat, nyaris tanpa hiasan, tipografi jadi penekanan utama.",
+    patch: { radius: "2px", pill: "2px", shadow: "none", brutal: false, glass: false, noise: false, deco: "none", gradientHead: false, upper: false, headWeight: 700 } },
+  { id: "bauhaus", name: "Bauhaus", desc: "Geometris & tegas, warna berani, tanpa gradasi.",
+    patch: { radius: "4px", pill: "4px", shadow: "none", brutal: false, glass: false, noise: false, deco: "none", gradientHead: false, upper: false, headWeight: 800 } },
+  { id: "y2k", name: "Y2K", desc: "Membulat & mengilap, judul bergradasi, nuansa 2000-an awal.",
+    patch: { radius: "999px", pill: "999px", shadow: "0 10px 30px rgba(0,0,0,.08)", brutal: false, glass: false, noise: false, deco: "none", gradientHead: true, upper: false, headWeight: 800 } },
+  { id: "glassmorphism", name: "Glassmorphism", desc: "Kartu kaca buram tembus pandang. Paling terlihat di atas latar gelap/berwarna.",
+    patch: { radius: "20px", pill: "999px", shadow: "0 8px 32px rgba(0,0,0,.08)", brutal: false, glass: true, noise: false, deco: "none", gradientHead: false, headWeight: 700 } },
+  { id: "neumorphism", name: "Neumorphism", desc: "Elemen terasa timbul dari latar lewat bayangan ganda. Paling terlihat di atas latar terang & polos.",
+    patch: { radius: "24px", pill: "999px", shadow: "8px 8px 16px rgba(0,0,0,.12), -8px -8px 16px rgba(255,255,255,.65)", brutal: false, glass: false, noise: false, deco: "none", headWeight: 700 } },
+  { id: "futurism", name: "Futuristik", desc: "Garis tajam & grid halus di latar. Paling kena di Template/Warna gelap.",
+    patch: { radius: "6px", pill: "6px", shadow: "none", brutal: false, glass: false, noise: false, deco: "grid", gradientHead: false, headWeight: 800 } },
+  { id: "minimalist", name: "Minimalist", desc: "Elemen seminim mungkin, nyaris tanpa bayangan atau hiasan.",
+    patch: { radius: "8px", pill: "8px", shadow: "none", brutal: false, glass: false, noise: false, deco: "none", gradientHead: false, headWeight: 600 } },
+  { id: "experimental", name: "Experimental", desc: "Bentuk besar membulat, bayangan lembut, judul bergradasi.",
+    patch: { radius: "28px", pill: "999px", shadow: "0 14px 40px rgba(0,0,0,.10)", brutal: false, glass: false, noise: false, deco: "blobs", gradientHead: true, headWeight: 800 } },
 ];
 
 const THEMES: Record<TemplateId, Theme> = {
@@ -685,8 +719,10 @@ export interface RenderOpts {
   shop?: boolean;
   /** Palet kustom: [utama, kedua, ...tambahan]. Kosong = ikuti template. */
   palette?: string[];
-  /** Jenis huruf kustom (mode "Atur manual"). Kosong = ikuti huruf bawaan template. */
-  font?: FontId;
+  /** Gaya desain/gerakan visual kustom (mode "Atur manual"). Kosong = ikuti bentuk bawaan template. */
+  style?: DesignStyleId;
+  /** Huruf per peran (mode "Atur manual"). Kosong per peran = ikut Gaya desain/Judul (lihat resolveFonts). */
+  fonts?: { title?: FontRoleId; sub?: FontRoleId; body?: FontRoleId };
   /** Gambar unggahan (data URL). */
   images?: SiteImages;
   /** "inline" (default) = data URL tertanam di HTML; "files" = berkas terpisah di assets/img (untuk ZIP). */
@@ -732,7 +768,8 @@ function buildCss(t: Theme, a: string, hero: HeroLayout, shop: boolean, hover: H
 *{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:96px}
 body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.65 ${t.body};-webkit-font-smoothing:antialiased;overflow-x:hidden}
 .wrap{max-width:1120px;margin:0 auto;padding:0 24px;position:relative}
-h1,h2,h3{font-family:${t.display};margin:0}
+h1{font-family:${t.display};margin:0}
+h2,h3{font-family:${t.sub ?? t.display};margin:0}
 a{color:inherit}
 svg{display:block;flex:none}
 .ic{display:inline-grid;place-items:center;flex:none}
@@ -1054,9 +1091,15 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
     (isHexColor(accent) ? accent : isHexColor(content.accent) && content.accent ? content.accent : TEMPLATES.find((x) => x.id === template)!.accent);
   // Palet kustom: warna ke-2 menggantikan aksen kedua template; warna ke-3 dst. menjadi warna tambahan (ikon bergantian + sorot hero).
   let t: Theme = custom.length >= 2 ? { ...base, acc2: custom[1], ib: tint(custom[1], base.dark) } : base;
-  // Huruf kustom (mode "Atur manual"): ganti paket huruf saja, bentuk/warna/tebal tetap ikut template.
-  const fontPick = FONT_OPTIONS.find((f) => f.id === opts.font);
-  if (fontPick) t = { ...t, display: fontPick.display, body: fontPick.body, mono: fontPick.mono };
+  // Gaya desain kustom (mode "Atur manual"): timpa bentuk/bayangan/dekorasi saja, warna tetap dari Template/Warna di atas.
+  const stylePick = DESIGN_STYLES.find((s) => s.id === opts.style);
+  if (stylePick) t = { ...t, ...stylePick.patch };
+  // Huruf per peran (mode "Atur manual"): Sub-judul kosong → ikut Judul yang terpilih → baru ikut bawaan Gaya desain/Template.
+  const roleStack = (id: FontRoleId | undefined): string | undefined => FONT_ROLES.find((r) => r.id === id)?.stack;
+  const titleFamily = roleStack(opts.fonts?.title) ?? t.display;
+  const subFamily = roleStack(opts.fonts?.sub) ?? titleFamily;
+  const bodyFamily = roleStack(opts.fonts?.body) ?? t.body;
+  if (opts.fonts) t = { ...t, display: titleFamily, sub: subFamily, body: bodyFamily };
   const extra = custom.slice(2);
   const cyc = custom.length >= 3 ? custom.slice(1) : [];
   const toneStyle = (i: number): string => {

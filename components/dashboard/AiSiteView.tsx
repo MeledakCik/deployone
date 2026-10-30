@@ -17,7 +17,7 @@ import {
   TEMPLATES,
   HERO_LAYOUTS,
   FEAT_LAYOUTS,
-  FONT_OPTIONS,
+  DESIGN_STYLES,
   KIND_LABEL,
   KIND_OPTIONS,
   MAX_PALETTE,
@@ -32,7 +32,8 @@ import {
   type TemplateId,
   type HeroLayout,
   type FeatLayout,
-  type FontId,
+  type DesignStyleId,
+  type FontRoleId,
   type RenderOpts,
 } from "@/lib/ai-site-templates";
 import { downloadZip, downloadHtml, downloadJson, copyHtml } from "@/lib/ai-site-export";
@@ -54,7 +55,8 @@ import { PreviewFrame } from "./ai-site/ScaledFrame";
 import { PaletteEditor } from "./ai-site/PaletteEditor";
 import { PhotoPool } from "./ai-site/PhotoPool";
 import { TemplatePicker } from "./ai-site/TemplatePicker";
-import { FontPicker } from "./ai-site/FontPicker";
+import { StylePicker } from "./ai-site/StylePicker";
+import { FontRolePicker } from "./ai-site/FontRolePicker";
 
 interface KeyStatus {
   hasKey: boolean;
@@ -103,7 +105,8 @@ interface Draft {
   palette: unknown;
   heroOpt: unknown;
   featOpt: unknown;
-  fontOpt: unknown;
+  styleOpt: unknown;
+  fontsOpt: unknown;
   tampilanMode: unknown;
   shopOn: boolean;
   variant: number;
@@ -124,7 +127,22 @@ function readDraft(): Draft | null {
 const validTpl = (v: unknown): v is TemplateId => TEMPLATES.some((t) => t.id === v);
 const validHero = (v: unknown): v is HeroLayout => HERO_LAYOUTS.some((l) => l.id === v);
 const validFeat = (v: unknown): v is FeatLayout => FEAT_LAYOUTS.some((l) => l.id === v);
-const validFont = (v: unknown): v is FontId => FONT_OPTIONS.some((f) => f.id === v);
+const validStyle = (v: unknown): v is DesignStyleId => DESIGN_STYLES.some((s) => s.id === v);
+const FONT_ROLE_IDS: FontRoleId[] = ["sans", "serif", "slab", "mono", "display"];
+const validFontRole = (v: unknown): v is FontRoleId => FONT_ROLE_IDS.includes(v as FontRoleId);
+interface FontRoles {
+  title: FontRoleId | null;
+  sub: FontRoleId | null;
+  body: FontRoleId | null;
+}
+const EMPTY_FONTS: FontRoles = { title: null, sub: null, body: null };
+const validFonts = (v: unknown): v is FontRoles =>
+  !!v &&
+  typeof v === "object" &&
+  (v as FontRoles).title !== undefined &&
+  (v as FontRoles).sub !== undefined &&
+  (v as FontRoles).body !== undefined &&
+  (["title", "sub", "body"] as const).every((k) => (v as FontRoles)[k] === null || validFontRole((v as FontRoles)[k]));
 const validPalette = (v: unknown): v is string[] =>
   Array.isArray(v) && v.length >= 2 && v.length <= MAX_PALETTE && v.every((x) => typeof x === "string" && isHex(x));
 
@@ -136,7 +154,8 @@ interface Snapshot {
   palette: string[] | null;
   heroOpt: HeroLayout | null;
   featOpt: FeatLayout | null;
-  fontOpt: FontId | null;
+  styleOpt: DesignStyleId | null;
+  fontsOpt: FontRoles;
   variant: number;
   shopOn: boolean;
 }
@@ -211,10 +230,12 @@ export function AiSiteView() {
   const [palette, setPalette] = React.useState<string[] | null>(null);
   const [heroOpt, setHeroOpt] = React.useState<HeroLayout | null>(null);
   const [featOpt, setFeatOpt] = React.useState<FeatLayout | null>(null);
-  // null = ikut huruf bawaan Template; nilai terisi = pilihan manual pengguna
-  const [fontOpt, setFontOpt] = React.useState<FontId | null>(null);
-  // Cara menampilkan kartu "2. Tampilan": "ai" = ringkas (Gaya + Warna, tata letak disembunyikan),
-  // "manual" = Gaya, Tata letak, Warna, dan Huruf sejajar dan terbuka semua.
+  // null = ikut bentuk bawaan Template; nilai terisi = gerakan desain pilihan pengguna (mode "Atur manual")
+  const [styleOpt, setStyleOpt] = React.useState<DesignStyleId | null>(null);
+  // null per peran = ikut Gaya desain/Template (Sub-judul: ikut Judul lebih dulu, lihat lib/ai-site-templates.ts)
+  const [fontsOpt, setFontsOpt] = React.useState<FontRoles>(EMPTY_FONTS);
+  // Cara menampilkan kartu "2. Tampilan": "ai" = ringkas (Template + Warna, tata letak disembunyikan),
+  // "manual" = Template, Tata letak, Warna, Gaya desain, dan Huruf sejajar dan terbuka semua.
   const [tampilanMode, setTampilanMode] = React.useState<"ai" | "manual">("ai");
   const [shopOn, setShopOn] = React.useState(true);
   const [device, setDevice] = React.useState<"desktop" | "mobile">("desktop");
@@ -291,7 +312,8 @@ export function AiSiteView() {
             if (validPalette(d.palette)) setPalette(d.palette);
             if (validHero(d.heroOpt)) setHeroOpt(d.heroOpt);
             if (validFeat(d.featOpt)) setFeatOpt(d.featOpt);
-            if (validFont(d.fontOpt)) setFontOpt(d.fontOpt);
+            if (validStyle(d.styleOpt)) setStyleOpt(d.styleOpt);
+            if (validFonts(d.fontsOpt)) setFontsOpt(d.fontsOpt);
             if (d.tampilanMode === "ai" || d.tampilanMode === "manual") setTampilanMode(d.tampilanMode);
             if (typeof d.shopOn === "boolean") setShopOn(d.shopOn);
             if (typeof d.variant === "number") setVariant(d.variant);
@@ -330,9 +352,13 @@ export function AiSiteView() {
   const accentEff = colors[0];
   const heroEff = heroOpt ?? content?.hero ?? "center";
   const featEff = featOpt ?? content?.feat ?? "grid";
+  const fontsEff = React.useMemo<RenderOpts["fonts"]>(
+    () => ({ title: fontsOpt.title ?? undefined, sub: fontsOpt.sub ?? undefined, body: fontsOpt.body ?? undefined }),
+    [fontsOpt],
+  );
   const renderOpts = React.useMemo<RenderOpts>(
-    () => ({ hero: heroEff, feat: featEff, shop: shopOn, palette: palette ?? undefined, font: fontOpt ?? undefined, images }),
-    [heroEff, featEff, shopOn, palette, fontOpt, images],
+    () => ({ hero: heroEff, feat: featEff, shop: shopOn, palette: palette ?? undefined, style: styleOpt ?? undefined, fonts: fontsEff, images }),
+    [heroEff, featEff, shopOn, palette, styleOpt, fontsEff, images],
   );
   const html = React.useMemo(
     () => renderSite(previewContent, tplId, accentEff, renderOpts),
@@ -354,7 +380,10 @@ export function AiSiteView() {
       palette !== null ||
       heroOpt !== null ||
       featOpt !== null ||
-      fontOpt !== null);
+      styleOpt !== null ||
+      fontsOpt.title !== null ||
+      fontsOpt.sub !== null ||
+      fontsOpt.body !== null);
   const dirtyMedia = !!content && html !== savedHtml && (Object.keys(images).length > 0 || photos.length > 0);
 
   const noAiMsg = "Jatah gratis hari ini habis. Pasang token Groq di kartu di atas untuk lanjut.";
@@ -386,7 +415,7 @@ export function AiSiteView() {
           return;
         }
         const d: Draft = {
-          v: 1, prompt, kindPick, content, template, palette, heroOpt, featOpt, fontOpt, tampilanMode, shopOn, variant,
+          v: 1, prompt, kindPick, content, template, palette, heroOpt, featOpt, styleOpt, fontsOpt, tampilanMode, shopOn, variant,
           hadImages: Object.keys(images).length > 0,
         };
         localStorage.setItem(DRAFT_KEY, JSON.stringify(d));
@@ -395,7 +424,7 @@ export function AiSiteView() {
       }
     }, 600);
     return () => window.clearTimeout(t);
-  }, [hydrated, prompt, kindPick, content, template, palette, heroOpt, featOpt, fontOpt, tampilanMode, shopOn, variant, images]);
+  }, [hydrated, prompt, kindPick, content, template, palette, heroOpt, featOpt, styleOpt, fontsOpt, tampilanMode, shopOn, variant, images]);
 
   // Peringatkan sebelum menutup halaman bila ada gambar/foto yang belum disimpan (tidak ikut draf).
   React.useEffect(() => {
@@ -445,7 +474,7 @@ export function AiSiteView() {
   /* ---------- riwayat / urungkan ---------- */
 
   function snapshot(): Snapshot | null {
-    return content ? { content, images, template, palette, heroOpt, featOpt, fontOpt, variant, shopOn } : null;
+    return content ? { content, images, template, palette, heroOpt, featOpt, styleOpt, fontsOpt, variant, shopOn } : null;
   }
 
   function pushHistory() {
@@ -463,7 +492,8 @@ export function AiSiteView() {
     setPalette(last.palette);
     setHeroOpt(last.heroOpt);
     setFeatOpt(last.featOpt);
-    setFontOpt(last.fontOpt);
+    setStyleOpt(last.styleOpt);
+    setFontsOpt(last.fontsOpt);
     setVariant(last.variant);
     setShopOn(last.shopOn);
     setPublished(null);
@@ -686,7 +716,8 @@ export function AiSiteView() {
         setPalette(null);
         setHeroOpt(null);
         setFeatOpt(null);
-        setFontOpt(null);
+        setStyleOpt(null);
+        setFontsOpt(EMPTY_FONTS);
       }
       pendingFocusRef.current = true;
       say("Website selesai dibuat. Pratinjau sudah diperbarui.");
@@ -702,7 +733,10 @@ export function AiSiteView() {
             feat: (again ? null : featOpt) ?? r.content.feat,
             shop: shopOn,
             palette: pal ?? undefined,
-            font: (again ? null : fontOpt) ?? undefined,
+            style: (again ? null : styleOpt) ?? undefined,
+            fonts: again
+              ? undefined
+              : { title: fontsOpt.title ?? undefined, sub: fontsOpt.sub ?? undefined, body: fontsOpt.body ?? undefined },
             images: nextImages,
           }),
         );
@@ -800,7 +834,8 @@ export function AiSiteView() {
     setPalette(null);
     setHeroOpt(null);
     setFeatOpt(null);
-    setFontOpt(null);
+    setStyleOpt(null);
+    setFontsOpt(EMPTY_FONTS);
     setTampilanMode("ai");
     setShopOn(true);
     setVariant(0);
@@ -880,7 +915,6 @@ export function AiSiteView() {
   const kindNote = content ? KIND_LABEL[content.kind].match(/\((.*)\)/)?.[1] ?? "" : "";
   const heroName = HERO_LAYOUTS.find((l) => l.id === heroEff)?.name ?? heroEff;
   const featName = FEAT_LAYOUTS.find((l) => l.id === featEff)?.name ?? featEff;
-  const fontName = fontOpt ? FONT_OPTIONS.find((f) => f.id === fontOpt)?.name ?? fontOpt : null;
 
   const tokenForm = (
     <>
@@ -1373,7 +1407,7 @@ export function AiSiteView() {
 
               <div>
                 <div className="mb-2 flex items-center justify-between gap-2">
-                  <span className="text-[13px] font-medium text-text-muted">Gaya desain</span>
+                  <span className="text-[13px] font-medium text-text-muted">Template</span>
                   {template && (
                     <button type="button" onClick={() => setTemplate(null)} className="min-h-[32px] text-[12.5px] text-text-muted underline">
                       {content ? "Ikuti saran AI" : "Atur ulang"}
@@ -1469,23 +1503,47 @@ export function AiSiteView() {
               {tampilanMode === "manual" && (
                 <div>
                   <div className="mb-2 flex items-center justify-between gap-2">
-                    <span className="text-[13px] font-medium text-text-muted">Jenis huruf</span>
-                    {fontOpt && (
-                      <button type="button" onClick={() => setFontOpt(null)} className="min-h-[32px] text-[12.5px] text-text-muted underline">
-                        Ikuti gaya desain
+                    <span className="text-[13px] font-medium text-text-muted">Gaya desain</span>
+                    {styleOpt && (
+                      <button type="button" onClick={() => setStyleOpt(null)} className="min-h-[32px] text-[12.5px] text-text-muted underline">
+                        Ikuti Template
                       </button>
                     )}
                   </div>
-                  <FontPicker value={fontOpt} template={tplId} accent={accentEff} palette={palette} preview={previewContent} onPick={setFontOpt} />
+                  <StylePicker
+                    value={styleOpt}
+                    template={tplId}
+                    accent={accentEff}
+                    palette={palette}
+                    fonts={fontsEff}
+                    preview={previewContent}
+                    onPick={setStyleOpt}
+                  />
                   <p className={`mt-2.5 rounded-2xl bg-[var(--pill-bg)] px-3.5 py-2.5 leading-relaxed ${hintCls}`}>
-                    {fontOpt ? (
+                    {styleOpt ? (
                       <>
-                        <b className="font-semibold text-text">{fontName}</b> · {FONT_OPTIONS.find((f) => f.id === fontOpt)?.desc}
+                        <b className="font-semibold text-text">{DESIGN_STYLES.find((s) => s.id === styleOpt)?.name}</b> ·{" "}
+                        {DESIGN_STYLES.find((s) => s.id === styleOpt)?.desc}
                       </>
                     ) : (
-                      "Belum diubah, masih mengikuti huruf bawaan Gaya desain di atas."
+                      "Belum diubah, masih mengikuti bentuk bawaan Template di atas."
                     )}
                   </p>
+                </div>
+              )}
+
+              {tampilanMode === "manual" && (
+                <div className="rounded-2xl bg-[var(--pill-bg)] p-3.5">
+                  <div className="mb-3 text-[13px] font-medium text-text-muted">Huruf</div>
+                  <FontRolePicker
+                    title={fontsOpt.title}
+                    sub={fontsOpt.sub}
+                    body={fontsOpt.body}
+                    onTitle={(id) => setFontsOpt((f) => ({ ...f, title: id }))}
+                    onSub={(id) => setFontsOpt((f) => ({ ...f, sub: id }))}
+                    onSubFollow={() => setFontsOpt((f) => ({ ...f, sub: null }))}
+                    onBody={(id) => setFontsOpt((f) => ({ ...f, body: id }))}
+                  />
                 </div>
               )}
 
