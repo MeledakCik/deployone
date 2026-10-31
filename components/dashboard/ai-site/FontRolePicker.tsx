@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { cn } from "@/lib/utils";
+import { chipCls } from "./shared";
 import { FONT_ROLES, FONT_WEIGHTS, type FontRoleId, type FontWeightId } from "@/lib/ai-site-templates";
 
 export interface RoleSetting {
@@ -31,10 +31,7 @@ function WeightRow({
         role="radio"
         aria-checked={value === null}
         onClick={onFollow}
-        className={cn(
-          "min-h-[30px] rounded-full border px-2.5 text-[12px] font-medium transition",
-          value === null ? "border-[var(--ring)] bg-tone-lilac" : "border-[var(--line)] bg-[var(--pill-bg)] text-text-muted hover:bg-[var(--card-hover)]",
-        )}
+        className={chipCls(value === null, true)}
       >
         {followLabel}
       </button>
@@ -46,10 +43,7 @@ function WeightRow({
           aria-checked={value === w.id}
           onClick={() => onPick(w.id)}
           style={{ fontWeight: w.id }}
-          className={cn(
-            "min-h-[30px] rounded-full border px-2.5 text-[12.5px] transition",
-            value === w.id ? "border-[var(--ring)] bg-tone-lilac" : "border-[var(--line)] bg-[var(--pill-bg)] hover:bg-[var(--card-hover)]",
-          )}
+          className={chipCls(value === w.id)}
         >
           {w.name}
         </button>
@@ -93,10 +87,7 @@ function RoleBlock({
             role="radio"
             aria-checked={value.family === null}
             onClick={onFamilyFollow}
-            className={cn(
-              "min-h-[34px] rounded-full border px-3 text-[12.5px] font-medium transition",
-              value.family === null ? "border-[var(--ring)] bg-tone-lilac" : "border-[var(--line)] bg-[var(--pill-bg)] text-text-muted hover:bg-[var(--card-hover)]",
-            )}
+            className={chipCls(value.family === null, true)}
           >
             {familyFollowLabel}
           </button>
@@ -110,17 +101,14 @@ function RoleBlock({
             onClick={() => onFamily(r.id)}
             title={r.desc}
             style={{ fontFamily: r.stack }}
-            className={cn(
-              "min-h-[34px] rounded-full border px-3 text-[13.5px] transition",
-              value.family === r.id ? "border-[var(--ring)] bg-tone-lilac" : "border-[var(--line)] bg-[var(--pill-bg)] hover:bg-[var(--card-hover)]",
-            )}
+            className={chipCls(value.family === r.id)}
           >
-            Aa <span className="text-[11.5px] font-sans font-medium text-text-muted">{r.name}</span>
+            Aa <span className={`text-[12px] font-sans font-medium ${value.family === r.id ? "opacity-90" : "text-text-muted"}`}>{r.name}</span>
           </button>
         ))}
       </div>
       <div className="mt-1.5">
-        <span className="mb-1 block text-[11.5px] text-text-faint">Ketebalan</span>
+        <span className="mb-1 block text-[12px] text-text-faint">Ketebalan</span>
         <WeightRow label={`${label} — ketebalan`} value={value.weight} onPick={onWeight} followLabel={weightFollowLabel} onFollow={onWeightFollow} />
       </div>
     </div>

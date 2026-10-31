@@ -3,6 +3,7 @@
 import * as React from "react";
 import { ChevronLeft, ChevronRight, ImagePlus, X } from "lucide-react";
 import { Btn } from "@/components/ui/primitives";
+import { ON_MIST } from "./shared";
 import { cn } from "@/lib/utils";
 import { formatBytes, IMAGE_ACCEPT, MAX_PRELOAD_BYTES } from "@/lib/ai-site-images";
 import type { PhotoDraft } from "@/lib/ai-site-photos";
@@ -48,8 +49,9 @@ export function PhotoPool({
         onAdd(Array.from<File>(e.dataTransfer.files));
       }}
       className={cn(
-        "space-y-3 rounded-2xl border border-dashed p-3.5 transition",
-        drag ? "border-[var(--accent)] bg-tone-lilac" : "border-[var(--line-strong)] bg-[var(--pill-bg)]",
+        "space-y-3 rounded-[14px] p-3.5 transition",
+        drag ? "bg-[var(--select-bg)]" : "bg-[var(--pill-bg)]",
+        ON_MIST,
       )}
     >
       <div className="flex flex-wrap items-center gap-2">
@@ -80,7 +82,7 @@ export function PhotoPool({
           </div>
           <ul className="grid grid-cols-3 gap-2 min-[480px]:grid-cols-4 sm:grid-cols-5">
             {photos.map((p, i) => (
-              <li key={p.id} className="relative aspect-square overflow-hidden rounded-xl ring-1 ring-[var(--line)]">
+              <li key={p.id} className="relative aspect-square overflow-hidden rounded-xl">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={p.preview} alt={`Foto ${i + 1}: ${p.file.name}`} className="h-full w-full object-cover" />
                 <span className="absolute left-1 top-1 rounded-full bg-black/70 px-2 text-[12px] font-semibold leading-5 text-white" aria-hidden>

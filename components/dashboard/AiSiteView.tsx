@@ -6,7 +6,7 @@ import {
   FileJson, Package, Monitor, Smartphone, Store, Pencil, ImagePlus, ImageIcon, X, Palette, Undo2, Eye,
   Info, ChevronDown, Loader2,
 } from "lucide-react";
-import { PageHead, Card, Btn, Badge, Loading } from "@/components/ui/primitives";
+import { PageHead, Card, Btn, BtnLink, Badge, Loading } from "@/components/ui/primitives";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { ViewFade } from "@/components/ui/ViewFade";
 import { useToast } from "@/components/ui/Toast";
@@ -55,7 +55,7 @@ import {
 } from "@/lib/ai-site-images";
 import { assignPhotos, type PhotoDraft } from "@/lib/ai-site-photos";
 import { remapImages } from "@/lib/ai-site-edit";
-import { Field, api, checkCls, hintCls, isHex, labelCls, timeLeftLabel, ttlLabel, useReducedMotion } from "./ai-site/shared";
+import { Field, api, checkCls, chipCls, swatchTileCls, ON_MIST, hintCls, isHex, labelCls, timeLeftLabel, ttlLabel, useReducedMotion } from "./ai-site/shared";
 import { PreviewFrame } from "./ai-site/ScaledFrame";
 import { PaletteEditor } from "./ai-site/PaletteEditor";
 import { PhotoPool } from "./ai-site/PhotoPool";
@@ -1003,7 +1003,7 @@ export function AiSiteView() {
 
   const tokenMasked = (
     <>
-      <div className="flex items-center gap-3 rounded-[14px] bg-[var(--pill-bg)] px-3.5 py-2">
+      <div className={cn("flex items-center gap-3 rounded-[14px] bg-[var(--pill-bg)] px-3.5 py-2", ON_MIST)}>
         <KeyRound size={14} className="shrink-0" aria-hidden />
         <span className="mono min-w-0 flex-1 truncate text-[13px]">{keyStatus.masked}</span>
         <Btn onClick={() => setEditingKey(true)}>Ganti</Btn>
@@ -1075,14 +1075,9 @@ export function AiSiteView() {
         />
         <div className="flex flex-wrap gap-1.5">
           {editSuggestions(content.kind).map((t) => (
-            <button
-              key={t}
-              type="button"
-              onClick={() => { setEditText(t); editRef.current?.focus(); }}
-              className="pill min-h-[36px] px-3 py-2 text-[12.5px]"
-            >
+            <Btn key={t} onClick={() => { setEditText(t); editRef.current?.focus(); }} className="whitespace-normal text-left">
               {t}
-            </button>
+            </Btn>
           ))}
         </div>
         <Btn
@@ -1130,23 +1125,13 @@ export function AiSiteView() {
               className="input-solid mono h-11 w-full px-3.5 text-[13px] text-text"
             />
             <div className="flex flex-wrap gap-2">
-              <a
-                href={published.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn-primary inline-flex min-h-[40px] items-center gap-1.5 whitespace-nowrap px-3.5 py-1.5 text-[13px] font-medium"
-              >
+              <BtnLink variant="primary" href={published.url} target="_blank" rel="noopener noreferrer">
                 <ExternalLink size={13} aria-hidden /> Buka website<span className="sr-only"> (tab baru)</span>
-              </a>
+              </BtnLink>
               {shopActive && (
-                <a
-                  href={`${published.url}#kelola`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="pill inline-flex min-h-[40px] items-center gap-1.5 whitespace-nowrap px-3.5 py-1.5 text-[13px] font-medium"
-                >
+                <BtnLink href={`${published.url}#kelola`} target="_blank" rel="noopener noreferrer">
                   <Pencil size={13} aria-hidden /> Mode kelola<span className="sr-only"> (tab baru)</span>
-                </a>
+                </BtnLink>
               )}
               <Btn onClick={() => void copyText(published.url, "Link disalin.")}>
                 <Copy size={13} /> Salin link
@@ -1244,11 +1229,11 @@ export function AiSiteView() {
           </div>
         )}
 
-        <div className={cn("relative rounded-2xl bg-[var(--pill-bg)] p-2 sm:p-3", busy === "ai" && "opacity-60 transition-opacity motion-reduce:transition-none")} aria-busy={busy === "ai" || undefined}>
+        <div className={cn("relative rounded-[14px] bg-[var(--pill-bg)] p-2 sm:p-3", busy === "ai" && "opacity-60 transition-opacity motion-reduce:transition-none")} aria-busy={busy === "ai" || undefined}>
           <PreviewFrame html={html} device={device} />
           {busy === "ai" && (
             <div className="absolute inset-0 grid place-items-center" aria-hidden>
-              <span className="notice notice-info inline-flex items-center gap-2 !px-4 !py-2.5 text-[13px] font-medium shadow-lg">
+              <span className="notice notice-info inline-flex items-center gap-2 !px-4 !py-2.5 text-[13px] font-medium [box-shadow:var(--surface-shadow)]">
                 <Loader2 size={15} className="animate-spin motion-reduce:animate-none" /> AI sedang merancang…
               </span>
             </div>
@@ -1315,14 +1300,9 @@ export function AiSiteView() {
                 </div>
                 <div className="mt-2.5 flex flex-wrap gap-1.5">
                   {EXAMPLES.map((ex) => (
-                    <button
-                      key={ex.label}
-                      type="button"
-                      onClick={() => { setPrompt(ex.text); promptRef.current?.focus(); }}
-                      className="pill min-h-[36px] px-3 py-2 text-[12.5px]"
-                    >
+                    <Btn key={ex.label} onClick={() => { setPrompt(ex.text); promptRef.current?.focus(); }} className="whitespace-normal text-left">
                       {ex.label}
-                    </button>
+                    </Btn>
                   ))}
                 </div>
               </div>
@@ -1463,7 +1443,7 @@ export function AiSiteView() {
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <span className="text-[13px] font-medium text-text-muted">Template</span>
                     {template && (
-                      <button type="button" onClick={() => setTemplate(null)} className="min-h-[32px] text-[12.5px] text-text-muted underline">
+                      <button type="button" onClick={() => setTemplate(null)} className="text-[12.5px] text-text-muted underline max-md:min-h-[40px]">
                         {content ? "Ikuti saran AI" : "Atur ulang"}
                       </button>
                     )}
@@ -1475,14 +1455,14 @@ export function AiSiteView() {
                     palette={palette}
                     onPick={setTemplate}
                   />
-                  <p className={`mt-2.5 rounded-2xl bg-[var(--pill-bg)] px-3.5 py-2.5 leading-relaxed ${hintCls}`}>
+                  <p className={`mt-2.5 rounded-[14px] bg-[var(--pill-bg)] px-3.5 py-2.5 leading-relaxed ${hintCls}`}>
                     <b className="font-semibold text-text">{tpl.name}</b> · {tpl.desc}
                   </p>
                 </div>
               )}
 
               {tampilanMode === "manual" ? (
-                <div className="rounded-2xl bg-[var(--pill-bg)] p-3.5">
+                <div className={cn("rounded-[14px] bg-[var(--pill-bg)] p-3.5", ON_MIST)}>
                   <div className="mb-3 text-[13px] font-medium text-text-muted">Tata letak</div>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <Field label="Bagian paling atas" htmlFor="ai-hero" hint="Judul besar dan tombol di awal halaman.">
@@ -1512,8 +1492,8 @@ export function AiSiteView() {
                   </div>
                 </div>
               ) : (
-                <details className="group rounded-2xl bg-[var(--pill-bg)]">
-                  <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-3 rounded-2xl px-3.5 py-2.5 text-[13.5px] font-medium [&::-webkit-details-marker]:hidden">
+                <details className={cn("group rounded-[14px] bg-[var(--pill-bg)]", ON_MIST)}>
+                  <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-3 rounded-[14px] px-3.5 py-2.5 text-[13.5px] font-medium [&::-webkit-details-marker]:hidden">
                     <span className="min-w-0">
                       Atur tata letak <span className="font-normal text-text-muted">· {heroName}, {featName}</span>
                     </span>
@@ -1560,7 +1540,7 @@ export function AiSiteView() {
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <span className="text-[13px] font-medium text-text-muted">Warna latar</span>
                     {bgOpt && (
-                      <button type="button" onClick={() => setBgOpt(null)} className="min-h-[32px] text-[12.5px] text-text-muted underline">
+                      <button type="button" onClick={() => setBgOpt(null)} className="text-[12.5px] text-text-muted underline max-md:min-h-[40px]">
                         Bawaan template
                       </button>
                     )}
@@ -1575,18 +1555,13 @@ export function AiSiteView() {
                         aria-label={p.name}
                         title={p.name}
                         onClick={() => setBgOpt(p.hex)}
-                        className={cn(
-                          "h-10 w-10 shrink-0 rounded-[14px] ring-1 ring-[var(--line-strong)] transition",
-                          bgEff.toLowerCase() === p.hex && "ring-2 ring-[var(--ring)] ring-offset-2",
-                        )}
-                        style={{ background: p.hex }}
-                      />
+                        className={swatchTileCls(bgEff.toLowerCase() === p.hex)}
+                      >
+                        <span aria-hidden className="h-7 w-7 rounded-[10px]" style={{ background: p.hex }} />
+                      </button>
                     ))}
-                    <label
-                      className="relative h-10 w-10 shrink-0 cursor-pointer rounded-[14px] ring-1 ring-[var(--line-strong)] focus-within:ring-2 focus-within:ring-[var(--ring)] focus-within:ring-offset-2"
-                      style={{ background: bgEff }}
-                      title="Warna lain"
-                    >
+                    <label className={swatchTileCls(false)} title="Warna lain">
+                      <span aria-hidden className="h-7 w-7 rounded-[10px]" style={{ background: bgEff }} />
                       <input
                         type="color"
                         value={bgEff}
@@ -1607,7 +1582,7 @@ export function AiSiteView() {
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <span className="text-[13px] font-medium text-text-muted">Gaya desain</span>
                     {styleOpt && (
-                      <button type="button" onClick={() => setStyleOpt(null)} className="min-h-[32px] text-[12.5px] text-text-muted underline">
+                      <button type="button" onClick={() => setStyleOpt(null)} className="text-[12.5px] text-text-muted underline max-md:min-h-[40px]">
                         Ikuti Template
                       </button>
                     )}
@@ -1621,7 +1596,7 @@ export function AiSiteView() {
                     preview={previewContent}
                     onPick={setStyleOpt}
                   />
-                  <p className={`mt-2.5 rounded-2xl bg-[var(--pill-bg)] px-3.5 py-2.5 leading-relaxed ${hintCls}`}>
+                  <p className={`mt-2.5 rounded-[14px] bg-[var(--pill-bg)] px-3.5 py-2.5 leading-relaxed ${hintCls}`}>
                     {styleOpt ? (
                       <>
                         <b className="font-semibold text-text">{DESIGN_STYLES.find((s) => s.id === styleOpt)?.name}</b> ·{" "}
@@ -1639,7 +1614,7 @@ export function AiSiteView() {
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <span className="text-[13px] font-medium text-text-muted">Hiasan</span>
                     {decorOpt && (
-                      <button type="button" onClick={() => setDecorOpt(null)} className="min-h-[32px] text-[12.5px] text-text-muted underline">
+                      <button type="button" onClick={() => setDecorOpt(null)} className="text-[12.5px] text-text-muted underline max-md:min-h-[40px]">
                         Ikuti Gaya desain
                       </button>
                     )}
@@ -1653,12 +1628,7 @@ export function AiSiteView() {
                         aria-checked={decorOpt === d.id}
                         onClick={() => setDecorOpt(d.id)}
                         title={d.desc}
-                        className={cn(
-                          "min-h-[34px] rounded-full border px-3.5 text-[13px] font-medium transition",
-                          decorOpt === d.id
-                            ? "border-[var(--ring)] bg-tone-lilac"
-                            : "border-[var(--line)] bg-[var(--pill-bg)] text-text-muted hover:bg-[var(--card-hover)]",
-                        )}
+                        className={chipCls(decorOpt === d.id, true)}
                       >
                         {d.name}
                       </button>
@@ -1671,7 +1641,7 @@ export function AiSiteView() {
               )}
 
               {tampilanMode === "manual" && (
-                <div className="rounded-2xl bg-[var(--pill-bg)] p-3.5">
+                <div className={cn("rounded-[14px] bg-[var(--pill-bg)] p-3.5", ON_MIST)}>
                   <div className="mb-3 text-[13px] font-medium text-text-muted">Huruf</div>
                   <FontRolePicker
                     title={fontsOpt.title}
@@ -1692,7 +1662,7 @@ export function AiSiteView() {
               )}
 
               {content && hasShop(content) && (
-                <label className="flex min-h-[44px] items-start gap-2.5 rounded-2xl bg-[var(--pill-bg)] p-3.5 text-[13.5px]">
+                <label className="flex min-h-[44px] items-start gap-2.5 rounded-[14px] bg-[var(--pill-bg)] p-3.5 text-[13.5px]">
                   <input type="checkbox" checked={shopOn} onChange={(e) => setShopOn(e.target.checked)} className={checkCls} />
                   <span className="min-w-0">
                     <span className="flex items-center gap-1.5 font-medium"><Store size={14} className="shrink-0" aria-hidden /> Katalog, keranjang, dan mode kelola</span>
@@ -1721,7 +1691,7 @@ export function AiSiteView() {
                 ))}
               </ul>
               {imageSlots.length > 6 && (
-                <button type="button" onClick={() => setShowAllImgs((v) => !v)} aria-expanded={showAllImgs} className="min-h-[36px] text-[12.5px] text-text-muted underline">
+                <button type="button" onClick={() => setShowAllImgs((v) => !v)} aria-expanded={showAllImgs} className="text-[12.5px] text-text-muted underline max-md:min-h-[40px]">
                   {showAllImgs ? "Tampilkan lebih sedikit" : `Tampilkan semua (${imageSlots.length})`}
                 </button>
               )}
@@ -1795,13 +1765,13 @@ export function AiSiteView() {
 
       {/* Layar sempit: jalan pintas kembali ke pratinjau saat sedang mengatur di bawah. */}
       {content && !previewVisible && (
-        <button
-          type="button"
+        <Btn
+          variant="primary"
           onClick={goPreview}
-          className="btn-primary fixed bottom-24 right-4 z-40 inline-flex min-h-[44px] items-center gap-2 px-4 text-[13px] font-semibold shadow-lg xl:hidden"
+          className="fixed bottom-24 right-[var(--edge)] z-40 [box-shadow:var(--surface-shadow)] xl:hidden"
         >
           <Eye size={15} aria-hidden /> Lihat pratinjau
-        </button>
+        </Btn>
       )}
     </ViewFade>
   );

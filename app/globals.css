@@ -389,14 +389,14 @@ textarea {
   }
   /* Tombol sekunder: isian Mist, tanpa garis */
   .pill {
-    background: var(--pill-bg);
+    background: var(--tile-fill, var(--pill-bg));
     border: 0;
     border-radius: 9999px;
     color: var(--text);
     transition: var(--theme-transition), background-color 160ms ease, transform 160ms var(--ease-out), filter 160ms ease;
   }
   .pill:hover {
-    background: color-mix(in srgb, var(--accent) 16%, var(--pill-bg));
+    background: color-mix(in srgb, var(--accent) 16%, var(--tile-fill, var(--pill-bg)));
   }
   .pill:active {
     transform: scale(0.97);

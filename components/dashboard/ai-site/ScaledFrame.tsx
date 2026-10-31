@@ -119,7 +119,7 @@ export function PreviewFrame({ html, device }: { html: string; device: "desktop"
           vh={vh}
           fitHeight={fs ? Math.max(240, winH - 56) : undefined}
           sandbox="allow-scripts allow-downloads allow-popups allow-popups-to-escape-sandbox"
-          className={fs ? undefined : "rounded-xl ring-1 ring-[var(--line)]"}
+          className={fs ? undefined : "rounded-xl"}
         />
       </div>
       {!fs && canFs && (

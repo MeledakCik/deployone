@@ -110,6 +110,33 @@ export function Badge({ tone = "neutral", dot, children }: { tone?: BadgeTone; d
 
 export type BtnVariant = "primary" | "ghost" | "danger" | "destructive";
 
+const BTN_BASE =
+  "inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 text-[12.5px] font-medium active:scale-[0.97] max-md:min-h-[40px] max-md:px-4 disabled:cursor-not-allowed disabled:opacity-50";
+
+function btnVariantCls(variant: BtnVariant): string {
+  return variant === "primary"
+    ? "btn-primary"
+    : variant === "destructive"
+      ? "bg-bad-solid text-white transition duration-150 hover:brightness-110"
+      : variant === "danger"
+        ? "pill text-bad-fg hover:!bg-bad-bg"
+        : "pill";
+}
+
+/** Tautan yang tampil persis seperti <Btn> (ukuran, tinggi sentuh, varian). Untuk <a>, bukan <button>. */
+export function BtnLink({
+  variant = "ghost",
+  className,
+  children,
+  ...rest
+}: React.AnchorHTMLAttributes<HTMLAnchorElement> & { variant?: BtnVariant }) {
+  return (
+    <a {...rest} className={cn(BTN_BASE, btnVariantCls(variant), className)}>
+      {children}
+    </a>
+  );
+}
+
 /**
  * - primary: aksi utama di satu area.
  * - ghost: aksi biasa (isian Mist).
@@ -137,16 +164,7 @@ export function Btn({
   /** Dipanggil bila tombol soft-disabled ditekan (bukan saat busy), mis. untuk menjelaskan alasannya. */
   onDisabledClick?: () => void;
 }) {
-  const base =
-    "inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 text-[12.5px] font-medium active:scale-[0.97] max-md:min-h-[40px] max-md:px-4 disabled:cursor-not-allowed disabled:opacity-50";
-  const v =
-    variant === "primary"
-      ? "btn-primary"
-      : variant === "destructive"
-        ? "bg-bad-solid text-white transition duration-150 hover:brightness-110"
-        : variant === "danger"
-          ? "pill text-bad-fg hover:!bg-bad-bg"
-          : "pill";
+  const v = btnVariantCls(variant);
   const off = !!(rest.disabled || busy);
   return (
     <button
@@ -163,7 +181,7 @@ export function Btn({
         }
         onClick?.(e);
       }}
-      className={cn(base, v, softDisabled && "aria-disabled:cursor-not-allowed aria-disabled:opacity-50", className)}
+      className={cn(BTN_BASE, v, softDisabled && "aria-disabled:cursor-not-allowed aria-disabled:opacity-50", className)}
     >
       {busy && <Loader2 size={13} className="animate-spin motion-reduce:animate-none" aria-hidden />}
       {children}

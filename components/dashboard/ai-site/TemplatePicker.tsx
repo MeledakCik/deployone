@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Check } from "lucide-react";
+import { SELECTED_FILL } from "./shared";
 import { cn } from "@/lib/utils";
 import { TEMPLATES, defaultPalette, renderSite, type RenderOpts, type SiteContent, type TemplateId } from "@/lib/ai-site-templates";
 import { ScaledFrame } from "./ScaledFrame";
@@ -34,7 +35,7 @@ function TemplateThumb({ build, swatch, name }: { build: () => string; swatch: [
   const html = React.useMemo(() => (seen ? build() : null), [seen, build]);
 
   return (
-    <div ref={ref} className="h-[86px] w-full overflow-hidden rounded-lg ring-1 ring-[var(--line)]" aria-hidden>
+    <div ref={ref} className="h-[86px] w-full overflow-hidden rounded-lg" aria-hidden>
       {html ? (
         <ScaledFrame html={html} title={`Contoh tampilan ${name}`} vw={1100} fitHeight={86} sandbox="" interactive={false} />
       ) : (
@@ -96,8 +97,8 @@ function TemplateCard({
   return (
     <div
       className={cn(
-        "relative flex min-w-0 flex-col gap-1.5 rounded-2xl p-2.5 transition",
-        selected ? "bg-tone-lilac ring-2 ring-[var(--ring)]" : "bg-[var(--pill-bg)] hover:bg-[var(--card-hover)]",
+        "relative flex min-w-0 flex-col gap-1.5 rounded-[14px] p-2.5 transition",
+        selected ? SELECTED_FILL : "bg-[var(--tile-fill,var(--pill-bg))] hover:bg-[var(--card-hover)]",
       )}
     >
       <TemplateThumb build={build} swatch={t.swatch} name={t.name} />
@@ -106,7 +107,7 @@ function TemplateCard({
         <span className="block min-w-0 truncate text-[13px] font-semibold">{t.name}</span>
       </span>
       {suggested ? (
-        <span className="block truncate text-[12px] font-medium text-lav-text">Saran AI</span>
+        <span className={cn("block truncate text-[12px] font-medium", selected ? "opacity-90" : "text-lav-text")}>Saran AI</span>
       ) : (
         <span aria-hidden className="block h-[16px]" />
       )}
@@ -115,7 +116,7 @@ function TemplateCard({
         onClick={() => onPick(t.id)}
         aria-pressed={selected}
         aria-label={`${t.name}${suggested ? ", saran AI" : ""}. ${t.desc}`}
-        className="absolute inset-0 rounded-2xl"
+        className="absolute inset-0 rounded-[14px]"
       />
     </div>
   );

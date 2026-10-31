@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Check } from "lucide-react";
+import { SELECTED_FILL } from "./shared";
 import { cn } from "@/lib/utils";
 import { DESIGN_STYLES, renderSite, type DesignStyleId, type RenderOpts, type SiteContent, type TemplateId } from "@/lib/ai-site-templates";
 import { ScaledFrame } from "./ScaledFrame";
@@ -34,11 +35,11 @@ function StyleThumb({ build, name }: { build: () => string; name: string }) {
   const html = React.useMemo(() => (seen ? build() : null), [seen, build]);
 
   return (
-    <div ref={ref} className="h-[86px] w-full overflow-hidden rounded-lg ring-1 ring-[var(--line)]" aria-hidden>
+    <div ref={ref} className="h-[86px] w-full overflow-hidden rounded-lg" aria-hidden>
       {html ? (
         <ScaledFrame html={html} title={`Contoh gaya ${name}`} vw={1100} fitHeight={86} sandbox="" interactive={false} />
       ) : (
-        <span className="flex h-full w-full items-center justify-center bg-[var(--pill-bg)] text-[11px] text-text-faint">{name}</span>
+        <span className="flex h-full w-full items-center justify-center bg-[var(--pill-bg)] text-[12px] text-text-faint">{name}</span>
       )}
     </div>
   );
@@ -99,8 +100,8 @@ function StyleCard({
   return (
     <div
       className={cn(
-        "relative flex min-w-0 flex-col gap-1.5 rounded-2xl p-2.5 transition",
-        selected ? "bg-tone-lilac ring-2 ring-[var(--ring)]" : "bg-[var(--pill-bg)] hover:bg-[var(--card-hover)]",
+        "relative flex min-w-0 flex-col gap-1.5 rounded-[14px] p-2.5 transition",
+        selected ? SELECTED_FILL : "bg-[var(--tile-fill,var(--pill-bg))] hover:bg-[var(--card-hover)]",
       )}
     >
       <StyleThumb build={build} name={s.name} />
@@ -108,13 +109,13 @@ function StyleCard({
         {selected && <Check size={14} className="shrink-0" aria-hidden />}
         <span className="block min-w-0 truncate text-[13px] font-semibold">{s.name}</span>
       </span>
-      <span className="block text-[12px] leading-snug text-text-muted">{s.desc}</span>
+      <span className={cn("block text-[12px] leading-snug", selected ? "opacity-90" : "text-text-muted")}>{s.desc}</span>
       <button
         type="button"
         onClick={() => onPick(s.id)}
         aria-pressed={selected}
         aria-label={`${s.name}. ${s.desc}`}
-        className="absolute inset-0 rounded-2xl"
+        className="absolute inset-0 rounded-[14px]"
       />
     </div>
   );

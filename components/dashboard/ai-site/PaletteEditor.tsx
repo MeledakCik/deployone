@@ -4,7 +4,7 @@ import * as React from "react";
 import { Plus, RefreshCw, X, TriangleAlert } from "lucide-react";
 import { Btn } from "@/components/ui/primitives";
 import { MAX_PALETTE, contrastRatio } from "@/lib/ai-site-templates";
-import { hintCls, isHex, labelCls } from "./shared";
+import { hintCls, isHex, labelCls, swatchTileCls } from "./shared";
 
 /** Pasangan warna siap pakai: [utama, kedua] beserta namanya (dibaca pembaca layar, bukan kode hex). */
 const PALETTE_PRESETS: { name: string; colors: [string, string] }[] = [
@@ -97,10 +97,8 @@ export function PaletteEditor({
           const rowId = `${uid}-${i}`;
           return (
             <li key={i} className="flex flex-wrap items-center gap-x-2.5 gap-y-2">
-              <label
-                className="relative h-11 w-11 shrink-0 cursor-pointer rounded-[14px] ring-1 ring-[var(--line-strong)] focus-within:ring-2 focus-within:ring-[var(--ring)] focus-within:ring-offset-2"
-                style={{ background: c }}
-              >
+              <label className={swatchTileCls(false, "h-11 w-11")}>
+                <span aria-hidden className="h-8 w-8 rounded-[10px]" style={{ background: c }} />
                 <input
                   type="color"
                   value={c}
@@ -167,8 +165,8 @@ export function PaletteEditor({
               onClick={() => onChange([...p.colors, ...colors.slice(2)])}
               className="pill inline-flex min-h-[40px] items-center gap-1 px-3"
             >
-              <span className="h-4 w-4 rounded-full ring-1 ring-[var(--line-strong)]" style={{ background: p.colors[0] }} />
-              <span className="h-4 w-4 rounded-full ring-1 ring-[var(--line-strong)]" style={{ background: p.colors[1] }} />
+              <span className="h-4 w-4 rounded-full " style={{ background: p.colors[0] }} />
+              <span className="h-4 w-4 rounded-full " style={{ background: p.colors[1] }} />
             </button>
           ))}
         </div>
