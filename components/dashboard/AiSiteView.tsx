@@ -18,6 +18,8 @@ import {
   HERO_LAYOUTS,
   FEAT_LAYOUTS,
   DESIGN_STYLES,
+  DECOR_OPTIONS,
+  BG_PRESETS,
   KIND_LABEL,
   KIND_OPTIONS,
   MAX_PALETTE,
@@ -33,7 +35,10 @@ import {
   type HeroLayout,
   type FeatLayout,
   type DesignStyleId,
+  type DecorId,
   type FontRoleId,
+  type FontWeightId,
+  FONT_WEIGHTS,
   type RenderOpts,
 } from "@/lib/ai-site-templates";
 import { downloadZip, downloadHtml, downloadJson, copyHtml } from "@/lib/ai-site-export";
@@ -106,6 +111,8 @@ interface Draft {
   heroOpt: unknown;
   featOpt: unknown;
   styleOpt: unknown;
+  decorOpt: unknown;
+  bgOpt: unknown;
   fontsOpt: unknown;
   tampilanMode: unknown;
   shopOn: boolean;
@@ -128,21 +135,34 @@ const validTpl = (v: unknown): v is TemplateId => TEMPLATES.some((t) => t.id ===
 const validHero = (v: unknown): v is HeroLayout => HERO_LAYOUTS.some((l) => l.id === v);
 const validFeat = (v: unknown): v is FeatLayout => FEAT_LAYOUTS.some((l) => l.id === v);
 const validStyle = (v: unknown): v is DesignStyleId => DESIGN_STYLES.some((s) => s.id === v);
+const validDecor = (v: unknown): v is DecorId => DECOR_OPTIONS.some((d) => d.id === v);
+const validBg = (v: unknown): v is string => typeof v === "string" && isHex(v);
 const FONT_ROLE_IDS: FontRoleId[] = ["sans", "serif", "slab", "mono", "display"];
 const validFontRole = (v: unknown): v is FontRoleId => FONT_ROLE_IDS.includes(v as FontRoleId);
-interface FontRoles {
-  title: FontRoleId | null;
-  sub: FontRoleId | null;
-  body: FontRoleId | null;
+const FONT_WEIGHT_IDS: FontWeightId[] = FONT_WEIGHTS.map((w) => w.id);
+const validFontWeight = (v: unknown): v is FontWeightId => FONT_WEIGHT_IDS.includes(v as FontWeightId);
+interface RoleSetting {
+  family: FontRoleId | null;
+  weight: FontWeightId | null;
 }
-const EMPTY_FONTS: FontRoles = { title: null, sub: null, body: null };
+interface FontRoles {
+  title: RoleSetting;
+  sub: RoleSetting;
+  body: RoleSetting;
+}
+const EMPTY_ROLE: RoleSetting = { family: null, weight: null };
+const EMPTY_FONTS: FontRoles = { title: EMPTY_ROLE, sub: EMPTY_ROLE, body: EMPTY_ROLE };
+const validRoleSetting = (v: unknown): v is RoleSetting =>
+  !!v &&
+  typeof v === "object" &&
+  (v as RoleSetting).family !== undefined &&
+  (v as RoleSetting).weight !== undefined &&
+  ((v as RoleSetting).family === null || validFontRole((v as RoleSetting).family)) &&
+  ((v as RoleSetting).weight === null || validFontWeight((v as RoleSetting).weight));
 const validFonts = (v: unknown): v is FontRoles =>
   !!v &&
   typeof v === "object" &&
-  (v as FontRoles).title !== undefined &&
-  (v as FontRoles).sub !== undefined &&
-  (v as FontRoles).body !== undefined &&
-  (["title", "sub", "body"] as const).every((k) => (v as FontRoles)[k] === null || validFontRole((v as FontRoles)[k]));
+  (["title", "sub", "body"] as const).every((k) => validRoleSetting((v as FontRoles)[k]));
 const validPalette = (v: unknown): v is string[] =>
   Array.isArray(v) && v.length >= 2 && v.length <= MAX_PALETTE && v.every((x) => typeof x === "string" && isHex(x));
 
@@ -155,6 +175,8 @@ interface Snapshot {
   heroOpt: HeroLayout | null;
   featOpt: FeatLayout | null;
   styleOpt: DesignStyleId | null;
+  decorOpt: DecorId | null;
+  bgOpt: string | null;
   fontsOpt: FontRoles;
   variant: number;
   shopOn: boolean;
@@ -232,10 +254,14 @@ export function AiSiteView() {
   const [featOpt, setFeatOpt] = React.useState<FeatLayout | null>(null);
   // null = ikut bentuk bawaan Template; nilai terisi = gerakan desain pilihan pengguna (mode "Atur manual")
   const [styleOpt, setStyleOpt] = React.useState<DesignStyleId | null>(null);
+  // null = ikut hiasan bawaan Gaya desain/Template. Hiasan murni dekoratif di belakang judul hero.
+  const [decorOpt, setDecorOpt] = React.useState<DecorId | null>(null);
+  // null = ikut warna latar bawaan Template; nilai terisi = latar kustom (mode "Atur manual")
+  const [bgOpt, setBgOpt] = React.useState<string | null>(null);
   // null per peran = ikut Gaya desain/Template (Sub-judul: ikut Judul lebih dulu, lihat lib/ai-site-templates.ts)
   const [fontsOpt, setFontsOpt] = React.useState<FontRoles>(EMPTY_FONTS);
   // Cara menampilkan kartu "2. Tampilan": "ai" = ringkas (Template + Warna, tata letak disembunyikan),
-  // "manual" = Template, Tata letak, Warna, Gaya desain, dan Huruf sejajar dan terbuka semua.
+  // "manual" = Template, Tata letak, Warna, Gaya desain, Hiasan, dan Huruf sejajar dan terbuka semua.
   const [tampilanMode, setTampilanMode] = React.useState<"ai" | "manual">("ai");
   const [shopOn, setShopOn] = React.useState(true);
   const [device, setDevice] = React.useState<"desktop" | "mobile">("desktop");
@@ -313,6 +339,8 @@ export function AiSiteView() {
             if (validHero(d.heroOpt)) setHeroOpt(d.heroOpt);
             if (validFeat(d.featOpt)) setFeatOpt(d.featOpt);
             if (validStyle(d.styleOpt)) setStyleOpt(d.styleOpt);
+            if (validDecor(d.decorOpt)) setDecorOpt(d.decorOpt);
+            if (validBg(d.bgOpt)) setBgOpt(d.bgOpt);
             if (validFonts(d.fontsOpt)) setFontsOpt(d.fontsOpt);
             if (d.tampilanMode === "ai" || d.tampilanMode === "manual") setTampilanMode(d.tampilanMode);
             if (typeof d.shopOn === "boolean") setShopOn(d.shopOn);
@@ -350,15 +378,23 @@ export function AiSiteView() {
   }, [tplId, template, content?.accent]);
   const colors = palette ?? baseColors;
   const accentEff = colors[0];
+  const bgEff = bgOpt ?? tpl.swatch[0];
   const heroEff = heroOpt ?? content?.hero ?? "center";
   const featEff = featOpt ?? content?.feat ?? "grid";
   const fontsEff = React.useMemo<RenderOpts["fonts"]>(
-    () => ({ title: fontsOpt.title ?? undefined, sub: fontsOpt.sub ?? undefined, body: fontsOpt.body ?? undefined }),
+    () => ({
+      title: { family: fontsOpt.title.family ?? undefined, weight: fontsOpt.title.weight ?? undefined },
+      sub: { family: fontsOpt.sub.family ?? undefined, weight: fontsOpt.sub.weight ?? undefined },
+      body: { family: fontsOpt.body.family ?? undefined, weight: fontsOpt.body.weight ?? undefined },
+    }),
     [fontsOpt],
   );
   const renderOpts = React.useMemo<RenderOpts>(
-    () => ({ hero: heroEff, feat: featEff, shop: shopOn, palette: palette ?? undefined, style: styleOpt ?? undefined, fonts: fontsEff, images }),
-    [heroEff, featEff, shopOn, palette, styleOpt, fontsEff, images],
+    () => ({
+      hero: heroEff, feat: featEff, shop: shopOn, palette: palette ?? undefined,
+      style: styleOpt ?? undefined, decor: decorOpt ?? undefined, bg: bgOpt ?? undefined, fonts: fontsEff, images,
+    }),
+    [heroEff, featEff, shopOn, palette, styleOpt, decorOpt, bgOpt, fontsEff, images],
   );
   const html = React.useMemo(
     () => renderSite(previewContent, tplId, accentEff, renderOpts),
@@ -381,9 +417,14 @@ export function AiSiteView() {
       heroOpt !== null ||
       featOpt !== null ||
       styleOpt !== null ||
-      fontsOpt.title !== null ||
-      fontsOpt.sub !== null ||
-      fontsOpt.body !== null);
+      decorOpt !== null ||
+      bgOpt !== null ||
+      fontsOpt.title.family !== null ||
+      fontsOpt.title.weight !== null ||
+      fontsOpt.sub.family !== null ||
+      fontsOpt.sub.weight !== null ||
+      fontsOpt.body.family !== null ||
+      fontsOpt.body.weight !== null);
   const dirtyMedia = !!content && html !== savedHtml && (Object.keys(images).length > 0 || photos.length > 0);
 
   const noAiMsg = "Jatah gratis hari ini habis. Pasang token Groq di kartu di atas untuk lanjut.";
@@ -415,7 +456,7 @@ export function AiSiteView() {
           return;
         }
         const d: Draft = {
-          v: 1, prompt, kindPick, content, template, palette, heroOpt, featOpt, styleOpt, fontsOpt, tampilanMode, shopOn, variant,
+          v: 1, prompt, kindPick, content, template, palette, heroOpt, featOpt, styleOpt, decorOpt, bgOpt, fontsOpt, tampilanMode, shopOn, variant,
           hadImages: Object.keys(images).length > 0,
         };
         localStorage.setItem(DRAFT_KEY, JSON.stringify(d));
@@ -424,7 +465,7 @@ export function AiSiteView() {
       }
     }, 600);
     return () => window.clearTimeout(t);
-  }, [hydrated, prompt, kindPick, content, template, palette, heroOpt, featOpt, styleOpt, fontsOpt, tampilanMode, shopOn, variant, images]);
+  }, [hydrated, prompt, kindPick, content, template, palette, heroOpt, featOpt, styleOpt, decorOpt, bgOpt, fontsOpt, tampilanMode, shopOn, variant, images]);
 
   // Peringatkan sebelum menutup halaman bila ada gambar/foto yang belum disimpan (tidak ikut draf).
   React.useEffect(() => {
@@ -474,7 +515,7 @@ export function AiSiteView() {
   /* ---------- riwayat / urungkan ---------- */
 
   function snapshot(): Snapshot | null {
-    return content ? { content, images, template, palette, heroOpt, featOpt, styleOpt, fontsOpt, variant, shopOn } : null;
+    return content ? { content, images, template, palette, heroOpt, featOpt, styleOpt, decorOpt, bgOpt, fontsOpt, variant, shopOn } : null;
   }
 
   function pushHistory() {
@@ -493,6 +534,8 @@ export function AiSiteView() {
     setHeroOpt(last.heroOpt);
     setFeatOpt(last.featOpt);
     setStyleOpt(last.styleOpt);
+    setDecorOpt(last.decorOpt);
+    setBgOpt(last.bgOpt);
     setFontsOpt(last.fontsOpt);
     setVariant(last.variant);
     setShopOn(last.shopOn);
@@ -717,6 +760,8 @@ export function AiSiteView() {
         setHeroOpt(null);
         setFeatOpt(null);
         setStyleOpt(null);
+        setDecorOpt(null);
+        setBgOpt(null);
         setFontsOpt(EMPTY_FONTS);
       }
       pendingFocusRef.current = true;
@@ -734,9 +779,15 @@ export function AiSiteView() {
             shop: shopOn,
             palette: pal ?? undefined,
             style: (again ? null : styleOpt) ?? undefined,
+            decor: (again ? null : decorOpt) ?? undefined,
+            bg: (again ? null : bgOpt) ?? undefined,
             fonts: again
               ? undefined
-              : { title: fontsOpt.title ?? undefined, sub: fontsOpt.sub ?? undefined, body: fontsOpt.body ?? undefined },
+              : {
+                  title: { family: fontsOpt.title.family ?? undefined, weight: fontsOpt.title.weight ?? undefined },
+                  sub: { family: fontsOpt.sub.family ?? undefined, weight: fontsOpt.sub.weight ?? undefined },
+                  body: { family: fontsOpt.body.family ?? undefined, weight: fontsOpt.body.weight ?? undefined },
+                },
             images: nextImages,
           }),
         );
@@ -835,6 +886,8 @@ export function AiSiteView() {
     setHeroOpt(null);
     setFeatOpt(null);
     setStyleOpt(null);
+    setDecorOpt(null);
+    setBgOpt(null);
     setFontsOpt(EMPTY_FONTS);
     setTampilanMode("ai");
     setShopOn(true);
@@ -1405,26 +1458,28 @@ export function AiSiteView() {
                   : "Atur gaya, tata letak, warna, dan huruf satu per satu. Pratinjau di samping langsung berubah tiap pilihan diganti."}
               </p>
 
-              <div>
-                <div className="mb-2 flex items-center justify-between gap-2">
-                  <span className="text-[13px] font-medium text-text-muted">Template</span>
-                  {template && (
-                    <button type="button" onClick={() => setTemplate(null)} className="min-h-[32px] text-[12.5px] text-text-muted underline">
-                      {content ? "Ikuti saran AI" : "Atur ulang"}
-                    </button>
-                  )}
+              {tampilanMode === "ai" && (
+                <div>
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <span className="text-[13px] font-medium text-text-muted">Template</span>
+                    {template && (
+                      <button type="button" onClick={() => setTemplate(null)} className="min-h-[32px] text-[12.5px] text-text-muted underline">
+                        {content ? "Ikuti saran AI" : "Atur ulang"}
+                      </button>
+                    )}
+                  </div>
+                  <TemplatePicker
+                    value={tplId}
+                    suggestedId={content && !template ? content.template : null}
+                    preview={previewContent}
+                    palette={palette}
+                    onPick={setTemplate}
+                  />
+                  <p className={`mt-2.5 rounded-2xl bg-[var(--pill-bg)] px-3.5 py-2.5 leading-relaxed ${hintCls}`}>
+                    <b className="font-semibold text-text">{tpl.name}</b> · {tpl.desc}
+                  </p>
                 </div>
-                <TemplatePicker
-                  value={tplId}
-                  suggestedId={content && !template ? content.template : null}
-                  preview={previewContent}
-                  palette={palette}
-                  onPick={setTemplate}
-                />
-                <p className={`mt-2.5 rounded-2xl bg-[var(--pill-bg)] px-3.5 py-2.5 leading-relaxed ${hintCls}`}>
-                  <b className="font-semibold text-text">{tpl.name}</b> · {tpl.desc}
-                </p>
-              </div>
+              )}
 
               {tampilanMode === "manual" ? (
                 <div className="rounded-2xl bg-[var(--pill-bg)] p-3.5">
@@ -1497,8 +1552,55 @@ export function AiSiteView() {
                 <div className="mb-2 flex items-center gap-1.5 text-[13px] font-medium text-text-muted">
                   <Palette size={13} aria-hidden /> Warna
                 </div>
-                <PaletteEditor colors={colors} custom={palette !== null} pageBg={tpl.swatch[0]} onChange={setPalette} onReset={() => setPalette(null)} />
+                <PaletteEditor colors={colors} custom={palette !== null} pageBg={bgEff} onChange={setPalette} onReset={() => setPalette(null)} />
               </div>
+
+              {tampilanMode === "manual" && (
+                <div>
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <span className="text-[13px] font-medium text-text-muted">Warna latar</span>
+                    {bgOpt && (
+                      <button type="button" onClick={() => setBgOpt(null)} className="min-h-[32px] text-[12.5px] text-text-muted underline">
+                        Bawaan template
+                      </button>
+                    )}
+                  </div>
+                  <div role="radiogroup" aria-label="Pilih warna latar" className="flex flex-wrap items-center gap-2">
+                    {BG_PRESETS.map((p) => (
+                      <button
+                        key={p.hex}
+                        type="button"
+                        role="radio"
+                        aria-checked={bgEff.toLowerCase() === p.hex}
+                        aria-label={p.name}
+                        title={p.name}
+                        onClick={() => setBgOpt(p.hex)}
+                        className={cn(
+                          "h-10 w-10 shrink-0 rounded-[14px] ring-1 ring-[var(--line-strong)] transition",
+                          bgEff.toLowerCase() === p.hex && "ring-2 ring-[var(--ring)] ring-offset-2",
+                        )}
+                        style={{ background: p.hex }}
+                      />
+                    ))}
+                    <label
+                      className="relative h-10 w-10 shrink-0 cursor-pointer rounded-[14px] ring-1 ring-[var(--line-strong)] focus-within:ring-2 focus-within:ring-[var(--ring)] focus-within:ring-offset-2"
+                      style={{ background: bgEff }}
+                      title="Warna lain"
+                    >
+                      <input
+                        type="color"
+                        value={bgEff}
+                        aria-label="Pilih warna latar lain"
+                        onChange={(e) => setBgOpt(e.target.value.toLowerCase())}
+                        className="absolute inset-0 h-full w-full cursor-pointer rounded-[14px] opacity-0"
+                      />
+                    </label>
+                  </div>
+                  <p className={`mt-2.5 leading-relaxed ${hintCls}`}>
+                    Teks, kartu, dan garis otomatis disesuaikan supaya tetap terbaca di atas warna latar ini.
+                  </p>
+                </div>
+              )}
 
               {tampilanMode === "manual" && (
                 <div>
@@ -1533,16 +1635,58 @@ export function AiSiteView() {
               )}
 
               {tampilanMode === "manual" && (
+                <div>
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <span className="text-[13px] font-medium text-text-muted">Hiasan</span>
+                    {decorOpt && (
+                      <button type="button" onClick={() => setDecorOpt(null)} className="min-h-[32px] text-[12.5px] text-text-muted underline">
+                        Ikuti Gaya desain
+                      </button>
+                    )}
+                  </div>
+                  <div role="radiogroup" aria-label="Pilih hiasan" className="flex flex-wrap gap-1.5">
+                    {DECOR_OPTIONS.map((d) => (
+                      <button
+                        key={d.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={decorOpt === d.id}
+                        onClick={() => setDecorOpt(d.id)}
+                        title={d.desc}
+                        className={cn(
+                          "min-h-[34px] rounded-full border px-3.5 text-[13px] font-medium transition",
+                          decorOpt === d.id
+                            ? "border-[var(--ring)] bg-tone-lilac"
+                            : "border-[var(--line)] bg-[var(--pill-bg)] text-text-muted hover:bg-[var(--card-hover)]",
+                        )}
+                      >
+                        {d.name}
+                      </button>
+                    ))}
+                  </div>
+                  <p className={`mt-2.5 leading-relaxed ${hintCls}`}>
+                    Hiasan murni di belakang judul, tidak membungkus teks/gambar — aman dipadukan dengan Gaya desain mana pun.
+                  </p>
+                </div>
+              )}
+
+              {tampilanMode === "manual" && (
                 <div className="rounded-2xl bg-[var(--pill-bg)] p-3.5">
                   <div className="mb-3 text-[13px] font-medium text-text-muted">Huruf</div>
                   <FontRolePicker
                     title={fontsOpt.title}
                     sub={fontsOpt.sub}
                     body={fontsOpt.body}
-                    onTitle={(id) => setFontsOpt((f) => ({ ...f, title: id }))}
-                    onSub={(id) => setFontsOpt((f) => ({ ...f, sub: id }))}
-                    onSubFollow={() => setFontsOpt((f) => ({ ...f, sub: null }))}
-                    onBody={(id) => setFontsOpt((f) => ({ ...f, body: id }))}
+                    onTitleFamily={(id) => setFontsOpt((f) => ({ ...f, title: { ...f.title, family: id } }))}
+                    onTitleWeight={(w) => setFontsOpt((f) => ({ ...f, title: { ...f.title, weight: w } }))}
+                    onTitleWeightFollow={() => setFontsOpt((f) => ({ ...f, title: { ...f.title, weight: null } }))}
+                    onSubFamily={(id) => setFontsOpt((f) => ({ ...f, sub: { ...f.sub, family: id } }))}
+                    onSubFamilyFollow={() => setFontsOpt((f) => ({ ...f, sub: { ...f.sub, family: null } }))}
+                    onSubWeight={(w) => setFontsOpt((f) => ({ ...f, sub: { ...f.sub, weight: w } }))}
+                    onSubWeightFollow={() => setFontsOpt((f) => ({ ...f, sub: { ...f.sub, weight: null } }))}
+                    onBodyFamily={(id) => setFontsOpt((f) => ({ ...f, body: { ...f.body, family: id } }))}
+                    onBodyWeight={(w) => setFontsOpt((f) => ({ ...f, body: { ...f.body, weight: w } }))}
+                    onBodyWeightFollow={() => setFontsOpt((f) => ({ ...f, body: { ...f.body, weight: null } }))}
                   />
                 </div>
               )}

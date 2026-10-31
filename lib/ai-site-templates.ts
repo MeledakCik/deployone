@@ -125,6 +125,16 @@ export const KIND_OPTIONS: { id: SiteKind; name: string }[] = [
 
 export const MAX_PALETTE = 6;
 
+/** Latar siap pakai untuk mode "Atur manual" (lepas dari Template). Pengguna tetap bebas pilih warna lain lewat input hex/color-picker — ini cuma titik awal cepat. */
+export const BG_PRESETS: { name: string; hex: string }[] = [
+  { name: "Putih", hex: "#ffffff" },
+  { name: "Krem", hex: "#faf6ee" },
+  { name: "Abu muda", hex: "#f1f3f6" },
+  { name: "Hitam", hex: "#0b0b0f" },
+  { name: "Navy", hex: "#0b1324" },
+  { name: "Cokelat tua", hex: "#1c1410" },
+];
+
 export const TEMPLATES: { id: TemplateId; name: string; desc: string; swatch: [string, string]; accent: string }[] = [
   { id: "bakso", name: "Kuliner Hangat", desc: "Krem & terakota, kartu membulat. Warung, bakso, kuliner", swatch: ["#FFFBF5", "#C2410C"], accent: "#C2410C" },
   { id: "kue", name: "Kue & Dessert", desc: "Persik lembut, pink tua, huruf serif. Bakery, dessert", swatch: ["#FFF7ED", "#BE185D"], accent: "#BE185D" },
@@ -513,6 +523,47 @@ function mixWhite(hex: string, k: number): string {
 /** Isian tipis dari sebuah warna (latar kotak ikon). */
 const tint = (hex: string, dark: boolean): string => `rgba(${rgb(hex)},${dark ? ".24" : ".30"})`;
 
+/**
+ * Turunkan satu set warna permukaan (fg/muted/card/line/navBg/dark) dari satu warna latar bebas pilihan
+ * pengguna (mode "Atur manual", lepas dari Template). Formula ini meniru pola THEMES.bersih (terang) dan
+ * THEMES.gelap (gelap) di atas, supaya latar warna apa pun tetap kontras & terbaca tanpa pengguna perlu
+ * mengatur fg/card/line satu-satu.
+ */
+function surfaceFromBg(bg: string): Partial<Theme> {
+  const dark = relLum(bg) < 0.5;
+  return {
+    bg,
+    fg: dark ? "#f4f6fb" : "#0b1220",
+    muted: dark ? "rgba(244,246,251,.64)" : "rgba(11,18,32,.62)",
+    card: dark ? "rgba(255,255,255,.045)" : "rgba(255,255,255,.75)",
+    line: dark ? "rgba(255,255,255,.09)" : "rgba(11,18,32,.08)",
+    navBg: rgb(bg),
+    dark,
+  };
+}
+
+/**
+ * Markup hiasan hero murni dekoratif (aria-hidden, tanpa konten di dalamnya) untuk 5 hiasan bentuk baru.
+ * "blobs"/"grid"/"orbs"/"none" tidak butuh markup tambahan — sudah ditangani lewat `.glow` di buildCss.
+ */
+function ornamentMarkup(deco: Deco): string {
+  const spans = (n: number) => Array.from({ length: n }, () => `<span class="d"></span>`).join("");
+  switch (deco) {
+    case "dots":
+      return `<div class="orn orn-dots" aria-hidden="true">${spans(6)}</div>`;
+    case "plus":
+      return `<div class="orn orn-plus" aria-hidden="true">${spans(5)}</div>`;
+    case "rings":
+      return `<div class="orn orn-rings" aria-hidden="true">${spans(3)}</div>`;
+    case "triangles":
+      return `<div class="orn orn-triangles" aria-hidden="true">${spans(5)}</div>`;
+    case "scribble":
+      return `<div class="orn orn-scribble" aria-hidden="true"><svg viewBox="0 0 400 120" fill="none"><path d="M4 60 Q60 10 110 60 T220 60 T330 60 T400 40" stroke="var(--a)" stroke-width="3" stroke-linecap="round"/></svg></div>`;
+    default:
+      return "";
+  }
+}
+
 /** Luminans relatif WCAG (0..1) dari warna hex #rrggbb. */
 function relLum(hex: string): number {
   const n = parseInt(hex.slice(1), 16);
@@ -553,7 +604,9 @@ function readable(hex: string, dark: boolean, bg: string = dark ? "#0b0b0b" : "#
   return c;
 }
 
-type Deco = "orbs" | "grid" | "blobs" | "none";
+type Deco = "orbs" | "grid" | "blobs" | "dots" | "plus" | "rings" | "triangles" | "scribble" | "none";
+/** Hiasan murni di belakang judul hero — tidak membungkus konten apa pun, jadi tidak pernah memotong teks/gambar. */
+export type DecorId = Deco;
 
 interface Theme {
   bg: string; fg: string; muted: string;
@@ -562,8 +615,28 @@ interface Theme {
   display: string; body: string; mono: string;
   /** Huruf sub-judul (h2/h3: judul bagian, judul kartu). Kosong = ikut `display`. */
   sub?: string;
-  headWeight: number; upper: boolean; gradientHead: boolean; brutal: boolean; dark: boolean;
+  /** Ketebalan Judul (h1 hero, brand, kutipan besar, dst). */
+  headWeight: number;
+  /** Ketebalan Sub-judul (h2, h3, judul kartu). Kosong = ikut headWeight. */
+  subWeight?: number;
+  /** Ketebalan teks Isi (body/paragraf). Kosong = 400 (reguler). */
+  bodyWeight?: number;
+  upper: boolean; gradientHead: boolean; brutal: boolean; dark: boolean;
   deco: Deco; pill: string;
+  /** Tebal garis tepi kartu/nav/tombol dalam px (dipakai saat `brutal` mati). Kosong = 1px. */
+  borderW?: number;
+  /** Pengali ukuran judul hero & judul bagian (h1/h2). 1 = bawaan. Dipakai Gaya desain untuk bikin karakter beda jauh (lebih besar/kecil), bukan cuma beda bentuk. */
+  heroScale?: number;
+  /** Letter-spacing judul hero & judul bagian. Kosong = ikut aturan bawaan (serif rapat, sans agak rapat). */
+  tracking?: string;
+  /** Lebar maksimum kolom konten (`.wrap`) dalam px. Kosong = 1120. Lebih sempit = editorial/minimalis, lebih lebar = lega/teknis. */
+  maxWidth?: number;
+  /** Jarak vertikal antar section (clamp CSS). Kosong = clamp(56px,8vw,112px). */
+  sectionGap?: string;
+  /** Jarak antar kartu di grid/items/steps/bento. Kosong = 18px. */
+  gridGap?: string;
+  /** Padding dalam kartu (`.card`). Kosong = 26px. */
+  cardPad?: string;
   /** Warna aksen kedua (palet kurasi): latar kotak ikon & sorot hero. */
   acc2?: string;
   /** Latar kotak ikon (lingkaran 40px). Kosong = aksen utama transparan. */
@@ -592,6 +665,17 @@ export const FONT_ROLES: { id: FontRoleId; name: string; desc: string; stack: st
   { id: "display", name: "Display Tebal", desc: "Besar, tebal, menonjol — Arial Black/Impact.", stack: DISPLAY },
 ];
 
+/** Ketebalan (variable font weight) untuk mode "Atur manual" — Judul, Sub-judul, dan Isi masing-masing bebas pilih sendiri, lepas dari jenis fontnya. */
+export type FontWeightId = 400 | 500 | 600 | 700 | 800 | 900;
+export const FONT_WEIGHTS: { id: FontWeightId; name: string }[] = [
+  { id: 400, name: "Reguler" },
+  { id: 500, name: "Medium" },
+  { id: 600, name: "Semibold" },
+  { id: 700, name: "Tebal" },
+  { id: 800, name: "Ekstra Tebal" },
+  { id: 900, name: "Hitam" },
+];
+
 /**
  * Gaya desain (gerakan visual) untuk mode "Atur manual". Independen dari Template: cuma menimpa
  * bentuk/bayangan/dekorasi di atas warna Template/Warna yang sedang aktif, warna & huruf tidak disentuh.
@@ -602,27 +686,60 @@ export type DesignStyleId =
   | "brutalism" | "neo-brutalism" | "swiss" | "bauhaus" | "y2k"
   | "glassmorphism" | "neumorphism" | "futurism" | "minimalist" | "experimental";
 
-export const DESIGN_STYLES: { id: DesignStyleId; name: string; desc: string; patch: Partial<Theme> }[] = [
-  { id: "brutalism", name: "Brutalism", desc: "Mentah: sudut tajam, garis tebal, tanpa bayangan halus.",
-    patch: { radius: "0px", pill: "0px", shadow: "none", brutal: true, glass: false, noise: false, deco: "none", gradientHead: false, upper: true, headWeight: 900 } },
-  { id: "neo-brutalism", name: "Neo-Brutalism", desc: "Brutalism yang lebih ramah: warna cerah, bayangan kotak geser, sudut membulat.",
-    patch: { radius: "14px", pill: "999px", shadow: "6px 6px 0 #0a0a0a", brutal: true, glass: false, noise: false, deco: "none", gradientHead: false, upper: false, headWeight: 900 } },
-  { id: "swiss", name: "Swiss / Grid", desc: "Grid ketat, nyaris tanpa hiasan, tipografi jadi penekanan utama.",
-    patch: { radius: "2px", pill: "2px", shadow: "none", brutal: false, glass: false, noise: false, deco: "none", gradientHead: false, upper: false, headWeight: 700 } },
-  { id: "bauhaus", name: "Bauhaus", desc: "Geometris & tegas, warna berani, tanpa gradasi.",
-    patch: { radius: "4px", pill: "4px", shadow: "none", brutal: false, glass: false, noise: false, deco: "none", gradientHead: false, upper: false, headWeight: 800 } },
-  { id: "y2k", name: "Y2K", desc: "Membulat & mengilap, judul bergradasi, nuansa 2000-an awal.",
-    patch: { radius: "999px", pill: "999px", shadow: "0 10px 30px rgba(0,0,0,.08)", brutal: false, glass: false, noise: false, deco: "none", gradientHead: true, upper: false, headWeight: 800 } },
-  { id: "glassmorphism", name: "Glassmorphism", desc: "Kartu kaca buram tembus pandang. Paling terlihat di atas latar gelap/berwarna.",
-    patch: { radius: "20px", pill: "999px", shadow: "0 8px 32px rgba(0,0,0,.08)", brutal: false, glass: true, noise: false, deco: "none", gradientHead: false, headWeight: 700 } },
-  { id: "neumorphism", name: "Neumorphism", desc: "Elemen terasa timbul dari latar lewat bayangan ganda. Paling terlihat di atas latar terang & polos.",
-    patch: { radius: "24px", pill: "999px", shadow: "8px 8px 16px rgba(0,0,0,.12), -8px -8px 16px rgba(255,255,255,.65)", brutal: false, glass: false, noise: false, deco: "none", headWeight: 700 } },
-  { id: "futurism", name: "Futuristik", desc: "Garis tajam & grid halus di latar. Paling kena di Template/Warna gelap.",
-    patch: { radius: "6px", pill: "6px", shadow: "none", brutal: false, glass: false, noise: false, deco: "grid", gradientHead: false, headWeight: 800 } },
-  { id: "minimalist", name: "Minimalist", desc: "Elemen seminim mungkin, nyaris tanpa bayangan atau hiasan.",
-    patch: { radius: "8px", pill: "8px", shadow: "none", brutal: false, glass: false, noise: false, deco: "none", gradientHead: false, headWeight: 600 } },
-  { id: "experimental", name: "Experimental", desc: "Bentuk besar membulat, bayangan lembut, judul bergradasi.",
-    patch: { radius: "28px", pill: "999px", shadow: "0 14px 40px rgba(0,0,0,.10)", brutal: false, glass: false, noise: false, deco: "blobs", gradientHead: true, headWeight: 800 } },
+export const DESIGN_STYLES: { id: DesignStyleId; name: string; desc: string; apply: (t: Theme) => Partial<Theme> }[] = [
+  { id: "brutalism", name: "Brutalism", desc: "Mentah: sudut lancip, garis tebal hitam, judul raksasa kapital, tanpa bayangan halus, elemen dirapatkan.",
+    apply: () => ({ radius: "0px", pill: "0px", shadow: "none", brutal: true, glass: false, noise: false, deco: "none", gradientHead: false, upper: true, headWeight: 900, borderW: 3, heroScale: 1.18, tracking: "-.01em",
+      maxWidth: 1180, sectionGap: "clamp(40px,6vw,80px)", gridGap: "14px", cardPad: "22px" }) },
+  { id: "neo-brutalism", name: "Neo-Brutalism", desc: "Brutalism yang lebih ramah: bayangan kotak geser warna-warni, sudut membulat, judul besar, grid rapat.",
+    apply: () => ({ radius: "18px", pill: "999px", shadow: "7px 7px 0 #0a0a0a", brutal: true, glass: false, noise: false, deco: "none", gradientHead: false, upper: false, headWeight: 900, borderW: 3, heroScale: 1.1, tracking: "-.02em",
+      maxWidth: 1140, sectionGap: "clamp(48px,7vw,96px)", gridGap: "16px", cardPad: "24px" }) },
+  { id: "swiss", name: "Swiss / Grid", desc: "Kolom konten lebih sempit & lega, jarak antar section lapang, label kapital renggang — tipografi jadi fokus.",
+    apply: () => ({ radius: "0px", pill: "0px", shadow: "none", brutal: false, glass: false, noise: false, deco: "none", gradientHead: false, upper: true, headWeight: 700, borderW: 1, heroScale: 0.92, tracking: ".04em",
+      maxWidth: 980, sectionGap: "clamp(72px,10vw,140px)", gridGap: "28px", cardPad: "20px" }) },
+  { id: "bauhaus", name: "Bauhaus", desc: "Kartu kotak tegas berdampingan dengan tombol bulat penuh — kontras bentuk geometris khas Bauhaus.",
+    apply: () => ({ radius: "0px", pill: "999px", shadow: "none", brutal: false, glass: false, noise: false, deco: "none", gradientHead: false, upper: false, headWeight: 800, borderW: 2, heroScale: 1.05, tracking: "0em",
+      maxWidth: 1120, sectionGap: "clamp(56px,8vw,112px)", gridGap: "20px", cardPad: "24px" }) },
+  { id: "y2k", name: "Y2K", desc: "Serba membulat & mengilap, judul besar bergradasi warna, kartu lega, dekorasi gelembung lembut di latar.",
+    apply: () => ({ radius: "999px", pill: "999px", shadow: "0 12px 28px rgba(0,0,0,.10)", brutal: false, glass: false, noise: false, deco: "blobs", gradientHead: true, upper: false, headWeight: 800, borderW: 1, heroScale: 1.12, tracking: "-.02em",
+      maxWidth: 1160, sectionGap: "clamp(56px,8vw,112px)", gridGap: "20px", cardPad: "28px" }) },
+  { id: "glassmorphism", name: "Glassmorphism", desc: "Kartu kaca buram lega tembus pandang di atas gelembung warna blur. Paling terlihat di Template/Warna gelap.",
+    apply: (t) => ({
+      radius: "22px", pill: "999px", shadow: "0 8px 32px rgba(0,0,0,.10)", brutal: false, glass: true, noise: false, deco: "blobs", gradientHead: false, upper: false, headWeight: 700, borderW: 1, heroScale: 1, tracking: "-.02em",
+      maxWidth: 1160, sectionGap: "clamp(56px,8vw,112px)", gridGap: "20px", cardPad: "30px",
+      card: `rgba(${rgb(t.card)},.55)`,
+    }) },
+  { id: "neumorphism", name: "Neumorphism", desc: "Tanpa garis tepi sama sekali, kartu longgar berjarak supaya bayangan ganda terbaca — elemen terasa timbul dari latar.",
+    apply: (t) => ({
+      radius: "26px", pill: "999px", brutal: false, glass: false, noise: false, deco: "none", gradientHead: false, upper: false, headWeight: 700, borderW: 0, heroScale: 0.92, tracking: "-.01em",
+      maxWidth: 1080, sectionGap: "clamp(48px,7vw,96px)", gridGap: "26px", cardPad: "32px",
+      card: t.bg,
+      shadow: t.dark ? "10px 10px 20px rgba(0,0,0,.55), -8px -8px 18px rgba(255,255,255,.05)" : "10px 10px 20px rgba(0,0,0,.14), -8px -8px 18px rgba(255,255,255,.75)",
+    }) },
+  { id: "futurism", name: "Futuristik", desc: "Kolom lebar, grid rapat teknis, garis tegas, grid halus menyala di beberapa bagian, judul besar kapital renggang.",
+    apply: () => ({ radius: "4px", pill: "4px", shadow: "none", brutal: false, glass: false, noise: false, deco: "grid", gradientHead: false, upper: true, headWeight: 800, borderW: 1, heroScale: 1.08, tracking: ".02em",
+      maxWidth: 1220, sectionGap: "clamp(44px,6vw,88px)", gridGap: "14px", cardPad: "22px" }) },
+  { id: "minimalist", name: "Minimalist", desc: "Kolom paling sempit, jarak antar section paling lapang — whitespace maksimal, judul lebih kecil & ramping.",
+    apply: () => ({ radius: "10px", pill: "999px", shadow: "none", brutal: false, glass: false, noise: false, deco: "none", gradientHead: false, upper: false, headWeight: 500, borderW: 1, heroScale: 0.8, tracking: "-.01em",
+      maxWidth: 960, sectionGap: "clamp(80px,11vw,160px)", gridGap: "32px", cardPad: "20px" }) },
+  { id: "experimental", name: "Experimental", desc: "Judul paling besar & berani, kartu lega tak beraturan, gelembung warna blur di beberapa bagian, bayangan lembut.",
+    apply: () => ({ radius: "32px", pill: "999px", shadow: "0 16px 40px rgba(0,0,0,.12)", brutal: false, glass: false, noise: false, deco: "blobs", gradientHead: true, upper: false, headWeight: 800, borderW: 1, heroScale: 1.28, tracking: "-.03em",
+      maxWidth: 1160, sectionGap: "clamp(56px,8vw,112px)", gridGap: "24px", cardPad: "30px" }) },
+];
+
+/**
+ * Hiasan (mode "Atur manual"): bentuk dekoratif murni di belakang judul hero, warna ikut Warna aktif
+ * (var(--a)/var(--a2)). Tidak pernah membungkus teks/gambar/tombol — aman dipadukan dengan Gaya desain apa pun.
+ * Independen dari Gaya desain: pilih gaya apa pun lalu tambah/ganti hiasan ini di atasnya.
+ */
+export const DECOR_OPTIONS: { id: DecorId; name: string; desc: string }[] = [
+  { id: "none", name: "Tanpa hiasan", desc: "Bersih, tanpa bentuk tambahan di belakang judul." },
+  { id: "blobs", name: "Gelembung", desc: "Gumpalan warna blur lembut di belakang judul." },
+  { id: "grid", name: "Garis Grid", desc: "Garis grid halus menyala di belakang judul." },
+  { id: "dots", name: "Titik-titik", desc: "Lingkaran kecil bertaburan di sekitar judul." },
+  { id: "plus", name: "Tanda Plus", desc: "Tanda plus kecil bertaburan, kesan teknis/blueprint." },
+  { id: "rings", name: "Cincin", desc: "Lingkaran garis besar mengambang di sudut." },
+  { id: "triangles", name: "Segitiga", desc: "Segitiga kecil bertaburan dengan rotasi acak." },
+  { id: "scribble", name: "Coretan", desc: "Satu garis lengkung seperti coretan tangan." },
 ];
 
 const THEMES: Record<TemplateId, Theme> = {
@@ -719,10 +836,22 @@ export interface RenderOpts {
   shop?: boolean;
   /** Palet kustom: [utama, kedua, ...tambahan]. Kosong = ikuti template. */
   palette?: string[];
+  /** Warna latar kustom (mode "Atur manual"). Kosong = ikuti warna latar bawaan template. */
+  bg?: string;
   /** Gaya desain/gerakan visual kustom (mode "Atur manual"). Kosong = ikuti bentuk bawaan template. */
   style?: DesignStyleId;
-  /** Huruf per peran (mode "Atur manual"). Kosong per peran = ikut Gaya desain/Judul (lihat resolveFonts). */
-  fonts?: { title?: FontRoleId; sub?: FontRoleId; body?: FontRoleId };
+  /** Hiasan hero kustom (mode "Atur manual"). Kosong = ikuti hiasan bawaan Gaya desain/Template. */
+  decor?: DecorId;
+  /**
+   * Huruf per peran (mode "Atur manual"): tiap peran (Judul/Sub-judul/Isi) bebas pilih jenis huruf (family)
+   * DAN ketebalan (weight) sendiri-sendiri — meniru sumbu variable-font. Kosong per bagian = ikut bawaan
+   * Gaya desain/Template; Sub-judul yang kosong juga ikut Judul lebih dulu (lihat buildSite).
+   */
+  fonts?: {
+    title?: { family?: FontRoleId; weight?: FontWeightId };
+    sub?: { family?: FontRoleId; weight?: FontWeightId };
+    body?: { family?: FontRoleId; weight?: FontWeightId };
+  };
   /** Gambar unggahan (data URL). */
   images?: SiteImages;
   /** "inline" (default) = data URL tertanam di HTML; "files" = berkas terpisah di assets/img (untuk ZIP). */
@@ -758,7 +887,7 @@ const fmtRp = (n: number): string => "Rp " + String(Math.round(n)).replace(/\B(?
 function buildCss(t: Theme, a: string, hero: HeroLayout, shop: boolean, hover: HoverEffect, extra: string[], article: boolean): string {
   const A = rgb(a);
   const aText = readable(a, t.dark, t.bg);
-  const bd = t.brutal ? "3px solid #0a0a0a" : `1px solid ${t.line}`;
+  const bd = t.brutal ? "3px solid #0a0a0a" : `${t.borderW ?? 1}px solid ${t.line}`;
   const grad = t.gradientHead
     ? `background:linear-gradient(120deg,var(--fg) 25%,var(--a) 135%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;`
     : "";
@@ -766,8 +895,8 @@ function buildCss(t: Theme, a: string, hero: HeroLayout, shop: boolean, hover: H
 
   return `:root{--bg:${t.bg};--fg:${t.fg};--muted:${t.muted};--card:${t.card};--line:${t.line};--a:${a};--at:${aText};--a-soft:rgba(${A},${t.dark ? ".16" : ".11"});--on:${onColor(a)};--r:${t.radius};--sh:${t.shadow};--pill:${t.pill};--a2:${t.acc2 ?? a};--ib:${t.ib ?? "var(--a-soft)"}}
 *{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:96px}
-body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.65 ${t.body};-webkit-font-smoothing:antialiased;overflow-x:hidden}
-.wrap{max-width:1120px;margin:0 auto;padding:0 24px;position:relative}
+body{margin:0;background:var(--bg);color:var(--fg);font:${t.bodyWeight ?? 400} 16px/1.65 ${t.body};-webkit-font-smoothing:antialiased;overflow-x:hidden}
+.wrap{max-width:${t.maxWidth ?? 1120}px;margin:0 auto;padding:0 24px;position:relative}
 h1{font-family:${t.display};margin:0}
 h2,h3{font-family:${t.sub ?? t.display};margin:0}
 a{color:inherit}
@@ -794,11 +923,40 @@ svg{display:block;flex:none}
 .orb{display:none}
 ${t.deco === "orbs" || t.deco === "grid" ? `.orb{border-radius:50%;filter:blur(70px);opacity:${t.dark ? ".5" : ".55"}}` : ""}
 ${t.deco === "grid" ? `.glow:after{content:"";position:absolute;inset:0;background-image:linear-gradient(var(--line) 1px,transparent 1px),linear-gradient(90deg,var(--line) 1px,transparent 1px);background-size:44px 44px;-webkit-mask-image:radial-gradient(ellipse at 50% 30%,#000 20%,transparent 70%);mask-image:radial-gradient(ellipse at 50% 30%,#000 20%,transparent 70%)}` : ""}
+.orn{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.orn .d{position:absolute}
+.orn-dots .d{border-radius:50%;background:var(--a)}
+.orn-dots .d:nth-child(1){width:10px;height:10px;top:18%;left:8%;opacity:.45}
+.orn-dots .d:nth-child(2){width:16px;height:16px;top:64%;left:14%;background:var(--a2);opacity:.35}
+.orn-dots .d:nth-child(3){width:7px;height:7px;top:30%;left:92%;background:var(--a2);opacity:.5}
+.orn-dots .d:nth-child(4){width:12px;height:12px;top:78%;left:88%;opacity:.4}
+.orn-dots .d:nth-child(5){width:9px;height:9px;top:8%;left:48%;opacity:.3}
+.orn-dots .d:nth-child(6){width:14px;height:14px;top:88%;left:46%;background:var(--a2);opacity:.3}
+.orn-plus .d{width:18px;height:18px}
+.orn-plus .d:before,.orn-plus .d:after{content:"";position:absolute;background:var(--a);border-radius:2px}
+.orn-plus .d:before{width:100%;height:3px;top:50%;left:0;transform:translateY(-50%)}
+.orn-plus .d:after{width:3px;height:100%;left:50%;top:0;transform:translateX(-50%)}
+.orn-plus .d:nth-child(1){top:20%;left:10%;opacity:.4}
+.orn-plus .d:nth-child(2){top:70%;left:16%;opacity:.3;transform:scale(.8)}
+.orn-plus .d:nth-child(3){top:14%;left:90%;opacity:.35;transform:scale(1.25)}
+.orn-plus .d:nth-child(4){top:82%;left:86%;opacity:.3}
+.orn-plus .d:nth-child(5){top:46%;left:50%;opacity:.25;transform:scale(.7)}
+.orn-rings .d{border-radius:50%;border:2px solid var(--a);background:none}
+.orn-rings .d:nth-child(1){width:90px;height:90px;top:4%;left:2%;opacity:.3}
+.orn-rings .d:nth-child(2){width:130px;height:130px;top:52%;left:84%;border-color:var(--a2);opacity:.22}
+.orn-rings .d:nth-child(3){width:50px;height:50px;top:76%;left:10%;opacity:.3}
+.orn-triangles .d{width:0;height:0;border-left:10px solid transparent;border-right:10px solid transparent;border-bottom:16px solid var(--a);opacity:.35}
+.orn-triangles .d:nth-child(1){top:16%;left:9%;transform:rotate(12deg)}
+.orn-triangles .d:nth-child(2){top:68%;left:15%;transform:rotate(-20deg);border-bottom-color:var(--a2)}
+.orn-triangles .d:nth-child(3){top:22%;left:90%;transform:rotate(160deg)}
+.orn-triangles .d:nth-child(4){top:80%;left:86%;transform:rotate(-100deg);border-bottom-color:var(--a2)}
+.orn-triangles .d:nth-child(5){top:8%;left:50%;transform:rotate(45deg)}
+.orn-scribble svg{position:absolute;top:8%;left:5%;width:90%;height:60%;opacity:.3;overflow:visible}
 
 
 .badge{display:inline-block;padding:5px 12px;border-radius:calc(var(--pill) * .6);color:var(--muted);font:600 12.5px ${t.mono};letter-spacing:.02em;border:${t.brutal ? "2px solid #0a0a0a" : `1px solid ${t.dark ? "rgba(255,255,255,.18)" : "var(--line)"}`};margin-bottom:22px}
 
-.hero h1{font-size:clamp(32px,${hero === "split" ? "5.4" : "7"}vw,${hero === "split" ? "60" : "72"}px);line-height:1.06;letter-spacing:${t.display === SERIF ? "-.02em" : "-.035em"};font-weight:${t.headWeight};max-width:${heroLeft ? "780px" : "900px"};margin:0 ${heroLeft ? "0" : "auto"} 22px;${t.upper ? "text-transform:uppercase;" : ""}${grad}padding-bottom:.06em;overflow-wrap:break-word}
+.hero h1{font-size:clamp(${Math.round(32 * (t.heroScale ?? 1))}px,${(hero === "split" ? 5.4 : 7) * (t.heroScale ?? 1)}vw,${Math.round((hero === "split" ? 60 : 72) * (t.heroScale ?? 1))}px);line-height:1.06;letter-spacing:${t.tracking ?? (t.display === SERIF ? "-.02em" : "-.035em")};font-weight:${t.headWeight};max-width:${heroLeft ? "780px" : "900px"};margin:0 ${heroLeft ? "0" : "auto"} 22px;${t.upper ? "text-transform:uppercase;" : ""}${grad}padding-bottom:.06em;overflow-wrap:break-word}
 .hero p.sub{font-size:clamp(16px,2.2vw,20px);color:var(--muted);max-width:640px;margin:0 ${heroLeft ? "0" : "auto"} 32px}
 .row{display:flex;flex-wrap:wrap;gap:12px;${heroLeft ? "" : "justify-content:center"}}
 .chips{display:none}
@@ -814,16 +972,16 @@ ${t.deco === "grid" ? `.glow:after{content:"";position:absolute;inset:0;backgrou
 .vrow small{display:block;color:var(--muted);font-size:13px;line-height:1.4}
 .vrow em{flex:none;margin-left:auto;font:700 13px ${t.mono};font-style:normal;color:var(--at);white-space:nowrap}
 
-section{padding:clamp(56px,8vw,112px) 0}
+section{padding:${t.sectionGap ?? "clamp(56px,8vw,112px)"} 0}
 .eyebrow{display:none}
-h2{font-size:clamp(28px,4.4vw,42px);line-height:1.12;letter-spacing:-.025em;font-weight:${t.headWeight};margin-bottom:32px;${t.upper ? "text-transform:uppercase;" : ""}}
-.grid{display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
-.card{background:var(--card);border:${bd};border-radius:var(--r);padding:26px;box-shadow:var(--sh);transition:border-color .15s;min-width:0;overflow-wrap:break-word}
+h2{font-size:clamp(${Math.round(28 * (t.heroScale ?? 1))}px,${4.4 * (t.heroScale ?? 1)}vw,${Math.round(42 * (t.heroScale ?? 1))}px);line-height:1.12;letter-spacing:${t.tracking ?? "-.025em"};font-weight:${t.subWeight ?? t.headWeight};margin-bottom:32px;${t.upper ? "text-transform:uppercase;" : ""}}
+.grid{display:grid;gap:${t.gridGap ?? "18px"};grid-template-columns:repeat(auto-fit,minmax(260px,1fr))}
+.card{background:var(--card);border:${bd};border-radius:var(--r);padding:${t.cardPad ?? "26px"};box-shadow:var(--sh);transition:border-color .15s;min-width:0;overflow-wrap:break-word}
 .feat:hover,.prod:hover{border-color:${t.brutal ? "#0a0a0a" : "var(--a)"}}
 .ico{display:flex;align-items:center;justify-content:${t.brutal ? "center" : "flex-start"};width:auto;height:auto;color:var(--at);margin-bottom:14px;${t.brutal ? "width:46px;height:46px;border:2px solid #0a0a0a;background:var(--a);color:var(--on);" : ""}}
-.card h3{font-size:19px;font-weight:${t.headWeight === 900 ? 900 : 700};letter-spacing:-.01em;margin-bottom:8px}
+.card h3{font-size:19px;font-weight:${t.subWeight ?? (t.headWeight === 900 ? 900 : 700)};letter-spacing:-.01em;margin-bottom:8px}
 .card p{margin:0;color:var(--muted);font-size:15.5px}
-.bento{display:grid;gap:18px;grid-template-columns:repeat(6,1fr)}
+.bento{display:grid;gap:${t.gridGap ?? "18px"};grid-template-columns:repeat(6,1fr)}
 .bento .feat{grid-column:span 2}
 .bento.b4 .feat{grid-column:span 3}.bento.b5 .feat:nth-child(-n+2){grid-column:span 3}.bento.b2 .feat{grid-column:span 3}
 .bento .feat:first-child{background:var(--a);color:var(--on);border-color:${t.brutal ? "#0a0a0a" : "transparent"}}
@@ -834,10 +992,10 @@ h2{font-size:clamp(28px,4.4vw,42px);line-height:1.12;letter-spacing:-.025em;font
 .frows{display:grid;gap:14px}
 .frow{display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:center;padding:20px 22px}
 .frow .ico{margin:0}.frow h3{margin-bottom:4px}
-.steps{list-style:none;margin:0;padding:0;display:grid;gap:18px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+.steps{list-style:none;margin:0;padding:0;display:grid;gap:${t.gridGap ?? "18px"};grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
 .steps li{padding:18px 0 0;background:none;border:0;border-top:${bd};border-radius:0;box-shadow:none}
 .steps b{display:block;margin-bottom:10px;font:700 13px ${t.mono};letter-spacing:.08em;color:var(--at)}
-.items{display:grid;gap:18px;grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+.items{display:grid;gap:${t.gridGap ?? "18px"};grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
 .prod{position:relative;display:flex;flex-direction:column;gap:14px;padding:22px}
 .pico{display:flex;align-items:center;justify-content:${t.brutal ? "center" : "flex-start"};width:auto;height:auto;color:var(--at);${t.brutal ? "width:52px;height:52px;border:2px solid #0a0a0a;background:var(--a);color:var(--on);" : ""}}
 .pico svg{width:24px;height:24px}
@@ -864,7 +1022,9 @@ h2{font-size:clamp(28px,4.4vw,42px);line-height:1.12;letter-spacing:-.025em;font
 .ci small{display:block;color:var(--muted);font-size:12.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
 .ci span{font-weight:600;word-break:break-word}
 .info.one{max-width:520px;margin:0 auto}
-.band{padding:clamp(32px,5vw,56px);border-radius:var(--r);background:${t.brutal ? "#0a0a0a" : "var(--a)"};color:${t.brutal ? "#fde68a" : "var(--on)"};display:flex;flex-wrap:wrap;gap:20px 32px;align-items:center;justify-content:space-between;${t.brutal ? "box-shadow:8px 8px 0 var(--a);" : ""}}
+.band{position:relative;overflow:hidden;padding:clamp(32px,5vw,56px);border-radius:var(--r);background:${t.brutal ? "#0a0a0a" : "var(--a)"};color:${t.brutal ? "#fde68a" : "var(--on)"};display:flex;flex-wrap:wrap;gap:20px 32px;align-items:center;justify-content:space-between;${t.brutal ? "box-shadow:8px 8px 0 var(--a);" : ""}}
+.band .orn{--a:var(--on);--a2:var(--on);opacity:.5}
+.band>*{position:relative;z-index:1}
 
 .band h2{margin:0 0 6px;color:inherit;-webkit-text-fill-color:currentColor;font-size:clamp(24px,3.6vw,34px)}
 .band p{margin:0;opacity:.88}
@@ -895,11 +1055,17 @@ function extraCss(t: Theme, bd: string, hover: HoverEffect, extra: string[]): st
   const noise = t.noise
     ? `.card,.scard,.acard{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 .06 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}`
     : "";
+  // Gelembung (deco "blobs"/"orbs"): warna sama dengan glow biasa, cuma lebih besar/pekat/buram supaya
+  // kelihatan sebagai bentuk gelembung sungguhan, bukan cuma pendar tipis — ini yang bikin gaya seperti
+  // Y2K/Glassmorphism/Experimental akhirnya beda dari gaya lain, bukan cuma beda radius.
+  const blobby = t.deco === "blobs" || t.deco === "orbs";
+  const glowOpacity = blobby ? (dk ? ".30" : ".5") : dk ? ".14" : ".38";
+  const glowOpacity2 = blobby ? (dk ? ".24" : ".4") : dk ? ".12" : ".26";
   const spots = ["8% 100%", "50% -10%", "100% 90%", "0% 0%"];
   const layers: string[] = [];
-  if (t.acc2) layers.push(`radial-gradient(55% 70% at 88% 0%,rgba(${rgb(t.acc2)},${dk ? ".14" : ".38"}),transparent 70%)`);
-  extra.slice(0, 4).forEach((c, i) => layers.push(`radial-gradient(42% 55% at ${spots[i]},rgba(${rgb(c)},${dk ? ".12" : ".26"}),transparent 70%)`));
-  const glow = layers.length ? `.glow{background:${layers.join(",")}}` : "";
+  if (t.acc2) layers.push(`radial-gradient(${blobby ? "42% 55%" : "55% 70%"} at 88% 0%,rgba(${rgb(t.acc2)},${glowOpacity}),transparent 70%)`);
+  extra.slice(0, 4).forEach((c, i) => layers.push(`radial-gradient(${blobby ? "32% 42%" : "42% 55%"} at ${spots[i]},rgba(${rgb(c)},${glowOpacity2}),transparent 70%)`));
+  const glow = layers.length ? `.glow{background:${layers.join(",")};${blobby ? "filter:blur(36px);" : ""}}` : "";
   const look = t.brutal
     ? ""
     : `.ico,.pico,.vrow i,.ci i,.acard i,.tqh .ico{display:grid;place-items:center;place-content:center;justify-content:center;align-items:center;flex:none;width:40px;height:40px;border-radius:50%;background:var(--ib);color:var(--at)}
@@ -1012,7 +1178,7 @@ html:has(.reader:target){overflow:hidden}
 .rcov{border-radius:var(--r);margin:0 0 32px;aspect-ratio:16/9}
 .prose{font:19px/1.85 ${SERIF}}
 .prose p{margin:0 0 1.3em}
-.prose h3{font:${t.headWeight} clamp(21px,3vw,26px)/1.25 ${t.display};margin:1.8em 0 .6em;letter-spacing:-.015em}
+.prose h3{font:${t.subWeight ?? t.headWeight} clamp(21px,3vw,26px)/1.25 ${t.display};margin:1.8em 0 .6em;letter-spacing:-.015em}
 .rnav{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:56px}
 .rnav a{text-decoration:none;display:grid;gap:4px;padding:16px 18px;min-width:0}
 .rnav small{color:var(--muted);font-size:12px;letter-spacing:.06em;text-transform:uppercase}
@@ -1090,16 +1256,28 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
     custom[0] ??
     (isHexColor(accent) ? accent : isHexColor(content.accent) && content.accent ? content.accent : TEMPLATES.find((x) => x.id === template)!.accent);
   // Palet kustom: warna ke-2 menggantikan aksen kedua template; warna ke-3 dst. menjadi warna tambahan (ikon bergantian + sorot hero).
-  let t: Theme = custom.length >= 2 ? { ...base, acc2: custom[1], ib: tint(custom[1], base.dark) } : base;
-  // Gaya desain kustom (mode "Atur manual"): timpa bentuk/bayangan/dekorasi saja, warna tetap dari Template/Warna di atas.
+  let t: Theme = base;
+  // Warna latar kustom (mode "Atur manual"): diterapkan lebih dulu, supaya aksen/gaya/huruf di bawah ini
+  // semuanya menimpa di atas latar yang benar (termasuk status terang/gelap untuk kontras teks & kartu).
+  if (opts.bg && isHexColor(opts.bg)) t = { ...t, ...surfaceFromBg(opts.bg) };
+  if (custom.length >= 2) t = { ...t, acc2: custom[1], ib: tint(custom[1], t.dark) };
+  // Gaya desain kustom (mode "Atur manual"): timpa bentuk/bayangan/dekorasi di atas warna Template/Warna di atas.
+  // Glass & Neumorphism butuh mengintip t.card/t.bg yang sedang aktif (lewat `apply`) supaya kartu benar-benar
+  // tembus pandang / menyatu dengan latar — bukan sekadar beda radius, karena itu yang bikin gaya terasa mirip.
   const stylePick = DESIGN_STYLES.find((s) => s.id === opts.style);
-  if (stylePick) t = { ...t, ...stylePick.patch };
-  // Huruf per peran (mode "Atur manual"): Sub-judul kosong → ikut Judul yang terpilih → baru ikut bawaan Gaya desain/Template.
+  if (stylePick) t = { ...t, ...stylePick.apply(t) };
+  // Hiasan kustom (mode "Atur manual"): pilihan eksplisit pengguna menang di atas hiasan bawaan Gaya desain/Template.
+  if (opts.decor) t = { ...t, deco: opts.decor };
+  // Huruf per peran (mode "Atur manual"): jenis huruf & ketebalan masing-masing bebas, mirip sumbu variable-font.
+  // Sub-judul kosong → ikut Judul yang terpilih (family & weight) → baru ikut bawaan Gaya desain/Template.
   const roleStack = (id: FontRoleId | undefined): string | undefined => FONT_ROLES.find((r) => r.id === id)?.stack;
-  const titleFamily = roleStack(opts.fonts?.title) ?? t.display;
-  const subFamily = roleStack(opts.fonts?.sub) ?? titleFamily;
-  const bodyFamily = roleStack(opts.fonts?.body) ?? t.body;
-  if (opts.fonts) t = { ...t, display: titleFamily, sub: subFamily, body: bodyFamily };
+  const titleFamily = roleStack(opts.fonts?.title?.family) ?? t.display;
+  const subFamily = roleStack(opts.fonts?.sub?.family) ?? titleFamily;
+  const bodyFamily = roleStack(opts.fonts?.body?.family) ?? t.body;
+  const titleWeight = opts.fonts?.title?.weight ?? t.headWeight;
+  const subWeight = opts.fonts?.sub?.weight ?? titleWeight;
+  const bodyWeight = opts.fonts?.body?.weight ?? t.bodyWeight ?? 400;
+  if (opts.fonts) t = { ...t, display: titleFamily, sub: subFamily, body: bodyFamily, headWeight: titleWeight, subWeight, bodyWeight };
   const extra = custom.slice(2);
   const cyc = custom.length >= 3 ? custom.slice(1) : [];
   const toneStyle = (i: number): string => {
@@ -1198,7 +1376,7 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
     heroInner = `<div class="hed"><div class="hed-top"><span class="slo">${esc(c.slogan || c.brand)}</span>${c.badge ? badgeHtml : ""}</div><h1>${esc(c.headline)}</h1><div class="hed-bot">${subHtml}${ctaRow}</div></div>${himg}`;
   }
 
-  const hero = `<div class="hero h-${heroL}"><div class="glow"></div><div class="wrap">${heroInner}</div></div>`;
+  const hero = `<div class="hero h-${heroL}"><div class="glow"></div>${ornamentMarkup(t.deco)}<div class="wrap">${heroInner}</div></div>`;
 
   /* ----- katalog / layanan ----- */
   const priceLabel = (i: SiteItem) => (i.price > 0 ? fmtRp(i.price) : "Tanya harga");
@@ -1293,7 +1471,7 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
   ].join("");
 
   const band = buttons
-    ? `<section id="kontak"><div class="wrap"><div class="band"><div><h2>${esc(c.closing)}</h2>${c.closingText ? `<p>${esc(c.closingText)}</p>` : ""}</div><div class="row">${buttons}</div></div></div></section>`
+    ? `<section id="kontak"><div class="wrap"><div class="band">${ornamentMarkup(t.deco)}<div><h2>${esc(c.closing)}</h2>${c.closingText ? `<p>${esc(c.closingText)}</p>` : ""}</div><div class="row">${buttons}</div></div></div></section>`
     : "";
 
   /* ----- urutan bagian: UMKM = katalog dulu; artikel = daftar artikel dulu; lainnya = keunggulan dulu ----- */
