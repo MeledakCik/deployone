@@ -4,7 +4,7 @@ import * as React from "react";
 import { Plus, RefreshCw, X, TriangleAlert } from "lucide-react";
 import { Btn } from "@/components/ui/primitives";
 import { MAX_PALETTE, contrastRatio } from "@/lib/ai-site-templates";
-import { hintCls, isHex, labelCls } from "./shared";
+import { hintCls, isHex, labelCls, swatchTileCls } from "./shared";
 
 /** Pasangan warna siap pakai: [utama, kedua] beserta namanya (dibaca pembaca layar, bukan kode hex). */
 const PALETTE_PRESETS: { name: string; colors: [string, string] }[] = [
@@ -49,7 +49,7 @@ function HexInput({ value, label, id, onChange }: { value: string; label: string
         className="input-solid mono h-11 w-[104px] shrink-0 px-3 text-[13px]"
       />
       {reverted && (
-        <p id={`${id}-err`} role="status" className="basis-full text-[12.5px] leading-snug text-bad-fg">
+        <p id={`${id}-err`} role="status" className="basis-full text-[13px] leading-snug text-bad-fg">
           Kode hex tidak valid, dikembalikan ke {value.toUpperCase()}. Pakai 6 karakter, contoh #7B50FF.
         </p>
       )}
@@ -97,10 +97,8 @@ export function PaletteEditor({
           const rowId = `${uid}-${i}`;
           return (
             <li key={i} className="flex flex-wrap items-center gap-x-2.5 gap-y-2">
-              <label
-                className="relative h-11 w-11 shrink-0 cursor-pointer rounded-[14px] ring-1 ring-[var(--line-strong)] focus-within:ring-2 focus-within:ring-[var(--ring)] focus-within:ring-offset-2"
-                style={{ background: c }}
-              >
+              <label className={swatchTileCls(false, "h-11 w-11")}>
+                <span aria-hidden className="h-8 w-8 rounded-[10px]" style={{ background: c }} />
                 <input
                   type="color"
                   value={c}
@@ -110,7 +108,7 @@ export function PaletteEditor({
                 />
               </label>
               <div className="min-w-0 flex-1 basis-[8.5rem]">
-                <p className="text-[13.5px] font-medium">{role.name}</p>
+                <p className="text-[14px] font-medium">{role.name}</p>
                 <p className={hintCls}>{role.hint}</p>
               </div>
               <HexInput value={c} label={role.name.toLowerCase()} id={rowId} onChange={(v) => setAt(i, v)} />
@@ -133,7 +131,7 @@ export function PaletteEditor({
 
       <div aria-live="polite">
         {weak && (
-          <div className="notice notice-warn flex items-start gap-2 !p-3 text-[12.5px] leading-snug">
+          <div className="notice notice-warn flex items-start gap-2 !p-3 text-[13px] leading-snug">
             <TriangleAlert size={15} className="mt-0.5 shrink-0" aria-hidden />
             <span className="min-w-0">
               Warna utama hampir sama dengan warna latar template (kontras {ratio.toFixed(1)}:1). Tombol dan blok sorot jadi sulit dibedakan.
@@ -167,8 +165,8 @@ export function PaletteEditor({
               onClick={() => onChange([...p.colors, ...colors.slice(2)])}
               className="pill inline-flex min-h-[40px] items-center gap-1 px-3"
             >
-              <span className="h-4 w-4 rounded-full ring-1 ring-[var(--line-strong)]" style={{ background: p.colors[0] }} />
-              <span className="h-4 w-4 rounded-full ring-1 ring-[var(--line-strong)]" style={{ background: p.colors[1] }} />
+              <span className="h-4 w-4 rounded-full " style={{ background: p.colors[0] }} />
+              <span className="h-4 w-4 rounded-full " style={{ background: p.colors[1] }} />
             </button>
           ))}
         </div>

@@ -33,7 +33,7 @@ export function BrandMark({ size, className }: { size: number; className: string
 
 /** Kelas untuk item menu sekunder di footer sidebar (Logout, Panel Admin, dst.). */
 export const SIDEBAR_LINK_CLASS =
-  "flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-[13.5px] font-medium text-[var(--sidebar-muted)] transition hover:bg-[var(--sidebar-hover)] hover:text-white";
+  "flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-[14px] font-medium text-[var(--sidebar-muted)] transition hover:bg-[var(--sidebar-hover)] hover:text-white";
 
 /**
  * Sidebar bersama Dashboard dan Panel Admin: top bar + drawer di mobile, kolom melayang di desktop,
@@ -137,7 +137,7 @@ export function AppSidebar({
         </button>
         <div className="flex items-center justify-center gap-2">
           <BrandMark size={28} className="h-7 w-7 rounded-lg" />
-          <span className="text-[15px] font-bold tracking-tight">Depup</span>
+          <span className="text-[16px] font-bold tracking-tight">Depup</span>
           {tagShort && <span className="rounded-full bg-[var(--lime)] px-2 py-0.5 text-[12px] font-bold text-[var(--lime-text)]">{tagShort}</span>}
         </div>
         <div aria-hidden />
@@ -168,10 +168,10 @@ export function AppSidebar({
           </button>
         </div>
 
-        <nav ref={navRef} className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain pr-0.5" aria-label={navLabel}>
+        <nav ref={navRef} className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain pr-0.5 [mask-image:linear-gradient(to_bottom,#000_calc(100%-28px),transparent)]" aria-label={navLabel}>
           {groups.map((g, gi) => (
             <div key={g.label ?? gi} className={gi === 0 ? "space-y-1" : "mt-4 space-y-1"}>
-              {g.label && <p className="px-3.5 pb-1 text-[12px] font-semibold text-[var(--sidebar-muted)] opacity-80">{g.label}</p>}
+              {g.label && <p className="px-3.5 pb-1 text-[12px] font-semibold text-[var(--sidebar-muted)]">{g.label}</p>}
               {g.items.map((item) => {
                 const isActive = active === item.id;
                 return (
@@ -183,7 +183,7 @@ export function AppSidebar({
                     type="button"
                     data-view={item.id}
                     aria-current={isActive ? "page" : undefined}
-                    className={`nav relative z-10 flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-[13.5px] font-medium transition ${
+                    className={`nav relative z-10 flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-[14px] font-medium transition ${
                       isActive ? "text-[var(--sidebar-active-text)]" : "text-[var(--sidebar-muted)] hover:bg-[var(--sidebar-hover)] hover:text-white"
                     }`}
                     onClick={() => onSelect(item.id)}

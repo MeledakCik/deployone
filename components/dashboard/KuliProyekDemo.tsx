@@ -90,7 +90,7 @@ export function KuliProyekDemo({ className }: { className?: string }) {
   return (
     <Card title="Kuli Proyek" action={<Badge tone="violet">Demo</Badge>} className={className}>
       <div className="space-y-4 p-4 sm:p-5">
-        <p className="text-[12.5px] leading-relaxed text-[var(--text-muted)]">
+        <p className="text-[13px] leading-relaxed text-[var(--text-muted)]">
           Simulasi lucu selagi &ldquo;deploy&rdquo; berjalan. Ini hanya timer palsu di browser, tidak memanggil deploy asli.
         </p>
 

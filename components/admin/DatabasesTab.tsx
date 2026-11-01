@@ -165,7 +165,7 @@ export function DatabasesTab({ toast }: { toast: (m: string) => void }) {
               {ov.findings.map((f, i) => (
                 <li key={i} className="flex flex-wrap items-start gap-x-3 gap-y-1 border-b border-[var(--surface-line)] px-6 py-3 last:border-0">
                   <Badge tone={LEVEL_TONE[f.level]}>{LEVEL_LABEL[f.level]}</Badge>
-                  <span className="min-w-0 flex-1 break-words text-[13.5px]">{f.text}</span>
+                  <span className="min-w-0 flex-1 break-words text-[14px]">{f.text}</span>
                 </li>
               ))}
             </ul>
@@ -174,7 +174,7 @@ export function DatabasesTab({ toast }: { toast: (m: string) => void }) {
           <Card title="Analisis AI">
             {analysis ? (
               <div className="space-y-2 px-6 py-4">
-                <p className="whitespace-pre-wrap break-words text-[13.5px]">{analysis.text}</p>
+                <p className="whitespace-pre-wrap break-words text-[14px]">{analysis.text}</p>
                 <p className="text-[12px] text-text-muted">
                   {fmtDateTime(analysis.at)} · {analysis.usedAi ? "memakai 1 panggilan AI (email pengguna disamarkan)" : "tanpa AI"}
                 </p>
@@ -192,7 +192,7 @@ export function DatabasesTab({ toast }: { toast: (m: string) => void }) {
             <ul className="grid gap-px sm:grid-cols-4">
               {ov.buckets.map((b) => (
                 <li key={b.label} className="px-6 py-4">
-                  <p className="text-[12.5px] text-text-muted">{b.label}</p>
+                  <p className="text-[13px] text-text-muted">{b.label}</p>
                   <p className="mt-1 flex items-center gap-2 text-[22px] font-bold tabular-nums">
                     {b.count} <Badge tone={b.tone}>{b.tone === "good" ? "aman" : b.tone === "warn" ? "waspada" : "penuh"}</Badge>
                   </p>
@@ -219,7 +219,7 @@ export function DatabasesTab({ toast }: { toast: (m: string) => void }) {
                     <li key={o.email} className="border-b border-[var(--surface-line)] last:border-0">
                       <button type="button" aria-expanded={isOpen} onClick={() => setOpen(isOpen ? null : o.email)} className="flex w-full flex-wrap items-center gap-x-4 gap-y-2 px-6 py-3 text-left">
                         <span className="min-w-0 flex-1 basis-[200px]">
-                          <span className="block truncate text-[13.5px] font-medium" title={o.email}>
+                          <span className="block truncate text-[14px] font-medium" title={o.email}>
                             {o.email}
                           </span>
                           <span className="block text-[12px] text-text-muted">
@@ -238,7 +238,7 @@ export function DatabasesTab({ toast }: { toast: (m: string) => void }) {
                             <span className="block h-full rounded-full" style={{ width: `${Math.min(100, o.pct)}%`, background: { good: "var(--ok-dot)", warn: "var(--warn-dot)", bad: "var(--bad-dot)" }[tone] }} />
                           </span>
                         </span>
-                        <span className="flex items-center gap-2 text-[12.5px] tabular-nums">
+                        <span className="flex items-center gap-2 text-[13px] tabular-nums">
                           {fmtBytes(o.usedBytes)} / {fmtBytes(t.quotaBytes)}
                           <Badge tone={tone}>{o.pct < 1 ? "<1" : Math.round(o.pct)}%</Badge>
                         </span>
@@ -246,7 +246,7 @@ export function DatabasesTab({ toast }: { toast: (m: string) => void }) {
                       {isOpen && (
                         <ul className="space-y-1 bg-[var(--pill-bg)]/40 px-6 pb-3 pt-1">
                           {o.dbs.map((d) => (
-                            <li key={d.id} className="flex flex-wrap items-center justify-between gap-2 text-[12.5px]">
+                            <li key={d.id} className="flex flex-wrap items-center justify-between gap-2 text-[13px]">
                               <span className="min-w-0 truncate">
                                 <span className="mono">{d.name}</span>
                                 <span className="text-text-muted"> · dibuat {fmtDateTime(d.createdAt)} · {d.activeKeys} API key aktif</span>

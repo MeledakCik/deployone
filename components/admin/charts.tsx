@@ -181,7 +181,7 @@ export function TimeChart({ days, series, kind, label, height = DEFAULT_H }: { d
             ))}
           </div>
         )}
-        {empty && <p className="pointer-events-none absolute inset-0 grid place-items-center text-[12.5px] text-text-muted">Belum ada data pada periode ini</p>}
+        {empty && <p className="pointer-events-none absolute inset-0 grid place-items-center text-[13px] text-text-muted">Belum ada data pada periode ini</p>}
       </div>
 
       <details className="mt-1 text-[12px] text-text-muted">
@@ -222,12 +222,12 @@ export function BarList({ items }: { items: { label: string; value: number; colo
   const intro = useIntro();
   const total = items.reduce((s, i) => s + i.value, 0);
   const max = Math.max(1, ...items.map((i) => i.value));
-  if (items.length === 0 || total === 0) return <p className="py-6 text-center text-[12.5px] text-text-muted">Belum ada data</p>;
+  if (items.length === 0 || total === 0) return <p className="py-6 text-center text-[13px] text-text-muted">Belum ada data</p>;
   return (
     <ul className="space-y-3">
       {items.map((it, idx) => (
         <li key={it.label}>
-          <div className="mb-1 flex items-baseline justify-between text-[12.5px]">
+          <div className="mb-1 flex items-baseline justify-between text-[13px]">
             <span className="text-text-muted">{it.label}</span>
             <span className="font-medium">
               {it.value} <span className="text-text-muted">({Math.round((it.value / total) * 100)}%)</span>

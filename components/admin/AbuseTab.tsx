@@ -129,7 +129,7 @@ export function AbuseTab({ toast }: { toast: (m: string) => void }) {
               role="tab"
               aria-selected={filter === f.id}
               onClick={() => setFilter(f.id)}
-              className={`rounded-full px-3.5 py-1.5 text-[12.5px] font-medium transition ${filter === f.id ? "chip-on" : "pill"}`}
+              className={`rounded-full px-3.5 py-1.5 text-[13px] font-medium transition ${filter === f.id ? "chip-on" : "pill"}`}
             >
               {f.label}
               {count !== null && <span className="ml-1.5 opacity-70">{count}</span>}
@@ -159,7 +159,7 @@ export function AbuseTab({ toast }: { toast: (m: string) => void }) {
                   <Badge dot={r.live} tone={r.live ? "warn" : "neutral"}>{r.live ? "Masih aktif" : "Sudah tidak ada"}</Badge>
                   <span className="ml-auto text-[12px] text-text-muted">{fmtDateTime(r.createdAt)}</span>
                 </div>
-                <p className="mt-2 whitespace-pre-wrap break-words text-[13.5px]">{r.reason}</p>
+                <p className="mt-2 whitespace-pre-wrap break-words text-[14px]">{r.reason}</p>
                 <p className="mt-1 text-[12px] text-text-muted">
                   Pemilik: {r.owner ?? "anonim (tunnel CLI)"} · Kontak pelapor: {r.contact ?? "—"}
                   {r.status !== "open" && r.resolvedAt ? ` · Diselesaikan ${fmtDateTime(r.resolvedAt)} oleh ${r.resolvedBy ?? "—"}` : ""}
@@ -171,7 +171,7 @@ export function AbuseTab({ toast }: { toast: (m: string) => void }) {
                       href={r.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="pill inline-flex items-center gap-1.5 px-3.5 py-1.5 text-[12.5px] font-medium"
+                      className="pill inline-flex items-center gap-1.5 px-3.5 py-1.5 text-[13px] font-medium"
                       title="Hati-hati: ini mungkin halaman phishing. Jangan isi data apa pun."
                     >
                       <ExternalLink size={13} /> Periksa link

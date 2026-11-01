@@ -24,7 +24,7 @@ export function StatCard({
   return (
     <div className={`stat-card-glass p-5 ${toneClass}`}>
       <div className="flex items-start justify-between gap-3">
-        <p className="pt-1 text-[13.5px] font-medium text-text-muted">{label}</p>
+        <p className="pt-1 text-[14px] font-medium text-text-muted">{label}</p>
         <span className="stat-icon text-text">
           <Icon size={19} />
         </span>

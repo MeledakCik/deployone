@@ -10,7 +10,7 @@ const config: Config = {
     extend: {
       fontFamily: {
         display: ["Inter Tight Variable", "Inter Tight", "Inter Variable", "Inter", "Helvetica", "Arial", "sans-serif"],
-        sans: ["Inter Tight Variable", "Inter Tight", "Inter Variable", "Inter", "Helvetica", "Arial", "sans-serif"],
+        sans: ["Inter Variable", "Inter", "Inter Tight Variable", "Inter Tight", "Helvetica", "Arial", "sans-serif"],
         mono: ["JetBrains Mono Variable", "ui-monospace", "SFMono-Regular", "Menlo", "monospace"],
       },
       borderRadius: {

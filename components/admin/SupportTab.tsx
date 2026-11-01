@@ -88,7 +88,7 @@ export function SupportTab({ toast }: { toast: (m: string) => void }) {
                         <ChevronDown size={14} className="chev" data-open={isOpen} />
                       </span>
                     </div>
-                    <p className="mt-1.5 text-[13.5px]">{r.summary}</p>
+                    <p className="mt-1.5 text-[14px]">{r.summary}</p>
                     <p className="text-[12px] text-text-muted">
                       {r.email}
                       {r.view ? ` · halaman ${r.view}` : ""}

@@ -99,12 +99,12 @@ export function HealthTab({ toast }: { toast: (m: string) => void }) {
               if (rows.length === 0) return null;
               return (
                 <div key={g} className="border-b border-[var(--surface-line)] last:border-0">
-                  <p className="px-6 pt-4 text-[11.5px] font-semibold uppercase tracking-wide text-text-muted">{g}</p>
+                  <p className="px-6 pt-4 text-[12px] font-semibold uppercase tracking-wide text-text-muted">{g}</p>
                   <ul>
                     {rows.map((c) => (
                       <li key={c.id} className="flex flex-wrap items-start gap-x-3 gap-y-1 px-6 py-3">
                         <Badge tone={TONE[c.status]}>{LABEL[c.status]}</Badge>
-                        <span className="min-w-[160px] text-[13.5px] font-medium">{c.label}</span>
+                        <span className="min-w-[160px] text-[14px] font-medium">{c.label}</span>
                         <span className="min-w-0 flex-1 break-words text-[13px] text-text-muted">{c.detail}</span>
                       </li>
                     ))}
@@ -122,7 +122,7 @@ export function HealthTab({ toast }: { toast: (m: string) => void }) {
                 {result.errors.map((e, i) => (
                   <li key={i} className="border-b border-[var(--surface-line)] px-6 py-3 last:border-0">
                     <p className="text-[12px] text-text-muted">{fmtDateTime(e.at)}</p>
-                    <p className="mono text-[12.5px]">
+                    <p className="mono text-[13px]">
                       {e.method} {e.path}
                     </p>
                     <p className="break-words text-[13px] text-text-muted">{e.message}</p>
@@ -135,7 +135,7 @@ export function HealthTab({ toast }: { toast: (m: string) => void }) {
           <Card title="Analisis AI">
             {result.analysis ? (
               <div className="space-y-2 px-6 py-4">
-                <p className="whitespace-pre-wrap break-words text-[13.5px]">{result.analysis.text}</p>
+                <p className="whitespace-pre-wrap break-words text-[14px]">{result.analysis.text}</p>
                 <p className="text-[12px] text-text-muted">
                   {fmtDateTime(result.analysis.at)} · {result.analysis.usedAi ? "memakai 1 panggilan AI" : "tanpa AI"}
                 </p>

@@ -182,7 +182,7 @@ export function DonateView() {
         {config?.configured && phase === "form" && (
           <form onSubmit={createQr} className="surface-solid space-y-5 p-5 sm:p-6">
             <fieldset>
-              <legend className="mb-2 text-[12.5px] font-medium text-text-muted">Nominal</legend>
+              <legend className="mb-2 text-[13px] font-medium text-text-muted">Nominal</legend>
               <div className="flex flex-wrap gap-2">
                 {PRESETS.map((p) => (
                   <button
@@ -217,7 +217,7 @@ export function DonateView() {
 
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block">
-                <span className="mb-1.5 block text-[12.5px] font-medium text-text-muted">Nama (tampil di Saweria)</span>
+                <span className="mb-1.5 block text-[13px] font-medium text-text-muted">Nama (tampil di Saweria)</span>
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value.slice(0, 30))}
@@ -226,7 +226,7 @@ export function DonateView() {
                 />
               </label>
               <label className="block">
-                <span className="mb-1.5 block text-[12.5px] font-medium text-text-muted">Email (untuk bukti)</span>
+                <span className="mb-1.5 block text-[13px] font-medium text-text-muted">Email (untuk bukti)</span>
                 <input
                   type="email"
                   value={email}
@@ -237,7 +237,7 @@ export function DonateView() {
             </div>
 
             <label className="block">
-              <span className="mb-1.5 block text-[12.5px] font-medium text-text-muted">Pesan (opsional)</span>
+              <span className="mb-1.5 block text-[13px] font-medium text-text-muted">Pesan (opsional)</span>
               <textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value.slice(0, 150))}
@@ -262,7 +262,7 @@ export function DonateView() {
             </button>
 
             {config.pageUrl && (
-              <p className="text-center text-[12.5px] text-text-muted">
+              <p className="text-center text-[13px] text-text-muted">
                 Lebih suka lewat e-wallet atau metode lain?{" "}
                 <a href={config.pageUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-violet-500 underline underline-offset-2">
                   Buka halaman Saweria <ExternalLink size={12} />
@@ -293,25 +293,25 @@ export function DonateView() {
               <Loader2 size={14} className="animate-spin" /> Menunggu pembayaran…
             </p>
             {checkNote && (
-              <p className="text-[12.5px] text-warn-fg" role="status">
+              <p className="text-[13px] text-warn-fg" role="status">
                 {checkNote}
               </p>
             )}
             <div className="flex flex-wrap items-center justify-center gap-2">
-              <button type="button" onClick={manualCheck} disabled={checking} className="pill inline-flex items-center gap-1.5 px-3.5 py-2 text-[12.5px] font-medium disabled:opacity-50">
+              <button type="button" onClick={manualCheck} disabled={checking} className="pill inline-flex items-center gap-1.5 px-3.5 py-2 text-[13px] font-medium disabled:opacity-50">
                 <RefreshCw size={13} className={checking ? "animate-spin" : ""} /> Sudah bayar? Periksa
               </button>
               <a
                 href={donation.qrImage}
                 download={`qris-donasi-${donation.amount}.png`}
-                className="pill inline-flex items-center gap-1.5 px-3.5 py-2 text-[12.5px] font-medium"
+                className="pill inline-flex items-center gap-1.5 px-3.5 py-2 text-[13px] font-medium"
               >
                 <Download size={13} /> Simpan QR
               </a>
-              <a href={donation.invoiceUrl} target="_blank" rel="noopener noreferrer" className="pill inline-flex items-center gap-1.5 px-3.5 py-2 text-[12.5px] font-medium">
+              <a href={donation.invoiceUrl} target="_blank" rel="noopener noreferrer" className="pill inline-flex items-center gap-1.5 px-3.5 py-2 text-[13px] font-medium">
                 Buka di Saweria <ExternalLink size={12} />
               </a>
-              <button type="button" onClick={again} className="pill px-3.5 py-2 text-[12.5px] font-medium text-text-muted hover:text-text">
+              <button type="button" onClick={again} className="pill px-3.5 py-2 text-[13px] font-medium text-text-muted hover:text-text">
                 Ubah nominal
               </button>
             </div>
@@ -327,7 +327,7 @@ export function DonateView() {
             <p className="text-[13px] leading-relaxed text-text-muted">
               Pembayaran terdeteksi. Dukunganmu sangat berarti untuk pengembangan Depup.
             </p>
-            <button type="button" onClick={again} className="pill mx-auto inline-flex items-center gap-1.5 px-4 py-2 text-[12.5px] font-medium">
+            <button type="button" onClick={again} className="pill mx-auto inline-flex items-center gap-1.5 px-4 py-2 text-[13px] font-medium">
               <Heart size={13} /> Donasi lagi
             </button>
           </div>
@@ -350,7 +350,7 @@ export function DonateView() {
           </div>
         )}
 
-        {error && phase !== "form" && <p className="text-center text-[12.5px] text-bad-fg">{error}</p>}
+        {error && phase !== "form" && <p className="text-center text-[13px] text-bad-fg">{error}</p>}
       </div>
     </ViewFade>
   );

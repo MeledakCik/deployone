@@ -18,7 +18,7 @@ export function PublicHeader() {
         <div className="mx-auto flex h-16 w-full max-w-4xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link
             href="/"
-            className="text-[17px] font-bold tracking-tight transition-opacity hover:opacity-80"
+            className="text-[18px] font-bold tracking-tight transition-opacity hover:opacity-80"
           >
             Depup.
           </Link>

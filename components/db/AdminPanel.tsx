@@ -40,7 +40,7 @@ export default function AdminPanel({ id }: { id: string }) {
 
   return (
     <div className={`${surface} overflow-hidden`}>
-      <div role="tablist" className="flex snap-x gap-1 overflow-x-auto border-b border-violet-100 bg-violet-50/50 px-2 pt-2 [scrollbar-width:none] dark:border-white/10 dark:bg-white/5 [&::-webkit-scrollbar]:hidden">
+      <div role="tablist" className="flex snap-x gap-1 overflow-x-auto bg-[var(--pill-bg)] px-2 pt-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {TABS.map(([k, label]) => (
           <button
             key={k}
@@ -49,8 +49,8 @@ export default function AdminPanel({ id }: { id: string }) {
             type="button"
             onClick={() => setTab(k)}
             className={cx(
-              "shrink-0 snap-start whitespace-nowrap rounded-t-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-violet-500",
-              tab === k ? "border-b-2 border-violet-500 bg-white text-violet-700 dark:border-lime-400 dark:bg-[#1e1150] dark:text-lime-300" : "text-slate-600 hover:bg-white/70 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-white/5 dark:hover:text-slate-100"
+              "shrink-0 snap-start whitespace-nowrap rounded-t-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-[var(--ring)]",
+              tab === k ? "bg-[var(--surface-solid)] text-lav-text   " : "text-text-muted hover:bg-[var(--card-hover)] hover:text-text  "
             )}
           >
             {label}
@@ -59,7 +59,7 @@ export default function AdminPanel({ id }: { id: string }) {
       </div>
       <div className="p-3 sm:p-5">
         {err && <Notice kind="error">{err}</Notice>}
-        {!schema && !err && <div className="space-y-2" aria-busy="true"><div className="h-8 w-40 animate-pulse rounded-lg bg-violet-100/70 dark:bg-white/10" /><div className="h-32 animate-pulse rounded-xl bg-violet-100/70 dark:bg-white/10" /></div>}
+        {!schema && !err && <div className="space-y-2" aria-busy="true"><div className="h-8 w-40 animate-pulse rounded-lg bg-tone-lilac" /><div className="h-32 animate-pulse rounded-xl bg-tone-lilac" /></div>}
         {schema && tab === "tables" && <TablesTab schema={schema} onOpen={(t, to) => { setTable(t); setTab(to); }} onReload={reload} />}
         {schema && tab === "browse" && <BrowseTab id={id} schema={schema} table={table} setTable={setTable} onChanged={reload} />}
         {schema && tab === "structure" && <StructureTab id={id} schema={schema} table={table} setTable={setTable} onChanged={reload} />}

@@ -15,7 +15,7 @@ export default function LaporkanPage({ searchParams }: { searchParams: { slug?: 
   return (
     <main className="app-canvas flex flex-col items-center justify-center gap-5 px-6 py-12 text-center">
       <h1 className="page-title">Laporkan penyalahgunaan</h1>
-      <p className="max-w-md text-[13.5px] leading-relaxed text-text-muted">
+      <p className="max-w-md text-[14px] leading-relaxed text-text-muted">
         Menemukan link Depup yang berisi phishing, penipuan, atau malware? Laporkan di sini. Jangan memasukkan
         password atau data pribadi di halaman tersebut.
       </p>

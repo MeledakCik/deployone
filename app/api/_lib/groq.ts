@@ -46,6 +46,15 @@ export interface GroqOptions {
 }
 
 export async function groqChat(system: string, messages: ChatMessage[], opts: GroqOptions = {}): Promise<string> {
+  return (await groqChatFull(system, messages, opts)).text;
+}
+
+/** Sama seperti groqChat, tapi juga mengembalikan alasan berhenti ("length" = terpotong karena batas token). */
+export async function groqChatFull(
+  system: string,
+  messages: ChatMessage[],
+  opts: GroqOptions = {},
+): Promise<{ text: string; finishReason: string | null }> {
   const ownKey = !!opts.apiKey;
   const apiKey = (opts.apiKey ?? process.env.GROQ_API_KEY)?.trim();
   if (!apiKey) throw new GroqError("not_configured", "GROQ_API_KEY belum diatur.");
@@ -105,11 +114,11 @@ export async function groqChat(system: string, messages: ChatMessage[], opts: Gr
   }
 
   const json = (await res.json().catch(() => null)) as {
-    choices?: { message?: { content?: string | null } }[];
+    choices?: { message?: { content?: string | null }; finish_reason?: string | null }[];
   } | null;
   const text = json?.choices?.[0]?.message?.content?.trim();
   if (!text) throw new GroqError("upstream", "Groq mengembalikan jawaban kosong.");
-  return text;
+  return { text, finishReason: json?.choices?.[0]?.finish_reason ?? null };
 }
 
 /** Cek token Groq lewat endpoint daftar model (tidak memakai kuota token). */

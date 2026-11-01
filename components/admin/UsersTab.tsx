@@ -178,7 +178,7 @@ export function UsersTab({ toast }: { toast: (m: string) => void }) {
                     </div>
                   </div>
                   <div className="mt-2.5">{statusBadges(u)}</div>
-                  <p className="mt-2 text-[12.5px] text-text-muted">
+                  <p className="mt-2 text-[13px] text-text-muted">
                     {u.deploys} deploy · {u.sites} link · login {u.lastSeen ? fmtDateTime(u.lastSeen) : "—"}
                   </p>
                   {actions(u, "mt-3 grid grid-cols-2 gap-2")}

@@ -26,7 +26,7 @@ function DnsField({ label, value }: { label: string; value: string }) {
     <div className="flex items-center justify-between gap-3 rounded-xl bg-[var(--row-hover)] px-3 py-1.5">
       <div className="min-w-0">
         <p className="text-[12px] uppercase tracking-wide text-text-faint">{label}</p>
-        <p className="mono truncate text-[12.5px]">{value}</p>
+        <p className="mono truncate text-[13px]">{value}</p>
       </div>
       <button
         type="button"
@@ -87,7 +87,7 @@ function AddDomainModal({ open, onClose }: { open: boolean; onClose: () => void 
     <div className="anim-fade fixed inset-0 z-[100] flex items-center justify-center modal-scrim px-4">
       <Surface className="anim-pop w-full max-w-sm p-6">
         <div className="flex items-center justify-between mb-5">
-          <h3 className="text-[15px] font-semibold">Tambah domain</h3>
+          <h3 className="text-[16px] font-semibold">Tambah domain</h3>
           <button
             type="button"
             onClick={onClose}
@@ -268,7 +268,7 @@ export function DomainsView() {
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <PageTitle title="Domains" desc={<>Kelola custom domain untuk project kamu.</>} />
+            <PageTitle title="Domain" desc={<>Kelola custom domain untuk project kamu.</>} />
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {(vercelToken || savedCloudflareToken || savedRailwayToken) && (

@@ -250,7 +250,7 @@ export function DeployModal() {
                   </div>
                 )}
 
-                <div className="mt-5 text-[15px] font-medium">
+                <div className="mt-5 text-[16px] font-medium">
                   {title || "Sedang menyiapkan deploy…"}
                 </div>
                 <div className="mt-1.5 text-[12px] text-[var(--text-muted)] max-w-[340px] mx-auto leading-relaxed">
@@ -474,7 +474,7 @@ function ErrorPanel({
         <div className="w-12 h-12 mx-auto rounded-full bg-[var(--bad-bg)] flex items-center justify-center">
           <CircleAlert className="w-6 h-6 text-bad-fg" />
         </div>
-        <div className="mt-4 text-[17px] font-semibold">{title}</div>
+        <div className="mt-4 text-[18px] font-semibold">{title}</div>
         <div className="mt-1.5 text-[13px] text-[var(--text-muted)] max-w-[400px] mx-auto leading-relaxed">
           {message}
         </div>
@@ -487,7 +487,7 @@ function ErrorPanel({
           </div>
           <ol className="space-y-2">
             {guide.steps.map((step, i) => (
-              <li key={i} className="flex gap-2.5 text-[12.5px] text-[var(--text-muted)] leading-relaxed">
+              <li key={i} className="flex gap-2.5 text-[13px] text-[var(--text-muted)] leading-relaxed">
                 <span className="shrink-0 w-5 h-5 rounded-full bg-[var(--dm-chip)] text-[var(--text-muted)] text-[12px] flex items-center justify-center mt-px">
                   {i + 1}
                 </span>

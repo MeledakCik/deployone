@@ -30,7 +30,7 @@ export default function BrowseTab({ id, schema, table, setTable, onChanged }: { 
   useEffect(() => setPage(1), [table]);
 
   const pages = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1;
-  if (!schema.tables.length) return <p className="rounded-xl border border-dashed border-violet-200 px-4 py-8 text-center text-sm text-slate-500 dark:border-white/15 dark:text-slate-400">Belum ada tabel.</p>;
+  if (!schema.tables.length) return <p className="rounded-xl bg-[var(--pill-bg)] px-4 py-8 text-center text-sm text-text-muted">Belum ada tabel.</p>;
 
   return (
     <div className="space-y-3">
@@ -40,7 +40,7 @@ export default function BrowseTab({ id, schema, table, setTable, onChanged }: { 
             <option key={t.name}>{t.name}</option>
           ))}
         </select>
-        {data && <span className="rounded-full bg-violet-50 px-2.5 py-1 text-xs font-medium text-violet-700 dark:bg-white/10 dark:text-violet-200">{data.total} baris</span>}
+        {data && <span className="rounded-full bg-[var(--pill-bg)] px-2.5 py-1 text-xs font-medium text-lav-text">{data.total} baris</span>}
         <div className="flex w-full gap-2 sm:ml-auto sm:w-auto [&>*]:flex-1 sm:[&>*]:flex-none">
           <Btn onClick={load}>Refresh</Btn>
           <Btn variant="primary" disabled={!data?.editable && !!data} onClick={() => setForm({ values: {} })}>
@@ -51,16 +51,16 @@ export default function BrowseTab({ id, schema, table, setTable, onChanged }: { 
       {err && <Notice kind="error">{err}</Notice>}
       {data && !data.editable && <Notice kind="info">View / tabel WITHOUT ROWID: hanya bisa dibaca di sini.</Notice>}
       {data && (
-        <div className="max-h-[70vh] overflow-auto rounded-xl border border-violet-100 dark:border-white/10">
+        <div className="max-h-[70vh] overflow-auto rounded-xl">
           <table className="w-full">
-            <thead className="sticky top-0 bg-violet-50 dark:bg-[#271b57]">
+            <thead className="sticky top-0 bg-[var(--pill-bg)]">
               <tr>
                 {data.editable && <th className={th} />}
                 {data.columns.map((c) => (
                   <th key={c} className={th}>
                     <button
                       type="button"
-                      className="font-semibold hover:text-slate-900 dark:hover:text-slate-100"
+                      className="font-semibold hover:text-text"
                       onClick={() => {
                         if (sort === c) setDir(dir === "asc" ? "desc" : "asc");
                         else {
@@ -75,7 +75,7 @@ export default function BrowseTab({ id, schema, table, setTable, onChanged }: { 
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-violet-50 dark:divide-white/5">
+            <tbody className="divide-y divide-[var(--line)]">
               {data.rows.length === 0 && (
                 <tr>
                   <td className={td} colSpan={data.columns.length + 1}>
@@ -84,7 +84,7 @@ export default function BrowseTab({ id, schema, table, setTable, onChanged }: { 
                 </tr>
               )}
               {data.rows.map((row, i) => (
-                <tr key={i} className="transition-colors hover:bg-violet-50/50 dark:hover:bg-white/5">
+                <tr key={i} className="transition-colors hover:bg-[var(--card-hover)]">
                   {data.editable && (
                     <td className={`${td} whitespace-nowrap`}>
                       <Btn small onClick={() => setForm({ rid: data.rids[i], values: Object.fromEntries(data.columns.map((c, j) => [c, row[j]])) })}>
@@ -185,11 +185,11 @@ function RowForm({ id, table, cols, initial, onClose, onSaved }: { id: string; t
           const isBlob = editing && typeof initial.values[c.name] === "object" && initial.values[c.name] !== null;
           return (
             <div key={c.name} className="grid items-center gap-1.5 sm:grid-cols-[10rem_1fr_auto] sm:gap-2">
-              <label htmlFor={`f-${c.name}`} className="text-sm font-medium text-slate-700 dark:text-slate-200">
-                {c.name} <span className="text-xs font-normal text-slate-400">{c.type}{c.pk ? " · PK" : ""}</span>
+              <label htmlFor={`f-${c.name}`} className="text-sm font-medium text-text">
+                {c.name} <span className="text-xs font-normal text-text-faint">{c.type}{c.pk ? " · PK" : ""}</span>
               </label>
               <input id={`f-${c.name}`} className={inputCls} disabled={isBlob || nulls[c.name]} value={isBlob ? "[BLOB]" : vals[c.name]} placeholder={!editing ? "(kosong = default)" : ""} onChange={(e) => setVals({ ...vals, [c.name]: e.target.value })} />
-              <label className="flex items-center gap-1 text-xs text-slate-500">
+              <label className="flex items-center gap-1 text-xs text-text-muted">
                 <input type="checkbox" disabled={isBlob || (!!c.notnull && !editing)} checked={!!nulls[c.name]} onChange={(e) => setNulls({ ...nulls, [c.name]: e.target.checked })} /> NULL
               </label>
             </div>

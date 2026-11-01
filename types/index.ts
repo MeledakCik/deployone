@@ -112,6 +112,7 @@ export type DashboardView =
   | "upload"
   | "hosting"
   | "ai"
+  | "convert"
   | "database";
 
 /* ---------------------------------------------------------------------- */

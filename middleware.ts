@@ -56,6 +56,7 @@ const CUSTOM_LIMITS: Record<string, { limit: number; windowSeconds: number }> = 
   "donate/status": { limit: 30, windowSeconds: 60 },
   "ai/site": { limit: 6, windowSeconds: 60 },
   "ai/key": { limit: 10, windowSeconds: 60 },
+  convert: { limit: 40, windowSeconds: 60 },
   "tunnel/create": { limit: 20, windowSeconds: 60 },
   abuse: { limit: 5, windowSeconds: 600 },
   unsubscribe: { limit: 20, windowSeconds: 600 },

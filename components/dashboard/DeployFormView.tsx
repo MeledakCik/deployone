@@ -62,10 +62,10 @@ function domainSuffixFor(p: Platform): string {
 /* ---------------- Shared classes ---------------- */
 
 const inputCls =
-  "w-full h-11 sm:h-[46px] rounded-[14px] bg-[var(--dc-input)] border border-transparent px-3.5 sm:px-4 text-[13.5px] sm:text-[14px] text-[var(--dc-text)] placeholder:text-[var(--dc-text-faint)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)] focus:bg-[var(--dc-input-focus)] transition-colors";
+  "w-full h-11 sm:h-[46px] rounded-[14px] bg-[var(--dc-input)] border border-transparent px-3.5 sm:px-4 text-[14px] sm:text-[14px] text-[var(--dc-text)] placeholder:text-[var(--dc-text-faint)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)] focus:bg-[var(--dc-input-focus)] transition-colors";
 
 const textareaCls =
-  "w-full rounded-[14px] bg-[var(--dc-input)] border border-transparent px-3.5 sm:px-4 py-2.5 sm:py-3 text-[12.5px] sm:text-[13px] text-[var(--dc-text)] placeholder:text-[var(--dc-text-faint)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)] focus:bg-[var(--dc-input-focus)] transition-colors resize-none font-mono";
+  "w-full rounded-[14px] bg-[var(--dc-input)] border border-transparent px-3.5 sm:px-4 py-2.5 sm:py-3 text-[13px] sm:text-[13px] text-[var(--dc-text)] placeholder:text-[var(--dc-text-faint)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)] focus:bg-[var(--dc-input-focus)] transition-colors resize-none font-mono";
 
 const labelCls =
   "block text-[12px] sm:text-[12px] tracking-wide uppercase text-[var(--dc-text-faint)] font-medium";
@@ -295,7 +295,7 @@ function VercelTokenField() {
           placeholder="••••••••••••••••"
           value={form.platformToken}
           onChange={(e) => setFormField("platformToken", e.target.value)}
-          className={cn(inputCls, "pr-10 font-mono text-[12.5px] sm:text-[13px]")}
+          className={cn(inputCls, "pr-10 font-mono text-[13px] sm:text-[13px]")}
         />
         <KeyRound className="absolute right-3 sm:right-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-[var(--dc-text-faint)]" />
       </div>
@@ -400,7 +400,7 @@ function CloudflareTokenField() {
           placeholder="••••••••••••••••"
           value={form.platformToken}
           onChange={(e) => setFormField("platformToken", e.target.value)}
-          className={cn(inputCls, "pr-10 font-mono text-[12.5px] sm:text-[13px]")}
+          className={cn(inputCls, "pr-10 font-mono text-[13px] sm:text-[13px]")}
         />
         <KeyRound className="absolute right-3 sm:right-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-[var(--dc-text-faint)]" />
       </div>
@@ -498,7 +498,7 @@ function RailwayTokenField() {
           placeholder="••••••••••••••••"
           value={form.platformToken}
           onChange={(e) => setFormField("platformToken", e.target.value)}
-          className={cn(inputCls, "pr-10 font-mono text-[12.5px] sm:text-[13px]")}
+          className={cn(inputCls, "pr-10 font-mono text-[13px] sm:text-[13px]")}
         />
         <KeyRound className="absolute right-3 sm:right-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-[var(--dc-text-faint)]" />
       </div>
@@ -684,7 +684,7 @@ export function DeployFormView() {
             <h1 className="page-title text-[var(--dc-text)]">
               Pilih Platform Deploy
             </h1>
-            <p className="mx-auto mt-1.5 max-w-[460px] text-[13.5px] leading-relaxed text-[var(--dc-text-muted)]">
+            <p className="mx-auto mt-1.5 max-w-[460px] text-[14px] leading-relaxed text-[var(--dc-text-muted)]">
               Pilih platform favoritmu. Depup akan memandu proses deploy otomatis
               langkah demi langkah.
             </p>
@@ -723,7 +723,7 @@ export function DeployFormView() {
                     <div className="min-w-0">
                       <div
                         className={cn(
-                          "text-[15px] sm:text-[16px] font-semibold tracking-[-0.01em] leading-none transition-colors duration-300",
+                          "text-[16px] sm:text-[16px] font-semibold tracking-[-0.01em] leading-none transition-colors duration-300",
                           selected ? "text-white" : "text-ink dark:text-[#c9c2e6]",
                         )}
                       >
@@ -818,7 +818,7 @@ export function DeployFormView() {
                     )}
                   </div>
                   <div className="min-w-0">
-                    <div className="text-[12.5px] sm:text-[13px] font-semibold leading-tight truncate text-[var(--dc-text)]">
+                    <div className="text-[13px] sm:text-[13px] font-semibold leading-tight truncate text-[var(--dc-text)]">
                       Deploy ke {activePlatformInfo?.label}
                     </div>
                     <div className="text-[12px] sm:text-[12px] text-[var(--dc-text-muted)] mt-0.5 truncate">
@@ -880,7 +880,7 @@ export function DeployFormView() {
                     );
                   })}
                 </div>
-                <div className="mt-1.5 sm:mt-2 flex justify-between text-[11px] sm:text-[12px] tracking-wide text-[var(--dc-text-faint)] uppercase">
+                <div className="mt-1.5 sm:mt-2 flex justify-between text-[12px] sm:text-[12px] tracking-wide text-[var(--dc-text-faint)] uppercase">
                   <span>1. Mulai</span>
                   <span className="hidden xs:inline">2. Input + Penjelasan</span>
                   <span className="xs:hidden">2. Input</span>
@@ -906,10 +906,10 @@ export function DeployFormView() {
                         <step.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-[15px] sm:text-[17px] font-semibold tracking-tight leading-tight flex items-center gap-2 flex-wrap text-[var(--dc-text)]">
+                        <h3 className="text-[16px] sm:text-[18px] font-semibold tracking-tight leading-tight flex items-center gap-2 flex-wrap text-[var(--dc-text)]">
                           {step.title}
                           {step.optional && (
-                            <span className="text-[11px] sm:text-[12px] px-1.5 sm:px-2 py-0.5 rounded-full bg-[var(--dc-pill)] text-[var(--dc-text-faint)] font-medium tracking-wide uppercase">
+                            <span className="text-[12px] sm:text-[12px] px-1.5 sm:px-2 py-0.5 rounded-full bg-[var(--dc-pill)] text-[var(--dc-text-faint)] font-medium tracking-wide uppercase">
                               Opsional
                             </span>
                           )}
@@ -1061,7 +1061,7 @@ export function DeployFormView() {
                               }
                               className={cn(
                                 inputCls,
-                                "font-mono text-[12.5px] sm:text-[13px]",
+                                "font-mono text-[13px] sm:text-[13px]",
                               )}
                             />
                           </div>
@@ -1079,7 +1079,7 @@ export function DeployFormView() {
                               }
                               className={cn(
                                 inputCls,
-                                "font-mono text-[12.5px] sm:text-[13px]",
+                                "font-mono text-[13px] sm:text-[13px]",
                               )}
                             />
                           </div>
@@ -1107,7 +1107,7 @@ export function DeployFormView() {
                               }
                               className={cn(
                                 inputCls,
-                                "pr-10 font-mono text-[12.5px] sm:text-[13px]",
+                                "pr-10 font-mono text-[13px] sm:text-[13px]",
                               )}
                             />
                             <Github className="absolute right-3 sm:right-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-4 sm:h-4 text-[var(--dc-text-faint)]" />
@@ -1167,7 +1167,7 @@ export function DeployFormView() {
                   onClick={goPrev}
                   disabled={currentStep === 0}
                   className={cn(
-                    "h-10 sm:h-9 px-3.5 sm:px-4 rounded-full text-[12.5px] sm:text-[13px] font-medium flex items-center gap-1.5 transition-colors shrink-0",
+                    "h-10 sm:h-9 px-3.5 sm:px-4 rounded-full text-[13px] sm:text-[13px] font-medium flex items-center gap-1.5 transition-colors shrink-0",
                     currentStep === 0
                       ? "text-[var(--dc-text-faint)] cursor-not-allowed"
                       : "bg-[var(--dc-pill)] text-[var(--dc-text-muted)] hover:bg-[var(--dc-hover)] hover:text-[var(--dc-text)] active:scale-[0.97]",
@@ -1182,7 +1182,7 @@ export function DeployFormView() {
                     <button
                       type="button"
                       onClick={skip}
-                      className="h-10 sm:h-9 px-3 sm:px-4 rounded-full text-[12.5px] sm:text-[13px] font-medium text-[var(--dc-text-faint)] hover:text-[var(--dc-text-muted)] transition-colors shrink-0"
+                      className="h-10 sm:h-9 px-3 sm:px-4 rounded-full text-[13px] sm:text-[13px] font-medium text-[var(--dc-text-faint)] hover:text-[var(--dc-text-muted)] transition-colors shrink-0"
                     >
                       Lewati
                     </button>
@@ -1192,7 +1192,7 @@ export function DeployFormView() {
                     <button
                       type="submit"
                       form="deployForm"
-                      className="h-10 sm:h-9 px-5 rounded-full text-[12.5px] sm:text-[13px] font-medium flex items-center gap-1.5 transition-all bg-[var(--dc-btn-bg)] text-[var(--dc-btn-fg)] hover:opacity-90 shadow-[var(--dc-shadow-btn)] active:scale-[0.97] shrink-0"
+                      className="h-10 sm:h-9 px-5 rounded-full text-[13px] sm:text-[13px] font-medium flex items-center gap-1.5 transition-all bg-[var(--dc-btn-bg)] text-[var(--dc-btn-fg)] hover:opacity-90 shadow-[var(--dc-shadow-btn)] active:scale-[0.97] shrink-0"
                     >
                       <span className="whitespace-nowrap">Deploy Project</span>
                       <Rocket className="w-3.5 h-3.5" />
@@ -1203,7 +1203,7 @@ export function DeployFormView() {
                       disabled={!canNext}
                       onClick={goNext}
                       className={cn(
-                        "h-10 sm:h-9 px-5 rounded-full text-[12.5px] sm:text-[13px] font-medium flex items-center gap-1.5 transition-all shrink-0",
+                        "h-10 sm:h-9 px-5 rounded-full text-[13px] sm:text-[13px] font-medium flex items-center gap-1.5 transition-all shrink-0",
                         canNext
                           ? "bg-[var(--dc-btn-bg)] text-[var(--dc-btn-fg)] hover:opacity-90 shadow-[var(--dc-shadow-btn)] active:scale-[0.97]"
                           : "bg-[var(--dc-pill)] text-[var(--dc-text-faint)] cursor-not-allowed",

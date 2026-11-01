@@ -28,13 +28,13 @@ export default function MobileProjects() {
 
   return (
     <div className="space-y-4 pt-2">
-      <label className="flex h-12 items-center gap-2.5 rounded-full bg-[#F1EEFF] px-4 ring-1 ring-transparent focus-within:bg-white focus-within:ring-[#7C3AED]">
-        <Search className="h-[18px] w-[18px] text-[#7B7487]" />
+      <label className="flex h-12 items-center gap-2.5 rounded-full bg-[#ede8ff] px-4 focus-within:bg-white focus-within:ring-[#7b50ff]">
+        <Search className="h-[18px] w-[18px] text-[#59546d]" />
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Cari project atau domain…"
-          className="h-full min-w-0 flex-1 bg-transparent text-[14px] font-medium outline-none placeholder:text-[#7B7487]"
+          className="h-full min-w-0 flex-1 bg-transparent text-[14px] font-medium outline-none placeholder:text-[#59546d]"
         />
       </label>
 
@@ -47,16 +47,16 @@ export default function MobileProjects() {
         ))}
       </div>
 
-      <section className={`relative overflow-hidden rounded-[24px] ${HERO_GRADIENT} p-5 text-white shadow-[0_18px_34px_-14px_rgba(109,40,217,0.7)]`}>
+      <section className={`relative overflow-hidden rounded-[24px] ${HERO_GRADIENT} p-5 text-white shadow-[0_18px_34px_-14px_rgba(90,57,192,0.7)]`}>
         <div className="pointer-events-none absolute -right-8 -top-8 h-36 w-36 rounded-full bg-white/15 blur-xl" />
-        <p className="relative flex items-center gap-2 text-[11.5px] font-bold uppercase tracking-[0.08em] text-[#EDE0FF]">
-          <span className="h-2 w-2 rounded-full bg-[#4EDEA3]" /> Status project
+        <p className="relative flex items-center gap-2 text-[12px] font-bold uppercase tracking-[0.08em] text-[#e7e0ff]">
+          <span className="h-2 w-2 rounded-full bg-[#c6f432]" /> Status project
         </p>
         <p className="relative mt-1 text-[22px] font-extrabold leading-tight tracking-[-0.025em]">
           {loading ? "Memuat…" : `${online} dari ${projects.length} project online`}
         </p>
         <div className="relative mt-4 grid grid-cols-2 gap-2">
-          <Link href="/m/kelola" className="flex h-10 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-white px-4 text-[13px] font-extrabold text-[#6D28D9] active:scale-95">
+          <Link href="/m/kelola" className="flex h-10 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-white px-4 text-[13px] font-extrabold text-[#5a39c0] active:scale-95">
             <Download className="h-4 w-4" /> Import
           </Link>
           <button onClick={sync} disabled={syncing} className="flex h-10 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-white/20 px-4 text-[13px] font-extrabold text-white backdrop-blur-sm active:scale-95 disabled:opacity-60">
@@ -81,18 +81,18 @@ export default function MobileProjects() {
               <div className="flex items-center gap-3">
                 <PlatformTile platform={p.platform} />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[15.5px] font-extrabold tracking-[-0.01em]">{p.name}</p>
-                  <p className="truncate text-[12px] font-semibold text-[#64748B]">{PLATFORM_LABEL[p.platform] ?? p.platform}</p>
+                  <p className="truncate text-[16px] font-extrabold tracking-[-0.01em]">{p.name}</p>
+                  <p className="truncate text-[12px] font-semibold text-[#59546d]">{PLATFORM_LABEL[p.platform] ?? p.platform}</p>
                 </div>
                 <StatusPill status={p.status} />
               </div>
               {p.domain && (
-                <div className="mt-3 flex items-center gap-2 rounded-[14px] bg-[#F1F3FF] px-3 py-2.5">
-                  <span className="min-w-0 flex-1 truncate font-mono text-[12.5px] font-medium text-[#4338CA]">{hostOf(p.domain)}</span>
+                <div className="mt-3 flex items-center gap-2 rounded-[14px] bg-[#ede8ff] px-3 py-2.5">
+                  <span className="min-w-0 flex-1 truncate font-mono text-[13px] font-medium text-[#5a39c0]">{hostOf(p.domain)}</span>
                   <OpenLink domain={p.domain} />
                 </div>
               )}
-              <p className="mt-2.5 flex items-center gap-1.5 text-[11.5px] text-[#64748B]">
+              <p className="mt-2.5 flex items-center gap-1.5 text-[12px] text-[#59546d]">
                 <Clock className="h-3.5 w-3.5" /> Deploy terakhir {prettyDate(p.date)}
               </p>
               <div className="mt-3 grid grid-cols-2 gap-2">
@@ -108,7 +108,7 @@ export default function MobileProjects() {
                 <MiniButton full onClick={() => redeploy(p.name)}>
                   <RotateCw className="h-3.5 w-3.5" /> Deploy ulang
                 </MiniButton>
-                <Link href="/m/kelola" className="inline-flex h-9 w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-[#F5F3FF] px-3.5 text-[12.5px] font-bold text-[#6D28D9] ring-1 ring-[#DDD6FE] active:scale-95">
+                <Link href="/m/kelola" className="inline-flex h-9 w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-[#f4f1ff] px-3.5 text-[13px] font-bold text-[#5a39c0] active:scale-95">
                   <Settings2 className="h-3.5 w-3.5" /> Kelola
                 </Link>
               </div>

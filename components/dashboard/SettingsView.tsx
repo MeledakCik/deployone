@@ -179,7 +179,7 @@ function SwitchRow({
           {icon}
         </div>
         <div className="min-w-0">
-          <label htmlFor={id} className="block cursor-pointer text-[13.5px] font-medium">
+          <label htmlFor={id} className="block cursor-pointer text-[14px] font-medium">
             {title}
           </label>
           <p className="text-[12px] leading-relaxed text-text-muted">{description}</p>
@@ -241,7 +241,7 @@ function AppearanceSettings() {
       <div className="h-px bg-[var(--surface-line)]" />
 
       <fieldset>
-        <legend className="mb-2 text-[13.5px] font-medium">Animasi loading deploy</legend>
+        <legend className="mb-2 text-[14px] font-medium">Animasi loading deploy</legend>
         <div className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Animasi loading deploy">
           {ANIMATION_OPTIONS.map((opt) => {
             const selected = prefs.deployAnimation === opt.value;
@@ -390,7 +390,7 @@ export function SettingsView() {
     <ViewFade>
       <div className="space-y-4 sm:space-y-5">
         <div>
-          <PageTitle title="Settings" desc={<>Token global ini dipakai sebagai default saat kamu deploy project baru. Klik{" "}
+          <PageTitle title="Preferensi" desc={<>Token global ini dipakai sebagai default saat kamu deploy project baru. Klik{" "}
             <span className="font-medium text-text">Test Koneksi</span> untuk memastikan token-nya benar-benar
             valid ke akun kamu.</>} />
         </div>

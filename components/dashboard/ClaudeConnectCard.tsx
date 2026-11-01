@@ -360,7 +360,7 @@ function Section({
         className="flex w-full items-center justify-between gap-3 bg-[var(--surface-solid-2)] px-4 py-3 text-left"
       >
         <span className="min-w-0">
-          <span className="block text-[13.5px] font-semibold">{title}</span>
+          <span className="block text-[14px] font-semibold">{title}</span>
           {summary && <span className="mt-0.5 block truncate text-[12px] text-text-muted">{summary}</span>}
         </span>
         <ChevronDown size={16} className={cn("shrink-0 text-text-faint transition-transform", open && "rotate-180")} />
@@ -376,11 +376,11 @@ export function CodeBlock({ title, code, onCopy }: { title: string; code: string
     <div>
       <div className="mb-1.5 flex items-center justify-between gap-2">
         <span className="min-w-0 truncate text-[12px] font-medium text-text-muted">{title}</span>
-        <button type="button" onClick={onCopy} className="pill inline-flex shrink-0 items-center gap-1 px-2.5 py-1 text-[11.5px]">
+        <button type="button" onClick={onCopy} className="pill inline-flex shrink-0 items-center gap-1 px-2.5 py-1 text-[12px]">
           <Copy size={12} /> Salin
         </button>
       </div>
-      <pre className="max-w-full overflow-x-auto rounded-xl border border-[var(--line)] bg-[var(--pill-bg)] p-3 font-mono text-[11.5px] leading-relaxed">
+      <pre className="max-w-full overflow-x-auto rounded-xl border border-[var(--line)] bg-[var(--pill-bg)] p-3 font-mono text-[12px] leading-relaxed">
         {code}
       </pre>
     </div>
@@ -700,7 +700,7 @@ export function ClaudeConnectCard({
           value={mcpUrl ?? "Memuat…"}
           aria-label="URL konektor MCP Depup"
           onFocus={(e) => e.currentTarget.select()}
-          className="min-w-0 flex-1 rounded-xl border border-[var(--line)] bg-[var(--pill-bg)] px-3.5 py-2.5 font-mono text-[12.5px] outline-none"
+          className="min-w-0 flex-1 rounded-xl border border-[var(--line)] bg-[var(--pill-bg)] px-3.5 py-2.5 font-mono text-[13px] outline-none"
         />
         <button
           type="button"
@@ -711,7 +711,7 @@ export function ClaudeConnectCard({
           <Copy size={13} /> Salin URL
         </button>
       </div>
-      <p className="mt-2 text-[11.5px] text-text-faint">
+      <p className="mt-2 text-[12px] text-text-faint">
         {siteQuota ? `Link Instan ${siteQuota.active}/${siteQuota.max} · ` : ""}Platform siap {readyPlatformsCount}/3 · OAuth sendiri {customClients.length}
       </p>
 
@@ -742,7 +742,7 @@ export function ClaudeConnectCard({
                     setShowMoreSnippets(false);
                   }}
                   className={cn(
-                    "shrink-0 rounded-xl border px-3.5 py-2 text-left text-[12.5px] font-semibold transition sm:shrink",
+                    "shrink-0 rounded-xl border px-3.5 py-2 text-left text-[13px] font-semibold transition sm:shrink",
                     active
                       ? "border-violet-500 bg-violet-500/15 text-text"
                       : "border-[var(--line)] bg-[var(--pill-bg)] text-text-muted hover:border-[var(--line-strong)] hover:text-text",
@@ -801,7 +801,7 @@ export function ClaudeConnectCard({
               <button
                 type="button"
                 onClick={() => setShowBearer((v) => !v)}
-                className="pill inline-flex items-center justify-center gap-1 px-3 py-2.5 text-[11.5px]"
+                className="pill inline-flex items-center justify-center gap-1 px-3 py-2.5 text-[12px]"
               >
                 {showBearer ? <EyeOff size={12} /> : <Eye size={12} />}
                 {showBearer ? "Sembunyikan" : "Tampilkan"}
@@ -875,7 +875,7 @@ export function ClaudeConnectCard({
                   maxLength={60}
                   value={oauthName}
                   onChange={(e) => setOauthName(e.target.value)}
-                  className="input-solid h-10 w-full px-3 text-[12.5px]"
+                  className="input-solid h-10 w-full px-3 text-[13px]"
                 />
               </div>
               <div>
@@ -941,7 +941,7 @@ export function ClaudeConnectCard({
               <button
                 type="submit"
                 disabled={creatingOauth}
-                className="btn-primary inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-[12.5px] disabled:opacity-50"
+                className="btn-primary inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-[13px] disabled:opacity-50"
               >
                 {creatingOauth ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
                 Buat OAuth
@@ -963,7 +963,7 @@ export function ClaudeConnectCard({
               <p className="flex items-center gap-1.5 text-[13px] font-semibold">
                 <Check size={15} /> &ldquo;{newlyCreated.client.name}&rdquo; siap dipakai
               </p>
-              <p className="text-[11.5px] text-text-muted">Simpan Client Secret sekarang, hanya ditampilkan sekali.</p>
+              <p className="text-[12px] text-text-muted">Simpan Client Secret sekarang, hanya ditampilkan sekali.</p>
               <div>
                 <span className="mb-1 block font-medium text-text-muted">Client ID</span>
                 <div className="flex gap-2">
@@ -971,12 +971,12 @@ export function ClaudeConnectCard({
                     readOnly
                     value={newlyCreated.client.clientId}
                     onFocus={(e) => e.currentTarget.select()}
-                    className="input-solid mono h-9 min-w-0 flex-1 px-3 text-[11.5px]"
+                    className="input-solid mono h-9 min-w-0 flex-1 px-3 text-[12px]"
                   />
                   <button
                     type="button"
                     onClick={() => void copyText(newlyCreated.client.clientId, "OAuth Client ID")}
-                    className="pill inline-flex shrink-0 items-center gap-1 px-3 py-1.5 text-[11.5px]"
+                    className="pill inline-flex shrink-0 items-center gap-1 px-3 py-1.5 text-[12px]"
                   >
                     <Copy size={12} /> Salin
                   </button>
@@ -991,7 +991,7 @@ export function ClaudeConnectCard({
                       type={showSecret ? "text" : "password"}
                       value={newlyCreated.clientSecret}
                       onFocus={(e) => e.currentTarget.select()}
-                      className="input-solid mono h-9 min-w-0 flex-1 px-3 text-[11.5px]"
+                      className="input-solid mono h-9 min-w-0 flex-1 px-3 text-[12px]"
                     />
                     <button
                       type="button"
@@ -1004,7 +1004,7 @@ export function ClaudeConnectCard({
                     <button
                       type="button"
                       onClick={() => void copyText(newlyCreated.clientSecret, "OAuth Client Secret")}
-                      className="pill inline-flex shrink-0 items-center gap-1 px-3 py-1.5 text-[11.5px]"
+                      className="pill inline-flex shrink-0 items-center gap-1 px-3 py-1.5 text-[12px]"
                     >
                       <Copy size={12} /> Salin
                     </button>
@@ -1025,7 +1025,7 @@ export function ClaudeConnectCard({
                   type={showBearer ? "text" : "password"}
                   value={generatedToken.accessToken}
                   onFocus={(e) => e.currentTarget.select()}
-                  className="input-solid mono h-9 min-w-0 flex-1 px-3 text-[11.5px]"
+                  className="input-solid mono h-9 min-w-0 flex-1 px-3 text-[12px]"
                 />
                 <button
                   type="button"
@@ -1038,7 +1038,7 @@ export function ClaudeConnectCard({
                 <button
                   type="button"
                   onClick={() => void copyText(generatedToken.accessToken, "Access Token")}
-                  className="pill inline-flex shrink-0 items-center gap-1 px-3 py-1.5 text-[11.5px]"
+                  className="pill inline-flex shrink-0 items-center gap-1 px-3 py-1.5 text-[12px]"
                 >
                   <Copy size={12} /> Salin
                 </button>
@@ -1054,8 +1054,8 @@ export function ClaudeConnectCard({
               ].map((e) => (
                 <div key={e.label} className="flex items-center justify-between gap-2 rounded-xl bg-[var(--pill-bg)] px-3 py-2">
                   <div className="min-w-0">
-                    <span className="block text-[11px] text-text-muted">{e.label}</span>
-                    <code className="block truncate text-[11.5px]">{e.value}</code>
+                    <span className="block text-[12px] text-text-muted">{e.label}</span>
+                    <code className="block truncate text-[12px]">{e.value}</code>
                   </div>
                   <button
                     type="button"
@@ -1081,12 +1081,12 @@ export function ClaudeConnectCard({
                     <div className="min-w-0 space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <strong className="text-[13px]">{c.name}</strong>
-                        <span className="rounded-md bg-[var(--surface-solid-2)] px-2 py-0.5 text-[11px] font-medium text-lav-text">
+                        <span className="rounded-md bg-[var(--surface-solid-2)] px-2 py-0.5 text-[12px] font-medium text-lav-text">
                           {c.hasSecret ? "ID + Secret" : "Public PKCE"}
                         </span>
-                        {c.secretPreview && <code className="text-[11px] text-text-muted">Secret: {c.secretPreview}</code>}
+                        {c.secretPreview && <code className="text-[12px] text-text-muted">Secret: {c.secretPreview}</code>}
                       </div>
-                      <p className="truncate font-mono text-[11px] text-text-muted" title={c.redirectUris.join(", ")}>
+                      <p className="truncate font-mono text-[12px] text-text-muted" title={c.redirectUris.join(", ")}>
                         {c.redirectUris.length} Redirect URI · {c.redirectUris[0]}
                       </p>
                     </div>
@@ -1094,7 +1094,7 @@ export function ClaudeConnectCard({
                       <button
                         type="button"
                         onClick={() => void copyText(c.clientId, `Client ID "${c.name}"`)}
-                        className="pill inline-flex items-center justify-center gap-1 px-2 py-2 text-[11.5px]"
+                        className="pill inline-flex items-center justify-center gap-1 px-2 py-2 text-[12px]"
                       >
                         <Copy size={12} /> ID
                       </button>
@@ -1102,7 +1102,7 @@ export function ClaudeConnectCard({
                         type="button"
                         onClick={() => void handleGenerateToken(c)}
                         disabled={busyClientId === c.id}
-                        className="pill inline-flex items-center justify-center gap-1 px-2 py-2 text-[11.5px]"
+                        className="pill inline-flex items-center justify-center gap-1 px-2 py-2 text-[12px]"
                       >
                         {busyClientId === c.id ? <Loader2 size={12} className="animate-spin" /> : <KeyRound size={12} />}
                         Token
@@ -1111,7 +1111,7 @@ export function ClaudeConnectCard({
                         type="button"
                         onClick={() => void handleDeleteOAuth(c)}
                         disabled={busyClientId === c.id}
-                        className="pill inline-flex items-center justify-center gap-1 px-2 py-2 text-[11.5px] text-bad-fg"
+                        className="pill inline-flex items-center justify-center gap-1 px-2 py-2 text-[12px] text-bad-fg"
                       >
                         <Trash2 size={12} /> Hapus
                       </button>

@@ -341,7 +341,7 @@ export function HostingView() {
           ) : (
             <>
               <UploadCloud size={38} className="text-text-muted" />
-              <p className="mt-4 text-[15px] font-medium">Tarik &amp; lepas file .zip atau folder website ke sini</p>
+              <p className="mt-4 text-[16px] font-medium">Tarik &amp; lepas file .zip atau folder website ke sini</p>
               <p className="mt-1 text-[12px] text-text-muted">
                 Harus ada <code>index.html</code>. Maks {formatBytes(config.maxBytes)} &amp; {config.maxFiles} file. Project
                 React/Vue/Next: upload folder hasil build-nya (dist / build / out).
@@ -444,7 +444,7 @@ export function HostingView() {
             </div>
           </div>
 
-          <label className="mt-4 flex items-start gap-2.5 text-[12.5px]">
+          <label className="mt-4 flex items-start gap-2.5 text-[13px]">
             <input type="checkbox" checked={spa} disabled={busy} onChange={(e) => setSpa(e.target.checked)} className="mt-0.5" />
             <span>
               Mode SPA — halaman yang tidak ditemukan diarahkan ke <code>index.html</code> (untuk React/Vue Router).
@@ -476,11 +476,11 @@ export function HostingView() {
       )}
 
 
-      {!config && !loadError && <p className="mt-8 text-[12.5px] text-text-muted">Memuat…</p>}
+      {!config && !loadError && <p className="mt-8 text-[13px] text-text-muted">Memuat…</p>}
       {config && config.sites.length === 0 && (
         <div className="mt-8">
-          <h3 className="mb-3 text-[15px] font-semibold">Link aktif (0/{config.maxSites})</h3>
-          <p className="text-[12.5px] text-text-muted">Belum ada link aktif.</p>
+          <h3 className="mb-3 text-[16px] font-semibold">Link aktif (0/{config.maxSites})</h3>
+          <p className="text-[13px] text-text-muted">Belum ada link aktif.</p>
         </div>
       )}
       {config && config.sites.length > 0 && (

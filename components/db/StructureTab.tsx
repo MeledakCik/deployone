@@ -57,9 +57,9 @@ export default function StructureTab({ id, schema, table, setTable, onChanged }:
         <>
           <section className="space-y-2">
             <h3 className={heading}>Kolom</h3>
-            <div className="overflow-x-auto rounded-xl border border-violet-100 dark:border-white/10">
+            <div className="overflow-x-auto rounded-xl">
               <table className="w-full min-w-[520px]">
-                <thead className="bg-violet-50/70 dark:bg-white/5">
+                <thead className="bg-[var(--pill-bg)]">
                   <tr>
                     {["#", "Nama", "Tipe", "Null", "Default", "PK", ""].map((h) => (
                       <th key={h} className={th}>
@@ -68,7 +68,7 @@ export default function StructureTab({ id, schema, table, setTable, onChanged }:
                     ))}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-violet-50 dark:divide-white/5">
+                <tbody className="divide-y divide-[var(--line)]">
                   {t.columns.map((c) => (
                     <tr key={c.name}>
                       <td className={td}>{c.cid}</td>
@@ -103,7 +103,7 @@ export default function StructureTab({ id, schema, table, setTable, onChanged }:
                     ))}
                   </select>
                   <input className={inputCls} placeholder="default (opsional)" value={addCol.default} onChange={(e) => setAddCol({ ...addCol, default: e.target.value })} aria-label="Default" />
-                  <label className="flex items-center gap-1 text-sm text-slate-600 dark:text-slate-300">
+                  <label className="flex items-center gap-1 text-sm text-text-muted">
                     <input type="checkbox" checked={addCol.notNull} onChange={(e) => setAddCol({ ...addCol, notNull: e.target.checked })} /> NOT NULL
                   </label>
                   <Btn
@@ -121,14 +121,14 @@ export default function StructureTab({ id, schema, table, setTable, onChanged }:
               <section className="space-y-2">
                 <h3 className={heading}>Index</h3>
                 {t.indexes.length === 0 && <p className={subtle}>Belum ada index.</p>}
-                <ul className="divide-y divide-slate-100 text-sm dark:divide-slate-800">
+                <ul className="divide-y divide-[var(--line)] text-sm">
                   {t.indexes.map((i) => (
                     <li key={i.name} className="flex items-center justify-between gap-2 py-2">
                       <div className="min-w-0">
-                        <div className="font-medium text-slate-900 dark:text-slate-100">
-                          {i.name} {i.unique && <span className="ml-1 rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700 dark:bg-white/10 dark:text-violet-200">unique</span>}
+                        <div className="font-medium text-text">
+                          {i.name} {i.unique && <span className="ml-1 rounded-full bg-[var(--pill-bg)] px-2 py-0.5 text-[12px] font-medium text-lav-text">unique</span>}
                         </div>
-                        <code className="block truncate font-mono text-xs text-slate-500 dark:text-slate-400">{i.sql ?? `auto (${i.origin})`}</code>
+                        <code className="block truncate font-mono text-xs text-text-muted">{i.sql ?? `auto (${i.origin})`}</code>
                       </div>
                       {i.sql && (
                         <Btn small variant="danger" onClick={() => act({ action: "dropIndex", name: i.name }, `Index ${i.name} dihapus.`, `Hapus index “${i.name}”?`)}>
@@ -145,7 +145,7 @@ export default function StructureTab({ id, schema, table, setTable, onChanged }:
                       <option key={c.name}>{c.name}</option>
                     ))}
                   </select>
-                  <label className="flex items-center gap-1 text-sm text-slate-600 dark:text-slate-300">
+                  <label className="flex items-center gap-1 text-sm text-text-muted">
                     <input type="checkbox" checked={idx.unique} onChange={(e) => setIdx({ ...idx, unique: e.target.checked })} /> Unique
                   </label>
                   <Btn
@@ -193,7 +193,7 @@ function CreateTable({ onClose, onSubmit }: { onClose: () => void; onSubmit: (na
         </Field>
         <div className="space-y-2">
           {cols.map((c, i) => (
-            <div key={i} className="grid items-center gap-2 rounded-xl border border-violet-100 p-2.5 dark:border-white/10 sm:grid-cols-[1fr_7rem_1fr_auto] sm:border-0 sm:p-0">
+            <div key={i} className="grid items-center gap-2 rounded-xl p-2.5 sm:grid-cols-[1fr_7rem_1fr_auto] sm:border-0 sm:p-0">
               <input className={inputCls} placeholder="nama_kolom" value={c.name} onChange={(e) => set(i, { name: e.target.value })} aria-label={`Nama kolom ${i + 1}`} />
               <select className={inputCls} value={c.type} onChange={(e) => set(i, { type: e.target.value })} aria-label="Tipe">
                 {TYPES.map((x) => (
@@ -201,11 +201,11 @@ function CreateTable({ onClose, onSubmit }: { onClose: () => void; onSubmit: (na
                 ))}
               </select>
               <input className={inputCls} placeholder="default" value={c.default} onChange={(e) => set(i, { default: e.target.value })} aria-label="Default" />
-              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-600 dark:text-slate-300">
+              <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-text-muted">
                 <label><input type="checkbox" checked={c.pk} onChange={(e) => set(i, { pk: e.target.checked })} /> PK</label>
                 <label><input type="checkbox" checked={c.autoincrement} onChange={(e) => set(i, { autoincrement: e.target.checked })} /> AI</label>
                 <label><input type="checkbox" checked={c.notNull} onChange={(e) => set(i, { notNull: e.target.checked })} /> NN</label>
-                <button type="button" aria-label="Hapus kolom" className="text-red-500" onClick={() => setCols(cols.filter((_, j) => j !== i))}>✕</button>
+                <button type="button" aria-label="Hapus kolom" className="text-bad-fg" onClick={() => setCols(cols.filter((_, j) => j !== i))}>✕</button>
               </div>
             </div>
           ))}

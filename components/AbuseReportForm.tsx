@@ -35,7 +35,7 @@ export function AbuseReportForm({ initialTarget }: { initialTarget: string }) {
     return (
       <div className="surface-solid w-full max-w-md p-7 text-center">
         <h2 className="text-[20px] font-bold tracking-[-0.025em]">Terima kasih</h2>
-        <p className="mt-2 text-[13.5px] text-text-muted">
+        <p className="mt-2 text-[14px] text-text-muted">
           Laporanmu sudah diteruskan ke admin Depup dan akan ditinjau.
         </p>
       </div>
