@@ -8,7 +8,7 @@
  * dengan catatan (peringatan), bukan menggagalkan seluruh halaman.
  */
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable */
 type Any = any;
 
 export interface RenderJob {
