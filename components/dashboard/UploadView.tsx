@@ -251,12 +251,12 @@ export function UploadView() {
   return (
     <ViewFade>
       <div className="mb-6">
-        <PageTitle title="Upload Project" desc={<>Upload zip atau folder project — otomatis diekstrak, dikirim ke repo GitHub baru, dan (kalau mau) langsung
+        <PageTitle title="Unggah Proyek" desc={<>Upload zip atau folder project — otomatis diekstrak, dikirim ke repo GitHub baru, dan (kalau mau) langsung
           dideploy.</>} />
       </div>
 
       {!githubPat.trim() && (
-        <div className="mb-4 flex items-start gap-2.5 rounded-2xl bg-[var(--warn-bg)] px-4 py-3 text-[12.5px] text-warn-fg">
+        <div className="mb-4 flex items-start gap-2.5 rounded-2xl bg-[var(--warn-bg)] px-4 py-3 text-[13px] text-warn-fg">
           <CircleAlert size={16} className="mt-0.5 shrink-0" />
           <span>
             Fitur ini butuh <b>GitHub Token</b> (izin <code>repo</code>) untuk membuat repo atas nama kamu.{" "}
@@ -271,7 +271,7 @@ export function UploadView() {
       {error && (
         <div
           role="alert"
-          className="mb-4 flex items-start gap-2.5 rounded-2xl bg-[var(--bad-bg)] px-4 py-3 text-[12.5px] text-bad-fg"
+          className="mb-4 flex items-start gap-2.5 rounded-2xl bg-[var(--bad-bg)] px-4 py-3 text-[13px] text-bad-fg"
         >
           <CircleAlert size={16} className="mt-0.5 shrink-0" />
           <span className="min-w-0 flex-1 break-words">{error}</span>
@@ -304,7 +304,7 @@ export function UploadView() {
           ) : (
             <>
               <UploadCloud size={38} className="text-text-muted" />
-              <p className="mt-4 text-[15px] font-medium">Tarik &amp; lepas file .zip atau folder project ke sini</p>
+              <p className="mt-4 text-[16px] font-medium">Tarik &amp; lepas file .zip atau folder project ke sini</p>
               <p className="mt-1 text-[12px] text-text-muted">
                 node_modules, .git, dan hasil build otomatis dilewati. File .env tidak ikut diunggah.
               </p>
@@ -420,7 +420,7 @@ export function UploadView() {
             </fieldset>
           </div>
 
-          <label className="mt-4 flex items-start gap-2.5 text-[12.5px] text-text-muted">
+          <label className="mt-4 flex items-start gap-2.5 text-[13px] text-text-muted">
             <input
               type="checkbox"
               checked={allowExisting}
@@ -585,7 +585,7 @@ export function UploadView() {
             ({result.isPrivate ? "private" : "public"}, branch {result.branch}).
           </p>
           {deployNow && platform && (
-            <p className="mt-2 text-[12.5px] text-text-muted">Proses deploy sudah dimulai — ikuti progresnya di jendela yang muncul.</p>
+            <p className="mt-2 text-[13px] text-text-muted">Proses deploy sudah dimulai — ikuti progresnya di jendela yang muncul.</p>
           )}
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             {!deployNow && (

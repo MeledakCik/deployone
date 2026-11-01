@@ -96,12 +96,12 @@ export function CliShareCard() {
       </div>
 
       <div className="mt-4 overflow-hidden rounded-2xl border border-[var(--line)]">
-        <p className="bg-[var(--surface-solid-2)] px-4 py-2.5 text-[13.5px] font-semibold">Opsi</p>
+        <p className="bg-[var(--surface-solid-2)] px-4 py-2.5 text-[14px] font-semibold">Opsi</p>
         <ul className="divide-y divide-[var(--line)] border-t border-[var(--line)]">
           {OPTIONS.map((o) => (
             <li key={o.flag} className="flex flex-col gap-1 px-4 py-3 sm:flex-row sm:items-start sm:gap-4">
               <code className="mono w-40 shrink-0 text-[12px] font-medium text-lav-text">{o.flag}</code>
-              <span className="text-[12.5px] leading-relaxed text-text-muted">{o.desc}</span>
+              <span className="text-[13px] leading-relaxed text-text-muted">{o.desc}</span>
             </li>
           ))}
         </ul>
@@ -109,7 +109,7 @@ export function CliShareCard() {
 
       <ul className="notice notice-info mt-4 list-none flex-col !items-stretch gap-1.5">
         {NOTES.map((n) => (
-          <li key={n} className="text-[12.5px] leading-relaxed">
+          <li key={n} className="text-[13px] leading-relaxed">
             {n}
           </li>
         ))}

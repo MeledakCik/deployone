@@ -105,7 +105,7 @@ export function HistoryTable({ filter, onFilterChange }: { filter: HistoryFilter
                 type="button"
                 aria-pressed={filter === f.id}
                 onClick={() => onFilterChange(f.id)}
-                className={`rounded-full px-3.5 py-1.5 text-[12.5px] font-medium transition-colors max-md:min-h-[40px] ${
+                className={`rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors max-md:min-h-[40px] ${
                   filter === f.id ? "chip-on" : "bg-[var(--surface-solid-2)] text-text-muted hover:text-text"
                 }`}
               >

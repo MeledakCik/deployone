@@ -45,8 +45,8 @@ export default function DatabaseList({ onOpen }: { onOpen: (id: string) => void 
       {err && <Notice kind="error">{err}</Notice>}
       {!data && !err && (
         <div className="space-y-3" aria-busy="true">
-          <div className="h-24 animate-pulse rounded-2xl bg-violet-100/70 dark:bg-white/10" />
-          <div className="h-40 animate-pulse rounded-2xl bg-violet-100/70 dark:bg-white/10" />
+          <div className="h-24 animate-pulse rounded-2xl bg-tone-lilac" />
+          <div className="h-40 animate-pulse rounded-2xl bg-tone-lilac" />
         </div>
       )}
 
@@ -55,7 +55,7 @@ export default function DatabaseList({ onOpen }: { onOpen: (id: string) => void 
           <section className={`${surface} space-y-3 p-4 sm:p-5`}>
             <div className="flex items-center justify-between gap-3 text-sm">
               <span className={heading}>Kuota penyimpanan</span>
-              <span className="rounded-full bg-violet-50 px-2.5 py-1 text-xs font-medium text-violet-700 dark:bg-white/10 dark:text-violet-200">
+              <span className="rounded-full bg-[var(--pill-bg)] px-2.5 py-1 text-xs font-medium text-lav-text">
                 {data.databases.length}/{data.maxDatabases} database
               </span>
             </div>
@@ -78,10 +78,10 @@ export default function DatabaseList({ onOpen }: { onOpen: (id: string) => void 
                   <li key={d.id} className={`${surface} space-y-3 p-4`}>
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
-                        <p className="truncate text-base font-semibold text-slate-900 dark:text-slate-100">{d.displayName}</p>
+                        <p className="truncate text-base font-semibold text-text">{d.displayName}</p>
                         <p className={subtle}>Dibuat {fmtDate(d.createdAt)}</p>
                       </div>
-                      <span className="shrink-0 rounded-full bg-violet-50 px-2.5 py-1 text-xs font-medium text-violet-700 dark:bg-white/10 dark:text-violet-200">{fmtBytes(d.usageBytes)}</span>
+                      <span className="shrink-0 rounded-full bg-[var(--pill-bg)] px-2.5 py-1 text-xs font-medium text-lav-text">{fmtBytes(d.usageBytes)}</span>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <Btn variant="primary" onClick={() => onOpen(d.id)}>
@@ -102,7 +102,7 @@ export default function DatabaseList({ onOpen }: { onOpen: (id: string) => void 
               {/* Desktop: tabel */}
               <section className={`${surface} hidden overflow-hidden md:block`}>
                 <table className="w-full">
-                  <thead className="border-b border-violet-100 bg-violet-50/60 dark:border-white/10 dark:bg-white/5">
+                  <thead className="bg-[var(--pill-bg)]">
                     <tr>
                       <th className={th}>Nama</th>
                       <th className={th}>Ukuran</th>
@@ -110,9 +110,9 @@ export default function DatabaseList({ onOpen }: { onOpen: (id: string) => void 
                       <th className={th} />
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-violet-50 dark:divide-white/5">
+                  <tbody className="divide-y divide-[var(--line)]">
                     {data.databases.map((d) => (
-                      <tr key={d.id} className="transition-colors hover:bg-violet-50/50 dark:hover:bg-white/5">
+                      <tr key={d.id} className="transition-colors hover:bg-[var(--card-hover)]">
                         <td className={`${td} font-medium`}>{d.displayName}</td>
                         <td className={td}>{fmtBytes(d.usageBytes)}</td>
                         <td className={td}>{fmtDate(d.createdAt)}</td>

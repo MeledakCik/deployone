@@ -221,7 +221,7 @@ function DeleteProjectModal({
             <X size={16} />
           </button>
         </div>
-        <h3 className="text-[15px] font-semibold mb-2">Hapus &quot;{project.name}&quot;?</h3>
+        <h3 className="text-[16px] font-semibold mb-2">Hapus &quot;{project.name}&quot;?</h3>
         <p className="text-[13px] leading-relaxed text-text-muted mb-5">
           Secara default, project hanya dihapus dari daftar Depup. Project di platform dan repo GitHub kamu tidak
           disentuh. Nyalakan saklar di bawah kalau ingin ikut menghapusnya.
@@ -278,7 +278,7 @@ function DeleteProjectModal({
                 placeholder="nama-akun/nama-repo"
                 spellCheck={false}
                 autoComplete="off"
-                className="mono w-full rounded-xl bg-[var(--surface-solid-2)] px-3 py-2 text-[12.5px] outline-none focus:shadow-[inset_0_0_0_2px_var(--bad-line)]"
+                className="mono w-full rounded-xl bg-[var(--surface-solid-2)] px-3 py-2 text-[13px] outline-none focus:shadow-[inset_0_0_0_2px_var(--bad-line)]"
               />
               <p className="mt-1 text-[12px] text-text-faint">
                 {repoLookup === "loading"
@@ -339,7 +339,7 @@ function DeleteProjectModal({
             type="button"
             onClick={onClose}
             disabled={busy}
-            className="w-full py-2 text-[12.5px] font-medium text-text-faint hover:text-text disabled:opacity-50"
+            className="w-full py-2 text-[13px] font-medium text-text-faint hover:text-text disabled:opacity-50"
           >
             Batal
           </button>
@@ -418,7 +418,7 @@ function ImportProjectModal({ open, onClose }: { open: boolean; onClose: () => v
     <div className="anim-fade fixed inset-0 z-[100] flex items-center justify-center modal-scrim px-4">
       <Surface className="anim-pop w-full max-w-md p-6">
         <div className="flex items-center justify-between mb-5">
-          <h3 className="text-[15px] font-semibold">Import Project</h3>
+          <h3 className="text-[16px] font-semibold">Import Project</h3>
           <button
             type="button"
             onClick={onClose}
@@ -435,7 +435,7 @@ function ImportProjectModal({ open, onClose }: { open: boolean; onClose: () => v
               key={t}
               type="button"
               onClick={() => setTab(t)}
-              className={`rounded-xl px-3.5 py-1.5 text-[12.5px] font-medium capitalize transition-colors ${
+              className={`rounded-xl px-3.5 py-1.5 text-[13px] font-medium capitalize transition-colors ${
                 tab === t
                   ? "chip-on"
                   : "bg-[var(--surface-solid-2)] text-text-muted hover:text-text"
@@ -543,7 +543,7 @@ export function ProjectsView() {
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <PageTitle title="Projects" desc={<>{projects.length} project {platformTab !== "all" ? `(${platformTab}) ` : ""}unik dari riwayat deployment kamu.</>} />
+            <PageTitle title="Proyek" desc={<>{projects.length} project {platformTab !== "all" ? `(${platformTab}) ` : ""}unik dari riwayat deployment kamu.</>} />
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button
@@ -577,7 +577,7 @@ export function ProjectsView() {
               key={t}
               type="button"
               onClick={() => setPlatformTab(t)}
-              className={`rounded-full px-4 py-1.5 text-[12.5px] font-medium capitalize transition-colors ${
+              className={`rounded-full px-4 py-1.5 text-[13px] font-medium capitalize transition-colors ${
                 platformTab === t
                   ? "chip-on"
                   : "bg-[var(--surface-solid-2)] text-text-muted hover:text-text"
@@ -604,7 +604,7 @@ export function ProjectsView() {
               return (
                 <Surface key={`${project.name}::${project.platform}`} className="p-4 transition-transform hover:-translate-y-0.5 sm:p-5">
                   <div className="flex items-start justify-between gap-2">
-                    <h3 className="min-w-0 truncate text-[17px] font-semibold tracking-[-0.01em]">{project.name}</h3>
+                    <h3 className="min-w-0 truncate text-[18px] font-semibold tracking-[-0.01em]">{project.name}</h3>
                     <span className="chip shrink-0">
                       <span className={`h-1.5 w-1.5 rounded-full ${isReady ? "bg-ok" : "bg-bad"}`} />
                       {isReady ? "Berhasil" : "Gagal"}
@@ -616,7 +616,7 @@ export function ProjectsView() {
                     <p>{tanggalIndonesia(project.date)}</p>
                   </div>
 
-                  <div className="mt-4 flex items-center gap-1.5 text-[12.5px] text-text-muted">
+                  <div className="mt-4 flex items-center gap-1.5 text-[13px] text-text-muted">
                     <Globe2 size={14} className="shrink-0" />
                     <span className="truncate">{project.domain}</span>
                   </div>

@@ -43,7 +43,7 @@ export function DashboardHomeView() {
   }, []);
 
   const deployButton = (
-    <button type="button" onClick={() => setView("deploy")} className="btn-lime inline-flex items-center gap-2 whitespace-nowrap px-5 py-2.5 text-[13.5px]">
+    <button type="button" onClick={() => setView("deploy")} className="btn-lime inline-flex items-center gap-2 whitespace-nowrap px-5 py-2.5 text-[14px]">
       <Plus size={16} /> Deploy baru
     </button>
   );
@@ -77,7 +77,7 @@ export function DashboardHomeView() {
               title="Belum ada deploy"
               action={
                 <>
-                  <button type="button" onClick={() => setView("deploy")} className="btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-[13.5px]">
+                  <button type="button" onClick={() => setView("deploy")} className="btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-[14px]">
                     <Rocket size={16} /> Deploy project
                   </button>
                   <Btn onClick={() => setView("upload")}>
@@ -153,7 +153,7 @@ export function DashboardHomeView() {
                   openExternal(e, WA_COMMUNITY_URL);
                   dismissCommunity();
                 }}
-                className="btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-[13.5px]"
+                className="btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-[14px]"
               >
                 Gabung komunitas
               </a>

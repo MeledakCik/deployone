@@ -101,7 +101,7 @@ function AddSecretModal({
     <div className="anim-fade fixed inset-0 z-[100] flex items-center justify-center modal-scrim px-4">
       <Surface className="anim-pop w-full max-w-sm p-6">
         <div className="flex items-center justify-between mb-5">
-          <h3 className="text-[15px] font-semibold">Tambah Secret</h3>
+          <h3 className="text-[16px] font-semibold">Tambah Secret</h3>
           <button
             type="button"
             onClick={onClose}
@@ -179,7 +179,7 @@ function AddSecretModal({
           {isVercelProject || isCloudflareProject || isRailwayProject ? (
             canPush ? (
               <div className="space-y-2 rounded-2xl bg-[var(--surface-solid-2)] p-3.5">
-                <label className="flex items-center gap-2.5 text-[12.5px] font-medium">
+                <label className="flex items-center gap-2.5 text-[13px] font-medium">
                   <input
                     type="checkbox"
                     checked={pushToRemote}
@@ -313,7 +313,7 @@ export function EnvironmentView() {
 
         <Surface className="flex items-start gap-3 px-5 py-4">
           <Info size={16} className="mt-0.5 shrink-0 text-lav-text" />
-          <p className="text-[12.5px] leading-relaxed text-text-muted">
+          <p className="text-[13px] leading-relaxed text-text-muted">
             Fitur injeksi <span className="mono">.env</span> saat build — setiap secret terikat ke satu
             project dan hanya tersedia sebagai environment variable pada build & runtime project itu saja.
           </p>
@@ -357,7 +357,7 @@ export function EnvironmentView() {
                     }`}
                   >
                     {opt.label}
-                    <span className={`text-[11px] ${selected ? "opacity-90" : "text-text-faint"}`}>
+                    <span className={`text-[12px] ${selected ? "opacity-90" : "text-text-faint"}`}>
                       {envCounts[opt.value]}
                     </span>
                   </button>

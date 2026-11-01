@@ -176,7 +176,7 @@ export function PromoTab({ toast }: { toast: (m: string) => void }) {
         <div className="min-w-0 space-y-5">
       <Card title="Buat dengan AI">
         <div className="space-y-3 p-6">
-          <p className="text-[12.5px] text-text-muted">Ketik topiknya saja, AI menyusun subjek, pratinjau, isi, dan teks tombol. Hasilnya mengisi form di bawah dan tetap bisa kamu edit.</p>
+          <p className="text-[13px] text-text-muted">Ketik topiknya saja, AI menyusun subjek, pratinjau, isi, dan teks tombol. Hasilnya mengisi form di bawah dan tetap bisa kamu edit.</p>
           <textarea
             value={topic}
             onChange={(e) => setTopic(e.target.value.slice(0, 600))}
@@ -274,7 +274,7 @@ export function PromoTab({ toast }: { toast: (m: string) => void }) {
               </Btn>
             ) : (
               <span className="ml-auto flex items-center gap-2">
-                <span className="text-[12.5px] text-warn-fg">Yakin kirim ke {Math.min(data.audience.eligible, data.maxRecipients)} akun? Tidak bisa dibatalkan.</span>
+                <span className="text-[13px] text-warn-fg">Yakin kirim ke {Math.min(data.audience.eligible, data.maxRecipients)} akun? Tidak bisa dibatalkan.</span>
                 <Btn onClick={() => setConfirming(false)} disabled={busy === "send"}>
                   Batal
                 </Btn>
@@ -315,7 +315,7 @@ export function PromoTab({ toast }: { toast: (m: string) => void }) {
                   <Badge tone={STATUS[c.status].tone}>{STATUS[c.status].label}</Badge>
                   <span className="ml-auto text-[12px] text-text-muted">{fmtDateTime(c.createdAt)}</span>
                 </div>
-                <p className="mt-1 text-[13.5px]">{c.subject}</p>
+                <p className="mt-1 text-[14px]">{c.subject}</p>
                 <p className="text-[12px] text-text-muted">
                   {c.sent}/{c.total} terkirim{c.failed ? ` · ${c.failed} gagal` : ""} · oleh {c.by}
                   {c.lastError ? ` · ${c.lastError}` : ""}
@@ -386,12 +386,12 @@ function PreviewPanel({
       <div className="overflow-hidden rounded-card bg-[#1e1150] text-white shadow-[0_30px_70px_-35px_rgba(30,17,80,0.85)]">
         {/* Header: judul, status, dan pemilih perangkat */}
         <div className="flex items-center gap-3 px-5 pb-3 pt-5">
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#c6f432] text-[17px] font-black leading-none text-[#1e1150]" aria-hidden>
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-[#c6f432] text-[18px] font-black leading-none text-[#1e1150]" aria-hidden>
             ↑
           </span>
           <div className="min-w-0">
             <h2 className="text-[14px] font-semibold leading-tight">Pratinjau email</h2>
-            <p className="truncate text-[11.5px] text-[#b2aec4]">{isSample ? "Contoh tampilan · mulai menulis untuk menggantinya" : `Langsung dari form · gaya ${templateLabel}`}</p>
+            <p className="truncate text-[12px] text-[#b2aec4]">{isSample ? "Contoh tampilan · mulai menulis untuk menggantinya" : `Langsung dari form · gaya ${templateLabel}`}</p>
           </div>
           <div className="ml-auto flex shrink-0 rounded-full bg-white/10 p-0.5" role="radiogroup" aria-label="Ukuran layar pratinjau">
             {(
@@ -421,7 +421,7 @@ function PreviewPanel({
 
         {/* Baris kotak masuk: begini email terlihat sebelum dibuka */}
         <div className="mx-4 rounded-2xl bg-white/[0.07] p-3.5">
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.14em] text-[#9a94b0]">Di kotak masuk</p>
+          <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.14em] text-[#9a94b0]">Di kotak masuk</p>
           <div className="flex items-start gap-3">
             <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#7b50ff] text-[16px] font-black leading-none" aria-hidden>
               ↑
@@ -429,13 +429,13 @@ function PreviewPanel({
             <div className="min-w-0 flex-1">
               <div className="flex items-baseline gap-2">
                 <span className="truncate text-[13px] font-semibold">{sender.name}</span>
-                <span className="ml-auto shrink-0 text-[11px] text-[#9a94b0]">Baru saja</span>
+                <span className="ml-auto shrink-0 text-[12px] text-[#9a94b0]">Baru saja</span>
               </div>
               <p className={"truncate text-[13px] " + (subject.trim() ? "text-white" : "italic text-[#9a94b0]")}>{subject.trim() || "(Subjek belum diisi)"}</p>
               <p className="truncate text-[12px] text-[#a5a0b9]">{preheader.trim() || "Teks pratinjau kosong: klien email akan memakai kalimat pertama isi email."}</p>
             </div>
           </div>
-          <div className="mt-2.5 flex flex-wrap gap-1.5 text-[11px]">
+          <div className="mt-2.5 flex flex-wrap gap-1.5 text-[12px]">
             <span className={"rounded-full px-2 py-0.5 " + (subjectLen === 0 ? "bg-white/10 text-[#b2aec4]" : subjectLen <= 60 ? "bg-[#c6f432]/20 text-[#d3f65f]" : "bg-[#fbbf24]/20 text-[#fcd34d]")}>
               Subjek {subjectLen}/60{subjectLen > 60 ? " · terpotong di ponsel" : ""}
             </span>
@@ -460,7 +460,7 @@ function PreviewPanel({
                 <span className="h-2 w-2 rounded-full bg-[#d6455d]/70" />
                 <span className="h-2 w-2 rounded-full bg-[#fbbf24]/80" />
                 <span className="h-2 w-2 rounded-full bg-[#34d399]/80" />
-                <span className="ml-2 truncate rounded-full bg-white px-3 py-0.5 text-[11px] text-[#5a39c0]">{sender.addr} → kamu</span>
+                <span className="ml-2 truncate rounded-full bg-white px-3 py-0.5 text-[12px] text-[#5a39c0]">{sender.addr} → kamu</span>
               </div>
             )}
             <div ref={stageRef} className="relative w-full overflow-hidden bg-white" style={{ height: frameH }}>
@@ -477,7 +477,7 @@ function PreviewPanel({
               />
             </div>
           </div>
-          <p className="mt-3 text-[11.5px] leading-relaxed text-[#9a94b0]">
+          <p className="mt-3 text-[12px] leading-relaxed text-[#9a94b0]">
             Tampilan asli bisa sedikit beda di tiap aplikasi email (Gmail, Outlook, dll). Selalu kirim tes sebelum kirim massal.
           </p>
         </div>

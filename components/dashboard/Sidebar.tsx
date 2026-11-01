@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { LayoutDashboard, FolderKanban, Rocket, UploadCloud, Link2, Sparkles, Globe2, KeyRound, BookOpen, Database, Settings2, Heart, Users, LogOut, ShieldCheck } from "@/components/ui/icons";
+import { LayoutDashboard, FolderKanban, Rocket, UploadCloud, Link2, Sparkles, RefreshCw, Globe2, KeyRound, BookOpen, Database, Settings2, Heart, Users, LogOut, ShieldCheck } from "@/components/ui/icons";
 import { useAuth } from "@/lib/auth-context";
 import { useDeploy } from "@/lib/deploy-context";
 import { AppSidebar, SIDEBAR_LINK_CLASS, type NavGroup } from "@/components/ui/AppSidebar";
@@ -21,32 +21,33 @@ export function Sidebar() {
       {
         label: "Ringkasan",
         items: [
-          { id: "dashboard", label: "Dashboard", icon: LayoutDashboard, badge: stats.failed, badgeLabel: `${stats.failed} deploy gagal` },
-          { id: "projects", label: "Projects", icon: FolderKanban },
+          { id: "dashboard", label: "Beranda", icon: LayoutDashboard, badge: stats.failed, badgeLabel: `${stats.failed} deploy gagal` },
+          { id: "projects", label: "Proyek", icon: FolderKanban },
         ],
       },
       {
         label: "Rilis",
         items: [
           { id: "deploy", label: "Deploy", icon: Rocket },
-          { id: "upload", label: "Upload", icon: UploadCloud },
+          { id: "upload", label: "Unggah", icon: UploadCloud },
           { id: "hosting", label: "Link Instan", icon: Link2 },
           { id: "ai", label: "AI Web Builder", icon: Sparkles },
+          { id: "convert", label: "Konversi", icon: RefreshCw },
         ],
       },
       {
-        label: "Pengaturan",
+        label: "Konfigurasi",
         items: [
-          { id: "domains", label: "Domains", icon: Globe2 },
+          { id: "domains", label: "Domain", icon: Globe2 },
           { id: "env", label: "Environment", icon: KeyRound },
           { id: "database", label: "Database", icon: Database },
-          { id: "settings", label: "Settings", icon: Settings2 },
+          { id: "settings", label: "Preferensi", icon: Settings2 },
         ],
       },
       {
         label: "Lainnya",
         items: [
-          { id: "docs", label: "Docs", icon: BookOpen },
+          { id: "docs", label: "Dokumentasi", icon: BookOpen },
           { id: "community", label: "Komunitas", icon: Users },
           { id: "donate", label: "Donasi", icon: Heart },
         ],
@@ -81,10 +82,19 @@ export function Sidebar() {
               )}
               <span className="min-w-0 flex-1">
                 <span className="block truncate text-[13px] font-semibold">{user.name}</span>
-                <span className="block truncate text-[12px] text-white/80" title={user.email}>
+                <span className="block truncate text-[12px] text-white" title={user.email}>
                   {user.email}
                 </span>
               </span>
+              <button
+                type="button"
+                onClick={handleLogout}
+                aria-label="Keluar"
+                title="Keluar"
+                className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-white transition hover:bg-white/15 max-md:h-10 max-md:w-10"
+              >
+                <LogOut size={18} aria-hidden />
+              </button>
             </div>
           )}
           {user?.isAdmin && (
@@ -92,9 +102,11 @@ export function Sidebar() {
               <ShieldCheck size={18} /> Panel Admin
             </a>
           )}
-          <button type="button" onClick={handleLogout} className={SIDEBAR_LINK_CLASS}>
-            <LogOut size={18} /> Logout
-          </button>
+          {!user && (
+            <button type="button" onClick={handleLogout} className={SIDEBAR_LINK_CLASS}>
+              <LogOut size={18} /> Keluar
+            </button>
+          )}
         </>
       }
     />

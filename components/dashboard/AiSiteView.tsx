@@ -55,7 +55,7 @@ import {
 } from "@/lib/ai-site-images";
 import { assignPhotos, type PhotoDraft } from "@/lib/ai-site-photos";
 import { remapImages } from "@/lib/ai-site-edit";
-import { Field, api, checkCls, chipCls, swatchTileCls, ON_MIST, hintCls, isHex, labelCls, timeLeftLabel, ttlLabel, useReducedMotion } from "./ai-site/shared";
+import { Field, api, checkCls, chipCls, ChipLabel, subheadCls, swatchTileCls, ON_MIST, hintCls, isHex, labelCls, timeLeftLabel, ttlLabel, useReducedMotion } from "./ai-site/shared";
 import { PreviewFrame } from "./ai-site/ScaledFrame";
 import { PaletteEditor } from "./ai-site/PaletteEditor";
 import { PhotoPool } from "./ai-site/PhotoPool";
@@ -209,7 +209,7 @@ function ImageRow({
         )}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[13.5px] font-medium">{def.label}</p>
+        <p className="truncate text-[14px] font-medium">{def.label}</p>
         <p className={`truncate ${hintCls}`}>{src ? formatBytes(dataUrlBytes(src)) : def.hint}</p>
       </div>
       <Btn busy={busy} onClick={onPick} aria-label={`${src ? "Ganti" : "Unggah"} gambar ${def.label}`}>
@@ -980,7 +980,7 @@ export function AiSiteView() {
         aria-describedby="groq-help"
         value={keyDraft}
         onChange={(e) => setKeyDraft(e.target.value)}
-        className="input-solid mono h-11 w-full px-3.5 text-[13.5px]"
+        className="input-solid mono h-11 w-full px-3.5 text-[14px]"
       />
       <div className="flex flex-wrap items-center gap-2">
         <Btn variant="primary" busy={savingKey} disabled={keyDraft.trim().length < 20} softDisabled onClick={saveKey}>
@@ -1019,7 +1019,7 @@ export function AiSiteView() {
   const tokenCardTop = (
     <div ref={tokenRef} tabIndex={-1} className="scroll-mt-4 outline-none">
       <Card title="Pasang token Groq dulu" action={<Badge tone="warn" dot>Belum ada</Badge>}>
-        <div className="space-y-3 px-6 py-5 text-[13.5px]">
+        <div className="space-y-3 px-6 py-5 text-[14px]">
           <p className="leading-relaxed">Jatah gratis hari ini sudah habis. Untuk lanjut membuat website, pasang token Groq milikmu sendiri.</p>
           {tokenForm}
         </div>
@@ -1034,12 +1034,12 @@ export function AiSiteView() {
     >
       {keyStatus.hasKey || showKeyForm ? (
         keyStatus.hasKey && !showKeyForm ? (
-          <div className="space-y-3 px-6 py-5 text-[13.5px]">{tokenMasked}</div>
+          <div className="space-y-3 px-6 py-5 text-[14px]">{tokenMasked}</div>
         ) : keyStatus.hasKey ? (
-          <div className="space-y-3 px-6 py-5 text-[13.5px]">{tokenForm}</div>
+          <div className="space-y-3 px-6 py-5 text-[14px]">{tokenForm}</div>
         ) : (
-          <details className="group px-6 py-5 text-[13.5px]">
-            <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-3 text-[13.5px] font-medium [&::-webkit-details-marker]:hidden">
+          <details className="group px-6 py-5 text-[14px]">
+            <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-3 text-[14px] font-medium [&::-webkit-details-marker]:hidden">
               <span className="min-w-0">
                 Kamu masih punya {keyStatus.freePerDay}x coba gratis per hari. Pakai token sendiri?
               </span>
@@ -1071,7 +1071,7 @@ export function AiSiteView() {
           }}
           aria-describedby="ai-edit-hint edit-hint"
           placeholder="Contoh: tambah 3 menu minuman, headline lebih santai, warna lebih gelap"
-          className="input-solid w-full resize-y px-3.5 py-3 text-[13.5px] leading-relaxed"
+          className="input-solid w-full resize-y px-3.5 py-3 text-[14px] leading-relaxed"
         />
         <div className="flex flex-wrap gap-1.5">
           {editSuggestions(content.kind).map((t) => (
@@ -1175,7 +1175,7 @@ export function AiSiteView() {
               <span className={`tabular-nums ${hintCls}`}>Link aktif: {siteCount} dari {cfg.maxSites}</span>
             </div>
             {lastPubId && (
-              <label className="flex min-h-[44px] items-start gap-2.5 text-[13.5px]">
+              <label className="flex min-h-[44px] items-start gap-2.5 text-[14px]">
                 <input type="checkbox" checked={replacePrev} onChange={(e) => setReplacePrev(e.target.checked)} className={checkCls} />
                 <span className="min-w-0">
                   Matikan link sebelumnya setelah publish
@@ -1229,7 +1229,7 @@ export function AiSiteView() {
           </div>
         )}
 
-        <div className={cn("relative rounded-[14px] bg-[var(--pill-bg)] p-2 sm:p-3", busy === "ai" && "opacity-60 transition-opacity motion-reduce:transition-none")} aria-busy={busy === "ai" || undefined}>
+        <div className={cn("relative rounded-[14px] bg-[var(--pill-bg)] p-2 sm:p-3", ON_MIST, busy === "ai" && "opacity-60 transition-opacity motion-reduce:transition-none")} aria-busy={busy === "ai" || undefined}>
           <PreviewFrame html={html} device={device} />
           {busy === "ai" && (
             <div className="absolute inset-0 grid place-items-center" aria-hidden>
@@ -1290,7 +1290,7 @@ export function AiSiteView() {
                   }}
                   aria-describedby="ai-prompt-hint gen-hint"
                   placeholder="Contoh: Warung bakso Pak Slamet, buka 10–21. Menu: bakso urat 15rb, es teler 12rb. Pesan via WA 0812…"
-                  className="input-solid w-full resize-y px-3.5 py-3 text-[13.5px] leading-relaxed"
+                  className="input-solid w-full resize-y px-3.5 py-3 text-[14px] leading-relaxed"
                 />
                 <div className="mt-1.5 flex items-start justify-between gap-3">
                   <span id="ai-prompt-hint" className={`min-w-0 ${hintCls}`}>
@@ -1335,7 +1335,7 @@ export function AiSiteView() {
               </Field>
 
               <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_150px] sm:items-end">
-                <label className="flex min-h-[44px] items-start gap-2.5 text-[13.5px]">
+                <label className="flex min-h-[44px] items-start gap-2.5 text-[14px]">
                   <input
                     type="checkbox"
                     checked={autoPublish && cfg.enabled}
@@ -1443,7 +1443,7 @@ export function AiSiteView() {
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <span className="text-[13px] font-medium text-text-muted">Template</span>
                     {template && (
-                      <button type="button" onClick={() => setTemplate(null)} className="text-[12.5px] text-text-muted underline max-md:min-h-[40px]">
+                      <button type="button" onClick={() => setTemplate(null)} className="text-[13px] text-text-muted underline max-md:min-h-[40px]">
                         {content ? "Ikuti saran AI" : "Atur ulang"}
                       </button>
                     )}
@@ -1462,8 +1462,8 @@ export function AiSiteView() {
               )}
 
               {tampilanMode === "manual" ? (
-                <div className={cn("rounded-[14px] bg-[var(--pill-bg)] p-3.5", ON_MIST)}>
-                  <div className="mb-3 text-[13px] font-medium text-text-muted">Tata letak</div>
+                <div>
+                  <div className={`mb-3 ${subheadCls}`}>Tata letak</div>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <Field label="Bagian paling atas" htmlFor="ai-hero" hint="Judul besar dan tombol di awal halaman.">
                       <Select value={heroEff} onValueChange={(v) => setHeroOpt(v as HeroLayout)}>
@@ -1493,7 +1493,7 @@ export function AiSiteView() {
                 </div>
               ) : (
                 <details className={cn("group rounded-[14px] bg-[var(--pill-bg)]", ON_MIST)}>
-                  <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-3 rounded-[14px] px-3.5 py-2.5 text-[13.5px] font-medium [&::-webkit-details-marker]:hidden">
+                  <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-3 rounded-[14px] px-3.5 py-2.5 text-[14px] font-medium [&::-webkit-details-marker]:hidden">
                     <span className="min-w-0">
                       Atur tata letak <span className="font-normal text-text-muted">· {heroName}, {featName}</span>
                     </span>
@@ -1538,9 +1538,9 @@ export function AiSiteView() {
               {tampilanMode === "manual" && (
                 <div>
                   <div className="mb-2 flex items-center justify-between gap-2">
-                    <span className="text-[13px] font-medium text-text-muted">Warna latar</span>
+                    <span className={subheadCls}>Warna latar</span>
                     {bgOpt && (
-                      <button type="button" onClick={() => setBgOpt(null)} className="text-[12.5px] text-text-muted underline max-md:min-h-[40px]">
+                      <button type="button" onClick={() => setBgOpt(null)} className="text-[13px] text-text-muted underline max-md:min-h-[40px]">
                         Bawaan template
                       </button>
                     )}
@@ -1582,7 +1582,7 @@ export function AiSiteView() {
                   <div className="mb-2 flex items-center justify-between gap-2">
                     <span className="text-[13px] font-medium text-text-muted">Gaya desain</span>
                     {styleOpt && (
-                      <button type="button" onClick={() => setStyleOpt(null)} className="text-[12.5px] text-text-muted underline max-md:min-h-[40px]">
+                      <button type="button" onClick={() => setStyleOpt(null)} className="text-[13px] text-text-muted underline max-md:min-h-[40px]">
                         Ikuti Template
                       </button>
                     )}
@@ -1612,9 +1612,9 @@ export function AiSiteView() {
               {tampilanMode === "manual" && (
                 <div>
                   <div className="mb-2 flex items-center justify-between gap-2">
-                    <span className="text-[13px] font-medium text-text-muted">Hiasan</span>
+                    <span className={subheadCls}>Hiasan</span>
                     {decorOpt && (
-                      <button type="button" onClick={() => setDecorOpt(null)} className="text-[12.5px] text-text-muted underline max-md:min-h-[40px]">
+                      <button type="button" onClick={() => setDecorOpt(null)} className="text-[13px] text-text-muted underline max-md:min-h-[40px]">
                         Ikuti Gaya desain
                       </button>
                     )}
@@ -1630,7 +1630,7 @@ export function AiSiteView() {
                         title={d.desc}
                         className={chipCls(decorOpt === d.id, true)}
                       >
-                        {d.name}
+                        <ChipLabel selected={decorOpt === d.id}>{d.name}</ChipLabel>
                       </button>
                     ))}
                   </div>
@@ -1641,8 +1641,8 @@ export function AiSiteView() {
               )}
 
               {tampilanMode === "manual" && (
-                <div className={cn("rounded-[14px] bg-[var(--pill-bg)] p-3.5", ON_MIST)}>
-                  <div className="mb-3 text-[13px] font-medium text-text-muted">Huruf</div>
+                <div>
+                  <div className={`mb-3 ${subheadCls}`}>Huruf</div>
                   <FontRolePicker
                     title={fontsOpt.title}
                     sub={fontsOpt.sub}
@@ -1662,7 +1662,7 @@ export function AiSiteView() {
               )}
 
               {content && hasShop(content) && (
-                <label className="flex min-h-[44px] items-start gap-2.5 rounded-[14px] bg-[var(--pill-bg)] p-3.5 text-[13.5px]">
+                <label className="flex min-h-[44px] items-start gap-2.5 rounded-[14px] bg-[var(--pill-bg)] p-3.5 text-[14px]">
                   <input type="checkbox" checked={shopOn} onChange={(e) => setShopOn(e.target.checked)} className={checkCls} />
                   <span className="min-w-0">
                     <span className="flex items-center gap-1.5 font-medium"><Store size={14} className="shrink-0" aria-hidden /> Katalog, keranjang, dan mode kelola</span>
@@ -1691,7 +1691,7 @@ export function AiSiteView() {
                 ))}
               </ul>
               {imageSlots.length > 6 && (
-                <button type="button" onClick={() => setShowAllImgs((v) => !v)} aria-expanded={showAllImgs} className="text-[12.5px] text-text-muted underline max-md:min-h-[40px]">
+                <button type="button" onClick={() => setShowAllImgs((v) => !v)} aria-expanded={showAllImgs} className="text-[13px] text-text-muted underline max-md:min-h-[40px]">
                   {showAllImgs ? "Tampilkan lebih sedikit" : `Tampilkan semua (${imageSlots.length})`}
                 </button>
               )}
@@ -1710,7 +1710,7 @@ export function AiSiteView() {
           {content && shopActive && (
             <Card title="Kelola produk (untuk pemilik)" action={<Badge tone="good" dot>Aktif</Badge>}>
               <div className="space-y-4 px-6 py-5">
-                <ol className="list-decimal space-y-2 pl-5 text-[13.5px] leading-relaxed text-text-muted marker:font-medium marker:text-text">
+                <ol className="list-decimal space-y-2 pl-5 text-[14px] leading-relaxed text-text-muted marker:font-medium marker:text-text">
                   <li>Pratinjau sudah dalam <b className="text-text">mode kelola</b>: coba tambah, ubah, atau hapus produk langsung di kartunya.</li>
                   <li>Di situs yang sudah online, tambahkan <code className="mono">#kelola</code> di akhir link untuk masuk mode kelola. Pengunjung biasa tidak melihatnya.</li>
                   <li>Setelah selesai, tekan <b className="text-text">Unduh situs</b> di bilah kelola, lalu upload ulang file itu supaya semua pengunjung melihat versi terbaru.</li>

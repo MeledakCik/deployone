@@ -78,7 +78,7 @@ export function SettingsTab({ toast }: { toast: (m: string) => void }) {
             <li key={r.key} className="flex items-center justify-between gap-4 border-b border-[var(--surface-line)] px-6 py-4 last:border-0">
               <div className="min-w-0">
                 <p className="text-[14px] font-medium">{r.title}</p>
-                <p className="text-[12.5px] text-text-muted">{r.desc}</p>
+                <p className="text-[13px] text-text-muted">{r.desc}</p>
               </div>
               <Toggle checked={s[r.key]} label={r.title} disabled={saving === r.key} onChange={(v) => void save({ [r.key]: v } as Partial<Settings>, r.key)} />
             </li>
@@ -133,7 +133,7 @@ export function SettingsTab({ toast }: { toast: (m: string) => void }) {
             <StatusRow key={e.name} ok={e.ok} label={e.label} extra={e.ok ? undefined : `isi ${e.name}`} />
           ))}
         </ul>
-        <div className="border-t border-[var(--surface-line)] px-6 py-4 text-[12.5px] text-text-muted">
+        <div className="border-t border-[var(--surface-line)] px-6 py-4 text-[13px] text-text-muted">
           <p>
             Admin: <span className="text-text">{data.system.admins.join(", ")}</span>
           </p>

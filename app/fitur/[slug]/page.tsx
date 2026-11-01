@@ -69,7 +69,7 @@ export default function FeaturePage({ params }: { params: { slug: string } }) {
       <JsonLd data={ld} />
       <PublicHeader />
       <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-10 sm:px-6 lg:px-8">
-        <nav aria-label="Jejak halaman" className="mb-4 text-[12.5px] text-text-muted">
+        <nav aria-label="Jejak halaman" className="mb-4 text-[13px] text-text-muted">
           <Link href="/" className="underline-offset-4 hover:underline">Depup</Link>
           <span aria-hidden="true"> / </span>
           <Link href="/fitur" className="underline-offset-4 hover:underline">Fitur</Link>
@@ -80,11 +80,11 @@ export default function FeaturePage({ params }: { params: { slug: string } }) {
         <article className="space-y-6">
           <header>
             <h1 className="page-title">{f.name}</h1>
-            <p className="mt-2 text-[14.5px] leading-relaxed text-text-muted">{f.summary}</p>
+            <p className="mt-2 text-[14px] leading-relaxed text-text-muted">{f.summary}</p>
           </header>
 
           <section aria-labelledby="tldr" className="surface-solid rounded-3xl p-5 sm:p-7">
-            <h2 id="tldr" className="text-[15px] font-semibold">Ringkasan singkat</h2>
+            <h2 id="tldr" className="text-[16px] font-semibold">Ringkasan singkat</h2>
             <p className="mt-2 text-[14px] leading-relaxed">{f.tldr}</p>
             <p className="mt-3 text-[13px] text-text-muted">
               <strong className="font-semibold text-text">Cocok untuk:</strong> {f.audience}
@@ -92,34 +92,34 @@ export default function FeaturePage({ params }: { params: { slug: string } }) {
           </section>
 
           <section aria-labelledby="kemampuan" className="surface-solid rounded-3xl p-5 sm:p-7">
-            <h2 id="kemampuan" className="text-[15px] font-semibold">Yang bisa kamu lakukan</h2>
-            <ul className="mt-3 list-disc space-y-1.5 pl-5 text-[13.5px] leading-relaxed">
+            <h2 id="kemampuan" className="text-[16px] font-semibold">Yang bisa kamu lakukan</h2>
+            <ul className="mt-3 list-disc space-y-1.5 pl-5 text-[14px] leading-relaxed">
               {f.points.map((p) => <li key={p}>{p}</li>)}
             </ul>
           </section>
 
           <section aria-labelledby="langkah" className="surface-solid rounded-3xl p-5 sm:p-7">
-            <h2 id="langkah" className="text-[15px] font-semibold">Cara memakainya</h2>
-            <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-[13.5px] leading-relaxed">
+            <h2 id="langkah" className="text-[16px] font-semibold">Cara memakainya</h2>
+            <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-[14px] leading-relaxed">
               {f.steps.map((s) => <li key={s}>{s}</li>)}
             </ol>
           </section>
 
           <section aria-labelledby="batas" className="surface-solid rounded-3xl p-5 sm:p-7">
-            <h2 id="batas" className="text-[15px] font-semibold">Batas dan hal yang perlu diketahui</h2>
-            <ul className="mt-3 list-disc space-y-1.5 pl-5 text-[13.5px] leading-relaxed">
+            <h2 id="batas" className="text-[16px] font-semibold">Batas dan hal yang perlu diketahui</h2>
+            <ul className="mt-3 list-disc space-y-1.5 pl-5 text-[14px] leading-relaxed">
               {f.limits.map((l) => <li key={l}>{l}</li>)}
             </ul>
           </section>
 
           {f.faqs.length > 0 && (
             <section aria-labelledby="tanya" className="surface-solid rounded-3xl p-5 sm:p-7">
-              <h2 id="tanya" className="text-[15px] font-semibold">Pertanyaan yang sering muncul</h2>
+              <h2 id="tanya" className="text-[16px] font-semibold">Pertanyaan yang sering muncul</h2>
               <dl className="mt-3 space-y-4">
                 {f.faqs.map((q) => (
                   <div key={q.q}>
                     <dt className="text-[14px] font-semibold">{q.q}</dt>
-                    <dd className="mt-1 text-[13.5px] leading-relaxed text-text-muted">{q.a}</dd>
+                    <dd className="mt-1 text-[14px] leading-relaxed text-text-muted">{q.a}</dd>
                   </div>
                 ))}
               </dl>

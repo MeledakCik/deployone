@@ -502,7 +502,7 @@ export function KuliProyek({ stage, compact = false, speed = 1, className }: Kul
         </div>
 
         {!compact && (
-          <span aria-hidden="true" className="pointer-events-none absolute left-2.5 top-2.5 rounded-full border border-[var(--line-strong)] bg-black/35 px-2.5 py-1 text-[11px] font-medium text-white backdrop-blur-sm">
+          <span aria-hidden="true" className="pointer-events-none absolute left-2.5 top-2.5 rounded-full border border-[var(--line-strong)] bg-black/35 px-2.5 py-1 text-[12px] font-medium text-white backdrop-blur-sm">
             {KULI_STAGE_LABEL[stage]}
           </span>
         )}
@@ -512,13 +512,13 @@ export function KuliProyek({ stage, compact = false, speed = 1, className }: Kul
           </span>
         )}
         {stage === "live" && (
-          <span aria-hidden="true" className="kuli-pop pointer-events-none absolute right-2.5 top-2.5 rounded-full border border-emerald-500/40 bg-emerald-950/70 px-2.5 py-1 text-[11px] font-semibold text-emerald-200">
+          <span aria-hidden="true" className="kuli-pop pointer-events-none absolute right-2.5 top-2.5 rounded-full border border-emerald-500/40 bg-emerald-950/70 px-2.5 py-1 text-[12px] font-semibold text-emerald-200">
             Resmi live!
           </span>
         )}
       </div>
 
-      <div aria-live="polite" className={cn("mt-2.5", compact ? "text-[11.5px]" : "text-[13px]")}>
+      <div aria-live="polite" className={cn("mt-2.5", compact ? "text-[12px]" : "text-[13px]")}>
         <p key={`${stage}-${tick % lines.length}`} className="kuli-pop flex items-start gap-2 rounded-2xl border border-[var(--line-strong)] bg-[var(--card-hover)] px-3 py-2 leading-snug text-[var(--text)]">
           <span
             aria-hidden="true"

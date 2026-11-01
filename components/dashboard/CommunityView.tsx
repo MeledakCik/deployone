@@ -39,7 +39,7 @@ export function CommunityView() {
                       <Icon size={20} />
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block text-[14.5px] font-bold tracking-tight">{label}</span>
+                      <span className="block text-[14px] font-bold tracking-tight">{label}</span>
                       <span className="block truncate text-[13px] text-text-muted">{desc}</span>
                     </span>
                     <ArrowUpRight size={18} className="shrink-0 text-text-muted" />

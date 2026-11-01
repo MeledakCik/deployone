@@ -30,7 +30,7 @@ function CredentialsCard({ id, username }: { id: string; username: string }) {
       <Btn onClick={() => setConfirm(true)} className="w-full sm:w-auto">Reset password</Btn>
       {confirm && (
         <Modal title="Reset password?" onClose={() => setConfirm(false)}>
-          <p className="mb-4 text-sm text-slate-700 dark:text-slate-300">Password lama tidak berlaku lagi dan semua sesi login database yang aktif akan keluar.</p>
+          <p className="mb-4 text-sm text-text">Password lama tidak berlaku lagi dan semua sesi login database yang aktif akan keluar.</p>
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
             <Btn onClick={() => setConfirm(false)}>Batal</Btn>
             <Btn
@@ -78,7 +78,7 @@ function ApiCard({ id }: { id: string }) {
     <section className={`${surface} min-w-0 space-y-4 p-4 sm:p-5`}>
       <h2 className={heading}>REST API</h2>
       <SecretRow label="Endpoint (POST)" value={endpoint} />
-      <pre className="overflow-x-auto rounded-xl bg-[#1e1150] dark:bg-[#0d0624] dark:ring-1 dark:ring-white/10 p-3 font-mono text-[11px] leading-relaxed text-violet-100 sm:text-xs">{`curl -X POST ${endpoint} \\
+      <pre className="overflow-x-auto rounded-xl bg-[#1e1150] p-3 font-mono text-[12px] leading-relaxed text-white sm:text-xs">{`curl -X POST ${endpoint} \\
   -H "Authorization: Bearer <api_key>" \\
   -H "Content-Type: application/json" \\
   -d '{"sql":"SELECT * FROM users WHERE id = ?","args":[1]}'`}</pre>
@@ -88,14 +88,14 @@ function ApiCard({ id }: { id: string }) {
           <SecretRow label="API key" value={fresh.key} />
         </div>
       )}
-      <ul className="divide-y divide-violet-50 rounded-xl border border-violet-100 px-3 text-sm dark:divide-white/5 dark:border-white/10">
+      <ul className="divide-y divide-[var(--line)] rounded-xl px-3 text-sm">
         {keys.map((k) => (
           <li key={k.id} className="flex items-center justify-between gap-3 py-2.5">
             <div className="min-w-0">
-              <div className="truncate font-medium text-slate-900 dark:text-slate-100">
-                {k.label} <span className="ml-1 rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700 dark:bg-white/10 dark:text-violet-200">({k.mode === "ro" ? "read-only" : "read-write"})</span>
+              <div className="truncate font-medium text-text">
+                {k.label} <span className="ml-1 rounded-full bg-[var(--pill-bg)] px-2 py-0.5 text-[12px] font-medium text-lav-text">({k.mode === "ro" ? "read-only" : "read-write"})</span>
               </div>
-              <div className="truncate text-xs text-slate-500 dark:text-slate-400">
+              <div className="truncate text-xs text-text-muted">
                 {k.prefix}… · {fmtDate(k.createdAt)} {k.revokedAt && "· dicabut"}
               </div>
             </div>

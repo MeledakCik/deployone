@@ -152,7 +152,7 @@ export function LinksTab({ toast }: { toast: (m: string) => void }) {
                     {l.status === "pending" && <Badge tone="warn">upload belum selesai</Badge>}
                   </div>
                   {l.name && <p className="text-[12px] text-text-muted">{l.name}</p>}
-                  <p className="mt-1.5 text-[12.5px] text-text-muted">
+                  <p className="mt-1.5 text-[13px] text-text-muted">
                     {l.owner ?? "anonim"} · {fmtBytes(l.bytes)}
                     {l.files ? ` · ${l.files} file` : ""} · {timeLeft(l.expiresAt)}
                   </p>

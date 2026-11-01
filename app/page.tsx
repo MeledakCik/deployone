@@ -36,12 +36,12 @@ export default function LandingPage() {
       {/* Bagian isi: lembar putih membulat di atas kanvas lavender */}
       <div className="lp-sheet mx-2 mt-10 sm:mx-5 min-[1400px]:mx-auto min-[1400px]:max-w-[1360px]">
         <SocialProof />
+        <AtAGlance />
         <FeaturesGrid />
         <HowItWorks />
         <DeployDemo />
         <KuliSection />
         <SupportMatrix />
-        <AtAGlance />
         <FAQ />
       </div>
 

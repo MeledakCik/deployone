@@ -1,7 +1,7 @@
 "use client";
 /**
  * Komponen bersama untuk shell app Android (/m).
- * Bahasa visual mengikuti referensi Stitch "Vibrant App Utility": ungu #7C3AED → indigo #6366F1,
+ * Bahasa visual mengikuti referensi Stitch "Vibrant App Utility": ungu #7b50ff → indigo #9876ff,
  * kanvas putih/lavender, kartu radius besar, bayangan ungu halus, chip status pill.
  */
 import * as React from "react";
@@ -10,18 +10,18 @@ import { ArrowUpRight, Triangle, Cloud, TrainFront, Server } from "lucide-react"
 import type { HistoryItem, Platform } from "@/types";
 
 export const M = {
-  primary: "#7C3AED",
-  primaryDeep: "#6D28D9",
-  indigo: "#6366F1",
-  ink: "#141B2B",
-  muted: "#64748B",
-  line: "#EDE9FE",
+  primary: "#7b50ff",
+  primaryDeep: "#5a39c0",
+  indigo: "#9876ff",
+  ink: "#120b2e",
+  muted: "#59546d",
+  line: "#ede8ff",
 } as const;
 
 export const CARD =
-  "rounded-[20px] bg-white ring-1 ring-[#EDE9FE] shadow-[0_4px_20px_-2px_rgba(124,58,237,0.08)]";
+  "rounded-[20px] bg-white shadow-[0_4px_20px_-2px_rgba(123,80,255,0.08)]";
 
-export const HERO_GRADIENT = "bg-gradient-to-br from-[#6D28D9] via-[#7C3AED] to-[#6366F1]";
+export const HERO_GRADIENT = "bg-gradient-to-br from-[#5a39c0] via-[#7b50ff] to-[#9876ff]";
 
 /** Halaman tidak-terdaftar di tipe Platform (mis. render) tetap aman. */
 export const PLATFORM_LABEL: Record<string, string> = {
@@ -39,16 +39,16 @@ export function PlatformIcon({ platform, className = "h-5 w-5" }: { platform: Pl
 }
 
 const PLATFORM_TILE: Record<string, string> = {
-  vercel: "bg-[#141B2B] text-white",
+  vercel: "bg-[#120b2e] text-white",
   cloudflare: "bg-[#FFF1E6] text-[#EA580C]",
-  railway: "bg-[#EEF2FF] text-[#4F46E5]",
-  render: "bg-[#ECFDF5] text-[#047857]",
+  railway: "bg-[#ede8ff] text-[#5a39c0]",
+  render: "bg-[#e9f6ef] text-[#047857]",
 };
 
 export function PlatformTile({ platform, size = 44 }: { platform: Platform | string; size?: number }) {
   return (
     <span
-      className={`flex shrink-0 items-center justify-center rounded-[14px] ${PLATFORM_TILE[platform] ?? "bg-[#F5F3FF] text-[#7C3AED]"}`}
+      className={`flex shrink-0 items-center justify-center rounded-[14px] ${PLATFORM_TILE[platform] ?? "bg-[#f4f1ff] text-[#7b50ff]"}`}
       style={{ width: size, height: size }}
     >
       <PlatformIcon platform={platform} className={size >= 44 ? "h-[18px] w-[18px]" : "h-4 w-4"} />
@@ -57,16 +57,16 @@ export function PlatformTile({ platform, size = 44 }: { platform: Platform | str
 }
 
 const STATUS: Record<string, { label: string; wrap: string; dot: string }> = {
-  ready: { label: "Aktif", wrap: "bg-[#ECFDF5] text-[#065F46]", dot: "bg-[#10B981]" },
-  building: { label: "Building", wrap: "bg-[#FFFBEB] text-[#92400E]", dot: "bg-[#F59E0B] animate-pulse" },
-  failed: { label: "Gagal", wrap: "bg-[#FEF2F2] text-[#B91C1C]", dot: "bg-[#EF4444]" },
-  deleted: { label: "Dihapus", wrap: "bg-[#F1F5F9] text-[#64748B]", dot: "bg-[#94A3B8]" },
+  ready: { label: "Aktif", wrap: "bg-[#e9f6ef] text-[#047857]", dot: "bg-[#1f9d63]" },
+  building: { label: "Building", wrap: "bg-[#fef5e7] text-[#92400E]", dot: "bg-[#c98a12] animate-pulse" },
+  failed: { label: "Gagal", wrap: "bg-[#fdecec] text-[#B91C1C]", dot: "bg-[#d6455d]" },
+  deleted: { label: "Dihapus", wrap: "bg-[#ede8ff] text-[#59546d]", dot: "bg-[#67637a]" },
 };
 
 export function StatusPill({ status }: { status: string }) {
   const s = STATUS[status] ?? STATUS.deleted;
   return (
-    <span className={`inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-[11px] font-bold ${s.wrap}`}>
+    <span className={`inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-[12px] font-bold ${s.wrap}`}>
       <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} />
       {s.label}
     </span>
@@ -79,7 +79,7 @@ export function Chip({ active, onClick, children }: { active: boolean; onClick: 
       type="button"
       onClick={onClick}
       className={`h-9 shrink-0 rounded-full px-4 text-[13px] font-semibold transition active:scale-95 ${
-        active ? "bg-[#7C3AED] text-white shadow-[0_6px_14px_-4px_rgba(124,58,237,0.5)]" : "bg-[#F1EEFF] text-[#4A4455]"
+        active ? "bg-[#7b50ff] text-white shadow-[0_6px_14px_-4px_rgba(123,80,255,0.5)]" : "bg-[#ede8ff] text-[#59546d]"
       }`}
     >
       {children}
@@ -90,9 +90,9 @@ export function Chip({ active, onClick, children }: { active: boolean; onClick: 
 export function SectionTitle({ children, action }: { children: React.ReactNode; action?: { href: string; label: string } }) {
   return (
     <div className="flex items-end justify-between px-1">
-      <h2 className="min-w-0 text-[17px] font-extrabold tracking-[-0.02em] text-[#141B2B]">{children}</h2>
+      <h2 className="min-w-0 text-[18px] font-extrabold tracking-[-0.02em] text-[#120b2e]">{children}</h2>
       {action && (
-        <Link href={action.href} className="shrink-0 whitespace-nowrap pl-3 text-[13px] font-bold text-[#7C3AED]">
+        <Link href={action.href} className="shrink-0 whitespace-nowrap pl-3 text-[13px] font-bold text-[#7b50ff]">
           {action.label}
         </Link>
       )}
@@ -103,11 +103,11 @@ export function SectionTitle({ children, action }: { children: React.ReactNode; 
 export function EmptyState({ icon, title, hint, cta }: { icon: React.ReactNode; title: string; hint: string; cta?: { href: string; label: string } }) {
   return (
     <div className={`${CARD} flex flex-col items-center px-6 py-10 text-center`}>
-      <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#F5F3FF] text-[#7C3AED]">{icon}</span>
-      <p className="mt-4 text-[16px] font-bold text-[#141B2B]">{title}</p>
-      <p className="mt-1 text-[13px] leading-snug text-[#64748B]">{hint}</p>
+      <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#f4f1ff] text-[#7b50ff]">{icon}</span>
+      <p className="mt-4 text-[16px] font-bold text-[#120b2e]">{title}</p>
+      <p className="mt-1 text-[13px] leading-snug text-[#59546d]">{hint}</p>
       {cta && (
-        <Link href={cta.href} className="mt-5 inline-flex h-11 items-center whitespace-nowrap rounded-full bg-[#7C3AED] px-6 text-[14px] font-bold text-white shadow-[0_8px_16px_-4px_rgba(124,58,237,0.4)] active:scale-95">
+        <Link href={cta.href} className="mt-5 inline-flex h-11 items-center whitespace-nowrap rounded-full bg-[#7b50ff] px-6 text-[14px] font-bold text-white shadow-[0_8px_16px_-4px_rgba(123,80,255,0.4)] active:scale-95">
           {cta.label}
         </Link>
       )}
@@ -181,9 +181,9 @@ export function MiniButton({
   /** Lebar penuh sel induknya (dipakai di grid tombol agar simetris). */
   full?: boolean;
 }) {
-  const cls = `inline-flex h-9 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3.5 text-[12.5px] font-bold transition active:scale-95 ${
+  const cls = `inline-flex h-9 shrink-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3.5 text-[13px] font-bold transition active:scale-95 ${
     full ? "w-full" : ""
-  } ${primary ? "bg-[#7C3AED] text-white" : "bg-[#F5F3FF] text-[#6D28D9] ring-1 ring-[#DDD6FE]"}`;
+  } ${primary ? "bg-[#7b50ff] text-white" : "bg-[#f4f1ff] text-[#5a39c0]"}`;
   if (href)
     return (
       <a href={href} target="_blank" rel="noreferrer" className={cls}>
@@ -204,7 +204,7 @@ export function OpenLink({ domain }: { domain: string }) {
       target="_blank"
       rel="noreferrer"
       aria-label={`Buka ${hostOf(domain)}`}
-      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F5F3FF] text-[#7C3AED] active:scale-90"
+      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#f4f1ff] text-[#7b50ff] active:scale-90"
     >
       <ArrowUpRight className="h-4 w-4" />
     </a>

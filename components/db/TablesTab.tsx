@@ -13,17 +13,17 @@ export default function TablesTab({ schema, onOpen, onReload }: { schema: Schema
         </Btn>
       </div>
 
-      {schema.tables.length === 0 && <p className="rounded-xl border border-dashed border-violet-200 px-4 py-8 text-center text-sm text-slate-500 dark:border-white/15 dark:text-slate-400">{empty}</p>}
+      {schema.tables.length === 0 && <p className="rounded-xl bg-[var(--pill-bg)] px-4 py-8 text-center text-sm text-text-muted">{empty}</p>}
 
       {schema.tables.length > 0 && (
         <>
           {/* Mobile: kartu */}
           <ul className="space-y-2 md:hidden">
             {schema.tables.map((t) => (
-              <li key={t.name} className="rounded-xl border border-violet-100 p-3 dark:border-white/10">
+              <li key={t.name} className="rounded-xl p-3">
                 <div className="flex items-start justify-between gap-2">
-                  <p className="min-w-0 break-all font-medium text-slate-900 dark:text-slate-100">{t.name}</p>
-                  <span className="shrink-0 rounded-full bg-violet-50 px-2 py-0.5 text-[11px] font-medium text-violet-700 dark:bg-white/10 dark:text-violet-200">{t.type}</span>
+                  <p className="min-w-0 break-all font-medium text-text">{t.name}</p>
+                  <span className="shrink-0 rounded-full bg-[var(--pill-bg)] px-2 py-0.5 text-[12px] font-medium text-lav-text">{t.type}</span>
                 </div>
                 <p className={`${subtle} mt-0.5`}>
                   {String(t.rowCount ?? "—")} baris · {t.columns.length} kolom
@@ -41,9 +41,9 @@ export default function TablesTab({ schema, onOpen, onReload }: { schema: Schema
           </ul>
 
           {/* Desktop: tabel */}
-          <div className="hidden overflow-x-auto rounded-xl border border-violet-100 dark:border-white/10 md:block">
+          <div className="hidden overflow-x-auto rounded-xl md:block">
             <table className="w-full">
-              <thead className="bg-violet-50/70 dark:bg-white/5">
+              <thead className="bg-[var(--pill-bg)]">
                 <tr>
                   <th className={th}>Nama</th>
                   <th className={th}>Tipe</th>
@@ -52,9 +52,9 @@ export default function TablesTab({ schema, onOpen, onReload }: { schema: Schema
                   <th className={th} />
                 </tr>
               </thead>
-              <tbody className="divide-y divide-violet-50 dark:divide-white/5">
+              <tbody className="divide-y divide-[var(--line)]">
                 {schema.tables.map((t) => (
-                  <tr key={t.name} className="transition-colors hover:bg-violet-50/50 dark:hover:bg-white/5">
+                  <tr key={t.name} className="transition-colors hover:bg-[var(--card-hover)]">
                     <td className={`${td} font-medium`}>{t.name}</td>
                     <td className={td}>{t.type}</td>
                     <td className={td}>{String(t.rowCount ?? "—")}</td>

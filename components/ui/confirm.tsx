@@ -76,7 +76,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
               {o.title}
             </h3>
             {o.description && (
-              <p id="confirm-desc" className="mt-1.5 text-[13.5px] text-text-muted">
+              <p id="confirm-desc" className="mt-1.5 text-[14px] text-text-muted">
                 {o.description}
               </p>
             )}

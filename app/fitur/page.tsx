@@ -45,7 +45,7 @@ export default function FiturPage() {
       <JsonLd data={ld} />
       <PublicHeader />
       <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-10 sm:px-6 lg:px-8">
-        <nav aria-label="Jejak halaman" className="mb-4 text-[12.5px] text-text-muted">
+        <nav aria-label="Jejak halaman" className="mb-4 text-[13px] text-text-muted">
           <Link href="/" className="underline-offset-4 hover:underline">Depup</Link>
           <span aria-hidden="true"> / </span>
           <span>Fitur</span>
@@ -54,7 +54,7 @@ export default function FiturPage() {
         <h1 className="page-title">Semua fitur Depup</h1>
 
         <section aria-labelledby="ringkasan" className="surface-solid mt-5 rounded-3xl p-5 sm:p-7">
-          <h2 id="ringkasan" className="text-[15px] font-semibold">Ringkasan singkat</h2>
+          <h2 id="ringkasan" className="text-[16px] font-semibold">Ringkasan singkat</h2>
           <p className="mt-2 text-[14px] leading-relaxed">{SITE_DEFINITION}</p>
           <p className="mt-2 text-[14px] leading-relaxed text-text-muted">
             Masuk dengan akun Google, tempel link GitHub atau upload ZIP, dan Depup memeriksa isi repo sebelum deploy.
@@ -74,12 +74,12 @@ export default function FiturPage() {
         <ul className="mt-6 grid gap-4 sm:grid-cols-2">
           {FEATURES.map((f) => (
             <li key={f.slug} className="surface-solid flex flex-col rounded-3xl p-5 sm:p-6">
-              <h2 className="text-[17px] font-bold tracking-tight">
+              <h2 className="text-[18px] font-bold tracking-tight">
                 <Link href={`/fitur/${f.slug}`} className="underline-offset-4 hover:underline">
                   {f.name}
                 </Link>
               </h2>
-              <p className="mt-2 flex-1 text-[13.5px] leading-relaxed text-text-muted">{f.summary}</p>
+              <p className="mt-2 flex-1 text-[14px] leading-relaxed text-text-muted">{f.summary}</p>
               <Link
                 href={`/fitur/${f.slug}`}
                 className="mt-4 text-[13px] font-semibold underline underline-offset-4"
@@ -98,7 +98,7 @@ export default function FiturPage() {
           >
             Coba Depup gratis
           </DashboardLink>
-          <p className="text-[12.5px] text-text-muted">
+          <p className="text-[13px] text-text-muted">
             Butuh panduan? Lihat <Link href="/docs" className="underline underline-offset-4">dokumentasi</Link> atau{" "}
             <Link href="/#faq" className="underline underline-offset-4">FAQ</Link>.
           </p>

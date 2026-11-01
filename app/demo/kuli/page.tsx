@@ -12,7 +12,7 @@ export default function DemoKuliPage() {
     <main className="mx-auto flex min-h-[100dvh] w-full max-w-2xl flex-col gap-5 px-4 py-10 text-[var(--text)]">
       <header className="space-y-1.5">
         <h1 className="text-2xl font-semibold">Demo Kuli Proyek</h1>
-        <p className="text-[13.5px] text-[var(--text-muted)]">
+        <p className="text-[14px] text-[var(--text-muted)]">
           Kuli dan mandor membangun gedung kecil selagi &ldquo;deploy&rdquo; berjalan. Tekan Mulai untuk melihatnya.
         </p>
       </header>

@@ -117,8 +117,8 @@ export function McpTab() {
                   {data.byClient.map((c) => (
                     <li key={c.key} className="px-6 py-3.5">
                       <div className="flex items-baseline justify-between gap-3">
-                        <span className="text-[13.5px] font-semibold">{c.label}</span>
-                        <span className="shrink-0 text-[12.5px] tabular-nums text-text-muted">{nf.format(c.users)} pengguna</span>
+                        <span className="text-[14px] font-semibold">{c.label}</span>
+                        <span className="shrink-0 text-[13px] tabular-nums text-text-muted">{nf.format(c.users)} pengguna</span>
                       </div>
                       <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[var(--pill-bg)]" aria-hidden>
                         <div className="h-full rounded-full" style={{ width: `${(c.users / maxUsers) * 100}%`, background: "var(--ring)" }} />
@@ -140,8 +140,8 @@ export function McpTab() {
                   {data.topTools.map((t) => (
                     <li key={t.name} className="px-6 py-3.5">
                       <div className="flex items-baseline justify-between gap-3">
-                        <code className="mono min-w-0 truncate text-[12.5px]">{t.name}</code>
-                        <span className="shrink-0 text-[12.5px] tabular-nums text-text-muted">{nf.format(t.count)}×</span>
+                        <code className="mono min-w-0 truncate text-[13px]">{t.name}</code>
+                        <span className="shrink-0 text-[13px] tabular-nums text-text-muted">{nf.format(t.count)}×</span>
                       </div>
                       <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[var(--pill-bg)]" aria-hidden>
                         <div className="h-full rounded-full" style={{ width: `${(t.count / maxTool) * 100}%`, background: "var(--ring)" }} />
@@ -204,7 +204,7 @@ export function McpTab() {
                   {pager.slice.map((u) => (
                     <li key={u.email} className="space-y-2 border-b border-[var(--surface-line)] px-5 py-4 last:border-0">
                       <div className="flex items-start justify-between gap-2">
-                        <span className="min-w-0 break-all text-[13.5px] font-semibold">{u.email}</span>
+                        <span className="min-w-0 break-all text-[14px] font-semibold">{u.email}</span>
                         {Date.now() - u.lastAt < 86400000 && <Badge tone="good" dot>Aktif</Badge>}
                       </div>
                       <div className="space-y-1.5">

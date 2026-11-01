@@ -29,6 +29,7 @@ const TITLES: Record<string, string> = {
   "/m/upload": "Upload Zip",
   "/m/link-instan": "Link Instan",
   "/m/ai": "AI Web Builder",
+  "/m/convert": "Konversi",
   "/m/domain": "Domain",
   "/m/env": "Environment",
   "/m/pengaturan": "Pengaturan",
@@ -50,23 +51,24 @@ const VIEW_ROUTE: Record<string, string> = {
   upload: "/m/upload",
   hosting: "/m/link-instan",
   ai: "/m/ai",
+  convert: "/m/convert",
 };
 export default function MobileLayout({ children }: { children: React.ReactNode }) {
   const { user, ready, login, loggingIn, loginError } = useAuth();
   const pathname = usePathname();
   if (!ready) {
     return (
-      <div className="flex h-[100dvh] items-center justify-center bg-[#7C3AED]">
+      <div className="flex h-[100dvh] items-center justify-center bg-[#7b50ff]">
         <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
       </div>
     );
   }
   if (!user) {
     return (
-      <div className="relative flex h-[100dvh] w-full flex-col overflow-hidden overscroll-none bg-[#7C3AED] text-[#1E143F]">
+      <div className="relative flex h-[100dvh] w-full flex-col overflow-hidden overscroll-none bg-[#7b50ff] text-[#120b2e]">
         {/* BG */}
         <div className="pointer-events-none absolute inset-0">
-          <div className="absolute inset-0 bg-gradient-to-b from-[#8B5CF6] via-[#7C3AED] to-[#5B3FD6]" />
+          <div className="absolute inset-0 bg-gradient-to-b from-[#9876ff] via-[#7b50ff] to-[#5a39c0]" />
           <div className="absolute -top-24 left-1/2 h-[500px] w-[500px] -translate-x-1/2 rounded-full bg-white/20 blur-[80px]" />
         </div>
         {/* WRAPPER - ini kunci no scroll */}
@@ -86,7 +88,7 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
                 alt="Depup"
                 width={72}
                 height={72}
-                className="mx-auto h-[clamp(56px,18vw,72px)] w-[clamp(56px,18vw,72px)] rounded-[clamp(18px,4.5vw,22px)] shadow-[0_12px_32px_-8px_rgba(76,40,184,0.5),0_0_0_1px_rgba(255,255,255,0.2)_inset]"
+                className="mx-auto h-[clamp(56px,18vw,72px)] w-[clamp(56px,18vw,72px)] rounded-[clamp(18px,4.5vw,22px)] shadow-[0_12px_32px_-8px_rgba(73,46,160,0.5),0_0_0_1px_rgba(255,255,255,0.2)_inset]"
               />
               <h1 className="mt-[clamp(12px,3vh,20px)] text-center text-[clamp(26px,7vw,30px)] font-bold leading-none tracking-[-0.03em] text-white">
                 Depup
@@ -100,7 +102,7 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
                   { label: "Cloudflare", dot: "bg-orange-400" },
                   { label: "Railway", dot: "bg-zinc-700" },
                 ].map((b) => (
-                  <div key={b.label} className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-white/65 px-3 py-1.5 text-[11px] font-medium text-[#1A1033]/80 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.1)] backdrop-blur-md ring-1 ring-white/30">
+                  <div key={b.label} className="flex items-center gap-1.5 whitespace-nowrap rounded-full bg-white/65 px-3 py-1.5 text-[12px] font-medium text-[#120b2e]/80 shadow-[0_2px_8px_-2px_rgba(0,0,0,0.1)] backdrop-blur-md ring-1 ring-white/30">
                     <span className={`h-1.5 w-1.5 rounded-full ${b.dot}`} />
                     {b.label}
                   </div>
@@ -114,20 +116,20 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
           <div className="w-full shrink-0">
             <div className="mx-auto w-full max-w-[340px]">
               {loginError && (
-                <div className="mb-3 rounded-[14px] bg-white/90 px-3.5 py-2.5 text-left shadow-lg ring-1 ring-black/5 backdrop-blur animate-[fadeIn_0.3s_ease-out]">
-                  <p className="text-[12.5px] font-semibold leading-none">Login gagal</p>
-                  <p className="mt-1 text-[11px] leading-snug opacity-70 line-clamp-2">{loginError}</p>
+                <div className="mb-3 rounded-[14px] bg-white/90 px-3.5 py-2.5 text-left shadow-lg backdrop-blur animate-[fadeIn_0.3s_ease-out]">
+                  <p className="text-[13px] font-semibold leading-none">Login gagal</p>
+                  <p className="mt-1 text-[12px] leading-snug opacity-70 line-clamp-2">{loginError}</p>
                 </div>
               )}
               <button
                 type="button"
                 onClick={login}
                 disabled={loggingIn}
-                className="flex h-[50px] w-full items-center justify-center gap-2.5 rounded-[16px] bg-white text-[14px] font-semibold text-[#1A1033] shadow-[0_8px_20px_-8px_rgba(44,19,126,0.4)] transition active:scale-[0.97] disabled:opacity-60"
+                className="flex h-[50px] w-full items-center justify-center gap-2.5 rounded-[16px] bg-white text-[14px] font-semibold text-[#120b2e] shadow-[0_8px_20px_-8px_rgba(56,35,129,0.4)] transition active:scale-[0.97] disabled:opacity-60"
               >
                 {loggingIn ? (
                   <>
-                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#1A1033]/20 border-t-[#1A1033]" />
+                    <span className="h-4 w-4 animate-spin rounded-full border-2 border-[#120b2e]/20 border-t-[#120b2e]" />
                     Menghubungkan...
                   </>
                 ) : (
@@ -137,7 +139,7 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
                   </>
                 )}
               </button>
-              <p className="mx-auto mt-3 text-balance text-center text-[11px] leading-[1.4] text-white/75">
+              <p className="mx-auto mt-3 text-balance text-center text-[12px] leading-[1.4] text-white/75">
                 Kamu akan diarahkan ke halaman masuk Google yang asli, lalu otomatis kembali ke Depup.
               </p>
             </div>
@@ -181,11 +183,11 @@ function MobileShell({ user, children }: { user: AuthUser; children: React.React
   const isSub = !TABS.some((t) => t.href === pathname) && pathname !== "/m/riwayat";
   const initial = (user.name || user.email || "D").trim().charAt(0).toUpperCase();
   return (
-    <div data-theme="light" className="flex h-[100dvh] flex-col overflow-hidden bg-[#F9F9FF] font-[family-name:'Plus_Jakarta_Sans_Variable','Plus_Jakarta_Sans',sans-serif] text-[#141B2B]">
-      <style>{`html, body { overflow: hidden; overscroll-behavior: none; scrollbar-gutter: auto; background: #F9F9FF; }`}</style>
+    <div data-theme="light" className="flex h-[100dvh] flex-col overflow-hidden bg-[#f4f1ff] font-sans text-[#120b2e]">
+      <style>{`html, body { overflow: hidden; overscroll-behavior: none; scrollbar-gutter: auto; background: #f4f1ff; }`}</style>
       {/* Top bar */}
       <header
-        className="z-40 shrink-0 bg-[#F9F9FF]/90 backdrop-blur-xl"
+        className="z-40 shrink-0 bg-[#f4f1ff]/90 backdrop-blur-xl"
         style={{ paddingTop: "env(safe-area-inset-top)" }}
       >
         <div className="flex h-16 items-center justify-between gap-3 px-4">
@@ -195,22 +197,22 @@ function MobileShell({ user, children }: { user: AuthUser; children: React.React
                 type="button"
                 onClick={() => router.back()}
                 aria-label="Kembali"
-                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F1EEFF] text-[#6D28D9] active:scale-90"
+                className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#ede8ff] text-[#5a39c0] active:scale-90"
               >
                 <ChevronLeft className="h-5 w-5" />
               </button>
             ) : (
-              <img src="/logo.png" alt="" width={36} height={36} className="h-9 w-9 shrink-0 rounded-[11px] shadow-[0_6px_14px_-6px_rgba(124,58,237,0.6)]" />
+              <img src="/logo.png" alt="" width={36} height={36} className="h-9 w-9 shrink-0 rounded-[11px] shadow-[0_6px_14px_-6px_rgba(123,80,255,0.6)]" />
             )}
             <div className="flex min-w-0 flex-col leading-none">
-              <span className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#7B7487]">Depup Cloud</span>
-              <h1 className="mt-1 truncate text-[17px] font-extrabold tracking-[-0.02em]">{title}</h1>
+              <span className="text-[12px] font-bold uppercase tracking-[0.14em] text-[#59546d]">Depup Cloud</span>
+              <h1 className="mt-1 truncate text-[18px] font-extrabold tracking-[-0.02em]">{title}</h1>
             </div>
           </div>
           <Link
             href="/m/akun"
             aria-label="Akun"
-            className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#7C3AED] to-[#6366F1] text-[14px] font-bold text-white ring-2 ring-white shadow-[0_4px_12px_-2px_rgba(124,58,237,0.5)] active:scale-90"
+            className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-[#7b50ff] to-[#9876ff] text-[14px] font-bold text-white ring-2 ring-white shadow-[0_4px_12px_-2px_rgba(123,80,255,0.5)] active:scale-90"
           >
             {user.picture ? <img src={user.picture} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" /> : initial}
           </Link>
@@ -223,7 +225,7 @@ function MobileShell({ user, children }: { user: AuthUser; children: React.React
 
       {/* Bottom nav ala super-app: tombol Deploy menonjol di tengah */}
       <nav
-        className="fixed inset-x-0 bottom-0 z-50 border-t border-[#EDE9FE] bg-white/95 shadow-[0_-10px_25px_-5px_rgba(17,24,39,0.08)] backdrop-blur-md"
+        className="fixed inset-x-0 bottom-0 z-50 bg-white/95 shadow-[0_-10px_25px_-5px_rgba(18,11,46,0.08)] backdrop-blur-md"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
         aria-label="Navigasi utama"
       >
@@ -235,20 +237,20 @@ function MobileShell({ user, children }: { user: AuthUser; children: React.React
                 <Link key={t.href} href={t.href} aria-current={active ? "page" : undefined} className="relative flex flex-col items-center justify-center gap-1 active:scale-95">
                   <span aria-hidden className="h-[22px] w-[22px]" />
                   <span
-                    className={`absolute -top-8 flex h-[58px] w-[58px] items-center justify-center rounded-full bg-gradient-to-br from-[#7C3AED] to-[#6366F1] text-white ring-4 ring-[#F9F9FF] shadow-[0_8px_16px_-2px_rgba(124,58,237,0.5)] transition ${active ? "scale-105" : ""}`}
+                    className={`absolute -top-8 flex h-[58px] w-[58px] items-center justify-center rounded-full bg-gradient-to-br from-[#7b50ff] to-[#9876ff] text-white ring-4 ring-[#f4f1ff] shadow-[0_8px_16px_-2px_rgba(123,80,255,0.5)] transition ${active ? "scale-105" : ""}`}
                   >
                     <t.Icon className="h-6 w-6" strokeWidth={2.2} />
                   </span>
-                  <span className={`text-[11px] leading-4 ${active ? "font-extrabold text-[#7C3AED]" : "font-semibold text-[#64748B]"}`}>{t.label}</span>
+                  <span className={`text-[12px] leading-4 ${active ? "font-extrabold text-[#7b50ff]" : "font-semibold text-[#59546d]"}`}>{t.label}</span>
                   <span aria-hidden className="h-1 w-1" />
                 </Link>
               );
             }
             return (
               <Link key={t.href} href={t.href} aria-current={active ? "page" : undefined} className="flex flex-col items-center justify-center gap-1 active:scale-95">
-                <t.Icon className={`h-[22px] w-[22px] transition ${active ? "text-[#7C3AED]" : "text-[#94A3B8]"}`} strokeWidth={active ? 2.4 : 2} />
-                <span className={`text-[11px] leading-4 ${active ? "font-extrabold text-[#7C3AED]" : "font-semibold text-[#64748B]"}`}>{t.label}</span>
-                <span className={`h-1 w-1 rounded-full transition ${active ? "bg-[#7C3AED] shadow-[0_0_6px_#7C3AED]" : "bg-transparent"}`} />
+                <t.Icon className={`h-[22px] w-[22px] transition ${active ? "text-[#7b50ff]" : "text-[#67637a]"}`} strokeWidth={active ? 2.4 : 2} />
+                <span className={`text-[12px] leading-4 ${active ? "font-extrabold text-[#7b50ff]" : "font-semibold text-[#59546d]"}`}>{t.label}</span>
+                <span className={`h-1 w-1 rounded-full transition ${active ? "bg-[#7b50ff] shadow-[0_0_6px_#7b50ff]" : "bg-transparent"}`} />
               </Link>
             );
           })}

@@ -55,7 +55,7 @@ const MCP_URL = `${(process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_
 /** Blok kode untuk dipakai di dalam langkah panduan. Bisa di-scroll ke samping di layar kecil. */
 function Pre({ children }: { children: string }) {
   return (
-    <pre className="mt-2 max-w-full overflow-x-auto rounded-xl border border-[var(--line)] bg-[var(--pill-bg)] p-3 font-mono text-[11.5px] leading-relaxed text-[var(--text)]">
+    <pre className="mt-2 max-w-full overflow-x-auto rounded-xl border border-[var(--line)] bg-[var(--pill-bg)] p-3 font-mono text-[12px] leading-relaxed text-[var(--text)]">
       {children}
     </pre>
   );
@@ -788,7 +788,7 @@ function GuideCard({ guide }: { guide: Guide }) {
           <Icon size={20} />
         </span>
         <div className="min-w-0 flex-1">
-          <h3 className="text-[14.5px] font-semibold sm:text-[15px]">{guide.title}</h3>
+          <h3 className="text-[14px] font-semibold sm:text-[16px]">{guide.title}</h3>
           <p className="mt-1 text-[13px] leading-relaxed text-text-muted">{guide.desc}</p>
         </div>
         <ChevronDown
@@ -855,7 +855,7 @@ export function DocsView() {
       <div className="space-y-6 sm:space-y-8">
         <div>
           <PageTitle
-            title="Docs"
+            title="Dokumentasi"
             desc={<>{GUIDES.length} panduan: cara mulai, memakai fitur, setup token, dan mengatasi masalah yang sering muncul — semuanya real, tidak ada simulasi.</>}
           />
         </div>
@@ -869,7 +869,7 @@ export function DocsView() {
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Cari panduan, mis. domain, token, error"
               aria-label="Cari panduan"
-              className="w-full h-12 rounded-full border border-[var(--line-strong)] bg-[var(--surface-solid)] pl-11 pr-11 text-[13.5px] sm:text-[14px] text-[var(--text)] shadow-[var(--surface-shadow)] placeholder:text-[var(--text-faint)] focus:border-[var(--ring)] focus:outline-none focus:ring-[3px] focus:ring-violet-200 dark:focus:ring-violet-800 transition-colors"
+              className="w-full h-12 rounded-full border border-[var(--line-strong)] bg-[var(--surface-solid)] pl-11 pr-11 text-[14px] sm:text-[14px] text-[var(--text)] shadow-[var(--surface-shadow)] placeholder:text-[var(--text-faint)] focus:border-[var(--ring)] focus:outline-none focus:ring-[3px] focus:ring-violet-200 dark:focus:ring-violet-800 transition-colors"
             />
             {query && (
               <button
@@ -901,7 +901,7 @@ export function DocsView() {
 
         {visible.length === 0 ? (
           <Surface className="p-8 text-center sm:p-10">
-            <p className="text-[15px] font-semibold">Tidak ada panduan yang cocok dengan &ldquo;{query.trim()}&rdquo;</p>
+            <p className="text-[16px] font-semibold">Tidak ada panduan yang cocok dengan &ldquo;{query.trim()}&rdquo;</p>
             <p className="mt-2 text-[13px] leading-relaxed text-text-muted">
               Coba kata kunci lain, atau tanyakan ke Asisten Bantuan lewat tombol Bantuan di pojok kanan bawah.
             </p>
@@ -913,7 +913,7 @@ export function DocsView() {
             return (
               <section key={cat.id} id={`docs-${cat.id}`} className="scroll-mt-24 space-y-4 pt-4">
                 <div className="border-b border-[var(--line-strong)] pb-2">
-                  <h2 id={`docs-${cat.id}-title`} className="text-[16px] font-semibold sm:text-[17px]">
+                  <h2 id={`docs-${cat.id}-title`} className="text-[16px] font-semibold sm:text-[18px]">
                     {cat.label}
                   </h2>
                   <p className="mt-1 text-[13px] text-text-muted">{cat.desc}</p>

@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { chipCls } from "./shared";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { ChipLabel, chipCls } from "./shared";
 import { FONT_ROLES, FONT_WEIGHTS, type FontRoleId, type FontWeightId } from "@/lib/ai-site-templates";
 
 export interface RoleSetting {
@@ -11,87 +12,57 @@ export interface RoleSetting {
   weight: FontWeightId | null;
 }
 
-function WeightRow({
-  label,
-  value,
-  onPick,
-  followLabel,
-  onFollow,
-}: {
-  label: string;
-  value: FontWeightId | null;
-  onPick: (w: FontWeightId) => void;
-  followLabel: string;
-  onFollow: () => void;
-}) {
-  return (
-    <div role="radiogroup" aria-label={label} className="flex flex-wrap gap-1.5">
-      <button
-        type="button"
-        role="radio"
-        aria-checked={value === null}
-        onClick={onFollow}
-        className={chipCls(value === null, true)}
-      >
-        {followLabel}
-      </button>
-      {FONT_WEIGHTS.map((w) => (
-        <button
-          key={w.id}
-          type="button"
-          role="radio"
-          aria-checked={value === w.id}
-          onClick={() => onPick(w.id)}
-          style={{ fontWeight: w.id }}
-          className={chipCls(value === w.id)}
-        >
-          {w.name}
-        </button>
-      ))}
-    </div>
-  );
-}
-
 function RoleBlock({
   label,
   hint,
   value,
   onFamily,
   onWeight,
-  familyFollowLabel,
-  onFamilyFollow,
   weightFollowLabel,
-  onWeightFollow,
+  canReset,
+  onReset,
+  resetLabel,
 }: {
   label: string;
   hint?: string;
   value: RoleSetting;
   onFamily: (id: FontRoleId) => void;
   onWeight: (w: FontWeightId) => void;
-  /** Bila terisi, tombol tambahan muncul untuk mengembalikan jenis huruf peran ini ke null. */
-  familyFollowLabel?: string;
-  onFamilyFollow?: () => void;
+  /** Teks placeholder dropdown ketebalan saat nilainya null (ikut bawaan). */
   weightFollowLabel: string;
-  onWeightFollow: () => void;
+  /** Tampilkan tautan reset hanya bila ada nilai yang sudah diubah. */
+  canReset: boolean;
+  onReset: () => void;
+  resetLabel: string;
 }) {
   return (
     <div>
-      <div className="mb-1.5">
-        <span className="text-[12.5px] font-medium text-text-muted">{label}</span>
-        {hint && <span className="ml-1.5 text-[12px] text-text-faint">{hint}</span>}
+      <div className="mb-2 flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+        <div className="min-w-0 flex-1 basis-[12rem]">
+          <span className="text-[13px] font-medium text-text-muted">{label}</span>
+          {hint && <span className="ml-1.5 text-[12px] text-text-faint">{hint}</span>}
+        </div>
+        <div className="flex w-full items-center gap-3 sm:w-auto">
+          {canReset && (
+            <button type="button" onClick={onReset} className="shrink-0 text-[13px] text-text-muted underline max-md:min-h-[40px]">
+              {resetLabel}
+            </button>
+          )}
+          <Select value={value.weight === null ? "" : String(value.weight)} onValueChange={(v) => onWeight(Number(v) as FontWeightId)}>
+            <SelectTrigger aria-label={`${label} — ketebalan`} className="h-10 min-w-0 flex-1 sm:w-[176px] sm:flex-none">
+              <SelectValue placeholder={weightFollowLabel} />
+            </SelectTrigger>
+            <SelectContent>
+              {FONT_WEIGHTS.map((w) => (
+                <SelectItem key={w.id} value={String(w.id)}>
+                  <span style={{ fontWeight: w.id }}>{w.name}</span>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
       </div>
       <div role="radiogroup" aria-label={`${label} — jenis huruf`} className="flex flex-wrap gap-1.5">
-        {familyFollowLabel && onFamilyFollow && (
-          <button
-            type="button"
-            role="radio"
-            aria-checked={value.family === null}
-            onClick={onFamilyFollow}
-            className={chipCls(value.family === null, true)}
-          >
-            {familyFollowLabel}
-          </button>
-        )}
         {FONT_ROLES.map((r) => (
           <button
             key={r.id}
@@ -103,13 +74,9 @@ function RoleBlock({
             style={{ fontFamily: r.stack }}
             className={chipCls(value.family === r.id)}
           >
-            Aa <span className={`text-[12px] font-sans font-medium ${value.family === r.id ? "opacity-90" : "text-text-muted"}`}>{r.name}</span>
+            <ChipLabel selected={value.family === r.id}>Aa</ChipLabel> <span className={`text-[12px] font-sans font-medium ${value.family === r.id ? "opacity-90" : "text-text-muted"}`}>{r.name}</span>
           </button>
         ))}
-      </div>
-      <div className="mt-1.5">
-        <span className="mb-1 block text-[12px] text-text-faint">Ketebalan</span>
-        <WeightRow label={`${label} — ketebalan`} value={value.weight} onPick={onWeight} followLabel={weightFollowLabel} onFollow={onWeightFollow} />
       </div>
     </div>
   );
@@ -157,7 +124,9 @@ export function FontRolePicker({
         onFamily={onTitleFamily}
         onWeight={onTitleWeight}
         weightFollowLabel="Ikut Gaya desain"
-        onWeightFollow={onTitleWeightFollow}
+        canReset={title.weight !== null}
+        onReset={onTitleWeightFollow}
+        resetLabel="Ikut Gaya desain"
       />
       <RoleBlock
         label="Sub-judul"
@@ -165,10 +134,13 @@ export function FontRolePicker({
         value={sub}
         onFamily={onSubFamily}
         onWeight={onSubWeight}
-        familyFollowLabel="Ikut Judul"
-        onFamilyFollow={onSubFamilyFollow}
         weightFollowLabel="Ikut Judul"
-        onWeightFollow={onSubWeightFollow}
+        canReset={sub.family !== null || sub.weight !== null}
+        onReset={() => {
+          onSubFamilyFollow();
+          onSubWeightFollow();
+        }}
+        resetLabel="Ikut Judul"
       />
       <RoleBlock
         label="Isi"
@@ -177,7 +149,9 @@ export function FontRolePicker({
         onFamily={onBodyFamily}
         onWeight={onBodyWeight}
         weightFollowLabel="Ikut Gaya desain"
-        onWeightFollow={onBodyWeightFollow}
+        canReset={body.weight !== null}
+        onReset={onBodyWeightFollow}
+        resetLabel="Ikut Gaya desain"
       />
     </div>
   );

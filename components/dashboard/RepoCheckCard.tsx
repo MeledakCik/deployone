@@ -145,7 +145,7 @@ export function RepoCheckCard({ platform }: { platform: Platform }) {
             <ul className="mt-1.5 space-y-1.5">
               {railwayPreview.preview.files.map((f) => (
                 <li key={f.path} className="flex items-start gap-1.5">
-                  <span className="font-mono shrink-0 rounded bg-[var(--dc-hover)] px-1.5 py-0.5 text-[11px]">
+                  <span className="font-mono shrink-0 rounded bg-[var(--dc-hover)] px-1.5 py-0.5 text-[12px]">
                     {f.action === "create" ? "+" : "~"} {f.path}
                   </span>
                   <span className="text-[var(--dc-text-muted)]">{f.reason}</span>

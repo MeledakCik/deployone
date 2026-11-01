@@ -337,6 +337,7 @@ const DASHBOARD_VIEWS: readonly DashboardView[] = [
   "upload",
   "hosting",
   "ai",
+  "convert",
   "database",
 ];
 

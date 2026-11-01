@@ -40,7 +40,7 @@ export function UsageCard({ label, used, limitBytes, note }: { label: string; us
   return (
     <div className="px-6 py-4">
       <div className="flex items-baseline justify-between gap-2">
-        <p className="text-[12.5px] text-text-muted">{label}</p>
+        <p className="text-[13px] text-text-muted">{label}</p>
         {pct !== null && <Badge tone={tone}>{pct < 1 ? "<1" : Math.round(pct)}%</Badge>}
       </div>
       <p className="mt-1 text-[22px] font-bold tracking-tight tabular-nums">
@@ -74,7 +74,7 @@ export function Toggle({ checked, onChange, label, disabled }: { checked: boolea
 /** Checkbox kustom 20×20 dengan centang yang "memantul" saat dicentang. */
 export function Checkbox({ checked, onChange, label, children }: { checked: boolean; onChange: (v: boolean) => void; label?: string; children?: React.ReactNode }) {
   return (
-    <label className="inline-flex cursor-pointer select-none items-center gap-2.5 text-[12.5px] text-text-muted">
+    <label className="inline-flex cursor-pointer select-none items-center gap-2.5 text-[13px] text-text-muted">
       <button type="button" role="checkbox" aria-checked={checked} aria-label={label} onClick={() => onChange(!checked)} className="check-box">
         <Check size={13} />
       </button>
@@ -128,7 +128,7 @@ export function Pager({ pager }: { pager: PagerState }) {
   const from = pager.page * pager.size + 1;
   const to = Math.min(pager.total, (pager.page + 1) * pager.size);
   return (
-    <div className="flex items-center justify-between gap-3 border-t border-[var(--surface-line)] px-6 py-3 text-[12.5px] text-text-muted">
+    <div className="flex items-center justify-between gap-3 border-t border-[var(--surface-line)] px-6 py-3 text-[13px] text-text-muted">
       <span className="tabular-nums">
         {from}–{to} dari {pager.total}
       </span>

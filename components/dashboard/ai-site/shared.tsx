@@ -1,10 +1,11 @@
 "use client";
 
 import * as React from "react";
+import { Check } from "@/components/ui/icons";
 
 /** Gaya bersama halaman AI Web Builder. Teks bantu minimal 12,5px supaya terbaca di HP. */
 export const labelCls = "mb-1.5 block text-[13px] font-medium text-text-muted";
-export const hintCls = "text-[12.5px] leading-snug text-text-muted";
+export const hintCls = "text-[13px] leading-snug text-text-muted";
 export const checkCls = "mt-0.5 h-5 w-5 shrink-0 cursor-pointer accent-[var(--accent)]";
 
 /**
@@ -24,7 +25,7 @@ export const SELECTED_FILL = "bg-[var(--ink-fill)] text-[var(--ink-fill-text)]";
 /** Chip pilihan (radio). Tinggi sentuh 40px hanya di layar kecil, seperti <Btn>. */
 export const chipCls = (selected: boolean, muted = false): string =>
   [
-    "rounded-full px-3.5 py-1.5 text-[12.5px] font-medium transition max-md:min-h-[40px]",
+    "rounded-full px-3.5 py-1.5 text-[13px] font-medium transition max-md:min-h-[40px]",
     selected
       ? `${SELECTED_FILL} hover:bg-[var(--ink-fill-hover)]`
       : `bg-[var(--tile-fill,var(--pill-bg))] hover:bg-[var(--card-hover)]${muted ? " text-text-muted" : ""}`,
@@ -38,6 +39,19 @@ export const swatchTileCls = (selected: boolean, size: "h-10 w-10" | "h-11 w-11"
   `relative grid ${size} shrink-0 cursor-pointer place-items-center rounded-[14px] transition focus-within:ring-2 focus-within:ring-[var(--ring)] focus-within:ring-offset-2 ${
     selected ? "bg-[var(--ink-fill)]" : "bg-[var(--tile-fill,var(--pill-bg))] hover:bg-[var(--card-hover)]"
   }`;
+
+/** Judul sub-bagian di dalam kartu (Tata letak, Warna latar, Hiasan, Huruf): lebih tegas dari teks petunjuk. */
+export const subheadCls = "text-[14px] font-semibold text-text";
+
+/** Isi chip: centang kecil saat terpilih, supaya pilihan tidak hanya dibedakan oleh warna. */
+export function ChipLabel({ selected, children }: { selected: boolean; children: React.ReactNode }) {
+  return (
+    <>
+      {selected && <Check size={13} aria-hidden className="mr-1 inline-block -translate-y-px" />}
+      {children}
+    </>
+  );
+}
 
 export const isHex = (v: string): boolean => /^#[0-9a-fA-F]{6}$/.test(v);
 

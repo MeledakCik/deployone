@@ -46,40 +46,40 @@ const GUIDES = [
 export default function MobileGuide() {
   return (
     <div className="space-y-4 pt-2">
-      <section className={`relative overflow-hidden rounded-[24px] ${HERO_GRADIENT} p-5 text-white shadow-[0_18px_34px_-14px_rgba(109,40,217,0.7)]`}>
-        <div className="pointer-events-none absolute -bottom-10 -right-8 h-40 w-40 rounded-full bg-[#6366F1]/40 blur-2xl" />
-        <BookOpen className="relative h-7 w-7 text-[#EDE0FF]" />
+      <section className={`relative overflow-hidden rounded-[24px] ${HERO_GRADIENT} p-5 text-white shadow-[0_18px_34px_-14px_rgba(90,57,192,0.7)]`}>
+        <div className="pointer-events-none absolute -bottom-10 -right-8 h-40 w-40 rounded-full bg-[#9876ff]/40 blur-2xl" />
+        <BookOpen className="relative h-7 w-7 text-[#e7e0ff]" />
         <p className="relative mt-2 text-[20px] font-extrabold leading-tight tracking-[-0.025em]">Panduan singkat</p>
-        <p className="relative mt-1 text-[13px] text-[#EDE0FF]">Dari token sampai situs online, tanpa laptop.</p>
+        <p className="relative mt-1 text-[13px] text-[#e7e0ff]">Dari token sampai situs online, tanpa laptop.</p>
       </section>
 
       {GUIDES.map(({ Icon, title, steps, link }) => (
         <article key={title} className={`${CARD} p-4`}>
           <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#F5F3FF] text-[#7C3AED]"><Icon className="h-5 w-5" /></span>
-            <h2 className="min-w-0 text-[15.5px] font-extrabold tracking-[-0.01em]">{title}</h2>
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[12px] bg-[#f4f1ff] text-[#7b50ff]"><Icon className="h-5 w-5" /></span>
+            <h2 className="min-w-0 text-[16px] font-extrabold tracking-[-0.01em]">{title}</h2>
           </div>
           <ol className="mt-3 space-y-2">
             {steps.map((s, i) => (
-              <li key={s} className="flex gap-2.5 text-[13px] leading-snug text-[#334155] [&>:last-child]:min-w-0">
-                <span className="mt-[1px] flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#EDE9FE] text-[11px] font-extrabold text-[#6D28D9]">{i + 1}</span>
+              <li key={s} className="flex gap-2.5 text-[13px] leading-snug text-[#59546d] [&>:last-child]:min-w-0">
+                <span className="mt-[1px] flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#ede8ff] text-[12px] font-extrabold text-[#5a39c0]">{i + 1}</span>
                 {s}
               </li>
             ))}
           </ol>
           {"internal" in link ? (
-            <Link href={link.href} className="mt-3 inline-flex h-9 max-w-full items-center gap-1 rounded-full bg-[#7C3AED] px-4 text-[12.5px] font-bold text-white active:scale-95">
+            <Link href={link.href} className="mt-3 inline-flex h-9 max-w-full items-center gap-1 rounded-full bg-[#7b50ff] px-4 text-[13px] font-bold text-white active:scale-95">
               <span className="min-w-0 truncate">{link.label}</span> <ChevronRight className="h-4 w-4 shrink-0" />
             </Link>
           ) : (
-            <a href={link.href} target="_blank" rel="noreferrer" className="mt-3 inline-flex h-9 max-w-full items-center gap-1.5 rounded-full bg-[#F5F3FF] px-4 text-[12.5px] font-bold text-[#6D28D9] ring-1 ring-[#DDD6FE] active:scale-95">
+            <a href={link.href} target="_blank" rel="noreferrer" className="mt-3 inline-flex h-9 max-w-full items-center gap-1.5 rounded-full bg-[#f4f1ff] px-4 text-[13px] font-bold text-[#5a39c0] active:scale-95">
               <span className="min-w-0 truncate">{link.label}</span> <ExternalLink className="h-3.5 w-3.5 shrink-0" />
             </a>
           )}
         </article>
       ))}
 
-      <Link href="/m/docs" className="flex items-center justify-between rounded-[16px] bg-[#EEF1FF] px-4 py-3.5 text-[14px] font-bold text-[#4338CA] active:scale-[0.99]">
+      <Link href="/m/docs" className="flex items-center justify-between rounded-[16px] bg-[#ede8ff] px-4 py-3.5 text-[14px] font-bold text-[#5a39c0] active:scale-[0.99]">
         Dokumentasi lengkap <ChevronRight className="h-5 w-5" />
       </Link>
     </div>

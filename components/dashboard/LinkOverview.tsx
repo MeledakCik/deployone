@@ -159,7 +159,7 @@ function TrafficCard({ stats, range, onRange }: { stats: SiteStats; range: Range
   return (
     <section className="surface-solid flex flex-col rounded-3xl p-5 sm:p-6" aria-labelledby="traffic-title">
       <div className="mb-4 flex items-center justify-between gap-3">
-        <h3 id="traffic-title" className="text-[15px] font-semibold">
+        <h3 id="traffic-title" className="text-[16px] font-semibold">
           Lalu lintas
         </h3>
         <div role="radiogroup" aria-label="Rentang waktu" className="inline-flex rounded-full bg-[var(--pill-bg)] p-0.5 text-[12px]">
@@ -209,7 +209,7 @@ function VisitorsCard({ stats }: { stats: SiteStats }) {
   const max = Math.max(1, ...top.map((t) => t.views));
   return (
     <section className="surface-solid flex flex-col rounded-3xl p-5 sm:p-6" aria-labelledby="visitors-title">
-      <h3 id="visitors-title" className="mb-4 text-[15px] font-semibold">
+      <h3 id="visitors-title" className="mb-4 text-[16px] font-semibold">
         Pengunjung
       </h3>
       <div className="flex items-center gap-3">
@@ -224,13 +224,13 @@ function VisitorsCard({ stats }: { stats: SiteStats }) {
 
       <h4 className="mb-2 mt-6 text-[13px] font-medium text-text-muted">Halaman teratas</h4>
       {top.length === 0 ? (
-        <p className="rounded-2xl bg-[var(--pill-bg)] px-4 py-6 text-center text-[12.5px] text-text-muted">
+        <p className="rounded-2xl bg-[var(--pill-bg)] px-4 py-6 text-center text-[13px] text-text-muted">
           Belum ada kunjungan. Bagikan linknya, lalu angkanya muncul di sini.
         </p>
       ) : (
         <ul className="space-y-2.5">
           {top.map((t) => (
-            <li key={t.path} className="text-[12.5px]">
+            <li key={t.path} className="text-[13px]">
               <div className="flex items-baseline justify-between gap-3">
                 <span className="min-w-0 truncate font-mono">{t.path}</span>
                 <span className="shrink-0 tabular-nums text-text-muted">{nf.format(t.views)}</span>
@@ -242,7 +242,7 @@ function VisitorsCard({ stats }: { stats: SiteStats }) {
           ))}
         </ul>
       )}
-      <p className="mt-auto pt-5 text-[11.5px] leading-relaxed text-text-faint">
+      <p className="mt-auto pt-5 text-[12px] leading-relaxed text-text-faint">
         Dihitung saat permintaan sampai ke server. Cache CDN (maks 2 menit) dan kunjungan dari bot bisa membuat angkanya sedikit berbeda.
       </p>
     </section>
@@ -255,7 +255,7 @@ function Detail({ label, children }: { label: string; children: React.ReactNode 
   return (
     <div className="min-w-0">
       <dt className="text-[12px] text-text-muted">{label}</dt>
-      <dd className="mt-1 text-[13.5px]">{children}</dd>
+      <dd className="mt-1 text-[14px]">{children}</dd>
     </div>
   );
 }
@@ -282,7 +282,7 @@ function SiteOverview({
     <div className="space-y-4 sm:space-y-5">
       <section className="surface-solid rounded-3xl" aria-labelledby="active-link-title">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--surface-line)] px-5 py-4 sm:px-6">
-          <h3 id="active-link-title" className="text-[15px] font-semibold">
+          <h3 id="active-link-title" className="text-[16px] font-semibold">
             Link aktif
           </h3>
           <div className="flex items-center gap-2">
@@ -335,7 +335,7 @@ function SiteOverview({
               <span className="inline-flex flex-wrap items-center gap-x-2">
                 <FileText size={13} className="text-text-muted" />
                 {nf.format(site.fileCount)} file · {formatBytes(site.totalBytes)}
-                {site.spa && <span className="rounded-full bg-[var(--pill-bg)] px-2 py-0.5 text-[11px] text-text-muted">Mode SPA</span>}
+                {site.spa && <span className="rounded-full bg-[var(--pill-bg)] px-2 py-0.5 text-[12px] text-text-muted">Mode SPA</span>}
               </span>
             </Detail>
             <Detail label="Kedaluwarsa">
@@ -357,7 +357,7 @@ function SiteOverview({
           </dl>
         </div>
 
-        <p className="flex items-start gap-2 border-t border-[var(--surface-line)] px-5 py-3.5 text-[12.5px] text-text-muted sm:px-6">
+        <p className="flex items-start gap-2 border-t border-[var(--surface-line)] px-5 py-3.5 text-[13px] text-text-muted sm:px-6">
           <Globe2 size={14} className="mt-0.5 shrink-0" />
           Link ini sementara. Untuk memperbarui isinya, upload ulang file di atas lalu hapus link lama.
         </p>
@@ -394,7 +394,7 @@ export function LinkOverview({
   return (
     <div className="mt-8">
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <h3 className="mr-1 text-[15px] font-semibold">
+        <h3 className="mr-1 text-[16px] font-semibold">
           Link aktif ({sites.length}/{maxSites})
         </h3>
         {sites.length > 1 && (
@@ -409,7 +409,7 @@ export function LinkOverview({
                   aria-selected={active}
                   onClick={() => setSelectedId(s.id)}
                   className={cn(
-                    "max-w-[14rem] truncate rounded-full px-3.5 py-1.5 text-[12.5px] font-medium transition-colors",
+                    "max-w-[14rem] truncate rounded-full px-3.5 py-1.5 text-[13px] font-medium transition-colors",
                     active ? "bg-[var(--ink-fill)] text-[var(--ink-fill-text)]" : "pill"
                   )}
                 >

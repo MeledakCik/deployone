@@ -18,7 +18,7 @@ export function PageTitle({ title, desc }: { title: string; desc?: React.ReactNo
   return (
     <div className="min-w-0">
       <h2 className="page-title">{title}</h2>
-      {desc && <p className="mt-1.5 max-w-2xl text-[13.5px] leading-relaxed text-text-muted">{desc}</p>}
+      {desc && <p className="mt-1.5 max-w-2xl text-[14px] leading-relaxed text-text-muted">{desc}</p>}
     </div>
   );
 }
@@ -78,7 +78,7 @@ export function SectionHead({
           <h3 id={id} className="text-[16px] font-bold tracking-tight">
             {title}
           </h3>
-          {desc && <p className="mt-0.5 text-[12.5px] leading-relaxed text-text-muted">{desc}</p>}
+          {desc && <p className="mt-0.5 text-[13px] leading-relaxed text-text-muted">{desc}</p>}
         </div>
       </div>
       {action}
@@ -111,7 +111,7 @@ export function Badge({ tone = "neutral", dot, children }: { tone?: BadgeTone; d
 export type BtnVariant = "primary" | "ghost" | "danger" | "destructive";
 
 const BTN_BASE =
-  "inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 text-[12.5px] font-medium active:scale-[0.97] max-md:min-h-[40px] max-md:px-4 disabled:cursor-not-allowed disabled:opacity-50";
+  "inline-flex items-center justify-center gap-1.5 whitespace-nowrap rounded-full px-3.5 py-1.5 text-[13px] font-medium active:scale-[0.97] max-md:min-h-[40px] max-md:px-4 disabled:cursor-not-allowed disabled:opacity-50";
 
 function btnVariantCls(variant: BtnVariant): string {
   return variant === "primary"
@@ -280,7 +280,7 @@ export function KpiCard({
       )}
     >
       <div className="flex items-start justify-between gap-3">
-        <p className="pt-1 text-[13.5px] font-medium text-text-muted">{label}</p>
+        <p className="pt-1 text-[14px] font-medium text-text-muted">{label}</p>
         {Icon && (
           <span className={cn("grid h-11 w-11 place-items-center rounded-[14px]", iconTone)}>
             <Icon size={19} />
@@ -290,7 +290,7 @@ export function KpiCard({
       <p className="mt-5 text-[36px] font-bold leading-none tracking-[-0.03em] tabular-nums">
         <CountUp value={value} />
       </p>
-      {sub && <p className={cn("mt-2 text-[12.5px]", tone === "bad" ? "text-bad-fg" : "text-text-muted")}>{sub}</p>}
+      {sub && <p className={cn("mt-2 text-[13px]", tone === "bad" ? "text-bad-fg" : "text-text-muted")}>{sub}</p>}
     </Comp>
   );
 }

@@ -121,7 +121,7 @@ function DiagnosticsCard({ checks }: { checks: DiagCheckView[] }) {
       <p className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-text-muted">Hasil pemeriksaan akunmu</p>
       <ul className="space-y-1.5">
         {checks.map((c) => (
-          <li key={c.id} className="flex gap-2 text-[12.5px] leading-snug">
+          <li key={c.id} className="flex gap-2 text-[13px] leading-snug">
             {icon[c.status]}
             <span>
               <span className="font-medium">{c.label}:</span> <span className="text-text-muted">{c.detail}</span>
@@ -307,7 +307,7 @@ export function SupportChat() {
           type="button"
           onClick={openChat}
           aria-label="Buka chat bantuan"
-          className={`btn-lime fab ${firstFab.current ? "anim-fab" : ""} fixed bottom-[var(--edge)] right-[var(--edge)] z-40 flex h-12 items-center gap-2 px-5 text-[13.5px] shadow-lg`}
+          className={`btn-lime fab ${firstFab.current ? "anim-fab" : ""} fixed bottom-[var(--edge)] right-[var(--edge)] z-40 flex h-12 items-center gap-2 px-5 text-[14px] shadow-lg`}
         >
           <MessageCircle size={18} />
           <span className="hidden sm:inline">Bantuan</span>
@@ -380,7 +380,7 @@ export function SupportChat() {
           <div ref={listRef} role="log" aria-live="polite" className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
             {messages.length === 0 && (
               <div className="space-y-4">
-                <div className="bubble-in-l rounded-2xl rounded-tl-md bg-[var(--pill-bg)] px-3.5 py-3 text-[13.5px] leading-relaxed">
+                <div className="bubble-in-l rounded-2xl rounded-tl-md bg-[var(--pill-bg)] px-3.5 py-3 text-[14px] leading-relaxed">
                   Halo{user?.name ? `, ${user.name.split(" ")[0]}` : ""}! Aku asisten Depup. Tanya soal deploy, token, domain, atau
                   error yang kamu temui.
                 </div>
@@ -391,7 +391,7 @@ export function SupportChat() {
                       style={{ "--i": i } as React.CSSProperties}
                       type="button"
                       onClick={() => send(s)}
-                      className="pill chip-in px-3.5 py-2 text-left text-[12.5px] text-text-muted transition hover:text-text"
+                      className="pill chip-in px-3.5 py-2 text-left text-[13px] text-text-muted transition hover:text-text"
                     >
                       {s}
                     </button>
@@ -403,14 +403,14 @@ export function SupportChat() {
             {messages.map((m, i) =>
               m.role === "user" ? (
                 <div key={i} className="flex justify-end">
-                  <div className="bubble-in-r max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-tr-md bg-lav px-3.5 py-2.5 text-[13.5px] leading-relaxed text-ink">
+                  <div className="bubble-in-r max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-tr-md bg-lav px-3.5 py-2.5 text-[14px] leading-relaxed text-ink">
                     {m.content}
                   </div>
                 </div>
               ) : (
                 <div key={i} className="flex flex-col items-start gap-2">
                   {m.diagnostics && m.diagnostics.length > 0 && <DiagnosticsCard checks={m.diagnostics} />}
-                  <div className="bubble-in-l max-w-[92%] break-words rounded-2xl rounded-tl-md bg-[var(--pill-bg)] px-3.5 py-2.5 text-[13.5px] leading-relaxed">
+                  <div className="bubble-in-l max-w-[92%] break-words rounded-2xl rounded-tl-md bg-[var(--pill-bg)] px-3.5 py-2.5 text-[14px] leading-relaxed">
                     <RichText text={m.content} />
                   </div>
                   {m.reportId && (
@@ -449,7 +449,7 @@ export function SupportChat() {
 
             {hasReply && !sending && (
               reportedId ? (
-                <p className="rounded-2xl bg-[var(--ok-bg)] px-3.5 py-2.5 text-center text-[12.5px] text-ok-fg">
+                <p className="rounded-2xl bg-[var(--ok-bg)] px-3.5 py-2.5 text-center text-[13px] text-ok-fg">
                   Laporan sudah diterima developer · <span className="font-mono">{reportedId}</span>
                 </p>
               ) : (
@@ -457,7 +457,7 @@ export function SupportChat() {
                   type="button"
                   onClick={() => void reportToDeveloper()}
                   disabled={reporting}
-                  className="pill inline-flex w-full items-center justify-center gap-2 px-3.5 py-2 text-[12.5px] font-medium hover:text-text disabled:opacity-60"
+                  className="pill inline-flex w-full items-center justify-center gap-2 px-3.5 py-2 text-[13px] font-medium hover:text-text disabled:opacity-60"
                 >
                   {reporting && <Loader2 size={13} className="animate-spin" />}
                   Masalah belum selesai? Laporkan ke developer
@@ -488,7 +488,7 @@ export function SupportChat() {
                 rows={1}
                 placeholder="Tulis pertanyaanmu…"
                 aria-label="Pesan"
-                className="input-solid max-h-28 min-h-[44px] flex-1 resize-none px-3.5 py-3 text-[13.5px]"
+                className="input-solid max-h-28 min-h-[44px] flex-1 resize-none px-3.5 py-3 text-[14px]"
               />
               <button
                 type="submit"

@@ -215,7 +215,7 @@ export function OverviewTab({ goto }: { goto: (tab: string) => void }) {
 function InfraStat({ label, value, sub }: { label: string; value: string; sub?: string }) {
   return (
     <div className="px-6 py-4">
-      <dt className="text-[12.5px] text-text-muted">{label}</dt>
+      <dt className="text-[13px] text-text-muted">{label}</dt>
       <dd className="mt-1 text-[22px] font-bold tracking-tight tabular-nums">{value}</dd>
       {sub && <p className="text-[12px] text-text-muted">{sub}</p>}
     </div>

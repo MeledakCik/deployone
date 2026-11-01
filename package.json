@@ -6,7 +6,8 @@
     "dev": "next dev -H 127.0.0.1",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "test:convert": "node --experimental-strip-types --test tests/convert-html.test.mjs tests/convert-next.test.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.5.3",
