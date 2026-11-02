@@ -138,11 +138,11 @@ export function HeroMockup() {
             <div className="flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-end">
               <div className="min-w-0 text-left">
                 <h2 className="text-[24px] font-bold leading-[1.1] tracking-[-0.03em] sm:text-[28px]">Deploy</h2>
-                <p className="mt-1.5 text-[13.5px] leading-relaxed text-text-muted">Depup membaca isi repo sebelum deploy dimulai.</p>
+                <p className="mt-1.5 text-[14px] leading-relaxed text-text-muted">Depup membaca isi repo sebelum deploy dimulai.</p>
               </div>
               <div className="input-solid flex w-full items-center gap-2 truncate px-3.5 py-2.5 sm:w-96">
                 <Search size={15} className="shrink-0 text-text-faint" aria-hidden="true" />
-                <span key={s.repo} className="truncate font-mono text-[12.5px] text-text">
+                <span key={s.repo} className="truncate font-mono text-[12px] text-text">
                   github.com/{s.repo}
                 </span>
               </div>
@@ -156,7 +156,7 @@ export function HeroMockup() {
                   role="tab"
                   aria-selected={idx === i}
                   onClick={() => setI(idx)}
-                  className={`press whitespace-nowrap rounded-full px-4 py-2 text-center text-[12.5px] font-medium transition-colors ${
+                  className={`press whitespace-nowrap rounded-full px-4 py-2 text-center text-[12px] font-medium transition-colors ${
                     idx === i ? "chip-on" : "pill"
                   }`}
                 >
@@ -169,10 +169,10 @@ export function HeroMockup() {
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-live="polite">
               <div className="surface-solid flex flex-col gap-1 p-5 text-left">
                 <span className="text-[13px] font-medium text-text-muted">Terdeteksi</span>
-                <span key={s.type} className="mt-3 text-[21px] font-bold leading-tight tracking-[-0.02em]">
+                <span key={s.type} className="mt-3 text-[22px] font-bold leading-tight tracking-[-0.02em]">
                   {s.type}
                 </span>
-                <span className="mt-1 text-[12.5px] text-text-muted">dibaca dari isi repo</span>
+                <span className="mt-1 text-[12px] text-text-muted">dibaca dari isi repo</span>
               </div>
               {platforms.map((name) => {
                 const [level, note] = s.verdict[name];
@@ -190,7 +190,7 @@ export function HeroMockup() {
                         {LABEL[level]}
                       </Badge>
                     </span>
-                    <span className="mt-1 text-[12.5px] text-text-muted">{note}</span>
+                    <span className="mt-1 text-[12px] text-text-muted">{note}</span>
                   </div>
                 );
               })}
@@ -203,7 +203,7 @@ export function HeroMockup() {
                   <span className="text-[16px] font-bold tracking-tight">Deploy terakhir</span>
                   <Badge tone="violet">Contoh data</Badge>
                 </div>
-                <span className="hidden items-center gap-1.5 text-[12.5px] font-medium text-text-muted sm:flex">
+                <span className="hidden items-center gap-1.5 text-[12px] font-medium text-text-muted sm:flex">
                   <RefreshCw size={14} aria-hidden="true" /> Redeploy
                 </span>
               </div>
@@ -232,8 +232,8 @@ export function HeroMockup() {
                           <Badge>{d.platform}</Badge>
                         </span>
                         {d.ref === "main" ? <GitCommitHorizontal size={15} aria-hidden="true" /> : <GitBranch size={15} aria-hidden="true" />}
-                        <span className="min-w-0 break-all font-mono text-[12.5px]">{d.ref}</span>
-                        <span className="text-[12.5px]">· {d.when}</span>
+                        <span className="min-w-0 break-all font-mono text-[12px]">{d.ref}</span>
+                        <span className="text-[12px]">· {d.when}</span>
                       </div>
                       <div className="order-4 col-span-2 truncate font-mono text-[12px] text-text-muted md:col-span-2 md:text-right">{d.link}</div>
                     </li>

@@ -41,7 +41,7 @@ export function Sidebar() {
           { id: "domains", label: "Domain", icon: Globe2 },
           { id: "env", label: "Environment", icon: KeyRound },
           { id: "database", label: "Database", icon: Database },
-          { id: "settings", label: "Preferensi", icon: Settings2 },
+          { id: "settings", label: "Settings", icon: Settings2 },
         ],
       },
       {

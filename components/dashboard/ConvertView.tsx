@@ -3,29 +3,34 @@
 import * as React from "react";
 import { PageTitle, Badge, Btn, type BadgeTone } from "@/components/ui/primitives";
 import { ViewFade } from "@/components/ui/ViewFade";
-import { UploadCloud, FileArchive, FolderUp, Loader2, CircleAlert, X, Download, Copy, Check, ArrowRight } from "@/components/ui/icons";
+import { UploadCloud, FileArchive, FolderUp, Loader2, CircleAlert, X, Download, Copy, Check, Sparkles, ArrowRight } from "@/components/ui/icons";
 import { useToast } from "@/components/ui/Toast";
+import { useDeploy } from "@/lib/deploy-context";
 import { cn } from "@/lib/utils";
 import { ON_MIST, SELECTED_FILL, chipCls } from "./ai-site/shared";
 import { collectFromZip, collectFromFileList, collectFromDataTransfer, UploadError, type CollectResult } from "@/lib/github-upload";
 import { convertHtmlProject } from "@/lib/convert/html-to-next";
-import { analyzeNextProject, detectNext } from "@/lib/convert/next-to-html";
+import { analyzeNextProject, detectNext, MAX_PAGE_SOURCE } from "@/lib/convert/next-to-html";
 import {
-  LANGS, GROUP_LABEL, langById, langOfPath, guessLangFromCode, targetFromLang, targetPath, isNoise,
+  LANGS, GROUP_LABEL, CUSTOM_ID, langById, langOfPath, guessLangFromCode, targetFromLang, customTarget, targetPath, isNoise,
   type Lang, type LangGroup, type TargetSpec,
 } from "@/lib/convert/languages";
 import { runItems, buildZip, saveBlob, type RunItem, type ItemStatus } from "@/lib/convert/run";
-import { canConvertLocal, localTargets, whyNotLocal } from "@/lib/convert/local/simple";
 
 const inputCls =
   "input-solid w-full px-3.5 py-2.5 text-[13px]";
-/** Batas aman per file di browser (karakter). */
-const MAX_FILE_CHARS = 2_000_000;
+const MAX_FILE_CHARS = 36_000;
 const NEXT16 = "next16";
 const HTML_ID = "html";
 
 const dec = new TextDecoder();
 const enc = new TextEncoder();
+
+interface KeyStatus {
+  hasKey: boolean;
+  masked: string | null;
+  freePerDay: number;
+}
 
 interface Det {
   files: { path: string; data: string | Uint8Array }[];
@@ -48,10 +53,18 @@ function formatBytes(n: number): string {
   return `${(n / 1024 / 1024).toFixed(1)} MB`;
 }
 
+async function api<T>(url: string, init?: RequestInit): Promise<T> {
+  const res = await fetch(url, init);
+  const json = (await res.json().catch(() => null)) as { ok?: boolean; data?: T; error?: string } | null;
+  if (!res.ok || !json?.ok) throw new Error(json?.error ?? `Server menjawab error (${res.status}).`);
+  return json.data as T;
+}
+
 const TEXT_OUT = /\.(html?|css|scss|js|mjs|ts|tsx|jsx|json|md|txt|vue|svelte|astro|php|py|java|kt|swift|go|rs|cs|c|cpp|h|rb|dart|lua|sh|sql|ya?ml|toml|xml|mjs|svg)$/i;
 
 export function ConvertView() {
   const { showToast } = useToast();
+  const { setView } = useDeploy();
 
   const zipRef = React.useRef<HTMLInputElement>(null);
   const folderRef = React.useRef<HTMLInputElement>(null);
@@ -67,6 +80,9 @@ export function ConvertView() {
   const [error, setError] = React.useState<string | null>(null);
 
   const [targetId, setTargetId] = React.useState<string>(NEXT16);
+  const [customName, setCustomName] = React.useState("");
+  const [customExt, setCustomExt] = React.useState("");
+  const [hint, setHint] = React.useState("");
   const [selected, setSelected] = React.useState<Set<string>>(new Set());
   const [includeOthers, setIncludeOthers] = React.useState(false);
 
@@ -75,10 +91,18 @@ export function ConvertView() {
   const [skipped, setSkipped] = React.useState<{ path: string; reason: string }[]>([]);
   const [running, setRunning] = React.useState(false);
   const [finished, setFinished] = React.useState(false);
+  const [fatal, setFatal] = React.useState<string | null>(null);
   const [preview, setPreview] = React.useState<string | null>(null);
   const [copied, setCopied] = React.useState(false);
 
+  const [keyStatus, setKeyStatus] = React.useState<KeyStatus | null>(null);
+  const [keyInput, setKeyInput] = React.useState("");
+  const [savingKey, setSavingKey] = React.useState(false);
+
   React.useEffect(() => () => abortRef.current?.abort(), []);
+  React.useEffect(() => {
+    api<KeyStatus>("/api/ai/key").then(setKeyStatus).catch(() => setKeyStatus({ hasKey: false, masked: null, freePerDay: 0 }));
+  }, []);
 
   /* ---------- analisis sumber ---------- */
 
@@ -93,11 +117,14 @@ export function ConvertView() {
 
   const target: TargetSpec | null = React.useMemo(() => {
     if (targetId === NEXT16) return { id: NEXT16, label: "Next.js 16", ext: "tsx", prompt: "Next.js 16" };
+    if (targetId === CUSTOM_ID) return customName.trim() ? customTarget(customName, customExt) : null;
     const l = langById(targetId);
     return l ? targetFromLang(l) : null;
-  }, [targetId]);
+  }, [targetId, customName, customExt]);
 
   const projectHtml = targetId === HTML_ID && !!nextKind && tab === "upload";
+  const needsAi = targetId !== NEXT16;
+  const aiReady = !!keyStatus && (keyStatus.hasKey || keyStatus.freePerDay > 0);
 
   const langStats = React.useMemo(() => {
     const m = new Map<string, number>();
@@ -114,32 +141,10 @@ export function ConvertView() {
     [files],
   );
 
-  /** Tujuan yang punya konverter lokal untuk sumber saat ini (urutan = urutan tampil). */
-  const availableTargets = React.useMemo(() => {
-    const ids = new Set<string>();
-    if (tab === "paste") {
-      if (pasteLang) for (const t of localTargets(pasteLang.id)) ids.add(t);
-      if (pasteLang?.id === "html") ids.add(NEXT16);
-    } else if (source) {
-      for (const c of candidates) for (const t of localTargets(c.lang.id)) ids.add(t);
-      if (htmlPages > 0) ids.add(NEXT16);
-      if (nextKind) ids.add(HTML_ID);
-    }
-    return ids;
-  }, [tab, pasteLang, source, candidates, htmlPages, nextKind]);
-
-  // Tujuan harus salah satu yang tersedia; kalau belum, pilih yang paling masuk akal.
-  React.useEffect(() => {
-    if (availableTargets.size === 0 || availableTargets.has(targetId)) return;
-    const order = [NEXT16, HTML_ID, ...LANGS.map((l) => l.id)];
-    const first = order.find((id) => availableTargets.has(id));
-    if (first) setTargetId(first);
-  }, [availableTargets, targetId]);
-
-  // Pilihan awal: semua file yang punya konverter lokal ke tujuan ini.
+  // Pilihan awal: semua file kode yang bukan bahasa tujuan dan muat di batas AI.
   React.useEffect(() => {
     if (projectHtml || targetId === NEXT16) return;
-    setSelected(new Set(candidates.filter((c) => c.lang.id !== targetId && canConvertLocal(c.lang.id, targetId) && c.size <= MAX_FILE_CHARS).map((c) => c.path)));
+    setSelected(new Set(candidates.filter((c) => c.lang.id !== targetId && c.size <= MAX_FILE_CHARS * 3).map((c) => c.path)));
   }, [candidates, targetId, projectHtml]);
 
   /* ---------- membaca sumber ---------- */
@@ -150,6 +155,7 @@ export function ConvertView() {
     setDet(null);
     setSkipped([]);
     setFinished(false);
+    setFatal(null);
     setPreview(null);
     setRunning(false);
   }
@@ -164,7 +170,7 @@ export function ConvertView() {
       setSource(res);
       const hasHtml = res.files.some((f) => /\.html?$/i.test(f.path));
       const next = detectNext(res.files);
-      setTargetId(hasHtml && !next ? NEXT16 : next ? HTML_ID : "js");
+      setTargetId(hasHtml && !next ? NEXT16 : next ? HTML_ID : "ts");
     } catch (e) {
       setSource(null);
       setError(e instanceof UploadError ? e.message : "Gagal membaca file. Coba lagi atau pakai zip lain.");
@@ -204,7 +210,7 @@ export function ConvertView() {
     // Tempel kode
     if (tab === "paste") {
       if (!pasteCode.trim()) return "Tempel kodenya dulu.";
-      if (!target) return "Pilih tujuan konversi.";
+      if (!target) return "Isi nama bahasa tujuan.";
       const from = pasteLang;
       const name = pasteName.trim() || `kode.${from?.ext ?? "txt"}`;
       if (targetId === NEXT16) {
@@ -212,10 +218,9 @@ export function ConvertView() {
         return { items: [], det: { files: out.files, warnings: out.warnings, note: "Satu halaman HTML → proyek Next.js 16 lengkap." }, skipped: [] };
       }
       if (pasteCode.length > MAX_FILE_CHARS) return `Kodenya terlalu panjang (${Math.round(pasteCode.length / 1000)} KB; batas ${MAX_FILE_CHARS / 1000} KB). Bagi jadi beberapa bagian.`;
-      if (!from) return "Bahasa asal tidak terdeteksi. Isi nama file dengan ekstensi yang benar, mis. data.json.";
-      if (!canConvertLocal(from.id, targetId)) return `${from.label} → ${target.label} tidak tersedia: ${whyNotLocal(from.id, targetId)}.`;
+      if (!from) return "Bahasa asal tidak terdeteksi. Isi nama file dengan ekstensi yang benar, mis. app.py.";
       return {
-        items: [{ id: name, path: name, outPath: targetPath(name, target), status: "queued", payload: { mode: "file", path: name, code: pasteCode, from: from.id, to: target.id } }],
+        items: [{ id: name, path: name, outPath: targetPath(name, target), status: "queued", payload: { mode: "file", path: name, code: pasteCode, from: from.prompt, to: target.prompt, hint: hint.trim() || undefined } }],
         det: null,
         skipped: [],
       };
@@ -242,11 +247,8 @@ export function ConvertView() {
         outPath: j.outPath,
         status: "queued",
         payload: {
-          mode: "page",
-          job: {
-            router: j.router, route: j.route, page: { path: j.sourcePath, code: j.code }, layouts: j.layouts, files: j.context, resolved: j.resolved,
-            routeMap: j.routeMap, assetPrefix: j.assetPrefix, cssLinks: j.cssLinks, imageImports: j.imageImports, tailwind: j.tailwind,
-          },
+          mode: "page", path: j.sourcePath, code: j.code, context: j.context, routeMap: j.routeMap, assetPrefix: j.assetPrefix,
+          cssLinks: j.cssLinks, imageImports: j.imageImports, tailwind: j.tailwind, hint: hint.trim() || undefined,
         },
       }));
       return {
@@ -256,17 +258,13 @@ export function ConvertView() {
       };
     }
 
-    if (!target) return "Pilih tujuan konversi.";
+    if (!target) return "Isi nama bahasa tujuan.";
     const chosen = candidates.filter((c) => selected.has(c.path));
     if (chosen.length === 0) return "Centang minimal satu file untuk dikonversi.";
     const sk: { path: string; reason: string }[] = [];
     const its: RunItem[] = [];
     for (const c of chosen) {
       const code = dec.decode(files.find((f) => f.path === c.path)!.data);
-      if (!canConvertLocal(c.lang.id, targetId)) {
-        sk.push({ path: c.path, reason: `${c.lang.label} → ${target.label} tidak tersedia (${whyNotLocal(c.lang.id, targetId)})` });
-        continue;
-      }
       if (code.length > MAX_FILE_CHARS) {
         sk.push({ path: c.path, reason: `terlalu besar (${Math.round(code.length / 1000)} KB; batas ${MAX_FILE_CHARS / 1000} KB) — pecah dulu` });
         continue;
@@ -277,7 +275,7 @@ export function ConvertView() {
       }
       its.push({
         id: c.path, path: c.path, outPath: targetPath(c.path, target), status: "queued",
-        payload: { mode: "file", path: c.path, code, from: c.lang.id, to: target.id },
+        payload: { mode: "file", path: c.path, code, from: c.lang.prompt, to: target.prompt, hint: hint.trim() || undefined },
       });
     }
     if (its.length === 0) return "Semua file yang dipilih dilewati (terlalu besar atau kosong).";
@@ -292,10 +290,12 @@ export function ConvertView() {
     const ctl = new AbortController();
     abortRef.current = ctl;
     setRunning(true);
-    await runItems(list, { signal: ctl.signal, onChange: patchItem });
+    setFatal(null);
+    const r = await runItems(list, { signal: ctl.signal, onChange: patchItem, concurrency: 2 });
     abortRef.current = null;
     setRunning(false);
-    if (!ctl.signal.aborted) {
+    if (r.fatal) setFatal(r.fatal);
+    else if (!ctl.signal.aborted) {
       setFinished(true);
       showToast("Konversi selesai.");
     }
@@ -305,6 +305,7 @@ export function ConvertView() {
     setError(null);
     const p = plan();
     if (typeof p === "string") return setError(p);
+    if (needsAi && !aiReady) return setError("Pasang token Groq dulu (kartu di bawah), lalu coba lagi.");
     resetResults();
     setItems(p.items);
     setDet(p.det);
@@ -315,6 +316,13 @@ export function ConvertView() {
       return;
     }
     await execute(p.items);
+  }
+
+  async function resume() {
+    const list = items.map((i) => (i.status === "error" ? { ...i, status: "queued" as const, message: undefined } : i));
+    setItems(list);
+    setFinished(false);
+    await execute(list);
   }
 
   function cancel() {
@@ -356,7 +364,7 @@ export function ConvertView() {
     for (const i of items) lines.push(`- ${STATUS[i.status].label}: \`${i.path}\` → \`${i.outPath}\`${i.message ? ` — ${i.message}` : ""}`);
     for (const s of skipped) lines.push(`- Dilewati: \`${s.path}\` — ${s.reason}`);
     if (det?.warnings.length) lines.push("", "## Catatan", "", ...det.warnings.map((w) => `- ${w}`));
-    lines.push("", "Dikonversi di browser dengan aturan baku (tanpa AI). Periksa catatan di atas dan uji hasilnya sebelum dipakai.", "");
+    lines.push("", "Hasil konversi AI perlu diperiksa dan diuji sebelum dipakai.", "");
     return lines.join("\n");
   }
 
@@ -386,6 +394,25 @@ export function ConvertView() {
     }
   }
 
+  async function saveKey() {
+    setSavingKey(true);
+    try {
+      const r = await api<{ hasKey: boolean; masked: string }>("/api/ai/key", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ key: keyInput.trim() }),
+      });
+      setKeyStatus((s) => ({ hasKey: r.hasKey, masked: r.masked, freePerDay: s?.freePerDay ?? 0 }));
+      setKeyInput("");
+      setFatal(null);
+      showToast("Token Groq tersimpan dan terverifikasi.");
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Token gagal disimpan.");
+    } finally {
+      setSavingKey(false);
+    }
+  }
+
   /* ---------- tampilan ---------- */
 
   const groups = (["web", "bahasa", "data"] as LangGroup[]).map((g) => ({ g, list: LANGS.filter((l) => l.group === g) }));
@@ -396,17 +423,17 @@ export function ConvertView() {
   const modeNote = !hasInput
     ? null
     : targetId === NEXT16
-      ? "Dikonversi langsung di browser, gratis dan tanpa kuota. Tiap halaman jadi app/…/page.tsx, aset masuk public/, skrip lama tetap jalan."
+      ? "Tanpa AI: dikonversi langsung di browser, gratis dan tanpa kuota. Tiap halaman jadi app/…/page.tsx, aset masuk public/, skrip lama tetap jalan."
       : projectHtml
-        ? "Proyek Next.js terdeteksi. Tiap halaman dirender jadi satu file HTML lengkap (layout + komponen digabung) langsung di browser, tanpa AI dan tanpa kuota. Rute dinamis ([param]) dilewati; data dari fetch tidak dijalankan; interaksi (onClick, state) tidak ikut."
-        : "Dikonversi langsung di browser dengan aturan baku, tanpa AI dan tanpa kuota. Hanya pasangan format yang hasilnya pasti yang tersedia; cek catatan konversi setelah selesai.";
+        ? "Proyek Next.js terdeteksi. Tiap halaman jadi satu file HTML lengkap (layout + komponen digabung) oleh AI; CSS dan aset publik disalin otomatis. Rute dinamis ([param]) dilewati."
+        : "AI mengonversi file satu per satu dengan menjaga struktur dan perilakunya. Hasil perlu dicek sebelum dipakai.";
 
   return (
     <ViewFade>
       <div className="mb-6">
         <PageTitle
           title="Konversi"
-          desc="Ubah HTML ke Next.js 16, Next.js ke HTML statis, atau file ke format lain (TS ke JS, JSON/YAML/TOML/XML, Markdown ke HTML) — langsung di browser, tanpa AI dan tanpa kuota."
+          desc="Ubah HTML ke Next.js 16, Next.js ke HTML statis, atau kode ke bahasa dan format lain — dari zip, folder, file, atau tempel langsung."
         />
       </div>
 
@@ -421,7 +448,7 @@ export function ConvertView() {
       )}
 
       {/* ---------- 1. Sumber ---------- */}
-      <section className="surface-solid mb-4 rounded-3xl p-5 sm:p-6" aria-labelledby="cv-src">
+      <section className="surface-solid mb-4 p-5 sm:p-6" aria-labelledby="cv-src">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 id="cv-src" className="text-[14px] font-semibold">1. Sumber</h2>
           <div className="flex gap-1.5" role="tablist" aria-label="Cara memasukkan sumber">
@@ -466,13 +493,13 @@ export function ConvertView() {
                 <p className="mt-3 text-[14px] font-medium">Tarik &amp; lepas zip, folder, atau file ke sini</p>
                 <p className="mt-1 text-[12px] text-text-muted">node_modules, .git, dan hasil build otomatis dilewati. File .env tidak dibaca.</p>
                 <div className="mt-5 flex flex-wrap justify-center gap-2.5">
-                  <button type="button" onClick={() => zipRef.current?.click()} className="btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-[13px]">
+                  <button type="button" onClick={() => zipRef.current?.click()} className="btn-primary btn-md inline-flex items-center gap-2">
                     <FileArchive size={15} /> Pilih ZIP
                   </button>
-                  <button type="button" onClick={() => folderRef.current?.click()} className="pill inline-flex items-center gap-2 px-5 py-2.5 text-[13px] font-medium hover:bg-[var(--card-hover)]">
+                  <button type="button" onClick={() => folderRef.current?.click()} className="pill btn-md inline-flex items-center gap-2 font-medium hover:bg-[var(--card-hover)]">
                     <FolderUp size={15} /> Pilih folder
                   </button>
-                  <button type="button" onClick={() => filesRef.current?.click()} className="pill inline-flex items-center gap-2 px-5 py-2.5 text-[13px] font-medium hover:bg-[var(--card-hover)]">
+                  <button type="button" onClick={() => filesRef.current?.click()} className="pill btn-md inline-flex items-center gap-2 font-medium hover:bg-[var(--card-hover)]">
                     Pilih file
                   </button>
                 </div>
@@ -506,7 +533,7 @@ export function ConvertView() {
             <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
               <div>
                 <label htmlFor="cv-name" className="mb-1.5 block text-[12px] font-medium">Nama file (opsional)</label>
-                <input id="cv-name" value={pasteName} disabled={busy} onChange={(e) => setPasteName(e.target.value)} placeholder="data.json, index.html, Button.tsx …" className={inputCls} autoComplete="off" spellCheck={false} />
+                <input id="cv-name" value={pasteName} disabled={busy} onChange={(e) => setPasteName(e.target.value)} placeholder="app.py, index.html, Button.tsx …" className={inputCls} autoComplete="off" spellCheck={false} />
               </div>
               <p className="pb-2.5 text-[12px] text-text-muted">
                 Bahasa asal: <b>{pasteLang?.label ?? "belum terdeteksi"}</b>
@@ -515,7 +542,7 @@ export function ConvertView() {
             <div>
               <label htmlFor="cv-code" className="mb-1.5 block text-[12px] font-medium">Kode</label>
               <textarea id="cv-code" value={pasteCode} disabled={busy} onChange={(e) => setPasteCode(e.target.value)} rows={10} spellCheck={false} placeholder="Tempel kode di sini…" className={cn(inputCls, "resize-y font-mono text-[13px] leading-relaxed")} />
-              <p className="mt-1 text-[12px] text-text-muted">{pasteCode.length.toLocaleString("id-ID")} karakter</p>
+              <p className="mt-1 text-[12px] text-text-muted">{pasteCode.length.toLocaleString("id-ID")} karakter · batas {MAX_FILE_CHARS.toLocaleString("id-ID")} untuk konversi AI</p>
             </div>
           </div>
         )}
@@ -535,43 +562,55 @@ export function ConvertView() {
 
       {/* ---------- 2. Tujuan ---------- */}
       {hasInput && (
-        <section className="surface-solid mb-4 rounded-3xl p-5 sm:p-6" aria-labelledby="cv-tgt">
+        <section className="surface-solid mb-4 p-5 sm:p-6" aria-labelledby="cv-tgt">
           <h2 id="cv-tgt" className="text-[14px] font-semibold">2. Konversi ke</h2>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <div>
               <label htmlFor="cv-target" className="mb-1.5 block text-[12px] font-medium">Tujuan</label>
-              {availableTargets.size === 0 ? (
-                <p className="rounded-[14px] bg-[var(--pill-bg)] px-3.5 py-2.5 text-[13px] text-text-muted">
-                  Belum ada konversi lokal untuk bahasa file ini.
-                </p>
-              ) : (
-                <select id="cv-target" value={targetId} disabled={busy} onChange={(e) => { setTargetId(e.target.value); resetResults(); }} className={inputCls}>
-                  {availableTargets.has(NEXT16) && (
-                    <optgroup label="Proyek utuh">
-                      <option value={NEXT16}>Next.js 16 (dari HTML)</option>
-                    </optgroup>
-                  )}
-                  {groups.map(({ g, list }) => {
-                    const shown = list.filter((l) => availableTargets.has(l.id));
-                    if (shown.length === 0) return null;
-                    return (
-                      <optgroup key={g} label={GROUP_LABEL[g]}>
-                        {shown.map((l) => (
-                          <option key={l.id} value={l.id}>
-                            {l.id === HTML_ID && nextKind && tab === "upload" ? "HTML statis (dari proyek Next.js)" : l.label}
-                          </option>
-                        ))}
-                      </optgroup>
-                    );
-                  })}
-                </select>
-              )}
+              <select id="cv-target" value={targetId} disabled={busy} onChange={(e) => { setTargetId(e.target.value); resetResults(); }} className={inputCls}>
+                <optgroup label="Proyek utuh">
+                  <option value={NEXT16} disabled={tab === "upload" ? htmlPages === 0 : pasteLang?.id !== "html"}>
+                    Next.js 16 (dari HTML){(tab === "upload" ? htmlPages === 0 : pasteLang?.id !== "html") ? " — butuh sumber HTML" : ""}
+                  </option>
+                </optgroup>
+                {groups.map(({ g, list }) => (
+                  <optgroup key={g} label={GROUP_LABEL[g]}>
+                    {list.map((l) => (
+                      <option key={l.id} value={l.id}>
+                        {l.id === HTML_ID && nextKind && tab === "upload" ? "HTML statis (dari proyek Next.js)" : l.label}
+                      </option>
+                    ))}
+                  </optgroup>
+                ))}
+                <optgroup label="Lainnya">
+                  <option value={CUSTOM_ID}>Ketik sendiri…</option>
+                </optgroup>
+              </select>
             </div>
+            {targetId === CUSTOM_ID && (
+              <div className="grid grid-cols-[1fr_6rem] gap-2">
+                <div>
+                  <label htmlFor="cv-cname" className="mb-1.5 block text-[12px] font-medium">Bahasa / format</label>
+                  <input id="cv-cname" value={customName} disabled={busy} onChange={(e) => setCustomName(e.target.value)} placeholder="Elixir, Twig, Zig …" className={inputCls} autoComplete="off" />
+                </div>
+                <div>
+                  <label htmlFor="cv-cext" className="mb-1.5 block text-[12px] font-medium">Ekstensi</label>
+                  <input id="cv-cext" value={customExt} disabled={busy} onChange={(e) => setCustomExt(e.target.value)} placeholder="ex" className={inputCls} autoComplete="off" spellCheck={false} />
+                </div>
+              </div>
+            )}
           </div>
+
+          {needsAi && (
+            <div className="mt-4">
+              <label htmlFor="cv-hint" className="mb-1.5 block text-[12px] font-medium">Instruksi tambahan (opsional)</label>
+              <input id="cv-hint" value={hint} maxLength={300} disabled={busy} onChange={(e) => setHint(e.target.value)} placeholder="mis. pakai Tailwind, gunakan async/await, tanpa dependensi eksternal" className={inputCls} />
+            </div>
+          )}
 
           {modeNote && (
             <p className="mt-4 flex items-start gap-2 text-[13px] leading-relaxed text-text-muted">
-              <ArrowRight size={15} className="mt-0.5 shrink-0" />
+              {needsAi ? <Sparkles size={15} className="mt-0.5 shrink-0" /> : <ArrowRight size={15} className="mt-0.5 shrink-0" />}
               {modeNote}
             </p>
           )}
@@ -582,7 +621,7 @@ export function ConvertView() {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-[13px] font-medium">File yang dikonversi <span className="font-normal text-text-muted">({selected.size} dari {candidates.length})</span></p>
                 <div className="flex gap-3 text-[12px]">
-                  <button type="button" className="underline underline-offset-4" disabled={busy} onClick={() => setSelected(new Set(candidates.filter((c) => c.lang.id !== targetId && canConvertLocal(c.lang.id, targetId)).map((c) => c.path)))}>Pilih semua</button>
+                  <button type="button" className="underline underline-offset-4" disabled={busy} onClick={() => setSelected(new Set(candidates.filter((c) => c.lang.id !== targetId).map((c) => c.path)))}>Pilih semua</button>
                   <button type="button" className="underline underline-offset-4" disabled={busy} onClick={() => setSelected(new Set())}>Kosongkan</button>
                 </div>
               </div>
@@ -591,18 +630,18 @@ export function ConvertView() {
               ) : (
                 <ul className="mt-2 max-h-64 space-y-0.5 overflow-y-auto rounded-[14px] bg-[var(--pill-bg)] p-2" aria-label="Daftar file">
                   {candidates.slice(0, 400).map((c) => {
-                    const supported = canConvertLocal(c.lang.id, targetId) && c.lang.id !== targetId;
+                    const big = c.size > MAX_FILE_CHARS * 3;
                     return (
                       <li key={c.path}>
-                        <label className={cn("flex items-center gap-2.5 rounded-xl px-2.5 py-1.5 text-[13px]", supported ? "cursor-pointer hover:bg-[var(--card-hover)]" : "opacity-60")}>
+                        <label className={cn("flex cursor-pointer items-center gap-2.5 rounded-xl px-2.5 py-1.5 text-[13px] hover:bg-[var(--card-hover)]", big && "opacity-60")}>
                           <input
                             type="checkbox"
-                            checked={supported && selected.has(c.path)}
-                            disabled={busy || !supported}
+                            checked={selected.has(c.path)}
+                            disabled={busy}
                             onChange={(e) => setSelected((s) => { const n = new Set(s); if (e.target.checked) n.add(c.path); else n.delete(c.path); return n; })}
                           />
                           <span className="min-w-0 flex-1 truncate font-mono" title={c.path}>{c.path}</span>
-                          <span className="shrink-0 text-text-muted">{supported ? `${c.lang.label} · ${formatBytes(c.size)}` : `${c.lang.label} · tidak tersedia`}</span>
+                          <span className="shrink-0 text-text-muted">{c.lang.label} · {formatBytes(c.size)}</span>
                         </label>
                       </li>
                     );
@@ -617,8 +656,29 @@ export function ConvertView() {
             </div>
           )}
 
+          {/* token AI */}
+          {needsAi && keyStatus && !aiReady && (
+            <div className="mt-5 rounded-[14px] bg-[var(--warn-bg)] p-4 text-[13px] text-warn-fg">
+              <p className="font-medium">Konversi AI butuh token Groq (gratis).</p>
+              <p className="mt-1 leading-relaxed">
+                Buat di{" "}
+                <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" className="underline">console.groq.com/keys<span className="sr-only"> (buka di tab baru)</span></a>
+                , lalu tempel di sini. Disimpan terenkripsi dan dipakai juga oleh AI Web Builder.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <label htmlFor="cv-key" className="sr-only">Token Groq</label>
+                <input id="cv-key" type="password" autoComplete="off" spellCheck={false} value={keyInput} onChange={(e) => setKeyInput(e.target.value)} placeholder="gsk_…" className={cn(inputCls, "min-w-0 flex-1 !bg-[var(--surface-solid)]")} />
+                <Btn variant="primary" busy={savingKey} disabled={!keyInput.trim()} onClick={saveKey}>Simpan token</Btn>
+              </div>
+            </div>
+          )}
+          {needsAi && keyStatus?.hasKey && <p className="mt-4 text-[12px] text-text-muted">Memakai token Groq-mu ({keyStatus.masked}). Kuota mengikuti akun Groq-mu.</p>}
+          {needsAi && keyStatus && !keyStatus.hasKey && keyStatus.freePerDay > 0 && (
+            <p className="mt-4 text-[12px] text-text-muted">Jatah gratis: {keyStatus.freePerDay * 5} file per hari. Pasang token sendiri di <button type="button" className="underline underline-offset-4" onClick={() => setView("ai")}>AI Web Builder</button> untuk tanpa batas dari Depup.</p>
+          )}
+
           <div className="mt-5 flex flex-wrap items-center gap-3">
-            <Btn variant="primary" onClick={start} busy={running} disabled={reading || availableTargets.size === 0} className="!px-6 !py-2.5 !text-[13px]">
+            <Btn variant="primary" onClick={start} busy={running} disabled={reading || (needsAi && !aiReady)} className="!px-6 !py-2.5 !text-[13px]">
               {running ? "Mengonversi…" : finished || showResults ? "Konversi ulang" : "Mulai konversi"}
             </Btn>
             {running && <Btn onClick={cancel}>Batalkan</Btn>}
@@ -628,7 +688,7 @@ export function ConvertView() {
 
       {/* ---------- 3. Hasil ---------- */}
       {showResults && (
-        <section className="surface-solid rounded-3xl p-5 sm:p-6" aria-labelledby="cv-res" aria-live="polite">
+        <section className="surface-solid p-5 sm:p-6" aria-labelledby="cv-res" aria-live="polite">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <h2 id="cv-res" className="text-[14px] font-semibold">3. Hasil</h2>
@@ -648,6 +708,14 @@ export function ConvertView() {
               <div className="mt-1.5 h-2 overflow-hidden rounded-full bg-[var(--pill-bg)]" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Kemajuan konversi">
                 <div className="h-full rounded-full bg-[var(--lime)] transition-[width] duration-300" style={{ width: `${pct}%` }} />
               </div>
+            </div>
+          )}
+
+          {fatal && (
+            <div role="alert" className="mt-4 flex flex-wrap items-center gap-3 rounded-[14px] bg-[var(--bad-bg)] px-4 py-3 text-[13px] text-bad-fg">
+              <CircleAlert size={16} className="shrink-0" />
+              <span className="min-w-0 flex-1">{fatal}</span>
+              <Btn onClick={resume}>Lanjutkan</Btn>
             </div>
           )}
 
@@ -726,6 +794,9 @@ export function ConvertView() {
                 ))}
               </ul>
             </details>
+          )}
+          {stats.warn + stats.done > 0 && needsAi && (
+            <p className="mt-4 text-[12px] text-text-muted">Hasil AI bukan jaminan 100% benar. Jalankan, uji, dan baca ulang sebelum dipakai di produksi.</p>
           )}
         </section>
       )}

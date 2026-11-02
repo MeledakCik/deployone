@@ -109,7 +109,7 @@ export function OverviewTab({ goto }: { goto: (tab: string) => void }) {
               Laporan phishing/penipuan/malware dari halaman /laporkan. Periksa dulu, lalu takedown atau abaikan.
             </p>
           </div>
-          <button type="button" onClick={() => goto("abuse")} className="btn-primary press inline-flex items-center gap-2 px-5 py-2.5 text-[13px]">
+          <button type="button" onClick={() => goto("abuse")} className="btn-primary btn-md press inline-flex items-center gap-2">
             Tinjau laporan
           </button>
         </div>

@@ -7,6 +7,7 @@ import { useTheme } from "next-themes";
 import { HardHat } from "lucide-react";
 import { Eye, EyeOff, Save, ShieldCheck, ShieldAlert, Loader2, Trash2, Moon, Sun, Bug, Rocket, KeyRound, Network as SpiderIcon } from "@/components/ui/icons";
 import { Surface } from "@/components/ui/Surface";
+import { Switch } from "@/components/ui/Switch";
 import { ClaudeConnectCard } from "@/components/dashboard/ClaudeConnectCard";
 import { CliShareCard } from "@/components/dashboard/CliShareCard";
 import { ViewFade } from "@/components/ui/ViewFade";
@@ -185,24 +186,7 @@ function SwitchRow({
           <p className="text-[12px] leading-relaxed text-text-muted">{description}</p>
         </div>
       </div>
-      <button
-        id={id}
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        onClick={() => onChange(!checked)}
-        className={cn(
-          "relative h-7 w-12 shrink-0 rounded-full transition-colors",
-          checked ? "bg-[var(--ink-fill)]" : "bg-[var(--line-strong)]"
-        )}
-      >
-        <span
-          className={cn(
-            "absolute left-1 top-1 h-5 w-5 rounded-full bg-white shadow transition-transform duration-300 [transition-timing-function:var(--ease-soft)]",
-            checked ? "translate-x-5" : "translate-x-0"
-          )}
-        />
-      </button>
+      <Switch id={id} checked={checked} onChange={onChange} />
     </div>
   );
 }
@@ -390,7 +374,7 @@ export function SettingsView() {
     <ViewFade>
       <div className="space-y-4 sm:space-y-5">
         <div>
-          <PageTitle title="Preferensi" desc={<>Token global ini dipakai sebagai default saat kamu deploy project baru. Klik{" "}
+          <PageTitle title="Settings" desc={<>Token global ini dipakai sebagai default saat kamu deploy project baru. Klik{" "}
             <span className="font-medium text-text">Test Koneksi</span> untuk memastikan token-nya benar-benar
             valid ke akun kamu.</>} />
         </div>
@@ -482,7 +466,7 @@ export function SettingsView() {
               />
             </div>
             <div>
-              <button type="submit" className="btn-primary inline-flex w-full items-center justify-center gap-2 px-5 py-2.5 text-[13px] sm:w-auto">
+              <button type="submit" className="btn-primary btn-md inline-flex w-full items-center justify-center gap-2 sm:w-auto">
                 <Save size={15} /> Simpan
               </button>
             </div>

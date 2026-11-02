@@ -44,8 +44,8 @@ export function AbuseReportForm({ initialTarget }: { initialTarget: string }) {
 
   return (
     <form onSubmit={submit} className="surface-solid flex w-full max-w-md flex-col gap-4 p-6 text-left sm:p-7">
-      <label className="flex flex-col gap-1 text-[13px] text-text-muted">
-        Alamat link yang dilaporkan
+      <label className="flex flex-col gap-1.5 text-[13px] text-text-muted">
+        <span className="font-medium text-text">Alamat link yang dilaporkan</span>
         <input
           className="input-solid px-3.5 py-2.5 text-[14px]"
           value={target}
@@ -55,8 +55,10 @@ export function AbuseReportForm({ initialTarget }: { initialTarget: string }) {
           required
         />
       </label>
-      <label className="flex flex-col gap-1 text-[13px] text-text-muted">
-        Kenapa dilaporkan? (phishing, penipuan, malware, dll.)
+      <label className="flex flex-col gap-1.5 text-[13px] text-text-muted">
+        <span>
+          <span className="font-medium text-text">Kenapa dilaporkan?</span> Phishing, penipuan, malware, dan sebagainya.
+        </span>
         <textarea
           className="input-solid min-h-[96px] px-3.5 py-2.5 text-[14px]"
           value={reason}
@@ -65,8 +67,10 @@ export function AbuseReportForm({ initialTarget }: { initialTarget: string }) {
           required
         />
       </label>
-      <label className="flex flex-col gap-1 text-[13px] text-text-muted">
-        Kontak kamu (opsional, kalau perlu ditanya lagi)
+      <label className="flex flex-col gap-1.5 text-[13px] text-text-muted">
+        <span>
+          <span className="font-medium text-text">Kontak kamu</span> Opsional, kalau perlu ditanya lagi.
+        </span>
         <input
           className="input-solid px-3.5 py-2.5 text-[14px]"
           value={contact}
@@ -75,14 +79,14 @@ export function AbuseReportForm({ initialTarget }: { initialTarget: string }) {
         />
       </label>
       {state.kind === "error" && (
-        <p role="alert" className="text-[13px] text-bad-fg">
+        <p role="alert" className="notice notice-bad">
           {state.message}
         </p>
       )}
       <button
         type="submit"
         disabled={state.kind === "busy"}
-        className="btn-primary mt-1 px-5 py-2.5 text-[13px] disabled:opacity-60"
+        className="btn-primary btn-md mt-1 w-full disabled:opacity-60"
       >
         {state.kind === "busy" ? "Mengirim…" : "Kirim laporan"}
       </button>

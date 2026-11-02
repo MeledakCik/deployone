@@ -132,7 +132,7 @@ export function UsersTab({ toast }: { toast: (m: string) => void }) {
             <div className="hidden overflow-x-auto md:block">
               <table className="w-full text-left text-[13px]">
                 <thead>
-                  <tr className="text-[12px] uppercase tracking-wide text-text-muted">
+                  <tr className="text-[12px] text-text-muted">
                     <th className="px-6 py-3 font-medium">Akun</th>
                     <th className="px-4 py-3 font-medium">Login terakhir</th>
                     <th className="px-4 py-3 font-medium">Deploy</th>

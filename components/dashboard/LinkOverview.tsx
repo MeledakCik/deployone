@@ -157,7 +157,7 @@ function TrafficCard({ stats, range, onRange }: { stats: SiteStats; range: Range
   const errSeries = requests.map((q, i) => (q > 0 ? ((errors[i] ?? 0) / q) * 100 : 0));
 
   return (
-    <section className="surface-solid flex flex-col rounded-3xl p-5 sm:p-6" aria-labelledby="traffic-title">
+    <section className="surface-solid flex flex-col p-5 sm:p-6" aria-labelledby="traffic-title">
       <div className="mb-4 flex items-center justify-between gap-3">
         <h3 id="traffic-title" className="text-[16px] font-semibold">
           Lalu lintas
@@ -208,7 +208,7 @@ function VisitorsCard({ stats }: { stats: SiteStats }) {
   const top = stats.topPages;
   const max = Math.max(1, ...top.map((t) => t.views));
   return (
-    <section className="surface-solid flex flex-col rounded-3xl p-5 sm:p-6" aria-labelledby="visitors-title">
+    <section className="surface-solid flex flex-col p-5 sm:p-6" aria-labelledby="visitors-title">
       <h3 id="visitors-title" className="mb-4 text-[16px] font-semibold">
         Pengunjung
       </h3>
@@ -280,7 +280,7 @@ function SiteOverview({
 
   return (
     <div className="space-y-4 sm:space-y-5">
-      <section className="surface-solid rounded-3xl" aria-labelledby="active-link-title">
+      <section className="surface-solid" aria-labelledby="active-link-title">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--surface-line)] px-5 py-4 sm:px-6">
           <h3 id="active-link-title" className="text-[16px] font-semibold">
             Link aktif

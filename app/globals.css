@@ -9,6 +9,17 @@
    Tema terang adalah default; tema gelap memakai bahasa yang sama.
    ========================================================================== */
 
+/* ---- Skala desain: acuan tunggal. Jangan membuat nilai baru di luar skala ini. ----
+   Radius    28px permukaan (kartu, panel, modal; juga di app mobile) · 14px kontrol (input, kotak ikon)
+             16px banner (.notice) · pil penuh untuk tombol & chip
+   Tipografi 12 keterangan · 13 isi padat & tombol kecil · 14 isi · 15 bacaan panjang (FAQ, dokumen)
+             16 judul kartu · 18 judul bagian · 20 judul fitur · judul halaman fluid lewat .page-title.
+             Tanpa nilai pecahan (12.5, 13.5, ...) dan tanpa 11px. Bobot: 500 label · 600 tombol · 700 judul.
+   Tombol    CTA: .btn-md 40px · .btn-lg 48px · .btn-xl 56px. Aksi di dalam kartu: <Btn> (lebih kecil).
+   Label     Judul tabel & label formulir memakai huruf biasa (bukan KAPITAL).
+   Warna     Selalu token (--text, --accent, --ok-*, --bad-*, ...). Tanpa hex atau palet Tailwind mentah.
+   Ikon      Hanya dari components/ui/icons (garis tebal seragam) dan PlatformIcon untuk logo platform. */
+
 /* Brand DepUp v1.0 — Ungu #7B50FF (utama), Lime #C6F432 (aksen, ±10%), Midnight #1E1150 (latar gelap),
    Mist #EDE8FF (latar lembut), Ink #120B2E (teks). Proporsi: Ungu 45 / Mist-putih 25 / Midnight 20 / Lime 10. */
 :root,
@@ -257,6 +268,42 @@ textarea {
   outline-offset: 2px;
 }
 
+@layer base {
+  /* Kotak centang bawaan browser: tampil sama dengan .check-box (20×20, sudut 7px, centang putih).
+     Ada di layer base supaya utilitas Tailwind (mis. `sr-only`, `mt-0.5`) tetap bisa menimpanya. */
+  input[type="checkbox"] {
+    -webkit-appearance: none;
+    appearance: none;
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    margin: 0;
+    border-radius: 7px;
+    background-color: var(--line-strong);
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: 14px 14px;
+    cursor: pointer;
+    vertical-align: middle;
+    transition: background-color 180ms var(--ease-out);
+  }
+  input[type="checkbox"]:checked {
+    background-color: var(--accent);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l5 5L19 7.5'/%3E%3C/svg%3E");
+  }
+  input[type="checkbox"]:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+  }
+  /* Mode kontras tinggi (Windows): kembali ke kotak centang sistem supaya status tetap terbaca */
+  @media (forced-colors: active) {
+    input[type="checkbox"] {
+      -webkit-appearance: auto;
+      appearance: auto;
+    }
+  }
+}
+
 @layer components {
   .mono {
     font-family: "JetBrains Mono Variable", ui-monospace, SFMono-Regular, Menlo, monospace;
@@ -405,6 +452,39 @@ textarea {
     .btn-primary,
     .btn-lime {
       min-height: 40px;
+    }
+  }
+
+  /* Ukuran tombol CTA. Tinggi dikunci lewat min-height, jadi semua tombol sejajar berapa pun
+     tinggi baris teksnya. Dipasangkan dengan .btn-primary / .btn-lime / .pill.
+     Aksi kecil di dalam kartu memakai <Btn> dari components/ui/primitives. */
+  .btn-md,
+  .btn-lg,
+  .btn-xl {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    white-space: nowrap;
+  }
+  .btn-md {
+    min-height: 40px;
+    padding: 0 20px;
+    font-size: 14px;
+  }
+  .btn-lg {
+    min-height: 48px;
+    padding: 0 24px;
+    font-size: 15px;
+  }
+  .btn-xl {
+    min-height: 56px;
+    padding: 0 32px;
+    font-size: 16px;
+  }
+  @media (max-width: 479px) {
+    .btn-xl {
+      padding: 0 24px;
     }
   }
 
@@ -877,6 +957,10 @@ textarea {
   .switch[aria-checked="true"] {
     background: var(--accent);
   }
+  /* Saklar yang menyalakan tindakan merusak (mis. ikut menghapus di platform): merah saat aktif */
+  .switch[data-tone="danger"][aria-checked="true"] {
+    background: var(--bad-solid);
+  }
   .switch-knob {
     position: absolute;
     top: 2px;
@@ -903,6 +987,14 @@ textarea {
   .switch:disabled {
     cursor: not-allowed;
     opacity: 0.55;
+  }
+  /* Layar sentuh: area tekan saklar diperluas tanpa mengubah tampilannya */
+  @media (pointer: coarse) {
+    .switch::before {
+      content: "";
+      position: absolute;
+      inset: -10px -4px;
+    }
   }
 
   /* ---------- Penanda mode admin: garis tipis permanen di tepi atas layar ---------- */
@@ -1082,6 +1174,18 @@ textarea {
     .lp-sheet {
       border-radius: 44px;
     }
+  }
+  /* Latar kanvas merek (gradien ungu; midnight di tema gelap) untuk layar masuk & izin yang berdiri sendiri */
+  .bg-canvas {
+    background-color: var(--bg-base);
+    background-image: var(--canvas);
+  }
+  /* Header halaman publik di luar landing: pil melayang yang mengikuti tema terang/gelap */
+  .pub-nav {
+    background: color-mix(in srgb, var(--surface-solid) 90%, transparent);
+    -webkit-backdrop-filter: blur(14px);
+    backdrop-filter: blur(14px);
+    box-shadow: var(--surface-shadow);
   }
   .lp-nav {
     background: rgba(255, 255, 255, 0.86);

@@ -244,7 +244,7 @@ export function DatabasesTab({ toast }: { toast: (m: string) => void }) {
                         </span>
                       </button>
                       {isOpen && (
-                        <ul className="space-y-1 bg-[var(--pill-bg)]/40 px-6 pb-3 pt-1">
+                        <ul className="space-y-1 bg-[var(--row-hover)] px-6 pb-3 pt-1">
                           {o.dbs.map((d) => (
                             <li key={d.id} className="flex flex-wrap items-center justify-between gap-2 text-[13px]">
                               <span className="min-w-0 truncate">

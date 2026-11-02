@@ -421,7 +421,7 @@ function PreviewPanel({
 
         {/* Baris kotak masuk: begini email terlihat sebelum dibuka */}
         <div className="mx-4 rounded-2xl bg-white/[0.07] p-3.5">
-          <p className="mb-2 text-[12px] font-semibold uppercase tracking-[0.14em] text-[#9a94b0]">Di kotak masuk</p>
+          <p className="mb-2 text-[12px] font-semibold tracking-[0.14em] text-[#9a94b0]">Di kotak masuk</p>
           <div className="flex items-start gap-3">
             <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#7b50ff] text-[16px] font-black leading-none" aria-hidden>
               ↑

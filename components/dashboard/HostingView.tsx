@@ -323,7 +323,7 @@ export function HostingView() {
           onDragLeave={() => setDragging(false)}
           onDrop={(e) => (full ? e.preventDefault() : onDrop(e))}
           className={cn(
-            "surface-solid flex flex-col items-center rounded-3xl border-2 border-dashed px-6 py-14 text-center transition",
+            "surface-solid flex flex-col items-center border-2 border-dashed px-6 py-14 text-center transition",
             dragging ? "border-violet-400 bg-violet-500/10" : "border-[var(--line-strong)]"
           )}
         >
@@ -350,14 +350,14 @@ export function HostingView() {
                 <button
                   type="button"
                   onClick={() => zipRef.current?.click()}
-                  className="btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-[13px]"
+                  className="btn-primary btn-md inline-flex items-center gap-2"
                 >
                   <FileArchive size={15} /> Pilih file ZIP
                 </button>
                 <button
                   type="button"
                   onClick={() => folderRef.current?.click()}
-                  className="pill inline-flex items-center gap-2 px-5 py-2.5 text-[13px] font-medium hover:bg-[var(--card-hover)]"
+                  className="pill btn-md inline-flex items-center gap-2 font-medium hover:bg-[var(--card-hover)]"
                 >
                   <FolderUp size={15} /> Pilih folder
                 </button>
@@ -379,7 +379,7 @@ export function HostingView() {
       />
 
       {prepared && (stage === "ready" || stage === "publishing") && (
-        <div className="surface-solid rounded-3xl p-5 sm:p-6">
+        <div className="surface-solid p-5 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-[14px] font-semibold">
@@ -467,7 +467,7 @@ export function HostingView() {
             type="button"
             onClick={publish}
             disabled={busy}
-            className="btn-primary mt-5 inline-flex items-center gap-2 px-6 py-2.5 text-[13px] disabled:opacity-60"
+            className="btn-primary btn-md mt-5 inline-flex items-center gap-2 disabled:opacity-60"
           >
             {stage === "publishing" ? <Loader2 size={15} className="animate-spin" /> : <UploadCloud size={15} />}
             {stage === "publishing" ? "Mengupload…" : "Buat link publik"}

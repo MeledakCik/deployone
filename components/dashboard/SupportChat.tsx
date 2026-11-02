@@ -118,7 +118,7 @@ function DiagnosticsCard({ checks }: { checks: DiagCheckView[] }) {
   } as const;
   return (
     <div className="w-full max-w-[92%] rounded-2xl bg-[var(--pill-bg)] px-3.5 py-3">
-      <p className="mb-2 text-[12px] font-semibold uppercase tracking-wide text-text-muted">Hasil pemeriksaan akunmu</p>
+      <p className="mb-2 text-[12px] font-semibold text-text-muted">Hasil pemeriksaan akunmu</p>
       <ul className="space-y-1.5">
         {checks.map((c) => (
           <li key={c.id} className="flex gap-2 text-[13px] leading-snug">

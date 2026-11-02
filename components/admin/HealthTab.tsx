@@ -99,7 +99,7 @@ export function HealthTab({ toast }: { toast: (m: string) => void }) {
               if (rows.length === 0) return null;
               return (
                 <div key={g} className="border-b border-[var(--surface-line)] last:border-0">
-                  <p className="px-6 pt-4 text-[12px] font-semibold uppercase tracking-wide text-text-muted">{g}</p>
+                  <p className="px-6 pt-4 text-[12px] font-semibold text-text-muted">{g}</p>
                   <ul>
                     {rows.map((c) => (
                       <li key={c.id} className="flex flex-wrap items-start gap-x-3 gap-y-1 px-6 py-3">

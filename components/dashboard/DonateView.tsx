@@ -255,7 +255,7 @@ export function DonateView() {
             <button
               type="submit"
               disabled={!amountValid || busy}
-              className="btn-primary flex w-full items-center justify-center gap-2 py-3 text-[14px] disabled:opacity-40"
+              className="btn-primary btn-lg flex w-full items-center justify-center gap-2 disabled:opacity-40"
             >
               {busy ? <Loader2 size={16} className="animate-spin" /> : <QrCode size={16} />}
               {busy ? "Membuat QRIS…" : amountValid ? `Buat QRIS ${rupiah(amount)}` : "Buat QRIS"}
@@ -338,11 +338,11 @@ export function DonateView() {
             <h3 className="text-[16px] font-semibold">QRIS sudah kedaluwarsa</h3>
             <p className="text-[13px] text-text-muted">Kalau kamu sudah membayar, tidak perlu khawatir; periksa email bukti dari Saweria.</p>
             <div className="flex flex-wrap justify-center gap-2">
-              <button type="button" onClick={again} className="btn-primary px-5 py-2.5 text-[13px]">
+              <button type="button" onClick={again} className="btn-primary btn-md">
                 Buat QRIS baru
               </button>
               {fallbackUrl && (
-                <a href={fallbackUrl} target="_blank" rel="noopener noreferrer" className="pill inline-flex items-center gap-1.5 px-4 py-2.5 text-[13px] font-medium">
+                <a href={fallbackUrl} target="_blank" rel="noopener noreferrer" className="pill btn-md inline-flex items-center gap-1.5 font-medium">
                   Halaman Saweria <ExternalLink size={12} />
                 </a>
               )}

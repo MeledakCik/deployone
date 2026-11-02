@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Search, FolderOpen, RefreshCw, RotateCw, Download, Copy, Check, Settings2, Clock } from "lucide-react";
+import { Search, FolderOpen, RefreshCw, RotateCw, Download, Copy, Check, Settings2, Clock } from "@/components/ui/icons";
 import { useUserData } from "@/lib/m-data";
 import { useDeploy } from "@/lib/deploy-context";
 import {
@@ -28,13 +28,14 @@ export default function MobileProjects() {
 
   return (
     <div className="space-y-4 pt-2">
-      <label className="flex h-12 items-center gap-2.5 rounded-full bg-[#ede8ff] px-4 focus-within:bg-white focus-within:ring-[#7b50ff]">
-        <Search className="h-[18px] w-[18px] text-[#59546d]" />
+      <label className="input-solid flex h-12 items-center gap-2.5 !rounded-full px-4 focus-within:[box-shadow:inset_0_0_0_2px_var(--ring)]">
+        <Search size={18} className="shrink-0 text-text-muted" aria-hidden />
         <input
           value={q}
           onChange={(e) => setQ(e.target.value)}
           placeholder="Cari project atau domain…"
-          className="h-full min-w-0 flex-1 bg-transparent text-[14px] font-medium outline-none placeholder:text-[#59546d]"
+          aria-label="Cari project atau domain"
+          className="h-full min-w-0 flex-1 bg-transparent text-[14px] font-medium outline-none placeholder:text-text-faint"
         />
       </label>
 
@@ -47,20 +48,20 @@ export default function MobileProjects() {
         ))}
       </div>
 
-      <section className={`relative overflow-hidden rounded-[24px] ${HERO_GRADIENT} p-5 text-white shadow-[0_18px_34px_-14px_rgba(90,57,192,0.7)]`}>
+      <section className={`relative overflow-hidden rounded-card ${HERO_GRADIENT} p-5 text-white shadow-[0_18px_34px_-14px_rgba(90,57,192,0.7)]`}>
         <div className="pointer-events-none absolute -right-8 -top-8 h-36 w-36 rounded-full bg-white/15 blur-xl" />
-        <p className="relative flex items-center gap-2 text-[12px] font-bold uppercase tracking-[0.08em] text-[#e7e0ff]">
-          <span className="h-2 w-2 rounded-full bg-[#c6f432]" /> Status project
+        <p className="relative flex items-center gap-2 text-[13px] font-semibold text-violet-100">
+          <span className="h-2 w-2 rounded-full bg-lime-500" /> Status project
         </p>
-        <p className="relative mt-1 text-[22px] font-extrabold leading-tight tracking-[-0.025em]">
+        <p className="relative mt-1 text-[22px] font-bold leading-tight tracking-tight">
           {loading ? "Memuat…" : `${online} dari ${projects.length} project online`}
         </p>
         <div className="relative mt-4 grid grid-cols-2 gap-2">
-          <Link href="/m/kelola" className="flex h-10 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-white px-4 text-[13px] font-extrabold text-[#5a39c0] active:scale-95">
-            <Download className="h-4 w-4" /> Import
+          <Link href="/m/kelola" className="flex h-10 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-white px-4 text-[13px] font-bold text-lav-text active:scale-95">
+            <Download size={16} aria-hidden /> Import
           </Link>
-          <button onClick={sync} disabled={syncing} className="flex h-10 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-white/20 px-4 text-[13px] font-extrabold text-white backdrop-blur-sm active:scale-95 disabled:opacity-60">
-            <RefreshCw className={`h-4 w-4 ${syncing ? "animate-spin" : ""}`} /> Sinkronkan
+          <button onClick={sync} disabled={syncing} className="flex h-10 items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-white/20 px-4 text-[13px] font-bold text-white backdrop-blur-sm active:scale-95 disabled:opacity-60">
+            <RefreshCw size={16} aria-hidden className={syncing ? "animate-spin" : ""} /> Sinkronkan
           </button>
         </div>
       </section>
@@ -69,7 +70,7 @@ export default function MobileProjects() {
         <SkeletonList />
       ) : rows.length === 0 ? (
         <EmptyState
-          icon={<FolderOpen className="h-6 w-6" />}
+          icon={<FolderOpen size={24} aria-hidden />}
           title={projects.length === 0 ? "Belum ada project" : "Tidak ditemukan"}
           hint={projects.length === 0 ? "Deploy project pertamamu, atau import dari Vercel/Railway/Cloudflare." : "Coba kata kunci atau filter lain."}
           cta={projects.length === 0 ? { href: "/m/deploy", label: "Deploy sekarang" } : undefined}
@@ -81,19 +82,19 @@ export default function MobileProjects() {
               <div className="flex items-center gap-3">
                 <PlatformTile platform={p.platform} />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-[16px] font-extrabold tracking-[-0.01em]">{p.name}</p>
-                  <p className="truncate text-[12px] font-semibold text-[#59546d]">{PLATFORM_LABEL[p.platform] ?? p.platform}</p>
+                  <p className="truncate text-[16px] font-bold tracking-tight">{p.name}</p>
+                  <p className="truncate text-[12px] font-medium text-text-muted">{PLATFORM_LABEL[p.platform] ?? p.platform}</p>
                 </div>
                 <StatusPill status={p.status} />
               </div>
               {p.domain && (
-                <div className="mt-3 flex items-center gap-2 rounded-[14px] bg-[#ede8ff] px-3 py-2.5">
-                  <span className="min-w-0 flex-1 truncate font-mono text-[13px] font-medium text-[#5a39c0]">{hostOf(p.domain)}</span>
+                <div className="mt-3 flex items-center gap-2 rounded-[14px] bg-[var(--pill-bg)] px-3 py-2">
+                  <span className="min-w-0 flex-1 truncate font-mono text-[13px] font-medium text-lav-text">{hostOf(p.domain)}</span>
                   <OpenLink domain={p.domain} />
                 </div>
               )}
-              <p className="mt-2.5 flex items-center gap-1.5 text-[12px] text-[#59546d]">
-                <Clock className="h-3.5 w-3.5" /> Deploy terakhir {prettyDate(p.date)}
+              <p className="mt-2.5 flex items-center gap-1.5 text-[12px] text-text-muted">
+                <Clock size={14} aria-hidden /> Deploy terakhir {prettyDate(p.date)}
               </p>
               <div className="mt-3 grid grid-cols-2 gap-2">
                 {p.domain && (
@@ -101,15 +102,15 @@ export default function MobileProjects() {
                 )}
                 {p.domain && (
                   <MiniButton full onClick={() => copy(p.id, hrefOf(p.domain))}>
-                    {copied === p.id ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
+                    {copied === p.id ? <Check size={14} aria-hidden /> : <Copy size={14} aria-hidden />}
                     {copied === p.id ? "Tersalin" : "Salin"}
                   </MiniButton>
                 )}
                 <MiniButton full onClick={() => redeploy(p.name)}>
-                  <RotateCw className="h-3.5 w-3.5" /> Deploy ulang
+                  <RotateCw size={14} aria-hidden /> Deploy ulang
                 </MiniButton>
-                <Link href="/m/kelola" className="inline-flex h-9 w-full items-center justify-center gap-1.5 whitespace-nowrap rounded-full bg-[#f4f1ff] px-3.5 text-[13px] font-bold text-[#5a39c0] active:scale-95">
-                  <Settings2 className="h-3.5 w-3.5" /> Kelola
+                <Link href="/m/kelola" className="pill inline-flex h-10 w-full items-center justify-center gap-1.5 whitespace-nowrap px-4 text-[13px] font-semibold active:scale-95">
+                  <Settings2 size={14} aria-hidden /> Kelola
                 </Link>
               </div>
             </li>

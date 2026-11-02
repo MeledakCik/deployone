@@ -32,7 +32,7 @@ export function SupportMatrix() {
         {ROWS.map((r) => (
           <li key={r.type} className="surface-solid p-5">
             <h3 className="text-[15px] font-semibold">{r.type}</h3>
-            <p className="mt-1 text-[12.5px] leading-relaxed text-text-muted">{r.examples}</p>
+            <p className="mt-1 text-[12px] leading-relaxed text-text-muted">{r.examples}</p>
             <dl className="mt-4 flex flex-col gap-2.5">
               {(
                 [
@@ -74,7 +74,7 @@ export function SupportMatrix() {
               <tr key={r.type} className="surface-solid-row border-t border-[var(--surface-line)]">
                 <th scope="row" className="px-6 py-5 align-top font-semibold">
                   {r.type}
-                  <div className="mt-1 max-w-[320px] text-[12.5px] font-normal text-text-muted">{r.examples}</div>
+                  <div className="mt-1 max-w-[320px] text-[12px] font-normal text-text-muted">{r.examples}</div>
                 </th>
                 {[r.v, r.c, r.r].map((l, idx) => {
                   const { text, tone, Icon } = META[l];

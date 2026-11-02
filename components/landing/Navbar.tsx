@@ -68,7 +68,7 @@ export function Navbar() {
         <div className="lp-nav mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 rounded-full pl-2.5 pr-2 sm:h-16 sm:pl-3">
           <Link href="/" className="flex items-center gap-2.5" aria-label="Depup, beranda">
             <Image src="/logo.png" alt="" width={36} height={36} priority className="h-9 w-9" />
-            <span className="text-[19px] font-bold tracking-tight text-text">Depup</span>
+            <span className="text-[18px] font-bold tracking-tight text-text">Depup</span>
           </Link>
 
           <nav
@@ -90,7 +90,7 @@ export function Navbar() {
             {loggedIn ? (
               <DashboardLink
                 href="/dashboard"
-                className="btn-primary inline-flex h-10 items-center gap-1.5 px-5 text-[13px]"
+                className="btn-primary btn-md inline-flex items-center gap-1.5"
               >
                 Buka dashboard <ArrowUpRight size={14} />
               </DashboardLink>
@@ -99,14 +99,14 @@ export function Navbar() {
                 <button
                   type="button"
                   onClick={() => setLoginOpen(true)}
-                  className="pill inline-flex h-10 items-center gap-2 px-4 text-[13px] font-medium"
+                  className="pill btn-md inline-flex items-center gap-2 font-medium"
                 >
                   <GoogleMark size={14} />
                   Masuk
                 </button>
                 <DashboardLink
                   href="/dashboard"
-                  className="btn-primary inline-flex h-10 items-center gap-1.5 px-5 text-[13px]"
+                  className="btn-primary btn-md inline-flex items-center gap-1.5"
                 >
                   Deploy sekarang <ArrowUpRight size={14} />
                 </DashboardLink>
@@ -142,7 +142,7 @@ export function Navbar() {
                 <DashboardLink
                   href="/dashboard"
                   onClick={() => setMenuOpen(false)}
-                  className="btn-primary flex h-12 items-center justify-center gap-1.5 text-[14px]"
+                  className="btn-primary btn-lg flex items-center justify-center gap-1.5"
                 >
                   Buka dashboard <ArrowUpRight size={15} />
                 </DashboardLink>
@@ -154,7 +154,7 @@ export function Navbar() {
                       setMenuOpen(false);
                       setLoginOpen(true);
                     }}
-                    className="pill flex h-12 items-center justify-center gap-2 text-[14px] font-medium"
+                    className="pill btn-lg flex items-center justify-center gap-2 font-medium"
                   >
                     <GoogleMark size={16} />
                     Masuk dengan Google
@@ -162,7 +162,7 @@ export function Navbar() {
                   <DashboardLink
                     href="/dashboard"
                     onClick={() => setMenuOpen(false)}
-                    className="btn-primary flex h-12 items-center justify-center gap-1.5 text-[14px]"
+                    className="btn-primary btn-lg flex items-center justify-center gap-1.5"
                   >
                     Deploy sekarang <ArrowUpRight size={15} />
                   </DashboardLink>

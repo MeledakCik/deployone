@@ -1,6 +1,8 @@
 "use client";
 /** ui.tsx — util + komponen kecil bersama untuk fitur Database. Ubah warna aksen di sini saja. */
 import { ReactNode, useEffect, useState } from "react";
+import { X } from "@/components/ui/icons";
+import { useDialogA11y } from "@/components/ui/useDialogA11y";
 
 export class ApiError extends Error {
   status: number;
@@ -46,7 +48,7 @@ export const surface =
 export const inputCls =
   "input-solid w-full min-w-0 px-3.5 py-2.5 text-[13px] text-text placeholder:text-text-faint disabled:opacity-60";
 export const th =
-  "px-3 py-2.5 text-left text-[12px] font-semibold uppercase tracking-wide text-text-muted whitespace-nowrap";
+  "px-3 py-2.5 text-left text-[12px] font-medium text-text-muted whitespace-nowrap";
 export const td =
   "px-3 py-2.5 text-[13px] text-text align-top";
 /** Tombol link (<a>) dengan gaya secondary, agar sama dengan <Btn>. */
@@ -89,31 +91,30 @@ export function Field({ label, hint, children }: { label: string; hint?: string;
 }
 
 export function Modal({ title, onClose, children, wide }: { title: string; onClose: () => void; children: ReactNode; wide?: boolean }) {
+  // Perilaku dialog yang sama dengan semua modal lain: Esc menutup, Tab berputar di dalam, fokus kembali ke pemicu,
+  // scroll halaman dikunci (ref-count).
+  const dialogRef = useDialogA11y<HTMLDivElement>(true, onClose);
+  // Fokus awal ke isian pertama bila ada (lebih berguna bagi pengguna daripada tombol tutup).
   useEffect(() => {
-    const h = (e: KeyboardEvent) => e.key === "Escape" && onClose();
-    window.addEventListener("keydown", h);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    return () => {
-      window.removeEventListener("keydown", h);
-      document.body.style.overflow = prev;
-    };
-  }, [onClose]);
+    dialogRef.current?.querySelector<HTMLElement>("input:not([type=hidden]):not([type=checkbox]):not([type=file]), textarea, select")?.focus();
+  }, [dialogRef]);
   return (
-    <div className="fixed inset-0 z-50 flex items-end justify-center bg-[#120b2e]/55 backdrop-blur-[2px] sm:items-center sm:p-4" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
+    <div className="modal-scrim fixed inset-0 z-50 flex items-end justify-center backdrop-blur-[2px] sm:items-center sm:p-4" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         role="dialog"
         aria-modal="true"
         aria-label={title}
         className={cx(
-          "max-h-[92dvh] w-full overflow-y-auto overscroll-contain rounded-t-[28px] bg-[var(--surface-solid)] p-5 shadow-2xl pb-[max(1.25rem,env(safe-area-inset-bottom))] sm:max-h-[90vh] sm:rounded-[28px] sm:p-6",
+          "anim-pop max-h-[92dvh] w-full overflow-y-auto overscroll-contain rounded-t-[28px] bg-[var(--surface-solid)] p-5 shadow-2xl pb-[max(1.25rem,env(safe-area-inset-bottom))] focus:outline-none sm:max-h-[90vh] sm:rounded-[28px] sm:p-6",
           wide ? "sm:max-w-3xl" : "sm:max-w-md"
         )}
       >
         <div className="mb-4 flex items-start justify-between gap-3">
-          <h2 className="text-base font-semibold text-text sm:text-lg">{title}</h2>
-          <button type="button" onClick={onClose} aria-label="Tutup" className="-mr-1 -mt-1 rounded-lg p-2 text-text-muted hover:bg-[var(--card-hover)]">
-            ✕
+          <h2 className="text-[18px] font-bold tracking-tight text-text">{title}</h2>
+          <button type="button" onClick={onClose} aria-label="Tutup" className="-mr-1 -mt-1 grid h-9 w-9 shrink-0 place-items-center rounded-full text-text-muted transition-colors hover:bg-[var(--card-hover)] hover:text-text">
+            <X size={16} />
           </button>
         </div>
         {children}
@@ -158,7 +159,7 @@ export function SecretRow({ label, value }: { label: string; value: string }) {
 export function UsageBar({ used, quota }: { used: number; quota: number }) {
   const ratio = quota ? used / quota : 0;
   const pct = Math.min(100, Math.round(ratio * 100));
-  const color = ratio >= 1 ? "bg-bad-solid" : ratio >= 0.8 ? "bg-warn" : "bg-[var(--pill-bg)]0 ";
+  const color = ratio >= 1 ? "bg-bad-solid" : ratio >= 0.8 ? "bg-warn" : "bg-[var(--accent)]";
   return (
     <div>
       <div className="mb-1.5 flex justify-between gap-3 text-xs text-text-muted">
@@ -181,7 +182,7 @@ export function UsageBar({ used, quota }: { used: number; quota: number }) {
 
 /** Tabel responsif: bungkus dengan scroll horizontal + border halus. */
 export function TableWrap({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cx("overflow-x-auto rounded-xl  ", className)}>{children}</div>;
+  return <div className={cx("overflow-x-auto rounded-xl", className)}>{children}</div>;
 }
 
 /** Judul halaman + aksi di kanan; di mobile aksi turun ke bawah dan melebar. */
@@ -189,8 +190,8 @@ export function PageHeader({ title, subtitle, children }: { title: ReactNode; su
   return (
     <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
       <div className="min-w-0">
-        <h1 className="truncate text-xl font-semibold tracking-tight text-text sm:text-2xl">{title}</h1>
-        {subtitle && <p className="mt-0.5 text-sm text-text-muted">{subtitle}</p>}
+        <h1 className="page-title truncate">{title}</h1>
+        {subtitle && <p className="mt-1.5 text-[14px] leading-relaxed text-text-muted">{subtitle}</p>}
       </div>
       {children && <div className="flex flex-wrap gap-2 [&>*]:flex-1 sm:[&>*]:flex-none">{children}</div>}
     </div>

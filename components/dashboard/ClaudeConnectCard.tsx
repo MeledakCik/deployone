@@ -27,6 +27,7 @@ import { useConfirm } from "@/components/ui/confirm";
 import { useDeploy } from "@/lib/deploy-context";
 import { api } from "@/components/db/ui";
 import { SectionHead } from "@/components/ui/primitives";
+import { Switch } from "@/components/ui/Switch";
 
 const DEPLOY_TARGETS: { platform: Platform; label: string; tokenField: keyof SettingsTokens }[] = [
   { platform: "vercel", label: "Vercel", tokenField: "vercelToken" },
@@ -706,7 +707,7 @@ export function ClaudeConnectCard({
           type="button"
           onClick={() => void copyText(mcpUrl, "URL konektor MCP")}
           disabled={!mcpUrl}
-          className="pill inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-[12px] font-medium disabled:opacity-50"
+          className="pill btn-md inline-flex items-center justify-center gap-1.5 font-medium disabled:opacity-50"
         >
           <Copy size={13} /> Salin URL
         </button>
@@ -792,7 +793,7 @@ export function ClaudeConnectCard({
               type="button"
               onClick={() => void handleGenerateToken(undefined, currentClientMeta.label)}
               disabled={busyClientId === "personal"}
-              className="btn-primary inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-[12px] disabled:opacity-50"
+              className="btn-primary btn-md inline-flex items-center justify-center gap-1.5 disabled:opacity-50"
             >
               {busyClientId === "personal" ? <Loader2 size={13} className="animate-spin" /> : <KeyRound size={13} />}
               {generatedToken ? "Buat Ulang Token" : "Buat Token"}
@@ -801,7 +802,7 @@ export function ClaudeConnectCard({
               <button
                 type="button"
                 onClick={() => setShowBearer((v) => !v)}
-                className="pill inline-flex items-center justify-center gap-1 px-3 py-2.5 text-[12px]"
+                className="pill btn-md inline-flex items-center justify-center gap-1"
               >
                 {showBearer ? <EyeOff size={12} /> : <Eye size={12} />}
                 {showBearer ? "Sembunyikan" : "Tampilkan"}
@@ -812,7 +813,7 @@ export function ClaudeConnectCard({
           {selectedClient === "cursor" && (
             <a
               href={cursorDeepLink}
-              className="pill inline-flex w-full items-center justify-center gap-1.5 px-3.5 py-2.5 text-[12px] font-medium text-lav-text hover:brightness-110 sm:w-auto"
+              className="pill btn-md inline-flex w-full items-center justify-center gap-1.5 font-medium text-lav-text hover:brightness-110 sm:w-auto"
             >
               <ExternalLink size={13} /> Pasang 1-Klik ke Cursor
             </a>
@@ -941,7 +942,7 @@ export function ClaudeConnectCard({
               <button
                 type="submit"
                 disabled={creatingOauth}
-                className="btn-primary inline-flex items-center justify-center gap-1.5 px-4 py-2.5 text-[13px] disabled:opacity-50"
+                className="btn-primary btn-md inline-flex items-center justify-center gap-1.5 disabled:opacity-50"
               >
                 {creatingOauth ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
                 Buat OAuth
@@ -950,7 +951,7 @@ export function ClaudeConnectCard({
                 type="button"
                 onClick={() => void handleGenerateToken(undefined, "Multi-AI Web & CLI")}
                 disabled={busyClientId === "personal"}
-                className="pill inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 text-[12px] font-medium hover:brightness-95 disabled:opacity-50"
+                className="pill btn-md inline-flex items-center justify-center gap-1.5 font-medium hover:brightness-95 disabled:opacity-50"
               >
                 {busyClientId === "personal" ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
                 Bearer Token ({ttlDays} hari)
@@ -1145,25 +1146,7 @@ export function ClaudeConnectCard({
                       {hasToken ? "Token tersimpan." : `Isi token ${t.label} di form di atas, lalu Simpan.`}
                     </p>
                   </div>
-                  <button
-                    id={id}
-                    type="button"
-                    role="switch"
-                    aria-checked={on}
-                    disabled={!hasToken}
-                    onClick={() => togglePlatform(t.platform, !on)}
-                    className={cn(
-                      "relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-40",
-                      on ? "bg-[var(--ink-fill)]" : "bg-[var(--line-strong)]",
-                    )}
-                  >
-                    <span
-                      className={cn(
-                        "absolute left-1 top-1 h-5 w-5 rounded-full bg-white shadow transition-transform duration-300 [transition-timing-function:var(--ease-soft)]",
-                        on ? "translate-x-5" : "translate-x-0",
-                      )}
-                    />
-                  </button>
+                  <Switch id={id} checked={on} disabled={!hasToken} onChange={(v) => togglePlatform(t.platform, v)} />
                 </li>
               );
             })}

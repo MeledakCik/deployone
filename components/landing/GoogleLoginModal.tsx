@@ -48,12 +48,12 @@ export function GoogleLoginModal({ open, onClose }: { open: boolean; onClose: ()
           </button>
         </div>
 
-        <p className="mb-6 text-[13.5px] text-text-muted">untuk melanjutkan ke dashboard Depup</p>
+        <p className="mb-6 text-[14px] text-text-muted">untuk melanjutkan ke dashboard Depup</p>
 
         <button
           type="button"
           onClick={login}
-          className="btn-primary flex w-full items-center justify-center gap-3 px-4 py-3.5 text-[14px]"
+          className="btn-primary btn-lg flex w-full items-center justify-center gap-3"
         >
           <GoogleMark size={18} />
           <span>Lanjutkan dengan Google</span>

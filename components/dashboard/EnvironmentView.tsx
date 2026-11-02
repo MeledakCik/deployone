@@ -200,7 +200,7 @@ function AddSecretModal({
             </p>
           )}
 
-          <button type="submit" className="btn-primary w-full py-2.5 text-[13px]">
+          <button type="submit" className="btn-primary btn-md w-full">
             Simpan secret
           </button>
         </form>
@@ -295,7 +295,7 @@ export function EnvironmentView() {
                 type="button"
                 onClick={() => void syncAllEnvVars()}
                 disabled={syncingEnvVars}
-                className="pill inline-flex h-10 items-center gap-2 px-4 text-[13px] font-medium hover:brightness-110 disabled:opacity-50"
+                className="pill btn-md inline-flex items-center gap-2 font-medium hover:brightness-110 disabled:opacity-50"
               >
                 <RefreshCw size={13} className={syncingEnvVars ? "animate-spin" : undefined} />
                 {syncingEnvVars ? "Sinkronisasi..." : "Sinkronkan"}
@@ -304,7 +304,7 @@ export function EnvironmentView() {
             <button
               type="button"
               onClick={() => setModalOpen(true)}
-              className="btn-primary inline-flex h-10 items-center gap-2 px-4 text-[13px]"
+              className="btn-primary btn-md inline-flex items-center gap-2"
             >
               <Plus size={15} /> Add Secret
             </button>
@@ -389,7 +389,7 @@ export function EnvironmentView() {
             <div className="overflow-x-auto">
               <table className="w-full min-w-[560px] text-left">
                 <thead>
-                  <tr className="text-[12px] uppercase tracking-wide text-text-faint">
+                  <tr className="text-[12px] text-text-faint">
                     <th className="px-4 py-3 font-medium sm:px-5">Key</th>
                     <th className="px-4 py-3 font-medium sm:px-5">Value</th>
                     {showProjectColumn && <th className="px-4 py-3 font-medium sm:px-5">Project</th>}
@@ -406,7 +406,7 @@ export function EnvironmentView() {
                           <tr>
                             <td
                               colSpan={showProjectColumn ? 5 : 4}
-                              className={`px-4 py-2 text-[12px] font-semibold uppercase tracking-wide text-text-faint bg-[var(--row-hover)] sm:px-5 ${
+                              className={`px-4 py-2 text-[12px] font-semibold text-text-faint bg-[var(--row-hover)] sm:px-5 ${
                                 groupIndex > 0 ? "border-t" : ""
                               }`}
                               style={{ borderColor: "var(--surface-line)" }}

@@ -2,7 +2,8 @@ import { DocsView } from "@/components/dashboard/DocsView";
 import type { Metadata } from "next";
 import { pageMeta, breadcrumbLd } from "@/lib/seo";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { PublicHeader } from "@/components/public/PublicHeader"; // Sesuaikan path
+import { PublicShell } from "@/components/public/PublicShell";
+import { PublicAuthCta } from "@/components/public/PublicAuthCta";
 
 export const metadata: Metadata = pageMeta({
   title: "Dokumentasi: Panduan Deploy, Token & Link Instan",
@@ -13,21 +14,9 @@ export const metadata: Metadata = pageMeta({
 
 export default function DocsPage() {
   return (
-    // PERUBAHAN: bg-[var(--bg)] diganti jadi bg-slate-50 (abu-abu sangat muda)
-    // Ini bikin teks hitam dan kartu putih jadi jauh lebih menonjol dan bersih.
-    <div className="flex min-h-[100dvh] flex-col bg-slate-50 dark:bg-zinc-950">
+    <PublicShell cta={<PublicAuthCta />}>
       <JsonLd data={breadcrumbLd([{ name: "Depup", path: "/" }, { name: "Dokumentasi", path: "/docs" }])} />
-      <PublicHeader />
-
-      <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-10 sm:px-6 lg:px-8">
-        <DocsView />
-      </main>
-
-      <footer className="border-t border-slate-200 dark:border-zinc-800 py-8 text-center text-[13px] text-slate-500 dark:text-zinc-400">
-        <p>
-          &copy; {new Date().getFullYear()} Depup. Dibuat untuk memudahkan deploy.
-        </p>
-      </footer>
-    </div>
+      <DocsView />
+    </PublicShell>
   );
 }

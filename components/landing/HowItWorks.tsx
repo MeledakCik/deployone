@@ -64,10 +64,10 @@ export function HowItWorks() {
                 <Badge>{s.badge}</Badge>
               </div>
               <h3 className="mb-3 text-[22px] font-bold tracking-[-0.03em] sm:text-[24px]">{s.title}</h3>
-              <p className="mb-6 text-[14.5px] leading-relaxed text-text-muted">{s.body}</p>
+              <p className="mb-6 text-[15px] leading-relaxed text-text-muted">{s.body}</p>
             </div>
             <div className="rounded-2xl bg-[var(--surface-solid)] p-3.5 font-mono text-[12px] leading-[18px] break-words">
-              <div className="mb-1 text-[11px] font-bold text-text-faint">{s.label}</div>
+              <div className="mb-1 text-[12px] font-bold text-text-faint">{s.label}</div>
               {s.lines.map(([cls, t]) => (
                 <div key={t} className={cls}>
                   <GlyphText>{t}</GlyphText>

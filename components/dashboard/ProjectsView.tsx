@@ -4,6 +4,7 @@ import { PageTitle } from "@/components/ui/primitives";
 import * as React from "react";
 import { FolderOpen, ExternalLink, RotateCw, Globe2, RefreshCw, ShieldAlert, Trash2, X, Download, AlertTriangle } from "@/components/ui/icons";
 import { Surface } from "@/components/ui/Surface";
+import { Switch } from "@/components/ui/Switch";
 import { ViewFade } from "@/components/ui/ViewFade";
 import { useDeploy } from "@/lib/deploy-context";
 import { deployDomainToUrl, normalizeDeployDomain } from "@/lib/utils";
@@ -63,23 +64,7 @@ function DeleteSwitch({
         </label>
         <p className="mt-0.5 text-[12px] leading-relaxed text-text-muted">{description}</p>
       </div>
-      <button
-        id={id}
-        type="button"
-        role="switch"
-        aria-checked={checked}
-        disabled={disabled}
-        onClick={() => onChange(!checked)}
-        className={`relative mt-0.5 h-6 w-11 shrink-0 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${
-          checked ? "bg-bad" : "bg-[var(--line-strong)]"
-        }`}
-      >
-        <span
-          className={`absolute left-1 top-1 h-4 w-4 rounded-full bg-white shadow transition-transform duration-300 [transition-timing-function:var(--ease-soft)] ${
-            checked ? "translate-x-5" : "translate-x-0"
-          }`}
-        />
-      </button>
+      <Switch id={id} checked={checked} disabled={disabled} onChange={onChange} tone="danger" className="mt-0.5" />
     </div>
   );
 }
@@ -549,7 +534,7 @@ export function ProjectsView() {
             <button
               type="button"
               onClick={() => setImportOpen(true)}
-              className="pill inline-flex h-10 items-center gap-2 px-4 text-[13px] font-medium hover:brightness-110"
+              className="pill btn-md inline-flex items-center gap-2 font-medium hover:brightness-110"
             >
               <Download size={13} /> Import Project
             </button>
@@ -558,7 +543,7 @@ export function ProjectsView() {
                 type="button"
                 onClick={() => void syncAllProjects()}
                 disabled={syncingProjects}
-                className="pill inline-flex h-10 items-center gap-2 px-4 text-[13px] font-medium hover:brightness-110 disabled:opacity-50"
+                className="pill btn-md inline-flex items-center gap-2 font-medium hover:brightness-110 disabled:opacity-50"
               >
                 <RefreshCw size={13} className={syncingProjects ? "animate-spin" : ""} />
                 {syncingProjects ? "Sinkronisasi..." : "Sinkronkan"}

@@ -137,7 +137,7 @@ export function DeployDebugLog({
       aria-live="off"
       aria-label="Log proses debug"
     >
-      <div className="flex items-center justify-between px-3 pt-2 text-[12px] uppercase tracking-wider text-[var(--text-faint)]">
+      <div className="flex items-center justify-between px-3 pt-2 text-[12px] text-[var(--text-faint)]">
         <span>Debug log</span>
         <span>{lines.length} baris</span>
       </div>

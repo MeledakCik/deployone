@@ -23,7 +23,7 @@ function Mini({ children, className = "" }: { children: React.ReactNode; classNa
 
 const CARD = "flex flex-col justify-between rounded-card p-6 sm:p-7";
 const H3 = "mb-2 text-[20px] font-bold tracking-[-0.025em]";
-const P = "mb-5 text-[13.5px] leading-relaxed text-text-muted";
+const P = "mb-5 text-[14px] leading-relaxed text-text-muted";
 
 export function FeaturesGrid() {
   return (
@@ -91,7 +91,7 @@ export function FeaturesGrid() {
               <span className="h-2 w-2 rounded-full bg-bad" aria-hidden="true" />
               <span className="h-2 w-2 rounded-full bg-warn" aria-hidden="true" />
               <span className="h-2 w-2 rounded-full bg-ok" aria-hidden="true" />
-              <span className="ml-2 text-[11px] text-text-faint">hasil-periksa.log</span>
+              <span className="ml-2 text-[12px] text-text-faint">hasil-periksa.log</span>
             </div>
             <div className="font-semibold text-text">Terdeteksi: Express</div>
             <div className="text-warn-fg">! Vercel: butuh penyesuaian</div>

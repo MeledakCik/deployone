@@ -137,7 +137,7 @@ export function DeployDemo() {
               type="button"
               onClick={() => pick(i)}
               aria-pressed={i === scenario}
-              className={`pill px-4 py-2.5 text-[13.5px] font-semibold ${i === scenario ? "" : "bg-[var(--surface-solid)] text-text-muted"}`}
+              className={`pill px-4 py-2.5 text-[13px] font-semibold ${i === scenario ? "" : "bg-[var(--surface-solid)] text-text-muted"}`}
               style={i === scenario ? { background: "var(--ink-fill)", color: "var(--ink-fill-text)" } : undefined}
             >
               {sc.tab}
@@ -164,10 +164,10 @@ export function DeployDemo() {
                         type="button"
                         onClick={() => jumpTo(i)}
                         aria-current={active ? "step" : undefined}
-                        className={`dd-step flex items-center gap-1.5 rounded-full py-1 pl-1 pr-2.5 text-[11.5px] font-semibold sm:text-[12.5px] ${active ? "bg-tone-lilac text-text" : "text-text-faint"}`}
+                        className={`dd-step flex items-center gap-1.5 rounded-full py-1 pl-1 pr-2.5 text-[12px] font-semibold ${active ? "bg-tone-lilac text-text" : "text-text-faint"}`}
                       >
                         <span
-                          className="grid h-5 w-5 place-items-center rounded-full text-[11px] font-bold tabular-nums transition-colors"
+                          className="grid h-5 w-5 place-items-center rounded-full text-[12px] font-bold tabular-nums transition-colors"
                           style={
                             active || done
                               ? { background: "var(--ink-fill)", color: "var(--ink-fill-text)" }
@@ -211,12 +211,12 @@ export function DeployDemo() {
               {phase === 0 && (
                 <div key={`${s.key}-0`} className="dd-in">
                   <div className="mb-2 text-[12px] font-bold text-text-faint">Link repo GitHub</div>
-                  <div className="flex items-center gap-2 rounded-2xl border border-[var(--line-strong)] bg-[var(--surface-solid)] px-4 py-3.5 font-mono text-[13px] sm:text-[14.5px]">
+                  <div className="flex items-center gap-2 rounded-2xl border border-[var(--line-strong)] bg-[var(--surface-solid)] px-4 py-3.5 font-mono text-[13px] sm:text-[14px]">
                     <span className="truncate font-semibold text-text">{s.repo.slice(0, typed)}</span>
                     <span className="dd-caret h-[18px] w-[2px] shrink-0" style={{ background: "var(--ink-fill)" }} />
                   </div>
                   <div className="mt-4 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <span className="text-[12.5px] leading-snug text-text-muted">Repo private? Tambahkan GitHub Token di Settings.</span>
+                    <span className="text-[12px] leading-snug text-text-muted">Repo private? Tambahkan GitHub Token di Settings.</span>
                     <span
                       className={`shrink-0 whitespace-nowrap rounded-full px-5 py-2.5 text-center text-[13px] font-semibold transition-transform ${typingDone ? "dd-press" : "opacity-60"}`}
                       style={{ background: "var(--ink-fill)", color: "var(--ink-fill-text)" }}
@@ -229,18 +229,18 @@ export function DeployDemo() {
 
               {phase === 1 && (
                 <div key={`${s.key}-1`}>
-                  <div className="dd-in mb-4 flex items-center gap-2 font-mono text-[12.5px] text-text-muted">
+                  <div className="dd-in mb-4 flex items-center gap-2 font-mono text-[12px] text-text-muted">
                     <span className="live-dot" />
                     {s.repo}
                   </div>
                   <div className={`rounded-2xl p-4 sm:p-5 ${s.tone}`}>
-                    <div className="dd-in mb-1 text-[11px] font-bold text-text-faint" style={{ animationDelay: "120ms" }}>
+                    <div className="dd-in mb-1 text-[12px] font-bold text-text-faint" style={{ animationDelay: "120ms" }}>
                       Hasil pemeriksaan
                     </div>
-                    <div className="dd-in text-[19px] font-bold tracking-[-0.02em] sm:text-[22px]" style={{ animationDelay: "250ms" }}>
+                    <div className="dd-in text-[18px] font-bold tracking-[-0.02em] sm:text-[22px]" style={{ animationDelay: "250ms" }}>
                       {s.kind}
                     </div>
-                    <ul className="mt-4 flex flex-col gap-2 text-[13.5px]">
+                    <ul className="mt-4 flex flex-col gap-2 text-[13px]">
                       {s.checks.map((c, i) => (
                         <li key={c} className="dd-in flex items-center gap-2 text-ok-fg" style={{ animationDelay: `${600 + i * 450}ms` }}>
                           <Check size={14} />
@@ -273,7 +273,7 @@ export function DeployDemo() {
                       style={{ width: `${progress}%`, background: "var(--ink-fill)" }}
                     />
                   </div>
-                  <div className="mt-5 grid grid-cols-3 gap-2 text-center text-[12.5px] font-semibold">
+                  <div className="mt-5 grid grid-cols-3 gap-2 text-center text-[12px] font-semibold">
                     {["Build", "Deploy", "Live"].map((name, i) => (
                       <div
                         key={name}
@@ -315,13 +315,13 @@ export function DeployDemo() {
                     Situsmu sudah online
                   </div>
                   <div
-                    className="dd-in mt-4 inline-flex max-w-full items-center gap-2 rounded-full bg-tone-mint px-4 py-2.5 font-mono text-[12.5px] font-semibold sm:text-[14px]"
+                    className="dd-in mt-4 inline-flex max-w-full items-center gap-2 rounded-full bg-tone-mint px-4 py-2.5 font-mono text-[12px] font-semibold sm:text-[14px]"
                     style={{ animationDelay: "500ms" }}
                   >
                     <span className="live-dot" />
                     <span className="truncate">https://{s.url}</span>
                   </div>
-                  <div className="dd-in mt-3 text-[12.5px] text-text-muted" style={{ animationDelay: "700ms" }}>
+                  <div className="dd-in mt-3 text-[12px] text-text-muted" style={{ animationDelay: "700ms" }}>
                     Project masuk ke daftar Projects, siap dideploy ulang kapan saja.
                   </div>
                 </div>
@@ -335,7 +335,7 @@ export function DeployDemo() {
           Contoh alur deploy: tempel link repo GitHub, Depup memeriksa isinya (misalnya {s.kind}) dan merekomendasikan {s.platform}, lalu
           deploy berjalan dari build sampai live dan situs online di {s.url}.
         </p>
-        <p className="mt-4 text-center text-[12.5px] text-text-muted">Contoh tampilan. Klik tahap di atas untuk melompat.</p>
+        <p className="mt-4 text-center text-[12px] text-text-muted">Contoh tampilan. Klik tahap di atas untuk melompat.</p>
       </div>
     </section>
   );

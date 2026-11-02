@@ -55,7 +55,7 @@ export function FAQ() {
               </h3>
               <div id={`faq-a-${i}`} role="region" aria-labelledby={`faq-q-${i}`} className="faq-panel" data-open={isOpen}>
                 <div>
-                  <p className="px-5 pb-6 text-[14.5px] leading-relaxed text-text-muted sm:px-7 sm:text-[15.5px]">{f.a}</p>
+                  <p className="px-5 pb-6 text-[15px] leading-relaxed text-text-muted sm:px-7 sm:text-[16px]">{f.a}</p>
                 </div>
               </div>
             </div>

@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { Inbox } from "lucide-react";
+import { Inbox } from "@/components/ui/icons";
 import { useUserData } from "@/lib/m-data";
 import { HistoryCard } from "@/components/m/HistoryCard";
 import { Chip, EmptyState, SkeletonList } from "@/components/m/ui";
@@ -25,7 +25,7 @@ export default function MobileHistory() {
       {loading ? (
         <SkeletonList n={4} />
       ) : rows.length === 0 ? (
-        <EmptyState icon={<Inbox className="h-6 w-6" />} title="Belum ada riwayat" hint="Setiap deploy akan tercatat di sini sebagai bukti." cta={{ href: "/m/deploy", label: "Deploy sekarang" }} />
+        <EmptyState icon={<Inbox size={24} aria-hidden />} title="Belum ada riwayat" hint="Setiap deploy akan tercatat di sini sebagai bukti." cta={{ href: "/m/deploy", label: "Deploy sekarang" }} />
       ) : (
         <ul className="space-y-3">
           {rows.map((h) => (

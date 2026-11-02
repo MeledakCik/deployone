@@ -29,10 +29,10 @@ export function FinalCTA() {
             <h2 className="text-balance text-[30px] font-bold leading-[1.08] tracking-[-0.03em] sm:text-[48px]">
               Coba dengan repo yang sudah kamu miliki.
             </h2>
-            <p className="mb-8 mt-4 text-[17px] leading-relaxed text-night-80">
+            <p className="mb-8 mt-4 text-[16px] leading-relaxed sm:text-[18px] text-night-80">
               Masuk dengan Google, tempel link GitHub, dan lihat hasil pemeriksaannya dalam hitungan detik.
             </p>
-            <DashboardLink href="/dashboard" className="btn-lime inline-flex w-full items-center justify-center gap-2 whitespace-nowrap px-8 py-4 text-[16px] sm:w-auto">
+            <DashboardLink href="/dashboard" className="btn-lime btn-xl inline-flex w-full items-center justify-center gap-2 whitespace-nowrap sm:w-auto">
               Buka dashboard
               <ArrowRight size={18} />
             </DashboardLink>

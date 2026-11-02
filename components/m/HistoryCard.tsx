@@ -1,6 +1,6 @@
 "use client";
 import * as React from "react";
-import { Copy, Check, GitBranch } from "lucide-react";
+import { Copy, Check, GitBranch } from "@/components/ui/icons";
 import type { HistoryItem } from "@/types";
 import { CARD, MiniButton, OpenLink, PLATFORM_LABEL, PlatformTile, StatusPill, hostOf, hrefOf, prettyDate, useCopy } from "./ui";
 
@@ -13,16 +13,16 @@ export function HistoryCard({ item }: { item: HistoryItem }) {
         <PlatformTile platform={item.platform} />
         <div className="min-w-0 flex-1">
           <div className="flex items-start justify-between gap-2">
-            <p className="truncate text-[16px] font-bold tracking-[-0.01em]">{item.name}</p>
+            <p className="truncate text-[16px] font-bold tracking-tight">{item.name}</p>
             <StatusPill status={item.status} />
           </div>
-          <p className="mt-0.5 flex items-center gap-1.5 truncate text-[12px] text-[#59546d]">
+          <p className="mt-0.5 flex items-center gap-1.5 truncate text-[12px] text-text-muted">
             <span className="font-semibold">{PLATFORM_LABEL[item.platform] ?? item.platform}</span>
             <span>·</span>
             <span>{prettyDate(item.date)}</span>
           </p>
           {item.repo && (
-            <p className="mt-1 flex items-center gap-1 truncate font-mono text-[12px] text-[#59546d]">
+            <p className="mt-1 flex items-center gap-1 truncate font-mono text-[12px] text-text-muted">
               <GitBranch className="h-3 w-3 shrink-0" />
               <span className="truncate">{item.repo}</span>
             </p>
@@ -35,7 +35,7 @@ export function HistoryCard({ item }: { item: HistoryItem }) {
             {copied === item.id ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
             {copied === item.id ? "Tersalin" : "Salin URL"}
           </MiniButton>
-          <span className="min-w-0 flex-1 truncate font-mono text-[12px] text-[#59546d]">{hostOf(item.domain)}</span>
+          <span className="min-w-0 flex-1 truncate font-mono text-[12px] text-text-muted">{hostOf(item.domain)}</span>
           <OpenLink domain={item.domain} />
         </div>
       )}

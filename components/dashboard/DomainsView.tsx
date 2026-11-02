@@ -25,7 +25,7 @@ function DnsField({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between gap-3 rounded-xl bg-[var(--row-hover)] px-3 py-1.5">
       <div className="min-w-0">
-        <p className="text-[12px] uppercase tracking-wide text-text-faint">{label}</p>
+        <p className="text-[12px] text-text-faint">{label}</p>
         <p className="mono truncate text-[13px]">{value}</p>
       </div>
       <button
@@ -133,7 +133,7 @@ function AddDomainModal({ open, onClose }: { open: boolean; onClose: () => void 
               </Select>
             )}
           </div>
-          <button type="submit" className="btn-primary w-full py-2.5 text-[13px]">
+          <button type="submit" className="btn-primary btn-md w-full">
             Tambah domain
           </button>
         </form>
@@ -276,7 +276,7 @@ export function DomainsView() {
                 type="button"
                 onClick={() => void syncAllDomains()}
                 disabled={syncingDomains}
-                className="pill inline-flex h-10 items-center gap-2 px-4 text-[13px] font-medium hover:brightness-110 disabled:opacity-50"
+                className="pill btn-md inline-flex items-center gap-2 font-medium hover:brightness-110 disabled:opacity-50"
               >
                 <RefreshCw size={13} className={syncingDomains ? "animate-spin" : undefined} />
                 {syncingDomains ? "Sinkronisasi..." : "Sinkronkan"}
@@ -285,7 +285,7 @@ export function DomainsView() {
             <button
               type="button"
               onClick={() => setModalOpen(true)}
-              className="btn-primary inline-flex h-10 items-center gap-2 px-4 text-[13px]"
+              className="btn-primary btn-md inline-flex items-center gap-2"
             >
               <Plus size={15} /> Add Domain
             </button>
@@ -307,12 +307,12 @@ export function DomainsView() {
               {groupedDomains.map((group, groupIndex) => (
                 <section key={group.project}>
                   <h3
-                    className={`bg-[var(--row-hover)] px-4 py-2 text-[12px] font-semibold uppercase tracking-wide text-text-faint ${groupIndex > 0 ? "border-t" : ""}`}
+                    className={`bg-[var(--row-hover)] px-4 py-2 text-[12px] font-semibold text-text-faint ${groupIndex > 0 ? "border-t" : ""}`}
                     style={{ borderColor: "var(--surface-line)" }}
                   >
                     {group.project}
                     {projectPlatforms.get(group.project) && (
-                      <span className="ml-2 font-normal normal-case text-text-faint/80">({projectPlatforms.get(group.project)})</span>
+                      <span className="ml-2 font-normal normal-case text-text-faint">({projectPlatforms.get(group.project)})</span>
                     )}
                   </h3>
                   <ul>
@@ -338,7 +338,7 @@ export function DomainsView() {
             <div className="hidden overflow-x-auto md:block">
             <table className="w-full text-left">
               <thead>
-                <tr className="text-[12px] uppercase tracking-wide text-text-faint">
+                <tr className="text-[12px] text-text-faint">
                   <th className="px-6 py-3 font-medium">Domain</th>
                   <th className="px-6 py-3 font-medium">Project</th>
                   <th className="px-6 py-3 font-medium">Status</th>
@@ -351,14 +351,14 @@ export function DomainsView() {
                     <tr>
                       <td
                         colSpan={4}
-                        className={`px-6 py-2 text-[12px] font-semibold uppercase tracking-wide text-text-faint bg-[var(--row-hover)] ${
+                        className={`px-6 py-2 text-[12px] font-semibold text-text-faint bg-[var(--row-hover)] ${
                           groupIndex > 0 ? "border-t" : ""
                         }`}
                         style={{ borderColor: "var(--surface-line)" }}
                       >
                         {group.project}
                         {projectPlatforms.get(group.project) && (
-                          <span className="ml-2 normal-case font-normal text-text-faint/80">
+                          <span className="ml-2 normal-case font-normal text-text-faint">
                             ({projectPlatforms.get(group.project)})
                           </span>
                         )}

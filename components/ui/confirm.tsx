@@ -98,14 +98,14 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
               </div>
             )}
             <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-              <button type="button" autoFocus onClick={() => finish(false)} className="pill press px-5 py-2.5 text-[13px] font-medium">
+              <button type="button" autoFocus onClick={() => finish(false)} className="pill btn-md press font-medium">
                 Batal
               </button>
               <button
                 type="button"
                 onClick={() => finish(true)}
                 className={cn(
-                  "press rounded-full px-5 py-2.5 text-[13px] font-semibold text-white transition",
+                  "btn-md press rounded-full font-semibold text-white transition",
                   danger ? "bg-bad-solid hover:brightness-110" : "bg-[var(--ink-fill)] hover:bg-[var(--ink-fill-hover)]"
                 )}
               >

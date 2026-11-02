@@ -4,14 +4,20 @@ import * as React from "react";
 import { cn } from "@/lib/utils";
 
 /**
- * Saklar on/off aksesibel (role="switch"). Satu sumber untuk semua halaman,
- * supaya ukuran, warna, dan perilakunya sama. Area sentuh 48x28 px.
+ * Saklar on/off aksesibel (role="switch"). Satu-satunya saklar di aplikasi: ukuran 44×24, gerak knob,
+ * dan warnanya didefinisikan di globals.css (.switch), jadi tampil sama di dashboard, admin, dan app.
+ *
+ * - `tone="danger"`: untuk saklar yang menyalakan tindakan merusak (mis. ikut menghapus di platform).
+ *   Aktif = merah, supaya konsekuensinya terlihat sebelum disimpan.
+ * - Beri `id` dan hubungkan dengan <label htmlFor> agar teksnya ikut menjadi area sentuh.
  */
 export function Switch({
   id,
   checked,
   onChange,
   disabled,
+  tone = "default",
+  className,
   "aria-describedby": describedBy,
   "aria-label": ariaLabel,
 }: {
@@ -19,6 +25,8 @@ export function Switch({
   checked: boolean;
   onChange: (v: boolean) => void;
   disabled?: boolean;
+  tone?: "default" | "danger";
+  className?: string;
   "aria-describedby"?: string;
   "aria-label"?: string;
 }) {
@@ -30,20 +38,12 @@ export function Switch({
       aria-checked={checked}
       aria-describedby={describedBy}
       aria-label={ariaLabel}
+      data-tone={tone === "danger" ? "danger" : undefined}
       disabled={disabled}
       onClick={() => onChange(!checked)}
-      className={cn(
-        "relative h-7 w-12 shrink-0 rounded-full transition-colors disabled:cursor-not-allowed disabled:opacity-40",
-        checked ? "bg-[var(--ink-fill)]" : "bg-[var(--line-strong)]"
-      )}
+      className={cn("switch", className)}
     >
-      <span
-        aria-hidden
-        className={cn(
-          "absolute left-1 top-1 h-5 w-5 rounded-full bg-white shadow transition-transform duration-300 [transition-timing-function:var(--ease-soft)] motion-reduce:transition-none",
-          checked ? "translate-x-5" : "translate-x-0"
-        )}
-      />
+      <span className="switch-knob" aria-hidden />
     </button>
   );
 }

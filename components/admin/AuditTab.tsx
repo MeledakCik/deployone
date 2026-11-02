@@ -37,7 +37,7 @@ export function AuditTab() {
             <div className="hidden overflow-x-auto md:block">
               <table className="w-full text-left text-[13px]">
                 <thead>
-                  <tr className="text-[12px] uppercase tracking-wide text-text-muted">
+                  <tr className="text-[12px] text-text-muted">
                     <th className="px-6 py-3 font-medium">Waktu</th>
                     <th className="px-4 py-3 font-medium">Admin</th>
                     <th className="px-4 py-3 font-medium">Aksi</th>

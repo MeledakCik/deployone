@@ -130,8 +130,6 @@ export const FolderOutput = Pack05;
 export const FolderUp = Pack05;
 export const Rocket = Pack00;
 export const ExternalLink = Pack00;
-export const PlayCircle = Pack00;
-export const Sparkles = Pack00;
 export const Upload = Pack09;
 export const UploadCloud = Pack08;
 export const Download = Pack10;
@@ -179,6 +177,15 @@ export const ArrowLeft = lineIcon("ArrowLeft", <><path d="M19 12H5M11 6l-6 6 6 6
 export const ArrowRight = lineIcon("ArrowRight", <><path d="M5 12h14M13 6l6 6-6 6" /></>);
 export const ArrowUpRight = lineIcon("ArrowUpRight", <><path d="M7 17L17 7M9 7h8v8" /></>);
 export const Minus = lineIcon("Minus", <><path d="M6 12h12" /></>);
+// Sparkles punya gambar sendiri: sebelumnya beralias ke Pack00 (sama dengan Rocket), sehingga menu "Deploy" dan "AI Web Builder" tampil dengan ikon identik.
+export const Sparkles = lineIcon("Sparkles", <><path d="M10.5 4.5c.7 4.4 3.1 6.8 7.5 7.5-4.4.7-6.8 3.1-7.5 7.5-.7-4.4-3.1-6.8-7.5-7.5 4.4-.7 6.8-3.1 7.5-7.5z" /><path d="M19 3v4M17 5h4" /></>);
+// PlayCircle juga sebelumnya beralias ke Pack00 (jendela-panah); "Lihat cara kerja" dan "Jalankan audit" butuh simbol putar.
+export const PlayCircle = lineIcon("PlayCircle", <><circle cx="12" cy="12" r="9" /><path d="M10.5 8.8l4.8 3.2-4.8 3.2z" /></>);
+export const ChevronLeft = lineIcon("ChevronLeft", <><path d="M15 6l-6 6 6 6" /></>);
+export const Clock = lineIcon("Clock", <><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 2" /></>);
+export const Circle = lineIcon("Circle", <><circle cx="12" cy="12" r="9" /></>);
+export const UserRound = lineIcon("UserRound", <><circle cx="12" cy="8" r="4" /><path d="M4.5 20a7.5 7.5 0 0 1 15 0" /></>);
+export const Inbox = lineIcon("Inbox", <><path d="M21 12h-5.5L14 15h-4l-1.5-3H3" /><path d="M5.6 5.3L3 12v5a3 3 0 0 0 3 3h12a3 3 0 0 0 3-3v-5l-2.6-6.7A2 2 0 0 0 16.5 4h-9a2 2 0 0 0-1.9 1.3z" /></>);
 export const Menu = lineIcon("Menu", <><path d="M5 7h14M5 12h14M5 17h14" /></>);
 export const Search = lineIcon("Search", <><circle cx="11" cy="11" r="6.5" /><path d="M16 16l4 4" /></>);
 export const Copy = lineIcon("Copy", <><rect x="9" y="9" width="11" height="11" rx="3" /><path d="M15 9V7a3 3 0 0 0-3-3H7a3 3 0 0 0-3 3v5a3 3 0 0 0 3 3h2" /></>);

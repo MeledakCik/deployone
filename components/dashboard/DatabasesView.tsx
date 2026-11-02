@@ -1,6 +1,8 @@
 "use client";
 
 import * as React from "react";
+import { ArrowLeft, ExternalLink } from "@/components/ui/icons";
+import { Skeleton } from "@/components/ui/primitives";
 import AdminPanel from "@/components/db/AdminPanel";
 import DatabaseList from "@/components/db/DatabaseList";
 import DbInfoCards from "@/components/db/DbInfoCards";
@@ -51,13 +53,13 @@ function DatabaseDetail({ id, onBack }: { id: string; onBack: () => void }) {
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <Btn onClick={onBack} aria-label="Kembali ke semua database" className="shrink-0">
-            <span aria-hidden>←</span>
+            <ArrowLeft size={14} aria-hidden />
             <span className="hidden sm:inline">Semua database</span>
           </Btn>
-          <h1 className="truncate text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100 sm:text-2xl">{d?.database.displayName ?? "Database"}</h1>
+          <h1 className="page-title truncate">{d?.database.displayName ?? "Database"}</h1>
         </div>
         <a href={`/db/${id}`} target="_blank" rel="noopener noreferrer" className={`${linkBtn} w-full sm:w-auto`}>
-          Open in new tab ↗
+          Buka di tab baru <ExternalLink size={13} aria-hidden />
         </a>
       </div>
       {err && <Notice kind="error">{err}</Notice>}
@@ -72,9 +74,9 @@ function DatabaseDetail({ id, onBack }: { id: string; onBack: () => void }) {
         </>
       )}
       {!d && !err && (
-        <div className="space-y-3" aria-busy="true">
-          <div className="h-24 animate-pulse rounded-2xl bg-violet-100/70 dark:bg-white/10" />
-          <div className="h-56 animate-pulse rounded-2xl bg-violet-100/70 dark:bg-white/10" />
+        <div className="space-y-3" aria-busy="true" role="status" aria-label="Memuat database">
+          <Skeleton className="h-24 !rounded-[28px]" />
+          <Skeleton className="h-56 !rounded-[28px]" />
         </div>
       )}
     </div>

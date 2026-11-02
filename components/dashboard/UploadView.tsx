@@ -312,14 +312,14 @@ export function UploadView() {
                 <button
                   type="button"
                   onClick={() => zipInputRef.current?.click()}
-                  className="btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-[13px]"
+                  className="btn-primary btn-md inline-flex items-center gap-2"
                 >
                   <FileArchive size={15} /> Pilih file ZIP
                 </button>
                 <button
                   type="button"
                   onClick={() => folderInputRef.current?.click()}
-                  className="pill inline-flex items-center gap-2 px-5 py-2.5 text-[13px] font-medium hover:bg-[var(--card-hover)]"
+                  className="pill btn-md inline-flex items-center gap-2 font-medium hover:bg-[var(--card-hover)]"
                 >
                   <FolderUp size={15} /> Pilih folder
                 </button>
@@ -342,7 +342,7 @@ export function UploadView() {
 
       {/* ---------- Langkah 2: atur & upload ---------- */}
       {collected && (stage === "ready" || stage === "uploading") && (
-        <div className="surface-solid rounded-3xl p-5 sm:p-6">
+        <div className="surface-solid p-5 sm:p-6">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-[14px] font-semibold">
@@ -430,7 +430,7 @@ export function UploadView() {
             />
             <span>
               Timpa repo yang sudah ada kalau namanya sama{" "}
-              <span className="text-text-muted/80">(isi branch utama diganti dengan upload ini lewat commit baru)</span>
+              <span className="text-text-faint">(isi branch utama diganti dengan upload ini lewat commit baru)</span>
             </span>
           </label>
 
@@ -541,7 +541,7 @@ export function UploadView() {
               type="button"
               onClick={() => void startUpload()}
               disabled={busy || !repoName.trim() || (deployNow && platforms.length === 0)}
-              className="btn-primary inline-flex items-center gap-2 px-6 py-2.5 text-[13px] disabled:cursor-not-allowed disabled:opacity-50"
+              className="btn-primary btn-md inline-flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-50"
             >
               {stage === "uploading" ? (
                 <>
@@ -572,7 +572,7 @@ export function UploadView() {
 
       {/* ---------- Langkah 3: selesai ---------- */}
       {stage === "done" && result && (
-        <div className="surface-solid rounded-3xl p-6 text-center sm:p-8">
+        <div className="surface-solid p-6 text-center sm:p-8">
           <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-[var(--ok-bg)] text-ok-fg">
             <Check size={24} />
           </span>
@@ -592,7 +592,7 @@ export function UploadView() {
               <button
                 type="button"
                 onClick={continueInDeployWizard}
-                className="btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-[13px]"
+                className="btn-primary btn-md inline-flex items-center gap-2"
               >
                 <Rocket size={15} /> Deploy repo ini
               </button>
@@ -601,14 +601,14 @@ export function UploadView() {
               href={result.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="pill inline-flex items-center gap-2 px-5 py-2.5 text-[13px] font-medium hover:bg-[var(--card-hover)]"
+              className="pill btn-md inline-flex items-center gap-2 font-medium hover:bg-[var(--card-hover)]"
             >
               <ExternalLink size={15} /> Buka di GitHub
             </a>
             <button
               type="button"
               onClick={reset}
-              className="pill inline-flex items-center gap-2 px-5 py-2.5 text-[13px] font-medium hover:bg-[var(--card-hover)]"
+              className="pill btn-md inline-flex items-center gap-2 font-medium hover:bg-[var(--card-hover)]"
             >
               Upload lagi
             </button>

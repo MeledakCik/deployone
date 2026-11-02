@@ -43,7 +43,7 @@ export function DashboardHomeView() {
   }, []);
 
   const deployButton = (
-    <button type="button" onClick={() => setView("deploy")} className="btn-lime inline-flex items-center gap-2 whitespace-nowrap px-5 py-2.5 text-[14px]">
+    <button type="button" onClick={() => setView("deploy")} className="btn-lime btn-md inline-flex items-center gap-2 whitespace-nowrap">
       <Plus size={16} /> Deploy baru
     </button>
   );
@@ -77,7 +77,7 @@ export function DashboardHomeView() {
               title="Belum ada deploy"
               action={
                 <>
-                  <button type="button" onClick={() => setView("deploy")} className="btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-[14px]">
+                  <button type="button" onClick={() => setView("deploy")} className="btn-primary btn-md inline-flex items-center gap-2">
                     <Rocket size={16} /> Deploy project
                   </button>
                   <Btn onClick={() => setView("upload")}>
@@ -142,7 +142,7 @@ export function DashboardHomeView() {
             </span>
             <div className="min-w-0 flex-1">
               <p className="text-[16px] font-bold tracking-tight">Deploy pertamamu sudah online 🎉</p>
-              <p className="mt-0.5 text-[13px]">Gabung komunitas DepUp untuk dapat kabar fitur baru dan bantuan dari sesama pengguna.</p>
+              <p className="mt-0.5 text-[13px]">Gabung komunitas Depup untuk dapat kabar fitur baru dan bantuan dari sesama pengguna.</p>
             </div>
             <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
               <a
@@ -153,7 +153,7 @@ export function DashboardHomeView() {
                   openExternal(e, WA_COMMUNITY_URL);
                   dismissCommunity();
                 }}
-                className="btn-primary inline-flex items-center gap-2 px-5 py-2.5 text-[14px]"
+                className="btn-primary btn-md inline-flex items-center gap-2"
               >
                 Gabung komunitas
               </a>

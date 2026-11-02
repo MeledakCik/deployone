@@ -68,7 +68,7 @@ const textareaCls =
   "w-full rounded-[14px] bg-[var(--dc-input)] border border-transparent px-3.5 sm:px-4 py-2.5 sm:py-3 text-[13px] sm:text-[13px] text-[var(--dc-text)] placeholder:text-[var(--dc-text-faint)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)] focus:bg-[var(--dc-input-focus)] transition-colors resize-none font-mono";
 
 const labelCls =
-  "block text-[12px] sm:text-[12px] tracking-wide uppercase text-[var(--dc-text-faint)] font-medium";
+  "block text-[12px] text-[var(--dc-text-muted)] font-medium";
 
 /* ---------------- Step definitions ---------------- */
 
@@ -880,7 +880,7 @@ export function DeployFormView() {
                     );
                   })}
                 </div>
-                <div className="mt-1.5 sm:mt-2 flex justify-between text-[12px] sm:text-[12px] tracking-wide text-[var(--dc-text-faint)] uppercase">
+                <div className="mt-1.5 sm:mt-2 flex justify-between text-[12px] text-[var(--dc-text-faint)]">
                   <span>1. Mulai</span>
                   <span className="hidden xs:inline">2. Input + Penjelasan</span>
                   <span className="xs:hidden">2. Input</span>
@@ -909,7 +909,7 @@ export function DeployFormView() {
                         <h3 className="text-[16px] sm:text-[18px] font-semibold tracking-tight leading-tight flex items-center gap-2 flex-wrap text-[var(--dc-text)]">
                           {step.title}
                           {step.optional && (
-                            <span className="text-[12px] sm:text-[12px] px-1.5 sm:px-2 py-0.5 rounded-full bg-[var(--dc-pill)] text-[var(--dc-text-faint)] font-medium tracking-wide uppercase">
+                            <span className="text-[12px] px-1.5 sm:px-2 py-0.5 rounded-full bg-[var(--dc-pill)] text-[var(--dc-text-faint)] font-medium">
                               Opsional
                             </span>
                           )}

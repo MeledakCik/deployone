@@ -1,9 +1,9 @@
 /**
  * Persiapan konversi proyek Next.js → situs HTML statis.
  *
- * Bagian ini menemukan halaman, rantai layout, komponen lokal yang di-import, CSS global, dan aset publik.
- * Penulisan HTML-nya (JSX → HTML, mengembangkan map(), dst.) dikerjakan renderer statis lokal
- * (lib/convert/local/jsx-render.ts) per halaman, tanpa AI. Aset dan CSS disalin apa adanya.
+ * Bagian ini deterministik: menemukan halaman, rantai layout, komponen lokal yang di-import, CSS global,
+ * dan aset publik. Penulisan HTML-nya (mengubah JSX → HTML, mengembangkan map(), dst.) dikerjakan AI per
+ * halaman, dengan semua konteks yang dibutuhkan sudah disiapkan di sini. Aset dan CSS disalin apa adanya.
  *
  * Mandiri (tanpa import) supaya bisa dites dengan Node.
  */
@@ -28,11 +28,6 @@ export interface PageJob {
   code: string;
   /** Layout (terluar dulu), lalu komponen/data yang di-import halaman. */
   context: CtxFile[];
-  /** Path layout / _app (terluar dulu); kodenya ada di `context`. */
-  layouts: string[];
-  /** File → (spec import → path hasil resolve), untuk import lokal. */
-  resolved: Record<string, Record<string, string>>;
-  router: "app" | "pages";
   /** Rute internal → href relatif dari halaman ini. */
   routeMap: Record<string, string>;
   /** Awalan untuk mencapai root situs dari halaman ini: "", "../", "../../" ... */
@@ -63,9 +58,9 @@ const dec = new TextDecoder();
 const CODE_EXT = ["tsx", "ts", "jsx", "js", "mjs"];
 const IMG_EXT = /\.(png|jpe?g|gif|webp|avif|svg|ico)$/i;
 
-const MAX_CTX_FILE = 600_000;
-const MAX_CTX_TOTAL = 6_000_000;
-export const MAX_PAGE_SOURCE = 800_000;
+const MAX_CTX_FILE = 24_000;
+const MAX_CTX_TOTAL = 70_000;
+export const MAX_PAGE_SOURCE = 36_000;
 
 /* ---------------- path ---------------- */
 
@@ -295,7 +290,6 @@ export function analyzeNextProject(input: SrcFile[]): NextAnalysis {
     const seen = new Set<string>([pl.file]);
     const cssLinks: string[] = [];
     const imageImports: string[] = [];
-    const resolvedMap: Record<string, Record<string, string>> = {};
     let budget = MAX_CTX_TOTAL;
     let truncated = false;
     const queue: { path: string; depth: number }[] = [];
@@ -312,7 +306,6 @@ export function analyzeNextProject(input: SrcFile[]): NextAnalysis {
       const src = text.get(cur.path) ?? "";
       for (const spec of importSpecs(src)) {
         const res = resolveImport(spec, cur.path, text, all, aliases);
-        if (res) (resolvedMap[cur.path] ??= {})[spec] = res;
         if (!res || seen.has(res)) {
           if (res && IMG_EXT.test(res)) imageImports.push(`"${spec}" (di ${cur.path}) → ${relHref(pl.out, addImg(res))}`);
           continue;
@@ -346,7 +339,7 @@ export function analyzeNextProject(input: SrcFile[]): NextAnalysis {
         }
         ctx.push({ path: res, code: c });
         budget -= c.length;
-        if (cur.depth + 1 < 8 && !res.endsWith(".json")) queue.push({ path: res, depth: cur.depth + 1 });
+        if (cur.depth + 1 < 3 && !res.endsWith(".json")) queue.push({ path: res, depth: cur.depth + 1 });
       }
     }
     if (truncated) warnings.push(`Konteks halaman "${pl.file}" dipotong (komponen terlalu banyak) — periksa hasilnya.`);
@@ -368,9 +361,6 @@ export function analyzeNextProject(input: SrcFile[]): NextAnalysis {
       outPath: pl.out,
       code,
       context: ctx,
-      layouts,
-      resolved: resolvedMap,
-      router,
       routeMap,
       assetPrefix: "../".repeat(dirname(pl.out) ? dirname(pl.out).split("/").length : 0),
       cssLinks,
@@ -387,10 +377,10 @@ export function analyzeNextProject(input: SrcFile[]): NextAnalysis {
   }
 
   if (jobs.some((j) => /\bfetch\(|await\s+\w+\(|useSWR|getServerSideProps|getStaticProps/.test(j.code))) {
-    warnings.push("Ada halaman yang mengambil data (fetch/getServerSideProps/...). Data itu tidak dijalankan, jadi bagian yang bergantung padanya kosong di HTML statis — isi manual bila perlu.");
+    warnings.push("Ada halaman yang mengambil data (fetch/getServerSideProps/...). Di HTML statis datanya diganti konten contoh dari kode — periksa & sesuaikan.");
   }
   if (jobs.some((j) => /["']use client["']/.test(j.code) || j.context.some((c) => /["']use client["']/.test(c.code)))) {
-    warnings.push("Komponen interaktif (use client) hanya dirender dengan nilai awal state; klik, form, dan efek tidak ikut. Tambahkan JavaScript biasa bila perlu.");
+    warnings.push("Komponen interaktif (use client) diterjemahkan ke JavaScript biasa oleh AI — uji perilakunya di browser.");
   }
 
   return { router, jobs, staticFiles, skipped, warnings, tailwind };

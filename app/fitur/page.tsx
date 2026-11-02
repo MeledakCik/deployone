@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { PublicHeader } from "@/components/public/PublicHeader";
+import { PublicShell } from "@/components/public/PublicShell";
+import { PublicAuthCta } from "@/components/public/PublicAuthCta";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { DashboardLink } from "@/components/landing/DashboardLink";
 import { breadcrumbLd, pageMeta } from "@/lib/seo";
@@ -41,10 +42,9 @@ export default function FiturPage() {
   ];
 
   return (
-    <div className="flex min-h-[100dvh] flex-col bg-slate-50 dark:bg-zinc-950">
+    <PublicShell cta={<PublicAuthCta />}>
       <JsonLd data={ld} />
-      <PublicHeader />
-      <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-10 sm:px-6 lg:px-8">
+      <div>
         <nav aria-label="Jejak halaman" className="mb-4 text-[13px] text-text-muted">
           <Link href="/" className="underline-offset-4 hover:underline">Depup</Link>
           <span aria-hidden="true"> / </span>
@@ -53,8 +53,8 @@ export default function FiturPage() {
 
         <h1 className="page-title">Semua fitur Depup</h1>
 
-        <section aria-labelledby="ringkasan" className="surface-solid mt-5 rounded-3xl p-5 sm:p-7">
-          <h2 id="ringkasan" className="text-[16px] font-semibold">Ringkasan singkat</h2>
+        <section aria-labelledby="ringkasan" className="surface-solid mt-5 p-5 sm:p-7">
+          <h2 id="ringkasan" className="text-[16px] font-bold tracking-tight">Ringkasan singkat</h2>
           <p className="mt-2 text-[14px] leading-relaxed">{SITE_DEFINITION}</p>
           <p className="mt-2 text-[14px] leading-relaxed text-text-muted">
             Masuk dengan akun Google, tempel link GitHub atau upload ZIP, dan Depup memeriksa isi repo sebelum deploy.
@@ -73,7 +73,7 @@ export default function FiturPage() {
 
         <ul className="mt-6 grid gap-4 sm:grid-cols-2">
           {FEATURES.map((f) => (
-            <li key={f.slug} className="surface-solid flex flex-col rounded-3xl p-5 sm:p-6">
+            <li key={f.slug} className="surface-solid flex flex-col p-5 sm:p-6">
               <h2 className="text-[18px] font-bold tracking-tight">
                 <Link href={`/fitur/${f.slug}`} className="underline-offset-4 hover:underline">
                   {f.name}
@@ -82,7 +82,7 @@ export default function FiturPage() {
               <p className="mt-2 flex-1 text-[14px] leading-relaxed text-text-muted">{f.summary}</p>
               <Link
                 href={`/fitur/${f.slug}`}
-                className="mt-4 text-[13px] font-semibold underline underline-offset-4"
+                className="mt-4 text-[13px] font-semibold text-lav-text underline underline-offset-4"
                 aria-label={`Selengkapnya tentang ${f.name}`}
               >
                 Selengkapnya
@@ -94,19 +94,16 @@ export default function FiturPage() {
         <div className="mt-10 flex flex-col items-center gap-3 text-center">
           <DashboardLink
             href="/dashboard"
-            className="btn-primary inline-flex items-center justify-center gap-2 px-6 py-3 text-[14px]"
+            className="btn-primary btn-lg"
           >
             Coba Depup gratis
           </DashboardLink>
           <p className="text-[13px] text-text-muted">
-            Butuh panduan? Lihat <Link href="/docs" className="underline underline-offset-4">dokumentasi</Link> atau{" "}
-            <Link href="/#faq" className="underline underline-offset-4">FAQ</Link>.
+            Butuh panduan? Lihat <Link href="/docs" className="font-medium text-lav-text underline underline-offset-4">dokumentasi</Link> atau{" "}
+            <Link href="/#faq" className="font-medium text-lav-text underline underline-offset-4">FAQ</Link>.
           </p>
         </div>
-      </main>
-      <footer className="border-t border-slate-200 py-8 text-center text-[13px] text-slate-500 dark:border-zinc-800 dark:text-zinc-400">
-        <p>&copy; {new Date().getFullYear()} Depup. Dibuat untuk memudahkan deploy.</p>
-      </footer>
-    </div>
+      </div>
+    </PublicShell>
   );
 }

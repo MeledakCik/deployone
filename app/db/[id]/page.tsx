@@ -2,6 +2,8 @@
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
+import { Database } from "@/components/ui/icons";
+import { Skeleton } from "@/components/ui/primitives";
 import AdminPanel from "../../../components/db/AdminPanel";
 import type { PublicDb } from "../../../components/db/types";
 import { ApiError, Btn, Field, Notice, UsageBar, api, inputCls, linkBtn, subtle, surface } from "../../../components/db/ui";
@@ -33,9 +35,9 @@ export default function FullDbPage() {
 
   if (state === "loading")
     return (
-      <div className="mx-auto max-w-7xl space-y-3 p-3 sm:p-5" aria-busy="true">
-        <div className="h-12 w-56 animate-pulse rounded-xl bg-violet-100/70 dark:bg-white/10" />
-        <div className="h-72 animate-pulse rounded-2xl bg-violet-100/70 dark:bg-white/10" />
+      <div className="mx-auto max-w-7xl space-y-3 p-3 sm:p-5" aria-busy="true" role="status" aria-label="Memuat database">
+        <Skeleton className="h-12 w-56" />
+        <Skeleton className="h-72 !rounded-[28px]" />
       </div>
     );
   if (state === "error") return <div className="mx-auto max-w-xl p-4 sm:p-6"><Notice kind="error">{err}</Notice></div>;
@@ -45,11 +47,11 @@ export default function FullDbPage() {
     <div className="mx-auto max-w-7xl space-y-4 p-3 pb-[max(1rem,env(safe-area-inset-bottom))] sm:space-y-5 sm:p-6">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-center gap-3">
-          <div aria-hidden className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-violet-500 text-lg text-white shadow-sm dark:bg-lime-500 dark:text-[#1e1150]">
-            ⛁
+          <div aria-hidden className="grid h-11 w-11 shrink-0 place-items-center rounded-[14px] bg-tone-lilac text-lav-text">
+            <Database size={20} />
           </div>
           <div className="min-w-0">
-            <h1 className="truncate text-lg font-semibold tracking-tight sm:text-xl">{d?.database.displayName}</h1>
+            <h1 className="page-title truncate">{d?.database.displayName}</h1>
             <p className={subtle}>Masuk sebagai {d?.access === "owner" ? "pemilik (akun Google Depup)" : "pengguna database"}</p>
           </div>
         </div>
@@ -87,9 +89,9 @@ function Login({ id, onDone }: { id: string; onDone: () => void }) {
   const [err, setErr] = useState("");
   const [busy, setBusy] = useState(false);
   return (
-    <div className="flex min-h-[100dvh] items-center justify-center bg-gradient-to-br from-violet-100 via-violet-200 to-violet-500 p-4 dark:from-[#120b2e] dark:via-[#1e1150] dark:to-[#382381]">
+    <div className="bg-canvas flex min-h-[100dvh] items-center justify-center p-4">
       <form
-        className={`${surface} w-full max-w-sm space-y-5 p-5 shadow-xl sm:p-7`}
+        className={`${surface} w-full max-w-sm space-y-5 p-6 sm:p-8`}
         onSubmit={async (e) => {
           e.preventDefault();
           setBusy(true);
@@ -104,9 +106,11 @@ function Login({ id, onDone }: { id: string; onDone: () => void }) {
         }}
       >
         <div>
-          <div aria-hidden className="mb-3 grid h-11 w-11 place-items-center rounded-2xl bg-violet-500 text-lg text-white dark:bg-lime-500 dark:text-[#1e1150]">⛁</div>
-          <h1 className="text-xl font-semibold tracking-tight">Login database</h1>
-          <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">Masukkan username dan password database. Pemilik yang sudah login di Depup masuk otomatis.</p>
+          <div aria-hidden className="mb-4 grid h-11 w-11 place-items-center rounded-[14px] bg-tone-lilac text-lav-text">
+            <Database size={20} />
+          </div>
+          <h1 className="text-[22px] font-bold leading-tight tracking-tight">Login database</h1>
+          <p className="mt-1.5 text-[13px] leading-relaxed text-text-muted">Masukkan username dan password database. Pemilik yang sudah login di Depup masuk otomatis.</p>
         </div>
         <Field label="Username">
           <input className={inputCls} value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" autoFocus required />
@@ -115,10 +119,10 @@ function Login({ id, onDone }: { id: string; onDone: () => void }) {
           <input className={inputCls} type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
         </Field>
         {err && <Notice kind="error">{err}</Notice>}
-        <Btn variant="primary" type="submit" disabled={busy} className="w-full !py-2.5">
+        <button type="submit" disabled={busy} className="btn-primary btn-md w-full disabled:cursor-not-allowed disabled:opacity-60">
           {busy ? "Masuk…" : "Masuk"}
-        </Btn>
-        <Link href={`/dashboard?view=database&db=${id}`} className="block text-center text-sm font-medium text-violet-600 hover:underline dark:text-lime-300">
+        </button>
+        <Link href={`/dashboard?view=database&db=${id}`} className="block text-center text-[13px] font-medium text-lav-text underline-offset-4 hover:underline">
           Login dengan akun Google Depup
         </Link>
       </form>

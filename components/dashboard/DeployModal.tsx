@@ -335,7 +335,7 @@ export function DeployModal() {
 
                 {/* logs panel */}
                 <div className="mt-6 p-3 rounded-xl bg-[var(--dm-surface-2)] text-left">
-                  <div className="text-[12px] uppercase tracking-wide text-[var(--text-faint)]">
+                  <div className="text-[12px] text-[var(--text-faint)]">
                     Logs
                   </div>
                   <div className="mt-2 font-mono text-[12px] leading-[1.6] text-[var(--text-muted)]">
@@ -482,7 +482,7 @@ function ErrorPanel({
 
       {guide && guide.steps.length > 0 && (
         <div className="mt-5 rounded-2xl bg-[var(--dm-surface-2)] p-4 text-left">
-          <div className="text-[12px] uppercase tracking-wider text-[var(--text-faint)] font-medium mb-2.5">
+          <div className="text-[12px] text-[var(--text-faint)] font-medium mb-2.5">
             Yang bisa kamu lakukan
           </div>
           <ol className="space-y-2">

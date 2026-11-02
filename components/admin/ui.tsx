@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { Check, ArrowLeft, ArrowRight } from "@/components/ui/icons";
+import { ArrowLeft, ArrowRight } from "@/components/ui/icons";
+import { Switch } from "@/components/ui/Switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge, Btn } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils";
@@ -62,26 +63,12 @@ export function UsageCard({ label, used, limitBytes, note }: { label: string; us
   );
 }
 
-/** Switch simetris 44×24: knob 20px dengan jarak 2px di keempat sisi, bergeser lewat transform. */
+/** Saklar admin: pembungkus tipis <Switch> bersama (satu spesifikasi untuk seluruh aplikasi). */
 export function Toggle({ checked, onChange, label, disabled }: { checked: boolean; onChange: (v: boolean) => void; label: string; disabled?: boolean }) {
-  return (
-    <button type="button" role="switch" aria-checked={checked} aria-label={label} disabled={disabled} onClick={() => onChange(!checked)} className="switch">
-      <span className="switch-knob" />
-    </button>
-  );
+  return <Switch checked={checked} onChange={onChange} aria-label={label} disabled={disabled} />;
 }
 
-/** Checkbox kustom 20×20 dengan centang yang "memantul" saat dicentang. */
-export function Checkbox({ checked, onChange, label, children }: { checked: boolean; onChange: (v: boolean) => void; label?: string; children?: React.ReactNode }) {
-  return (
-    <label className="inline-flex cursor-pointer select-none items-center gap-2.5 text-[13px] text-text-muted">
-      <button type="button" role="checkbox" aria-checked={checked} aria-label={label} onClick={() => onChange(!checked)} className="check-box">
-        <Check size={13} />
-      </button>
-      {children}
-    </label>
-  );
-}
+export { Checkbox } from "@/components/ui/Checkbox";
 
 /** Select kustom (Radix) — pengganti <select> bawaan browser supaya sama dengan dropdown di dashboard. */
 export function SelectField({

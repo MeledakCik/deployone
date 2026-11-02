@@ -173,7 +173,7 @@ export function McpTab() {
                 <div className="hidden overflow-x-auto md:block">
                   <table className="w-full text-left text-[13px]">
                     <thead>
-                      <tr className="text-[12px] uppercase tracking-wide text-text-muted">
+                      <tr className="text-[12px] text-text-muted">
                         <th className="px-6 py-3 font-medium">Pengguna</th>
                         <th className="px-4 py-3 font-medium">Terhubung ke</th>
                         <th className="px-4 py-3 text-right font-medium">Request</th>
