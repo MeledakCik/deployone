@@ -18,6 +18,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { trainModel, classify } from "../lib/site-engine/core.ts";
+import { validatePack } from "../lib/site-engine/import.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const packDir = path.join(root, "data/site-engine/packs");
@@ -50,22 +51,19 @@ const feedback = fs.existsSync(fbDir)
       )
   : [];
 
-/* ---- validasi paket ---- */
+/* ---- validasi paket (aturan yang sama dengan Impor di Panel Admin) ---- */
 const icons = new Set([...fs.readFileSync(path.join(root, "lib/lucide-icons.ts"), "utf8").matchAll(/^\s*"?([a-z0-9-]+)"?\s*:/gm)].map((m) => m[1]));
 const prompts = fs.readFileSync(path.join(root, "lib/ai-site-prompts.ts"), "utf8");
 const banned = JSON.parse(/BANNED_PHRASES: string\[\] = (\[[\s\S]*?\]);/.exec(prompts)[1].replace(/,\s*\]/, "]"));
-const REQUIRED = ["id", "kind", "label", "prompts", "keywords", "brandIcon", "templates", "heroes", "feats", "headlines", "features"];
+const tpl = fs.readFileSync(path.join(root, "lib/ai-site-templates.ts"), "utf8");
+const union = (name) => new Set([...(new RegExp(`export type ${name} = ([^;]+);`).exec(tpl)?.[1].matchAll(/"([^"]+)"/g) ?? [])].map((m) => m[1]));
+const rules = { icons, banned, templates: union("TemplateId"), heroes: union("HeroLayout"), feats: union("FeatLayout") };
 let problems = 0;
 const ids = new Set();
 for (const p of packs) {
-  const where = `paket ${p.id ?? "?"}`;
-  for (const k of REQUIRED) if (!p[k] || (Array.isArray(p[k]) && !p[k].length)) (console.error(`  x ${where}: kolom "${k}" kosong`), problems++);
-  if (ids.has(p.id)) (console.error(`  x ${where}: id ganda`), problems++);
+  for (const e of validatePack(p, rules)) (console.error(`  x ${e}`), problems++);
+  if (ids.has(p.id)) (console.error(`  x Paket "${p.id}": id ganda`), problems++);
   ids.add(p.id);
-  const iconUses = [p.brandIcon, ...(p.features ?? []).map((f) => f.icon), ...(p.items ?? []).map((i) => i.icon)].filter(Boolean);
-  for (const ic of iconUses) if (!icons.has(ic)) (console.error(`  x ${where}: ikon "${ic}" tidak ada di lib/lucide-icons.ts`), problems++);
-  const text = JSON.stringify(p).toLowerCase();
-  for (const w of banned) if (new RegExp(`(?<![\\p{L}])${w.replace(/ /g, "\\s+")}(?![\\p{L}])`, "iu").test(text)) (console.error(`  x ${where}: memakai ungkapan terlarang "${w}"`), problems++);
 }
 if (problems) {
   console.error(`\n${problems} masalah pada paket. Perbaiki dulu, lalu jalankan lagi.`);

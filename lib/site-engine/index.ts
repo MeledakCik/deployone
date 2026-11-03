@@ -9,6 +9,11 @@ import { normalizeContent, type SiteContent, type SiteKind } from "@/lib/ai-site
 
 export const ENGINE_MODEL_KEY = "engine:site:model";
 export const ENGINE_FEEDBACK_KEY = "engine:site:feedback";
+/** Paket domain hasil impor Panel Admin (array DomainPack, JSON). Digabung dengan paket bawaan saat melatih. */
+export const ENGINE_PACKS_KEY = "engine:site:packs";
+/** Batas paket impor (jumlah dan ukuran total), supaya model tetap muat di satu nilai KV. */
+export const ENGINE_PACKS_MAX = 60;
+export const ENGINE_PACKS_MAX_BYTES = 400_000;
 /** Batas contoh pengguna yang disimpan (yang lama dibuang). */
 export const ENGINE_FEEDBACK_MAX = 2000;
 

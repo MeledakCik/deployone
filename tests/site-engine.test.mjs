@@ -84,3 +84,93 @@ test("edit: ganti nama ikut mengganti nama lama di teks lain", () => {
   assert.equal(r.raw.aboutTitle, "Tentang Bakso Mas Joko");
   assert.ok(!JSON.stringify(r.raw).includes("Pak Kumis"));
 });
+
+/* ---------------- impor data latihan (Panel Admin → Mesin AI) ---------------- */
+import { parseImport, validatePack, completePack, mergePacks } from "../lib/site-engine/import.ts";
+import { PACK_TEMPLATE, FEEDBACK_TEMPLATE, packTemplateText, feedbackTemplateText } from "../lib/site-engine/import-template.ts";
+
+const iconsSrc = fs.readFileSync(new URL("../lib/lucide-icons.ts", import.meta.url), "utf8");
+const tplSrc = fs.readFileSync(new URL("../lib/ai-site-templates.ts", import.meta.url), "utf8");
+const promptsSrc = fs.readFileSync(new URL("../lib/ai-site-prompts.ts", import.meta.url), "utf8");
+const union = (name) => new Set([...(new RegExp(`export type ${name} = ([^;]+);`).exec(tplSrc)?.[1].matchAll(/"([^"]+)"/g) ?? [])].map((m) => m[1]));
+const RULES = {
+  icons: new Set([...iconsSrc.matchAll(/^\s*"?([a-z0-9-]+)"?\s*:/gm)].map((m) => m[1])),
+  banned: JSON.parse(/BANNED_PHRASES: string\[\] = (\[[\s\S]*?\]);/.exec(promptsSrc)[1].replace(/,\s*\]/, "]")),
+  templates: union("TemplateId"),
+  heroes: union("HeroLayout"),
+  feats: union("FeatLayout"),
+};
+const BUNDLED = ["umkm", "jasa", "lainnya"].flatMap((f) => JSON.parse(fs.readFileSync(new URL(`../data/site-engine/packs/${f}.json`, import.meta.url), "utf8")));
+
+test("impor: contoh format yang diunduh dari panel lolos validasi", () => {
+  const packs = parseImport(packTemplateText());
+  assert.deepEqual(packs.errors, []);
+  assert.equal(packs.packs.length, PACK_TEMPLATE.length);
+  for (const p of packs.packs) assert.deepEqual(validatePack(p, RULES), []);
+  const fb = parseImport(feedbackTemplateText());
+  assert.deepEqual(fb.errors, []);
+  assert.equal(fb.feedback.length, FEEDBACK_TEMPLATE.length);
+  for (const p of BUNDLED) assert.deepEqual(validatePack(p, RULES), [], p.id);
+});
+
+test("impor: menerima satu objek, array, JSONL, dan bentuk {packs, feedback}", () => {
+  const one = parseImport(JSON.stringify(PACK_TEMPLATE[0]));
+  assert.equal(one.packs.length, 1);
+  const mixed = parseImport(JSON.stringify({ packs: PACK_TEMPLATE, feedback: FEEDBACK_TEMPLATE }));
+  assert.equal(mixed.packs.length, 1);
+  assert.equal(mixed.feedback.length, 1);
+  const jsonl = parseImport(feedbackTemplateText() + "\nbukan json\n");
+  assert.equal(jsonl.feedback.length, 1);
+  assert.match(jsonl.errors[0], /Baris 3/);
+  assert.match(parseImport('{"halo": 1}').errors[0], /tidak dikenali/);
+});
+
+test("impor: kesalahan paket dijelaskan dengan jelas", () => {
+  const bad = { ...PACK_TEMPLATE[0], kind: "toko", brandIcon: "ikon-ngawur", templates: ["merah"], headlines: ["Solusi terbaik untuk kamu"], items: [{ name: "Es", price: "5rb" }] };
+  const errs = validatePack(bad, RULES).join("\n");
+  assert.match(errs, /"kind" harus salah satu/);
+  const bad2 = { ...PACK_TEMPLATE[0], brandIcon: "ikon-ngawur", templates: ["merah"], headlines: ["Solusi terbaik untuk kamu"], items: [{ name: "Es", price: "5rb" }] };
+  const errs2 = validatePack(bad2, RULES).join("\n");
+  assert.match(errs2, /ikon tidak tersedia: ikon-ngawur/);
+  assert.match(errs2, /templates tidak dikenal: merah/);
+  assert.match(errs2, /ungkapan generik terlarang "solusi terbaik"/);
+  assert.match(errs2, /harus angka/);
+  const { prompts, ...noPrompts } = PACK_TEMPLATE[0];
+  assert.match(validatePack(noPrompts, RULES).join("\n"), /"prompts" wajib diisi/);
+});
+
+test("impor: paket minimal dilengkapi dari paket umum, lalu dikenali dan menghasilkan website utuh", () => {
+  const minimal = {
+    id: "umkm-tanaman-hias",
+    kind: "umkm",
+    label: "Tanaman hias",
+    prompts: ["toko tanaman hias monstera dan aglonema", "jual bibit tanaman hias di rumah", "florist tanaman pot untuk dekorasi", "tanaman gantung dan kaktus mini", "kebun tanaman hias online"],
+    keywords: ["tanaman", "monstera", "aglonema", "kaktus", "pot", "bibit"],
+    brandIcon: "leaf",
+    templates: ["segar"],
+    heroes: ["split"],
+    feats: ["grid"],
+    headlines: ["Tanaman hias sehat dari kebun {brand}"],
+    features: [{ icon: "leaf", title: "Dirawat sendiri", text: "Setiap tanaman dirawat di kebun kami sebelum dikirim." }],
+  };
+  assert.deepEqual(validatePack(minimal, RULES), []);
+  const { pack, filled } = completePack(minimal, BUNDLED);
+  assert.ok(filled.includes("steps") && filled.includes("testimonials"));
+  assert.ok(pack.items.length > 0 && pack.about.length > 0);
+  const merged = mergePacks(BUNDLED, [pack]);
+  assert.equal(merged.length, BUNDLED.length + 1);
+  const m = trainModel(merged, []);
+  assert.equal(classify(m, "toko tanaman hias monstera di Bogor")[0].id, "umkm-tanaman-hias");
+  const site = generateSite(m, "toko tanaman hias monstera di Bogor bernama Kebun Hijau", {});
+  assert.equal(site.domain, "umkm-tanaman-hias");
+  assert.ok(site.raw.headline && !/\{brand\}|undefined/.test(JSON.stringify(site.raw)));
+});
+
+test("impor: paket dengan id bawaan menggantikan bawaan, status umum tetap", () => {
+  const generic = BUNDLED.find((p) => p.id === "umkm-umum");
+  const merged = mergePacks(BUNDLED, [{ ...generic, label: "UMKM (versi admin)", generic: undefined }]);
+  assert.equal(merged.length, BUNDLED.length);
+  const g = merged.find((p) => p.id === "umkm-umum");
+  assert.equal(g.label, "UMKM (versi admin)");
+  assert.equal(g.generic, true);
+});

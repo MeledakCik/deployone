@@ -221,7 +221,16 @@ yang berjalan di server Depup sendiri: tanpa token, tanpa kuota harian, dan kode
   kota, produk + harga, WhatsApp, email, jam buka, dan alamat; isi disusun dari bank kalimat per jenis usaha.
 - "Ubah dengan perintah" memahami perintah umum: ganti nama/judul/slogan/tombol/kontak, tambah/hapus produk, ubah harga,
   ganti warna/template/hero, hapus testimoni.
-- **Melatih mesin**
+- **Melatih lewat Panel Admin (paling mudah)**: Panel Admin → **Mesin AI** → **Impor data latihan**. Unggah, seret, atau
+  tempel paket domain (`.json`) atau contoh pengguna (`.jsonl`); tombol **Contoh paket** / **Contoh pengguna** mengunduh
+  format yang benar. Isi diperiksa dengan aturan yang sama seperti `npm run engine:train`; kalau ada kesalahan tidak ada
+  yang disimpan dan semua kesalahannya ditampilkan. Kalau lolos, mesin langsung dilatih ulang dan dipakai.
+  - Kolom wajib paket: `id`, `kind`, `label`, `prompts` (≥ 5), `keywords`, `brandIcon`, `templates`, `heroes`, `feats`,
+    `headlines`, `features`. Kolom lain yang kosong diisi dari paket umum sejenis.
+  - `id` yang sama dengan paket bawaan = menggantikan paket bawaan itu.
+  - Paket impor disimpan di KV (`engine:site:packs`, maks. 60 paket / 400 KB). **Ekspor (.json)** lalu taruh di
+    `data/site-engine/packs/` untuk menjadikannya bawaan permanen.
+- **Melatih dari repo**
   1. Tambah atau ubah pengetahuan di `data/site-engine/packs/*.json` (satu paket = satu jenis usaha: contoh deskripsi,
      kata kunci, kalimat, produk, fitur, langkah, artikel).
   2. Contoh dari pengguna (website yang mereka terbitkan dan *izinkan* dipakai) masuk ke Panel Admin → **Mesin AI**.
