@@ -82,7 +82,7 @@ async function validate(p: AuthParams, origin: string): Promise<Validated> {
 
   const cid = clientFingerprint(p.client_id as string);
   if (await isClientCidRevoked(cid)) {
-    return { ok: false, error: "OAuth Client ini sudah dihapus atau dicabut dari Settings." };
+    return { ok: false, error: "OAuth Client ini sudah dihapus atau dicabut dari Pengaturan." };
   }
 
   const redirectUri = typeof p.redirect_uri === "string" ? p.redirect_uri : "";
@@ -148,7 +148,7 @@ function parseRedirectUrisInput(raw: unknown): string[] {
   return [];
 }
 
-/** GET /api/mcp/connect — info untuk kartu konektor MCP (Claude, OpenCode, Cursor, Codex, Gemini) & Custom OAuth di Settings. */
+/** GET /api/mcp/connect — info untuk kartu konektor MCP (Claude, OpenCode, Cursor, Codex, Gemini) & Custom OAuth di Pengaturan. */
 export const GET = withErrorHandling(async (req: NextRequest) => {
   const email = getSessionEmail(req);
   if (!email) return fail("Sesi login habis. Silakan login lagi.", 401, "unauthorized");

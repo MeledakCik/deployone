@@ -11,23 +11,28 @@ export default function MobileAccount() {
   const { user, logout } = useAuth();
   const { tokens, history, loading } = useUserData();
   const [leaving, setLeaving] = React.useState(false);
+  // Di browser HP (bukan app Android), sediakan jalan keluar ke dashboard versi desktop.
+  const [inBrowser, setInBrowser] = React.useState(false);
+  React.useEffect(() => {
+    setInBrowser(!(window as unknown as { Capacitor?: unknown }).Capacitor);
+  }, []);
   if (!user) return null;
 
   const projects = uniqueProjects(history).length;
   const conns = [
     { name: "Vercel", ok: !!tokens.vercelToken },
-    { name: "GitHub", ok: !!tokens.githubPat },
-    { name: "Cloudflare", ok: !!tokens.cloudflareToken },
+    { name: "Cloudflare Pages", ok: !!tokens.cloudflareToken },
     { name: "Railway", ok: !!tokens.railwayToken },
+    { name: "GitHub", ok: !!tokens.githubPat },
   ];
 
   // Nama dan ikon sama dengan menu di sidebar web.
   const rows = [
-    { href: "/m/pengaturan", label: "Settings & token", hint: "Token Vercel, GitHub, Cloudflare, Railway", Icon: Settings2 },
+    { href: "/m/pengaturan", label: "Pengaturan & token", hint: "Token Vercel, Cloudflare Pages, Railway, GitHub", Icon: Settings2 },
     { href: "/m/riwayat", label: "Riwayat deploy", hint: "Semua deploy tercatat permanen", Icon: History },
-    { href: "/m/kelola", label: "Kelola proyek", hint: "Sinkron, import, hapus project", Icon: FolderKanban },
+    { href: "/m/kelola", label: "Kelola project", hint: "Sinkron, import, hapus project", Icon: FolderKanban },
     { href: "/m/domain", label: "Domain", hint: "Hubungkan domain ke project", Icon: Globe2 },
-    { href: "/m/env", label: "Environment", hint: "Env variable per project", Icon: KeyRound },
+    { href: "/m/env", label: "Variabel env", hint: "Variabel environment per project", Icon: KeyRound },
     { href: "/m/donasi", label: "Donasi", hint: "Traktir kopi lewat Saweria", Icon: Heart },
     ...(user.isAdmin ? [{ href: "/admin", label: "Panel admin", hint: "Khusus admin Depup", Icon: ShieldCheck }] : []),
   ];
@@ -85,7 +90,14 @@ export default function MobileAccount() {
       >
         <LogOut size={18} aria-hidden /> Keluar
       </button>
-      <p className="pb-2 text-center text-[12px] text-text-faint">Depup · deploy dari HP</p>
+      {inBrowser && (
+        <p className="text-center text-[13px] text-text-muted">
+          <a href="/dashboard?desktop=1" className="font-semibold text-lav-text underline underline-offset-4">
+            Buka tampilan desktop
+          </a>
+        </p>
+      )}
+      <p className="pb-2 text-center text-[12px] text-text-muted">Depup · deploy dari HP</p>
     </div>
   );
 }

@@ -146,7 +146,7 @@ export function DeployDemo() {
         </div>
 
         <div className="lp-window mx-auto max-w-3xl p-2 sm:p-3">
-          <div className="overflow-hidden rounded-[26px] bg-[var(--surface-solid)] sm:rounded-[30px]">
+          <div className="overflow-hidden rounded-card bg-[var(--surface-solid)] sm:rounded-card">
             {/* Bar judul + tahap */}
             <div className="flex items-center justify-between gap-3 border-b border-[var(--surface-line)] px-4 py-3 sm:px-6">
               <div className="hidden items-center gap-1.5 sm:flex" aria-hidden="true">
@@ -211,15 +211,20 @@ export function DeployDemo() {
               {phase === 0 && (
                 <div key={`${s.key}-0`} className="dd-in">
                   <div className="mb-2 text-[12px] font-bold text-text-faint">Link repo GitHub</div>
-                  <div className="flex items-center gap-2 rounded-2xl border border-[var(--line-strong)] bg-[var(--surface-solid)] px-4 py-3.5 font-mono text-[13px] sm:text-[14px]">
+                  <div className="flex items-center gap-2 rounded-[14px] border border-[var(--line-strong)] bg-[var(--surface-solid)] px-4 py-3.5 font-mono text-[13px] sm:text-[14px]">
                     <span className="truncate font-semibold text-text">{s.repo.slice(0, typed)}</span>
                     <span className="dd-caret h-[18px] w-[2px] shrink-0" style={{ background: "var(--ink-fill)" }} />
                   </div>
                   <div className="mt-4 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <span className="text-[12px] leading-snug text-text-muted">Repo private? Tambahkan GitHub Token di Settings.</span>
+                    <span className="text-[12px] leading-snug text-text-muted">Repo private? Tambahkan token GitHub di Pengaturan.</span>
                     <span
-                      className={`shrink-0 whitespace-nowrap rounded-full px-5 py-2.5 text-center text-[13px] font-semibold transition-transform ${typingDone ? "dd-press" : "opacity-60"}`}
-                      style={{ background: "var(--ink-fill)", color: "var(--ink-fill-text)" }}
+                      className={`shrink-0 whitespace-nowrap rounded-full px-5 py-2.5 text-center text-[13px] font-semibold transition-transform ${typingDone ? "dd-press" : ""}`}
+                      // Sebelum link selesai diketik: gaya "belum aktif" dengan kontras teks tetap terbaca (bukan opacity 60%).
+                      style={
+                        typingDone
+                          ? { background: "var(--ink-fill)", color: "var(--ink-fill-text)" }
+                          : { background: "var(--pill-bg)", color: "var(--text-muted)" }
+                      }
                     >
                       Periksa repo
                     </span>
@@ -233,7 +238,7 @@ export function DeployDemo() {
                     <span className="live-dot" />
                     {s.repo}
                   </div>
-                  <div className={`rounded-2xl p-4 sm:p-5 ${s.tone}`}>
+                  <div className={`rounded-[14px] p-4 sm:p-5 ${s.tone}`}>
                     <div className="dd-in mb-1 text-[12px] font-bold text-text-faint" style={{ animationDelay: "120ms" }}>
                       Hasil pemeriksaan
                     </div>
@@ -277,13 +282,13 @@ export function DeployDemo() {
                     {["Build", "Deploy", "Live"].map((name, i) => (
                       <div
                         key={name}
-                        className={`rounded-xl px-2 py-2.5 transition-colors ${i <= stageIdx ? "bg-tone-lilac text-text" : "bg-[var(--frame)] text-text-faint"}`}
+                        className={`rounded-[14px] px-2 py-2.5 transition-colors ${i <= stageIdx ? "bg-tone-lilac text-text" : "bg-[var(--frame)] text-text-faint"}`}
                       >
                         {name}
                       </div>
                     ))}
                   </div>
-                  <div className="mt-5 rounded-2xl bg-[var(--frame)] p-4 font-mono text-[12px] leading-[20px]">
+                  <div className="mt-5 rounded-[14px] bg-[var(--frame)] p-4 font-mono text-[12px] leading-[20px]">
                     {s.logs.map((l, i) =>
                       progress > i * 30 + 4 ? (
                         <div key={l} className="dd-in flex items-center gap-2 text-text-muted">

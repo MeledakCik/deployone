@@ -12,7 +12,7 @@ export function BrandLoader({ label = "Memuat…" }: { label?: string }) {
     <div className="app-canvas flex min-h-[100dvh] items-center justify-center" role="status" aria-live="polite">
       <div className="brand-loader">
         <div className="brand-loader-tile">
-          <BrandMark size={40} className="h-10 w-10 rounded-xl" />
+          <BrandMark size={40} className="h-10 w-10 rounded-[14px]" />
         </div>
         <div className="flex flex-col items-center gap-3">
           <div className="brand-loader-bar" aria-hidden />

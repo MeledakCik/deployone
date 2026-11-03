@@ -96,13 +96,13 @@ export default function AuthorizeClient() {
               {view.preview.isCustomClient ? ", melalui Custom OAuth milikmu." : "."}
             </p>
 
-            <section aria-labelledby="izin-bisa" className="rounded-2xl bg-[var(--surface-solid-2)] p-4">
+            <section aria-labelledby="izin-bisa" className="rounded-[14px] bg-[var(--surface-solid-2)] p-4">
               <h2 id="izin-bisa" className="text-[13px] font-semibold">Yang bisa dilakukan konektor</h2>
               <ul className="mt-3 space-y-2.5 text-[13px] leading-snug">
                 {[
                   "Menayangkan dan memperbarui website statis (Link Instan) di akunmu, secara bertahap",
                   "Melihat daftar file, statistik kunjungan, dan daftar link aktifmu",
-                  "Menghapus link yang kamu minta, dan men-deploy ke platform yang kamu izinkan di Settings",
+                  "Menghapus link yang kamu minta, dan men-deploy ke platform yang kamu izinkan di Pengaturan",
                 ].map((t) => (
                   <li key={t} className="flex items-start gap-2.5">
                     <span className="mt-px grid h-5 w-5 shrink-0 place-items-center rounded-full bg-tone-mint text-ok-fg">
@@ -117,7 +117,7 @@ export default function AuthorizeClient() {
                 <span className="mt-px grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[var(--pill-bg)] text-text-muted">
                   <Lock size={11} aria-hidden />
                 </span>
-                Token platform, environment variable, dan database-mu. Akses bisa dicabut kapan saja di Settings → Konektor AI (MCP).
+                Token platform, environment variable, dan database-mu. Akses bisa dicabut kapan saja di Pengaturan → Konektor AI (MCP).
               </p>
             </section>
 

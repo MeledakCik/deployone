@@ -13,14 +13,14 @@ export default function TablesTab({ schema, onOpen, onReload }: { schema: Schema
         </Btn>
       </div>
 
-      {schema.tables.length === 0 && <p className="rounded-xl bg-[var(--pill-bg)] px-4 py-8 text-center text-sm text-text-muted">{empty}</p>}
+      {schema.tables.length === 0 && <p className="rounded-[14px] bg-[var(--pill-bg)] px-4 py-8 text-center text-sm text-text-muted">{empty}</p>}
 
       {schema.tables.length > 0 && (
         <>
           {/* Mobile: kartu */}
           <ul className="space-y-2 md:hidden">
             {schema.tables.map((t) => (
-              <li key={t.name} className="rounded-xl p-3">
+              <li key={t.name} className="rounded-[14px] p-3">
                 <div className="flex items-start justify-between gap-2">
                   <p className="min-w-0 break-all font-medium text-text">{t.name}</p>
                   <span className="shrink-0 rounded-full bg-[var(--pill-bg)] px-2 py-0.5 text-[12px] font-medium text-lav-text">{t.type}</span>
@@ -41,7 +41,7 @@ export default function TablesTab({ schema, onOpen, onReload }: { schema: Schema
           </ul>
 
           {/* Desktop: tabel */}
-          <div className="hidden overflow-x-auto rounded-xl md:block">
+          <div className="hidden overflow-x-auto rounded-[14px] md:block">
             <table className="w-full">
               <thead className="bg-[var(--pill-bg)]">
                 <tr>

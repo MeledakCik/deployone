@@ -75,7 +75,7 @@ function AddSecretModal({
     (isVercelProject && Boolean(vercelToken)) ||
     (isCloudflareProject && Boolean(savedCloudflareToken)) ||
     (isRailwayProject && Boolean(savedRailwayToken));
-  const remotePlatformLabel = isVercelProject ? "Vercel" : isCloudflareProject ? "Cloudflare" : "Railway";
+  const remotePlatformLabel = isVercelProject ? "Vercel" : isCloudflareProject ? "Cloudflare Pages" : "Railway";
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -101,7 +101,7 @@ function AddSecretModal({
     <div className="anim-fade fixed inset-0 z-[100] flex items-center justify-center modal-scrim px-4">
       <Surface className="anim-pop w-full max-w-sm p-6">
         <div className="flex items-center justify-between mb-5">
-          <h3 className="text-[16px] font-semibold">Tambah Secret</h3>
+          <h2 className="text-[16px] font-semibold">Tambah secret</h2>
           <button
             type="button"
             onClick={onClose}
@@ -178,7 +178,7 @@ function AddSecretModal({
 
           {isVercelProject || isCloudflareProject || isRailwayProject ? (
             canPush ? (
-              <div className="space-y-2 rounded-2xl bg-[var(--surface-solid-2)] p-3.5">
+              <div className="space-y-2 rounded-[14px] bg-[var(--surface-solid-2)] p-3.5">
                 <label className="flex items-center gap-2.5 text-[13px] font-medium">
                   <input
                     type="checkbox"
@@ -191,7 +191,7 @@ function AddSecretModal({
               </div>
             ) : (
               <p className="text-[12px] text-text-faint">
-                Konek-kan {remotePlatformLabel} Token di Settings untuk push otomatis.
+                Konek-kan {remotePlatformLabel} Token di Pengaturan untuk push otomatis.
               </p>
             )
           ) : (
@@ -287,7 +287,7 @@ export function EnvironmentView() {
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <PageTitle title="Environment Variables" desc={<>Simpan secret per-project untuk di-inject ke build kamu — tidak ada secret global antar project.</>} />
+            <PageTitle title="Variabel env" desc={<>Simpan variabel environment (secret, API key, URL database) per project. Nilainya dikirim ke platform saat build — tidak ada variabel global antar project.</>} />
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {(vercelToken || savedCloudflareToken || savedRailwayToken) && (
@@ -370,9 +370,9 @@ export function EnvironmentView() {
         {filteredEnvVars.length === 0 ? (
           <Surface className="flex flex-col items-center justify-center gap-3 px-6 py-24 text-center">
             <KeyRound size={52} className="text-text-faint" strokeWidth={1.5} />
-            <h3 className="text-[16px] font-semibold">
+            <h2 className="text-[16px] font-semibold">
               {activeEnv === "all" ? "Belum ada secret" : `Belum ada secret ${activeEnv}`}
-            </h3>
+            </h2>
             <p className="max-w-xs text-[13px] text-text-muted">
               {activeProject === "all" && activeEnv === "all"
                 ? "Tambahkan environment variable pertamamu untuk digunakan saat deploy."

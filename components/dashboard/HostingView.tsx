@@ -1,6 +1,7 @@
 "use client";
 
-import { PageTitle } from "@/components/ui/primitives";
+import { Card, Empty, PageTitle } from "@/components/ui/primitives";
+import { useAuth } from "@/lib/auth-context";
 import * as React from "react";
 import {
   UploadCloud,
@@ -11,7 +12,8 @@ import {
   X,
   TriangleAlert,
   Info,
-} from "lucide-react";
+  Link2,
+} from "@/components/ui/icons";
 import { ViewFade } from "@/components/ui/ViewFade";
 import { LinkOverview } from "@/components/dashboard/LinkOverview";
 import { useToast } from "@/components/ui/Toast";
@@ -39,7 +41,7 @@ import {
 } from "@/lib/site-upload";
 
 const inputCls =
-  "w-full rounded-xl border border-[var(--line)] bg-[var(--pill-bg)] px-3.5 py-2.5 text-[13px] outline-none transition focus:border-[var(--line-strong)]";
+  "w-full rounded-[14px] border border-[var(--line)] bg-[var(--pill-bg)] px-3.5 py-2.5 text-[13px] outline-none transition focus:border-[var(--line-strong)]";
 
 function formatBytes(n: number): string {
   if (n < 1024) return `${n} B`;
@@ -65,6 +67,8 @@ function remaining(expiresAt: number, now: number): string {
 type Stage = "idle" | "reading" | "ready" | "publishing";
 
 export function HostingView() {
+  const { user } = useAuth();
+  const isAdmin = !!user?.isAdmin;
   const { showToast } = useToast();
   const confirm = useConfirm();
   const { setView } = useDeploy();
@@ -252,8 +256,16 @@ export function HostingView() {
         <div className="notice notice-warn mb-4">
           <CircleAlert size={16} className="mt-0.5 shrink-0" />
           <span>
-            Fitur ini belum aktif di server. Admin perlu mengisi env <code>TUNNEL_BASE_DOMAIN</code> (domain wildcard) lalu
-            redeploy — lihat panduan &quot;Aktifkan Link Instan dan Link Gaib&quot; di menu Docs.
+            Link Instan sedang tidak tersedia. Sementara itu, kamu tetap bisa menayangkan situs lewat menu Deploy atau Unggah.
+            {isAdmin && (
+              <>
+                {" "}
+                <span className="block mt-1 text-[13px]">
+                  Untuk admin: isi env <code>TUNNEL_BASE_DOMAIN</code> (domain wildcard) lalu redeploy. Lihat panduan
+                  &quot;Aktifkan Link Instan dan Link Gaib&quot; di Dokumentasi.
+                </span>
+              </>
+            )}
           </span>
         </div>
       )}
@@ -478,10 +490,12 @@ export function HostingView() {
 
       {!config && !loadError && <p className="mt-8 text-[13px] text-text-muted">Memuat…</p>}
       {config && config.sites.length === 0 && (
-        <div className="mt-8">
-          <h3 className="mb-3 text-[16px] font-semibold">Link aktif (0/{config.maxSites})</h3>
-          <p className="text-[13px] text-text-muted">Belum ada link aktif.</p>
-        </div>
+        <Card className="mt-6">
+          <Empty icon={Link2} title="Belum ada link aktif">
+            Link yang kamu buat muncul di sini, lengkap dengan sisa masa aktifnya. Kamu bisa punya {config.maxSites} link
+            aktif sekaligus.
+          </Empty>
+        </Card>
       )}
       {config && config.sites.length > 0 && (
         <LinkOverview sites={config.sites} maxSites={config.maxSites} now={now} onCopy={copy} onDelete={remove} />

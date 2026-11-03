@@ -51,7 +51,7 @@ export const SERVER_INSTRUCTIONS =
   "Gunakan `deploy_website` untuk meng-upload kerangka awal `index.html` (atau batch file pertama), lalu panggil `update_website` (`append_files` untuk menyambung potongan `index.html` besar, atau `files` untuk menambah file/halaman berikutnya). " +
   "Untuk merevisi website yang sudah tayang, gunakan `update_website` (`patches` untuk cari-ganti teks cepat di `index.html`, atau `files` untuk menimpa file yang berubah) — link publiknya tetap sama dan jauh lebih cepat daripada upload ulang seluruh situs. " +
   "Gunakan `inspect_website` untuk melihat struktur file, statistik pengunjung, diagnostik link rusak, atau membaca isi file per rentang baris. " +
-  "`deploy_project` memakai token platform yang disimpan pengguna di Depup (Settings → Konektor Claude); token tidak pernah diminta atau dikembalikan lewat tool. " +
+  "`deploy_project` memakai token platform yang disimpan pengguna di Depup (Pengaturan → Konektor Claude); token tidak pernah diminta atau dikembalikan lewat tool. " +
   "`connector_status` menampilkan platform mana yang sudah siap. Konten phishing, malware, atau yang melanggar hukum tidak diterima.";
 
 function promptList() {
@@ -375,7 +375,7 @@ function toolList() {
       name: "connector_status",
       title: "Status konektor deploy Depup",
       description:
-        "Menampilkan platform deploy mana (Vercel, Cloudflare Pages, Railway) yang sudah siap dipakai Claude: token sudah disimpan di Settings dan sudah diizinkan pengguna. " +
+        "Menampilkan platform deploy mana (Vercel, Cloudflare Pages, Railway) yang sudah siap dipakai Claude: token sudah disimpan di Pengaturan dan sudah diizinkan pengguna. " +
         "Tidak pernah menampilkan token. Berguna untuk mengetahui apakah `deploy_project` bisa dipakai saat ini.",
       inputSchema: { type: "object", properties: {}, additionalProperties: false },
       annotations: { title: "Status konektor deploy Depup", readOnlyHint: true, destructiveHint: false, idempotentHint: true, openWorldHint: false },
@@ -385,7 +385,7 @@ function toolList() {
       title: "Deploy project dari GitHub ke Vercel / Cloudflare / Railway",
       description:
         "Men-deploy repo GitHub ke Vercel, Cloudflare Pages, atau Railway memakai token yang sudah disimpan pengguna di Depup → Settings (jangan kirim token di sini). " +
-        "Hanya platform yang diizinkan pengguna di Settings → Konektor Claude yang bisa dipakai. Repo harus sudah ada di GitHub dan berisi project yang akan dibangun. " +
+        "Hanya platform yang diizinkan pengguna di Pengaturan → Konektor Claude yang bisa dipakai. Repo harus sudah ada di GitHub dan berisi project yang akan dibangun. " +
         "Hasilnya URL deployment dan tautan dashboard; build bisa butuh beberapa menit setelah ini. Berbeda dengan `deploy_website`, hasilnya permanen dan berjalan di akun platform milik pengguna; deploy ulang memperbarui project produksi yang sama.",
       inputSchema: {
         type: "object",
@@ -541,7 +541,7 @@ async function callTool(name: string, args: Record<string, unknown>, ctx: RpcCon
       const { getConnectorStatus } = await import("@/app/api/_lib/mcp-deploy");
       const st = await getConnectorStatus(ctx.email);
       const lines = st.platforms.map((p) => {
-        const state = p.ready ? "siap dipakai" : !p.tokenSaved ? "token belum disimpan di Settings" : "token ada, tapi belum diizinkan di Settings → Konektor Claude";
+        const state = p.ready ? "siap dipakai" : !p.tokenSaved ? "token belum disimpan di Pengaturan" : "token ada, tapi belum diizinkan di Pengaturan → Konektor Claude";
         return `- ${p.label}: ${state}`;
       });
       lines.push(`- GitHub token (repo private): ${st.githubSaved ? "tersimpan" : "belum disimpan (cukup untuk repo publik)"}`);

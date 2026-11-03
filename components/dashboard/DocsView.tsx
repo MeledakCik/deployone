@@ -55,7 +55,7 @@ const MCP_URL = `${(process.env.NEXT_PUBLIC_SITE_URL || process.env.NEXT_PUBLIC_
 /** Blok kode untuk dipakai di dalam langkah panduan. Bisa di-scroll ke samping di layar kecil. */
 function Pre({ children }: { children: string }) {
   return (
-    <pre className="mt-2 max-w-full overflow-x-auto rounded-xl border border-[var(--line)] bg-[var(--pill-bg)] p-3 font-mono text-[12px] leading-relaxed text-[var(--text)]">
+    <pre className="mt-2 max-w-full overflow-x-auto rounded-[14px] border border-[var(--line)] bg-[var(--pill-bg)] p-3 font-mono text-[12px] leading-relaxed text-[var(--text)]">
       {children}
     </pre>
   );
@@ -70,12 +70,12 @@ const GUIDES: Guide[] = [
     desc: "Lima langkah dari akun baru sampai situsmu online.",
     steps: [
       "Masuk dengan akun Google lewat tombol Masuk di halaman utama. Depup tidak menyimpan password-mu.",
-      'Buka Settings, lalu isi token untuk platform yang ingin kamu pakai (Vercel, Cloudflare, atau Railway). Cara mendapatkannya ada di grup "Token dan keamanan" di halaman ini.',
-      'Tekan "Test Koneksi" di samping token untuk memastikan tokennya benar.',
+      'Buka Pengaturan, lalu isi token untuk platform yang ingin kamu pakai (Vercel, Cloudflare Pages, atau Railway). Cara mendapatkannya ada di grup "Token dan keamanan" di halaman ini.',
+      'Tekan "Tes koneksi" di samping token untuk memastikan tokennya benar.',
       "Buka Deploy, tempel link repo GitHub (contoh: https://github.com/username/repo), pilih platform, lalu klik Deploy.",
       "Tunggu progresnya selesai. Alamat situsmu muncul di layar, dan project-nya masuk ke daftar Projects.",
       "Belum memiliki repo GitHub? Pakai menu Upload. Hanya mau menunjukkan hasil sementara ke dosen atau client? Pakai Link Instan atau Link Gaib (lihat panduan perbandingannya di bawah).",
-      "Token tidak wajib disimpan di Settings. Kamu juga bisa mengetiknya langsung di form deploy; token yang diketik di sana hanya dipakai untuk deploy itu dan tidak disimpan.",
+      "Token tidak wajib disimpan di Pengaturan. Kamu juga bisa mengetiknya langsung di form deploy; token yang diketik di sana hanya dipakai untuk deploy itu dan tidak disimpan.",
     ],
   },
   {
@@ -132,7 +132,7 @@ const GUIDES: Guide[] = [
       'Waktu deploy pertama kali, Depup otomatis: buat project baru di akun Railway kamu (kalau nama project belum ada), buat service yang terhubung ke repo GitHub tersebut, generate domain publik "*.up.railway.app", lalu trigger deployment. Deploy berikutnya dengan nama project yang sama otomatis dianggap redeploy ke service yang sama.',
       "Sebelum deploy, Depup mengecek repo-mu dan otomatis menambahkan file yang kurang lewat satu commit: Staticfile (HTML statis di folder docs/dist atau bentrok dengan folder public/), index.html (kalau tidak ada), script \"start\" di package.json (server Node tanpa start), Procfile (FastAPI/Flask/Streamlit dan sejenisnya), gunicorn (Django), dan .dockerignore (kalau ada Dockerfile). Kalau project-mu ada di subfolder (mis. frontend/ atau backend/), Depup mengatur Root Directory Railway ke folder itu. Daftar file yang akan ditambahkan sudah tampil di kartu cek repo sebelum kamu menekan Deploy. File buatanmu tidak pernah ditimpa. Butuh GitHub Token dengan izin menulis — kalau tidak ada, deploy tetap jalan dan kamu diberi tahu apa yang kurang.",
       'Field "Start Command" di form Deploy Railway itu opsional — kosongkan saja kalau mau Railway auto-detect (misalnya baca script "start" di package.json, atau ikuti CMD di Dockerfile). Isi manual hanya kalau auto-detect-nya salah.',
-      'Field "Environment Variables" (format KEY=value per baris) dikirim ke service Railway sebelum deploy pertama jalan — praktis untuk isi credential database, API key, dsb dari awal.',
+      'Kolom "Variabel environment" (format KEY=value per baris) dikirim ke service Railway sebelum deploy pertama jalan — praktis untuk isi credential database, API key, dsb dari awal.',
       "Railway itu platform berbayar berdasarkan pemakaian resource (CPU/RAM/network), beda dari Vercel/Cloudflare yang memiliki free tier lebih murah hati untuk project kecil — pastikan akun Railway kamu memiliki kredit/metode pembayaran aktif sebelum deploy dari Depup, atau deployment bisa gagal/di-pause oleh Railway.",
       "Custom domain (menu Domains, termasuk record TXT untuk verifikasi) dan environment variable (menu Environment) untuk project Railway bisa dikelola dari Depup. Yang tetap lebih lengkap di dashboard Railway: pengaturan jaringan lanjutan, scaling, dan volume.",
     ],
@@ -159,7 +159,7 @@ const GUIDES: Guide[] = [
     title: "Upload zip atau folder ke GitHub",
     desc: "Cara tercepat kalau project-mu masih ada di komputer dan belum memiliki repo.",
     steps: [
-      'Buka menu Upload. Pastikan GitHub Token (izin "repo") sudah tersimpan di Settings.',
+      'Buka menu Upload. Pastikan GitHub Token (izin "repo") sudah tersimpan di Pengaturan.',
       'Tarik file .zip atau folder project ke kotak upload, atau klik "Pilih file ZIP" / "Pilih folder".',
       "Atur nama repo (huruf, angka, titik, strip, atau underscore) dan pilih Private atau Public.",
       'Pilih "Upload saja" untuk hanya mengirim ke GitHub, atau "Langsung deploy" lalu pilih platformnya.',
@@ -214,7 +214,7 @@ const GUIDES: Guide[] = [
     steps: [
       "Buka menu Environment, tambahkan variabel baru, lalu pilih Project, isi nama variabel dan nilainya, dan pilih Environment: Production (situs yang tayang) atau Preview.",
       "Pakai nama dengan huruf besar dan garis bawah, misalnya DATABASE_URL atau NEXT_PUBLIC_API_URL.",
-      "Nyalakan opsi untuk mengirim ke platform supaya variabelnya langsung dipasang di Vercel, Cloudflare, atau Railway. Ini butuh token platform tersebut di Settings. Project otomatis dideploy ulang agar perubahan berlaku.",
+      "Nyalakan opsi untuk mengirim ke platform supaya variabelnya langsung dipasang di Vercel, Cloudflare Pages, atau Railway. Ini butuh token platform tersebut di Pengaturan. Project otomatis dideploy ulang agar perubahan berlaku.",
       "Nilai variabel disembunyikan sampai kamu menekan ikon mata.",
       "Tombol Sinkronkan menyamakan daftar di Depup dengan yang ada di platform, untuk project yang sudah terhubung.",
       "Variabel dengan awalan NEXT_PUBLIC_, VITE_, atau REACT_APP_ ikut terkirim ke browser, jadi siapa pun bisa melihatnya. Jangan taruh secret key di sana.",
@@ -247,9 +247,9 @@ const GUIDES: Guide[] = [
     steps: [
       "Projects menampilkan project unik dari riwayat deploy-mu. Pakai tab untuk menyaring per platform.",
       "Redeploy: menjalankan deploy ulang project di platform yang sama, tanpa mengisi form lagi.",
-      "Import Project: membawa project yang sudah ada di akun Vercel, Cloudflare, atau Railway-mu ke Depup. Butuh token platform tersebut di Settings.",
+      "Import Project: membawa project yang sudah ada di akun Vercel, Cloudflare Pages, atau Railway-mu ke Depup. Butuh token platform tersebut di Pengaturan.",
       "Sinkronkan: menyamakan daftar dengan platform. Gunakan ini kalau kamu menghapus sesuatu langsung di dashboard platform. Project yang sudah tidak ada ditandai Dihapus di riwayat.",
-      'Hapus Project memiliki tiga tingkat. "Hapus di Depup" hanya menghapus dari daftar Depup. "Hapus juga di platform" ikut menghapus project di Vercel, Cloudflare, atau Railway sehingga situsnya mati. "Hapus juga repo GitHub" menghapus repo secara permanen.',
+      'Hapus Project memiliki tiga tingkat. "Hapus di Depup" hanya menghapus dari daftar Depup. "Hapus juga di platform" ikut menghapus project di Vercel, Cloudflare Pages, atau Railway sehingga situsnya mati. "Hapus juga repo GitHub" menghapus repo secara permanen.',
       "Menghapus repo GitHub butuh token dengan izin khusus. Lihat panduan \"Hapus project beserta repo GitHub\" di grup Token dan keamanan.",
       "Dashboard menyimpan 10 riwayat deploy terakhir. Yang paling lama otomatis tergeser. Project yang sudah dihapus tetap tercatat di riwayat dengan label Dihapus.",
     ],
@@ -265,7 +265,7 @@ const GUIDES: Guide[] = [
       'Kalau kamu melaporkan masalah (misalnya "deploy saya gagal"), asisten memeriksa akunmu lebih dulu: apakah token masih valid, apakah platformnya sedang gangguan, dan apakah deploy terakhirmu gagal. Hasilnya tampil sebagai kartu "Hasil pemeriksaan akunmu".',
       "Pemeriksaan akun dibatasi beberapa kali dalam beberapa menit, dan jumlah pesan per hari juga dibatasi. Kalau kena batas, coba lagi nanti atau periksa panduan di halaman ini.",
       'Masalah belum selesai? Tekan "Laporkan ke developer". Percakapan dan hasil pemeriksaan dikirim ke developer. Tombol "Salin percakapan" berguna kalau kamu mau mengirimnya lewat jalur lain.',
-      'Nyalakan "Tampilkan proses debug" di Settings kalau deploy bermasalah. Log langkah demi langkahnya membantu asisten dan developer menemukan penyebabnya.',
+      'Nyalakan "Tampilkan proses debug" di Pengaturan kalau deploy bermasalah. Log langkah demi langkahnya membantu asisten dan developer menemukan penyebabnya.',
       "Jangan tempel token atau password di chat. Kalau sudah terlanjur, buat ulang token itu di platform terkait. Token tidak pernah dikirim ke AI oleh pemeriksaan otomatis, hanya hasil ringkasnya.",
       "Asisten adalah AI, jadi bisa keliru. Untuk hal penting, periksa ulang di panduan ini atau di dashboard platform.",
     ],
@@ -273,15 +273,15 @@ const GUIDES: Guide[] = [
   {
     icon: Settings2,
     category: "features",
-    title: "Settings — token tersimpan, Test Koneksi, dan tampilan",
+    title: "Pengaturan — token tersimpan, Tes koneksi, dan tampilan",
     desc: "Simpan token sekali supaya tidak perlu mengetik ulang di setiap deploy.",
     steps: [
-      "Token yang disimpan di Settings dipakai sebagai default setiap kali kamu deploy project baru.",
-      "Tekan Test Koneksi di samping tiap token untuk memastikan tokennya benar-benar valid. Untuk Cloudflare, di sini kamu juga memilih akun yang dipakai.",
+      "Token yang disimpan di Pengaturan dipakai sebagai default setiap kali kamu deploy project baru.",
+      "Tekan Tes koneksi di samping tiap token untuk memastikan tokennya benar-benar valid. Untuk Cloudflare, di sini kamu juga memilih akun yang dipakai.",
       "Tombol Hapus di samping tiap token menghapusnya dari akunmu kapan saja (ada konfirmasi dulu).",
       'Mode terang mengganti tampilan dashboard antara terang dan gelap.',
       '"Tampilkan proses debug" memunculkan log tahap, status, dan pesan error di jendela deploy. Nyalakan kalau kamu perlu melaporkan masalah.',
-      "Token kedaluwarsa atau dicabut di platform? Buat yang baru, tempel di Settings, lalu Test Koneksi lagi.",
+      "Token kedaluwarsa atau dicabut di platform? Buat yang baru, tempel di Pengaturan, lalu Tes koneksi lagi.",
     ],
   },
 
@@ -292,14 +292,14 @@ const GUIDES: Guide[] = [
     title: "Konektor AI (MCP) — apa itu dan tool apa saja yang tersedia",
     desc: "Satu server MCP Depup untuk Claude, Gemini, Cursor, OpenCode, Codex, dan DeepSeek (Web maupun CLI).",
     steps: [
-      "MCP membuat AI pilihanmu bisa memakai Depup atas namamu: menayangkan website, mengeditnya, sampai men-deploy repo GitHub, tanpa kamu pindah-pindah halaman. Pengaturannya ada di Settings → Konektor AI (MCP).",
+      "MCP membuat AI pilihanmu bisa memakai Depup atas namamu: menayangkan website, mengeditnya, sampai men-deploy repo GitHub, tanpa kamu pindah-pindah halaman. Pengaturannya ada di Pengaturan → Konektor AI (MCP).",
       "deploy_website: menayangkan file HTML/CSS/JS sebagai Link Instan (aktif 1 jam sampai 7 hari). Mendukung kompresi gzip+base64 dan merapikan folder dist/ otomatis.",
       "update_website: memperbarui website yang sudah tayang tanpa mengubah linknya. Bisa menyambung index.html besar (append_files), menambah halaman bertahap (files), atau edit cari-dan-ganti cepat (patches).",
       "inspect_website: melihat daftar file beserta ukurannya, statistik kunjungan, diagnostik link HTML yang rusak, dan membaca isi file per rentang baris.",
       "list_websites dan delete_website: melihat semua Link Instan yang aktif beserta jumlah views-nya, atau menghapus salah satunya.",
       "connector_status: melihat platform deploy mana yang sudah siap dipakai. Token tidak pernah ditampilkan.",
-      "deploy_project: men-deploy repo GitHub ke Vercel, Cloudflare Pages, atau Railway memakai token yang kamu simpan di Settings.",
-      "Pasang di aplikasi AI-mu lewat panduan di bawah ini. Cara tercepat: buka Settings, tekan Buat Token, lalu salin konfigurasinya.",
+      "deploy_project: men-deploy repo GitHub ke Vercel, Cloudflare Pages, atau Railway memakai token yang kamu simpan di Pengaturan.",
+      "Pasang di aplikasi AI-mu lewat panduan di bawah ini. Cara tercepat: buka Pengaturan, tekan Buat Token, lalu salin konfigurasinya.",
     ],
   },
   {
@@ -310,11 +310,11 @@ const GUIDES: Guide[] = [
     link: { label: "Buka Connectors di claude.ai", href: "https://claude.ai/settings/connectors" },
     steps: [
       "Buka claude.ai → Settings → Connectors → Add custom connector.",
-      "Isi nama Depup, lalu tempel URL MCP. Salin dari Settings → Konektor AI (MCP), atau pakai: " + MCP_URL,
+      "Isi nama Depup, lalu tempel URL MCP. Salin dari Pengaturan → Konektor AI (MCP), atau pakai: " + MCP_URL,
       "Klik Add, lalu Connect. Login dengan Google di Depup dan tekan Izinkan.",
       "Ingin memakai Client ID dan Secret sendiri? Ikuti panduan \"Buat OAuth sendiri\" di grup ini.",
       <>
-        Claude Code CLI: jalankan perintah ini, ganti {"<TOKEN>"} dengan token dari Settings.
+        Claude Code CLI: jalankan perintah ini, ganti {"<TOKEN>"} dengan token dari Pengaturan.
         <Pre>{`claude mcp add --transport http depup ${MCP_URL} --header "Authorization: Bearer <TOKEN>"`}</Pre>
       </>,
       <>
@@ -331,7 +331,7 @@ const GUIDES: Guide[] = [
     steps: [
       "Gemini Web: buka jendela Terhubung ke server MCP di gemini.google.com, lalu tempel URL MCP Depup: " + MCP_URL,
       "Biarkan kolom Client ID dan Rahasia klien kosong. Depup sudah mengizinkan URL pengalihan Google dan metode client_secret_post secara otomatis.",
-      "Mau mengisi Client ID dan Secret sendiri? Buat di Settings dengan preset Gemini, lalu salin ke Gemini. Lihat panduan \"Buat OAuth sendiri\".",
+      "Mau mengisi Client ID dan Secret sendiri? Buat di Pengaturan dengan preset Gemini, lalu salin ke Gemini. Lihat panduan \"Buat OAuth sendiri\".",
       <>
         Gemini CLI dengan token (satu baris):
         <Pre>{`gemini mcp add --transport http depup ${MCP_URL} --header "Authorization: Bearer <TOKEN>"`}</Pre>
@@ -346,11 +346,11 @@ const GUIDES: Guide[] = [
     icon: Terminal,
     category: "mcp",
     title: "Pasang di Cursor, OpenCode, dan Codex",
-    desc: "Tiga alat ini sama-sama memakai file konfigurasi. Settings Depup membuatkan isinya lengkap dengan tokenmu.",
+    desc: "Tiga alat ini sama-sama memakai file konfigurasi. Pengaturan Depup membuatkan isinya lengkap dengan tokenmu.",
     steps: [
-      "Di Settings → Konektor AI (MCP), pilih aplikasinya, tekan Buat Token, lalu Salin Konfigurasi. Token otomatis masuk ke isi konfigurasi.",
+      "Di Pengaturan → Konektor AI (MCP), pilih aplikasinya, tekan Buat Token, lalu Salin Konfigurasi. Token otomatis masuk ke isi konfigurasi.",
       <>
-        Cursor: tekan tombol Pasang 1-Klik ke Cursor di Settings, atau tempel ke .cursor/mcp.json.
+        Cursor: tekan tombol Pasang 1-Klik ke Cursor di Pengaturan, atau tempel ke .cursor/mcp.json.
         <Pre>{`{\n  "mcpServers": {\n    "depup": {\n      "url": "${MCP_URL}",\n      "headers": { "Authorization": "Bearer <TOKEN>" }\n    }\n  }\n}`}</Pre>
       </>,
       "Cursor tanpa token: cukup isi url saja tanpa headers, lalu Cursor menjalankan login OAuth sendiri.",
@@ -368,9 +368,9 @@ const GUIDES: Guide[] = [
     icon: Terminal,
     category: "mcp",
     title: "Pasang di DeepSeek Harness (dsh)",
-    desc: "DeepSeek Harness memasang MCP lewat paket resmi dsh-mcp-client dan Bearer Token dari Settings Depup.",
+    desc: "DeepSeek Harness memasang MCP lewat paket resmi dsh-mcp-client dan Bearer Token dari Pengaturan Depup.",
     steps: [
-      "Di Settings → Konektor AI (MCP), pilih DeepSeek, tekan Buat Token, lalu salin konfigurasi dan langkah terminalnya. DeepSeek Harness masih developer preview, jadi format konfigurasinya bisa berubah antar rilis.",
+      "Di Pengaturan → Konektor AI (MCP), pilih DeepSeek, tekan Buat Token, lalu salin konfigurasi dan langkah terminalnya. DeepSeek Harness masih developer preview, jadi format konfigurasinya bisa berubah antar rilis.",
       <>
         Pasang paket MCP client ke profil dsh-mu. Ganti VERSI_DSH dengan hasil dsh --version, karena tag npm bawaan paket ini bisa tertinggal dari versi dsh.
         <Pre>{`dsh --version\ndsh plugin --profile web add @deepseek-ai/dsh-mcp-client@VERSI_DSH`}</Pre>
@@ -411,7 +411,7 @@ const GUIDES: Guide[] = [
     title: "Buat OAuth sendiri (Client ID dan Secret)",
     desc: "Untuk aplikasi AI yang meminta Client ID dan Secret, atau kalau kamu ingin mengatur Redirect URI sendiri.",
     steps: [
-      "Buka Settings → Konektor AI (MCP), lalu buka bagian Buat OAuth sendiri.",
+      "Buka Pengaturan → Konektor AI (MCP), lalu buka bagian Buat OAuth sendiri.",
       "Isi nama aplikasi dan pilih metode: Client ID + Secret (confidential) atau Public (PKCE S256, tanpa secret).",
       "Centang preset Redirect URI sesuai aplikasi yang dipakai: Claude, Gemini, Cursor, OpenCode, Codex, atau Localhost (DeepSeek Harness memakai token, bukan OAuth). Redirect URI tambahan bisa diisi di kolom bawahnya.",
       "Tekan Buat OAuth Sendiri. Client ID dan Secret muncul. Secret hanya ditampilkan sekali, jadi langsung simpan.",
@@ -426,10 +426,10 @@ const GUIDES: Guide[] = [
     title: "Izin deploy lewat MCP dan cara mencabut akses",
     desc: "Atur platform mana yang boleh dipakai AI untuk deploy, dan putuskan semua koneksi kalau perlu.",
     steps: [
-      "Di Settings → Konektor AI (MCP), buka bagian Izin deploy. Nyalakan saklar untuk Vercel, Cloudflare Pages, atau Railway.",
+      "Di Pengaturan → Konektor AI (MCP), buka bagian Izin deploy. Nyalakan saklar untuk Vercel, Cloudflare Pages, atau Railway.",
       "Saklar hanya bisa dinyalakan kalau token platform itu sudah tersimpan di form Settings. Platform yang dimatikan tidak bisa dipakai AI untuk deploy.",
       "AI memakai token yang tersimpan langsung dari server. Token tidak pernah dikirim lewat chat.",
-      "Untuk repo private, isi juga GitHub PAT di Settings.",
+      "Untuk repo private, isi juga GitHub PAT di Pengaturan.",
       "Tombol Cabut semua akses MCP memutus semua koneksi dan token OAuth aktif. Link dan deployment yang sudah jalan tetap aktif. Kamu bisa menghubungkan ulang kapan saja.",
     ],
   },
@@ -458,7 +458,7 @@ const GUIDES: Guide[] = [
       'Klik "Create Token", beri nama bebas (misalnya "depup"), pilih scope sesuai akun/tim yang mau dipakai.',
       "Atur masa berlaku (No Expiration lebih praktis untuk dipakai berulang, tetapi lebih aman kalau diberi masa berlaku).",
       'Klik "Create", lalu salin token yang muncul — token ini hanya ditampilkan sekali, jadi langsung simpan.',
-      "Tempel token itu ke field Vercel Token di form Deploy atau di halaman Settings Depup.",
+      "Tempel token itu ke field Vercel Token di form Deploy atau di halaman Pengaturan Depup.",
     ],
   },
   {
@@ -473,7 +473,7 @@ const GUIDES: Guide[] = [
       'Klik "Create Token" → pilih template "Edit Cloudflare Workers" atau membuat custom token dengan permission "Account" → "Cloudflare Pages" → "Edit".',
       "Pilih akun (Account Resources) yang mau dipakai deploy, lalu klik Continue to summary.",
       'Klik "Create Token", lalu salin token yang muncul — token ini hanya ditampilkan sekali, jadi langsung simpan.',
-      'Tempel token itu ke field Cloudflare Token di halaman Settings Depup, lalu klik "Test Koneksi" untuk pilih akun aktifnya.',
+      'Tempel token itu ke field Cloudflare Token di halaman Pengaturan Depup, lalu klik "Tes koneksi" untuk pilih akun aktifnya.',
     ],
   },
   {
@@ -502,7 +502,7 @@ const GUIDES: Guide[] = [
       'Di bagian "Personal Tokens", klik "Create Token" — token jenis ini (bukan Project Token / Team Token) yang dipakai Depup karena butuh izin membuat project baru.',
       'Beri nama bebas (misalnya "depup"), lalu klik "Create".',
       "Salin token yang muncul — token ini hanya ditampilkan sekali, jadi langsung simpan di tempat aman.",
-      'Tempel token itu ke field Railway Token di form Deploy atau di halaman Settings Depup, lalu klik "Test Koneksi" untuk memastikan token-nya valid.',
+      'Tempel token itu ke field Railway Token di form Deploy atau di halaman Pengaturan Depup, lalu klik "Tes koneksi" untuk memastikan token-nya valid.',
     ],
   },
   {
@@ -533,7 +533,7 @@ const GUIDES: Guide[] = [
       'Token classic: centang scope "repo" DAN "delete_repo". Scope "delete_repo" tidak aktif secara default, jadi harus dicentang sendiri.',
       'Token fine-grained: pilih repo yang akan dihapus di "Repository access", lalu set "Administration" ke "Read and write". Repo yang tidak masuk daftar akses token tidak bisa dihapus.',
       "Kamu harus pemilik repo (atau admin untuk repo organisasi). Repo milik orang lain atau organisasi tanpa hak admin akan ditolak GitHub.",
-      "Tempel token ke field GitHub Token di Settings. Token yang hanya memiliki izin baca untuk deploy akan ditolak dengan pesan \"GitHub menolak penghapusan\".",
+      "Tempel token ke field GitHub Token di Pengaturan. Token yang hanya memiliki izin baca untuk deploy akan ditolak dengan pesan \"GitHub menolak penghapusan\".",
       "Urutan penghapusan: project di platform dihapus dulu, baru repo GitHub. Kalau repo gagal dihapus (izin token kurang), project di platform sudah terlanjur terhapus — hapus repo manual di GitHub → Settings → Danger Zone.",
       "Penghapusan repo tidak bisa dibatalkan. Kalau ragu, biarkan saklar GitHub mati dan hapus repo manual nanti.",
     ],
@@ -547,7 +547,7 @@ const GUIDES: Guide[] = [
       "Kamu masuk lewat akun Google. Depup tidak menyimpan password-mu.",
       "Token platform dan nilai environment variable disimpan terenkripsi dan hanya bisa dipakai oleh akunmu.",
       "Token yang kamu ketik langsung di form deploy hanya dipakai untuk deploy itu dan tidak disimpan.",
-      "Kamu bisa menghapus token kapan saja di Settings.",
+      "Kamu bisa menghapus token kapan saja di Pengaturan.",
       "Pemeriksaan akun oleh Asisten Bantuan berjalan di server. Token tidak pernah dikirim ke AI, hanya hasil ringkasnya (\"valid\", \"ditolak\", dan sebagainya).",
       "Riwayat chat bantuan hanya ada di halaman dan hilang saat dimuat ulang, kecuali kamu menekan \"Laporkan ke developer\".",
       "Token tertempel di chat, tersimpan di repo publik, atau terkirim ke orang lain? Cabut token itu di platform terkait, lalu buat yang baru.",
@@ -583,12 +583,12 @@ const GUIDES: Guide[] = [
       'Koneksi internet terputus: periksa koneksimu, lalu klik "Coba lagi".',
       "Link GitHub belum benar: pakai format https://github.com/username/repo, tanpa tambahan di belakangnya.",
       "Repo tidak ditemukan: periksa ejaan username dan nama repo. Kalau repo-nya private, isi GitHub Token (izin \"repo\") di form deploy atau Settings.",
-      "GitHub menolak akses: token-mu kedaluwarsa, dicabut, atau izinnya kurang. Buat token baru dan perbarui di Settings.",
+      "GitHub menolak akses: token-mu kedaluwarsa, dicabut, atau izinnya kurang. Buat token baru dan perbarui di Pengaturan.",
       "Terlalu banyak permintaan: batas GitHub untuk akses tanpa token sudah tercapai. Isi GitHub Token, atau tunggu beberapa menit lalu coba lagi.",
-      "Token [platform] tidak diterima: token salah salin, kedaluwarsa, atau scope-nya kurang. Buat token baru di platform itu, tempel di Settings, lalu tekan Test Koneksi.",
+      "Token [platform] tidak diterima: token salah salin, kedaluwarsa, atau scope-nya kurang. Buat token baru di platform itu, tempel di Pengaturan, lalu tekan Tes koneksi.",
       "Nama project sudah dipakai: nama itu sudah terpakai di platform. Ganti dengan nama yang lebih unik.",
       "GitHub belum dihubungkan ke Cloudflare: ikuti panduan \"Cara hubungkan GitHub ke Cloudflare Pages\", lalu klik \"Sudah connect, periksa lagi\".",
-      "Account ID belum dipilih: buka Settings, tekan Test Koneksi di token Cloudflare, lalu pilih akun yang mau dipakai.",
+      "Account ID belum dipilih: buka Pengaturan, tekan Tes koneksi di token Cloudflare, lalu pilih akun yang mau dipakai.",
       "Sesi login habis: masuk lagi dengan akun Google, lalu ulangi aksimu.",
       "[Platform] sedang bermasalah: gangguan ada di sisi platform, bukan di Depup. Periksa halaman status platform itu, lalu coba lagi nanti.",
       "Build gagal di server: project-mu gagal dibangun di platform. Lihat panduan \"Build gagal — penyebab umum\" dan baca log build di dashboard platform.",
@@ -609,7 +609,7 @@ const GUIDES: Guide[] = [
       "File lock (package-lock.json, yarn.lock, atau pnpm-lock.yaml) sebaiknya ikut di-commit, dan semua library yang dipakai harus tercatat di package.json, bukan hanya terpasang di komputermu.",
       "Butuh environment variable saat build (mis. NEXT_PUBLIC_API_URL atau DATABASE_URL)? Tambahkan di menu Environment atau di form Deploy, lalu deploy ulang.",
       "Railway menolak project yang memakai versi library dengan celah keamanan, misalnya Next.js 14 di bawah 14.2.35. Naikkan versinya di package.json, lalu deploy lagi.",
-      "Baca log build di dashboard platform untuk baris error pertama. Nyalakan \"Tampilkan proses debug\" di Settings agar log langkah Depup juga tampil, lalu tanyakan ke Asisten Bantuan dengan menempelkan potongan error (bukan token).",
+      "Baca log build di dashboard platform untuk baris error pertama. Nyalakan \"Tampilkan proses debug\" di Pengaturan agar log langkah Depup juga tampil, lalu tanyakan ke Asisten Bantuan dengan menempelkan potongan error (bukan token).",
     ],
   },
   {
@@ -632,7 +632,7 @@ const GUIDES: Guide[] = [
     icon: AlertTriangle,
     category: "trouble",
     title: "Next.js di Cloudflare Pages vs Vercel — apa bedanya?",
-    desc: "Penting dibaca kalau repo yang dideploy ke Cloudflare pakai Next.js dengan API routes — perilakunya beda dari Vercel.",
+    desc: "Penting dibaca kalau repo yang dideploy ke Cloudflare Pages pakai Next.js dengan API routes — perilakunya beda dari Vercel.",
     link: {
       label: "Baca dokumentasi next-on-pages",
       href: "https://github.com/cloudflare/next-on-pages",
@@ -691,21 +691,23 @@ const GUIDES: Guide[] = [
       'Buka "Credentials" → "Create Credentials" → "OAuth client ID" → pilih tipe "Web application".',
       "Di bagian Authorized redirect URIs, tambahkan persis: https://<domain-vercel-kamu>/api/auth/google/callback",
       "Simpan, lalu salin Client ID dan Client Secret yang muncul.",
-      'Di project Vercel Depup, buka Settings → Environment Variables, tambahkan GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, dan AUTH_SECRET (string acak bebas, minimal 16 karakter) — lalu redeploy.',
+      'Di project Vercel Depup, buka Pengaturan → Environment Variables, tambahkan GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, dan AUTH_SECRET (string acak bebas, minimal 16 karakter) — lalu redeploy.',
     ],
   },
   {
     icon: Link2,
     category: "admin",
     title: "Aktifkan Link Instan dan Link Gaib di server sendiri",
-    desc: "Kedua fitur ini butuh domain wildcard. Tanpa itu, menu Link Instan tampil dengan pesan bahwa fitur belum aktif.",
+    desc: "Link Instan butuh domain wildcard. Link Gaib bisa jalan dengan wildcard, dengan satu subdomain khusus, atau dengan alamat cadangan /t/ di domain Depup.",
     steps: [
       "Siapkan domain yang terpisah dari domain dashboard Depup (mis. depup.web.id). Alasannya: isi link adalah milik pengguna, dan kalau satu subdomain ditandai phishing, reputasi seluruh domain ikut turun.",
       "Di Vercel → project Depup → Settings → Domains, tambahkan domain itu dan juga wildcard-nya (*.depup.web.id).",
       "Wildcard butuh nameserver domain diarahkan ke Vercel (ns1.vercel-dns.com dan ns2.vercel-dns.com) supaya sertifikat wildcard bisa diterbitkan.",
       "Isi environment variable TUNNEL_BASE_DOMAIN dengan domain itu (mis. depup.web.id), lalu redeploy. Env ini juga dibaca saat build.",
       "Untuk CLI Link Gaib, set DEPUP_HOST ke alamat Depup-mu, atau ubah DEFAULT_HOST di cli/bin/depup.js.",
-      "Fitur ini otomatis mati kalau TUNNEL_BASE_DOMAIN kosong. Itu disengaja, supaya kode milik pengguna tidak jalan di domain dashboard.",
+      "Tidak bisa memasang wildcard? Untuk Link Gaib cukup SATU subdomain: tambahkan mis. t.depup.web.id di Vercel → Domains (record CNAME biasa), lalu isi TUNNEL_PATH_HOST=t.depup.web.id. Link menjadi https://t.depup.web.id/<nama-link>/ dan tetap terpisah dari domain dashboard.",
+      "Tanpa TUNNEL_BASE_DOMAIN maupun TUNNEL_PATH_HOST, Link Gaib memakai alamat cadangan https://<domain-depup>/t/<nama-link>/. Aset, API, link, dan redirect ber-URL absolut (/style.css, /_next/..., fetch(\"/api/...\"), /login) tetap diteruskan ke tunnel lewat header Referer, jadi pengunjung tidak lagi dilempar ke login Depup. Tetap disarankan memakai salah satu domain terpisah di atas, karena di alamat cadangan kode milik pengguna berjalan di domain dashboard.",
+      "Link Instan tetap butuh TUNNEL_BASE_DOMAIN (wildcard), supaya situs pengguna tidak pernah dilayani dari domain dashboard.",
       "Batas bawaan Link Instan bisa diubah lewat env SITES_MAX_MB dan SITES_MAX_PER_USER. Daftar lengkap variabelnya ada di file .env.example.",
     ],
   },
@@ -761,7 +763,7 @@ const GUIDES: Guide[] = [
     desc: "Menu Donasi tampil dengan pesan bahwa fitur belum diaktifkan sampai admin mengisi satu variabel.",
     steps: [
       "Buat atau siapkan akun Saweria untuk menerima donasi.",
-      "Di project Vercel Depup, buka Settings → Environment Variables, lalu isi SAWERIA_USERNAME dengan username Saweria-mu.",
+      "Di project Vercel Depup, buka Pengaturan → Environment Variables, lalu isi SAWERIA_USERNAME dengan username Saweria-mu.",
       "Redeploy, lalu buka menu Donasi untuk memastikan form QRIS muncul.",
       "Daftar lengkap environment variable ada di file .env.example.",
     ],
@@ -784,7 +786,7 @@ function GuideCard({ guide }: { guide: Guide }) {
         aria-expanded={open}
         className="flex w-full items-start gap-4 p-5 text-left sm:p-6"
       >
-        <span className={`bounce-t grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-tone-lilac text-lav-text ${open ? "scale-[1.07] -rotate-3" : ""}`}>
+        <span className={`bounce-t grid h-11 w-11 shrink-0 place-items-center rounded-[14px] bg-tone-lilac text-lav-text ${open ? "scale-[1.07] -rotate-3" : ""}`}>
           <Icon size={20} />
         </span>
         <div className="min-w-0 flex-1">
@@ -831,7 +833,7 @@ function GuideCard({ guide }: { guide: Guide }) {
 export function DocsView() {
   const [query, setQuery] = React.useState("");
 
-  // Buka langsung ke grup tertentu, mis. /docs#docs-mcp atau dari tombol "Panduan" di Settings.
+  // Buka langsung ke grup tertentu, mis. /docs#docs-mcp atau dari tombol "Panduan" di Pengaturan.
   React.useEffect(() => {
     const id = window.location.hash.replace("#", "");
     if (!id.startsWith("docs-")) return;

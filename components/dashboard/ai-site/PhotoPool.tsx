@@ -82,7 +82,7 @@ export function PhotoPool({
           </div>
           <ul className="grid grid-cols-3 gap-2 min-[480px]:grid-cols-4 sm:grid-cols-5">
             {photos.map((p, i) => (
-              <li key={p.id} className="relative aspect-square overflow-hidden rounded-xl">
+              <li key={p.id} className="relative aspect-square overflow-hidden rounded-[14px]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={p.preview} alt={`Foto ${i + 1}: ${p.file.name}`} className="h-full w-full object-cover" />
                 <span className="absolute left-1 top-1 rounded-full bg-black/70 px-2 text-[12px] font-semibold leading-5 text-white" aria-hidden>

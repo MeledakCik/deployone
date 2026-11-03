@@ -35,7 +35,7 @@ export default function ImportExportTab({ id, schema, onChanged }: { id: string;
   const link = `${linkBtn} w-full sm:w-auto`;
   return (
     <div className="grid gap-4 lg:grid-cols-2 lg:gap-6">
-      <section className="space-y-3 rounded-xl p-4">
+      <section className="space-y-3 rounded-[14px] p-4">
         <h3 className={heading}>Export</h3>
         <a className={link} href={`/api/databases/${id}/export?format=sql`}>
           Unduh seluruh database (.sql)
@@ -53,10 +53,10 @@ export default function ImportExportTab({ id, schema, onChanged }: { id: string;
         <p className={subtle}>Maksimal 50.000 baris per ekspor.</p>
       </section>
 
-      <section className="space-y-3 rounded-xl p-4">
+      <section className="space-y-3 rounded-[14px] p-4">
         <h3 className={heading}>Import</h3>
-        <input ref={file} type="file" accept=".sql,.csv" className="block w-full cursor-pointer rounded-xl bg-[var(--pill-bg)] p-3 text-sm text-text file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-[var(--pill-bg)]0 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:bg-[var(--card-hover)]" aria-label="File import" />
-        <div className="space-y-2 rounded-xl bg-[var(--pill-bg)] p-3">
+        <input ref={file} type="file" accept=".sql,.csv" className="block w-full cursor-pointer rounded-[14px] bg-[var(--pill-bg)] p-3 text-sm text-text file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-[var(--pill-bg)]0 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:bg-[var(--card-hover)]" aria-label="File import" />
+        <div className="space-y-2 rounded-[14px] bg-[var(--pill-bg)] p-3">
           <p className="text-xs font-medium text-text-muted">Khusus CSV</p>
           <Field label="Tabel tujuan">
             <input className={inputCls} list="tbls" value={csvTable} onChange={(e) => setCsvTable(e.target.value)} />

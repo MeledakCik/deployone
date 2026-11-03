@@ -63,7 +63,7 @@ export default function FiturPage() {
           </p>
           <ul className="mt-4 grid gap-2 sm:grid-cols-3">
             {PLATFORMS.map((p) => (
-              <li key={p.name} className="rounded-2xl bg-[var(--pill-bg)] px-4 py-3 text-[13px]">
+              <li key={p.name} className="rounded-[14px] bg-[var(--pill-bg)] px-4 py-3 text-[13px]">
                 <span className="block font-semibold">{p.name}</span>
                 <span className="text-text-muted">{p.fit}</span>
               </li>

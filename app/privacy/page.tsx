@@ -22,7 +22,7 @@ export default function PrivacyPage() {
       <h2>1. Data yang kami kumpulkan</h2>
       <ul>
         <li><strong>Akun:</strong> alamat email, nama, dan foto profil dari Google saat kamu masuk dengan Google.</li>
-        <li><strong>Token platform yang kamu simpan di Settings:</strong> token Vercel, Cloudflare (dan ID akun), Railway, GitHub PAT, serta token Groq jika kamu memakai fitur AI. Semuanya opsional.</li>
+        <li><strong>Token platform yang kamu simpan di Pengaturan:</strong> token Vercel, Cloudflare (dan ID akun), Railway, GitHub PAT, serta token Groq bila kamu memasangnya untuk fitur lama. Semuanya opsional.</li>
         <li><strong>Data dashboard:</strong> riwayat deploy (nama project, platform, domain, tanggal, repo), daftar domain, dan environment variables yang kamu simpan.</li>
         <li><strong>Link Instan:</strong> file website yang kamu unggah (atau dikirim Claude atas permintaanmu) beserta nama, ukuran, dan waktu kedaluwarsa.</li>
         <li><strong>Konektor Claude (MCP):</strong> token akses OAuth yang diterbitkan Depup, dan catatan teknis seperti jumlah permintaan untuk pembatasan laju. Input dan hasil tool diproses untuk menjalankan permintaanmu; kami tidak membaca atau menyimpan isi percakapanmu dengan Claude.</li>
@@ -42,7 +42,7 @@ export default function PrivacyPage() {
       <ul>
         <li>Token platform, GitHub PAT, dan environment variables disimpan terenkripsi (AES-256-GCM) di database.</li>
         <li>Token platform dibaca hanya di server saat dibutuhkan. Token tidak pernah dikirim lewat chat Claude, tidak dikembalikan sebagai hasil tool, dan token Groq tidak dikirim balik ke browser.</li>
-        <li>Claude hanya bisa memakai platform yang kamu izinkan sendiri di <em>Settings → Konektor Claude</em>. Perubahan ke repo GitHub (khusus Railway) hanya dilakukan setelah kamu menyetujuinya.</li>
+        <li>Claude hanya bisa memakai platform yang kamu izinkan sendiri di <em>Pengaturan → Konektor Claude</em>. Perubahan ke repo GitHub (khusus Railway) hanya dilakukan setelah kamu menyetujuinya.</li>
         <li>Akses konektor memakai OAuth 2.0 dengan PKCE. Token akses berlaku 1 jam dan token penyegar 30 hari; kamu bisa mencabut semua akses kapan saja lewat tombol <em>Cabut semua akses Claude</em>.</li>
       </ul>
 
@@ -52,7 +52,7 @@ export default function PrivacyPage() {
         <li><strong>Vercel, Cloudflare, Railway, GitHub</strong> — menerima permintaan API (dengan tokenmu) hanya saat kamu atau Claude, atas permintaanmu, melakukan deploy atau membaca repo.</li>
         <li><strong>Supabase dan Vercel KV</strong> — penyimpanan data dan cache.</li>
         <li><strong>Resend</strong> — pengiriman email layanan.</li>
-        <li><strong>Groq</strong> — hanya bila kamu memakai fitur AI Web Builder; prompt dikirim ke Groq dengan tokenmu atau jatah server.</li>
+        <li><strong>AI Web Builder dan Konversi</strong> memakai mesin milik Depup sendiri; deskripsi dan kode yang kamu kirim diproses di server Depup dan tidak diteruskan ke layanan AI lain. Website yang kamu terbitkan hanya dipakai sebagai contoh latih bila kamu mencentang izinnya, dan tanpa gambar maupun data kontak.</li>
         <li><strong>Saweria</strong> — hanya bila kamu berdonasi.</li>
         <li><strong>Anthropic (Claude)</strong> — menerima hasil tool yang dikembalikan konektor sesuai kebijakan privasi Anthropic.</li>
       </ul>

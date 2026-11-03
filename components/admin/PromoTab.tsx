@@ -221,7 +221,7 @@ export function PromoTab({ toast }: { toast: (m: string) => void }) {
                   onClick={() => setTemplate(t.id)}
                   title={t.desc}
                   className={
-                    "rounded-xl bg-[var(--surface-solid-2)] p-2.5 text-left transition " +
+                    "rounded-[14px] bg-[var(--surface-solid-2)] p-2.5 text-left transition " +
                     (template === t.id ? "ring-2 ring-[var(--ring)]" : "hover:brightness-95")
                   }
                 >
@@ -420,7 +420,7 @@ function PreviewPanel({
         </div>
 
         {/* Baris kotak masuk: begini email terlihat sebelum dibuka */}
-        <div className="mx-4 rounded-2xl bg-white/[0.07] p-3.5">
+        <div className="mx-4 rounded-[14px] bg-white/[0.07] p-3.5">
           <p className="mb-2 text-[12px] font-semibold tracking-[0.14em] text-[#9a94b0]">Di kotak masuk</p>
           <div className="flex items-start gap-3">
             <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[#7b50ff] text-[16px] font-black leading-none" aria-hidden>
@@ -448,7 +448,7 @@ function PreviewPanel({
           <div
             className={
               "mx-auto overflow-hidden bg-white transition-[max-width,border-radius] duration-300 " +
-              (mobile ? "w-full max-w-[372px] rounded-[30px] border-[6px] border-[#0d0722]" : "w-full max-w-full rounded-xl border border-white/10")
+              (mobile ? "w-full max-w-[372px] rounded-card border-[6px] border-[#0d0722]" : "w-full max-w-full rounded-[14px] border border-white/10")
             }
           >
             {mobile ? (

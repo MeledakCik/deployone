@@ -45,8 +45,8 @@ export default function DatabaseList({ onOpen }: { onOpen: (id: string) => void 
       {err && <Notice kind="error">{err}</Notice>}
       {!data && !err && (
         <div className="space-y-3" aria-busy="true">
-          <div className="h-24 animate-pulse rounded-2xl bg-tone-lilac" />
-          <div className="h-40 animate-pulse rounded-2xl bg-tone-lilac" />
+          <div className="h-24 animate-pulse rounded-[14px] bg-tone-lilac" />
+          <div className="h-40 animate-pulse rounded-[14px] bg-tone-lilac" />
         </div>
       )}
 

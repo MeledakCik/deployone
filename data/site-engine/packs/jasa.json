@@ -1,0 +1,404 @@
+[
+  {
+    "id": "jasa-laundry",
+    "kind": "jasa",
+    "label": "Laundry",
+    "prompts": [
+      "laundry kiloan dekat kampus",
+      "jasa cuci sepatu dan tas",
+      "laundry satuan dan dry clean",
+      "usaha laundry antar jemput",
+      "cuci karpet dan bed cover",
+      "laundry express sehari jadi"
+    ],
+    "keywords": ["laundry", "cuci", "setrika", "kiloan", "dry clean", "sepatu", "karpet", "bed cover", "antar jemput", "express"],
+    "brandIcon": "droplets",
+    "templates": ["segar", "bersih", "pastel"],
+    "heroes": ["split-bold", "split", "center"],
+    "feats": ["bento", "grid"],
+    "brandFallback": ["{city} Laundry", "Laundry Wangi", "Cuci Bersih"],
+    "badges": ["Antar jemput gratis", "Selesai 24 jam", "Buka setiap hari"],
+    "slogans": ["Bersih, wangi, rapi terlipat", "Cucian beres, waktumu lega"],
+    "headlines": [
+      "Laundry kiloan yang selesai dalam 24 jam",
+      "Cucian bersih dan wangi tanpa keluar rumah",
+      "{brand}: antar jemput cucian di {city}"
+    ],
+    "subheadlines": [
+      "Kami jemput cucian di rumah atau kos, dicuci terpisah per pelanggan, lalu diantar kembali dalam keadaan terlipat rapi.",
+      "Pilih kiloan untuk pakaian harian atau satuan untuk jas, kebaya, dan bed cover. Ada layanan express sehari jadi.",
+      "Deterjen lembut untuk kain dan pewangi yang tahan lama. Harga jelas sejak awal."
+    ],
+    "cta": ["Jadwalkan jemput", "Tanya harga", "Pesan lewat WhatsApp"],
+    "featuresTitle": ["Kenapa {brand}"],
+    "features": [
+      {"icon": "truck", "title": "Antar jemput", "text": "Cucian dijemput dan diantar kembali ke alamatmu."},
+      {"icon": "timer", "title": "Selesai 24 jam", "text": "Layanan reguler satu hari, express enam jam."},
+      {"icon": "droplets", "title": "Dicuci terpisah", "text": "Cucian setiap pelanggan tidak dicampur dengan yang lain."},
+      {"icon": "sparkles", "title": "Wangi tahan lama", "text": "Pewangi pilihan yang tetap harum sampai di lemari."},
+      {"icon": "shield-check", "title": "Ganti rugi jelas", "text": "Ada ketentuan ganti rugi bila pakaian rusak atau hilang."},
+      {"icon": "wallet", "title": "Harga terbuka", "text": "Harga per kilo dan per satuan tertulis jelas."}
+    ],
+    "itemsTitle": ["Layanan dan harga", "Daftar layanan"],
+    "items": [
+      {"name": "Cuci Setrika Kiloan", "desc": "Pakaian harian dicuci, dikeringkan, dan disetrika.", "price": 8000, "category": "Kiloan", "icon": "shirt"},
+      {"name": "Cuci Kering Lipat", "desc": "Tanpa setrika, cocok untuk kaos dan pakaian rumah.", "price": 6000, "category": "Kiloan", "icon": "shirt"},
+      {"name": "Express 6 Jam", "desc": "Selesai di hari yang sama untuk kebutuhan mendadak.", "price": 15000, "category": "Express", "icon": "timer"},
+      {"name": "Bed Cover", "desc": "Cuci bed cover dan selimut tebal per satuan.", "price": 35000, "category": "Satuan", "icon": "bed"},
+      {"name": "Cuci Sepatu", "desc": "Pembersihan sepatu kain dan kulit secara manual.", "price": 40000, "category": "Satuan", "icon": "footprints"},
+      {"name": "Jas dan Kebaya", "desc": "Dry clean untuk bahan yang perlu perlakuan khusus.", "price": 45000, "category": "Satuan", "icon": "sparkles"}
+    ],
+    "stepsTitle": ["Cara pakai layanan"],
+    "steps": [
+      {"title": "Hubungi kami", "text": "Kirim alamat dan jam jemput lewat WhatsApp."},
+      {"title": "Cucian dijemput", "text": "Kurir menimbang cucian dan memberi nota."},
+      {"title": "Diantar kembali", "text": "Cucian bersih diantar sesuai jadwal layanan."}
+    ],
+    "aboutTitle": ["Tentang {brand}"],
+    "about": [
+      "{brand} melayani mahasiswa, pekerja, dan keluarga di {city} yang ingin urusan cucian beres tanpa repot. Setiap cucian kami tangani terpisah dan dicatat dengan nota.",
+      "Kami mulai dari satu mesin cuci di garasi rumah. Sekarang kami punya tim jemput antar sendiri supaya jadwal selalu tepat."
+    ],
+    "testimonials": [
+      {"text": "Tinggal kirim pesan, cucian dijemput dan besoknya sudah wangi terlipat.", "name": "Tika, mahasiswi"},
+      {"text": "Bed cover yang sudah lama tidak dicuci jadi seperti baru.", "name": "Pak Yanto"}
+    ],
+    "closing": ["Cucian menumpuk?", "Jadwalkan jemput hari ini"],
+    "closingText": ["Kirim alamatmu, kurir kami datang di jam yang kamu pilih.", "Jemput sebelum jam 10, selesai besok pagi."]
+  },
+  {
+    "id": "jasa-barbershop",
+    "kind": "jasa",
+    "label": "Barbershop dan salon",
+    "prompts": [
+      "barbershop pria modern",
+      "salon kecantikan wanita",
+      "jasa potong rambut panggilan",
+      "barber dengan layanan cukur jenggot",
+      "salon rambut, creambath, dan smoothing",
+      "nail art dan perawatan wajah"
+    ],
+    "keywords": ["barbershop", "barber", "cukur", "potong rambut", "salon", "creambath", "smoothing", "pomade", "jenggot", "facial", "nail art", "makeup", "rambut"],
+    "brandIcon": "scissors",
+    "templates": ["barber", "gelap", "tegas"],
+    "heroes": ["split-bold", "editorial", "asymmetric"],
+    "feats": ["bento", "grid"],
+    "brandFallback": ["{city} Barber", "Barber Rapi", "Studio Gunting"],
+    "badges": ["Bisa reservasi", "Buka sampai malam", "Tanpa antre lama"],
+    "slogans": ["Rapi tanpa antre lama", "Potongan yang pas di wajahmu"],
+    "headlines": [
+      "Potongan rambut yang pas dengan bentuk wajahmu",
+      "Reservasi dulu, datang langsung duduk",
+      "{brand}, barbershop di {city}"
+    ],
+    "subheadlines": [
+      "Kapster kami bertanya dulu sebelum memotong, supaya hasilnya sesuai yang kamu mau. Reservasi lewat WhatsApp, tidak perlu menunggu lama.",
+      "Potong, cuci, dan styling dalam satu kunjungan. Ruangan dingin dan alat selalu disterilkan.",
+      "Dari potongan klasik sampai gaya terbaru, semuanya dikerjakan dengan teliti."
+    ],
+    "cta": ["Reservasi sekarang", "Lihat harga", "Pesan jadwal"],
+    "featuresTitle": ["Kenapa {brand}"],
+    "features": [
+      {"icon": "calendar", "title": "Reservasi jadwal", "text": "Pilih jam lewat WhatsApp, datang langsung dilayani."},
+      {"icon": "scissors", "title": "Konsultasi dulu", "text": "Kapster menyesuaikan potongan dengan bentuk wajah dan rambutmu."},
+      {"icon": "shield-check", "title": "Alat steril", "text": "Gunting dan sisir dibersihkan setiap selesai dipakai."},
+      {"icon": "sparkles", "title": "Termasuk keramas", "text": "Setiap potong sudah termasuk keramas dan styling."},
+      {"icon": "clock", "title": "Buka sampai malam", "text": "Mampir sepulang kerja, kami buka sampai jam sembilan."},
+      {"icon": "users", "title": "Paket keluarga", "text": "Potong rambut ayah dan anak sekaligus."}
+    ],
+    "itemsTitle": ["Layanan dan harga"],
+    "items": [
+      {"name": "Potong Rambut", "desc": "Konsultasi, potong, keramas, dan styling.", "price": 45000, "category": "Rambut", "icon": "scissors"},
+      {"name": "Potong dan Cukur Jenggot", "desc": "Potong rambut lengkap dengan merapikan jenggot.", "price": 65000, "category": "Rambut", "icon": "scissors"},
+      {"name": "Potong Anak", "desc": "Untuk usia di bawah 12 tahun.", "price": 35000, "category": "Rambut", "icon": "baby"},
+      {"name": "Hair Coloring", "desc": "Pewarnaan rambut dengan produk ramah kulit kepala.", "price": 150000, "category": "Warna", "icon": "palette"},
+      {"name": "Creambath", "desc": "Pijat kepala dan masker rambut, 45 menit.", "price": 80000, "category": "Perawatan", "icon": "droplets"},
+      {"name": "Home Service", "desc": "Kapster datang ke rumahmu, minimal dua orang.", "price": 120000, "category": "Panggilan", "icon": "house"}
+    ],
+    "stepsTitle": ["Cara reservasi"],
+    "steps": [
+      {"title": "Pilih layanan", "text": "Tentukan layanan dan jam yang kamu mau."},
+      {"title": "Kirim pesan", "text": "Reservasi lewat WhatsApp, kami konfirmasi jadwalnya."},
+      {"title": "Datang tepat waktu", "text": "Langsung duduk dan dilayani tanpa antre panjang."}
+    ],
+    "aboutTitle": ["Tentang {brand}"],
+    "about": [
+      "{brand} berdiri di {city} untuk orang yang ingin potong rambut rapi tanpa membuang waktu mengantre. Kapster kami terbiasa dengan berbagai jenis rambut.",
+      "Kami menjaga kebersihan alat dan ruangan, dan selalu bertanya dulu sebelum memotong."
+    ],
+    "testimonials": [
+      {"text": "Datang sesuai jam reservasi, langsung dilayani. Potongannya rapi sesuai contoh.", "name": "Bayu"},
+      {"text": "Anak saya biasanya rewel, di sini malah betah.", "name": "Ibu Dewi"}
+    ],
+    "closing": ["Waktunya rapi lagi", "Reservasi jadwalmu"],
+    "closingText": ["Pilih jam yang kosong, kami simpan kursinya untukmu.", "Kirim pesan sekarang untuk slot hari ini."]
+  },
+  {
+    "id": "jasa-bengkel",
+    "kind": "jasa",
+    "label": "Bengkel motor dan mobil",
+    "prompts": [
+      "bengkel motor servis ringan",
+      "bengkel mobil dan ganti oli",
+      "jasa servis motor panggilan",
+      "bengkel ac mobil",
+      "tambal ban dan spooring balancing",
+      "cuci motor dan detailing mobil"
+    ],
+    "keywords": ["bengkel", "servis", "service", "motor", "mobil", "oli", "ban", "rem", "mesin", "spooring", "tune up", "detailing", "cuci mobil", "aki", "suku cadang"],
+    "brandIcon": "wrench",
+    "templates": ["tegas", "gelap", "tech"],
+    "heroes": ["split-bold", "split", "asymmetric"],
+    "feats": ["bento", "grid", "list"],
+    "brandFallback": ["Bengkel {city}", "Bengkel Maju Jaya", "Garasi Servis"],
+    "badges": ["Bisa servis panggilan", "Suku cadang asli", "Estimasi biaya di awal"],
+    "slogans": ["Mesin sehat, jalan tenang", "Servis jujur, harga jelas"],
+    "headlines": [
+      "Servis kendaraan dengan estimasi biaya di awal",
+      "Motor dan mobil kembali enak dipakai",
+      "{brand}: bengkel andalan warga {city}"
+    ],
+    "subheadlines": [
+      "Mekanik kami memeriksa dulu dan memberi tahu biayanya sebelum mulai bekerja. Tidak ada tambahan tanpa persetujuanmu.",
+      "Ganti oli, servis rutin, sampai perbaikan rem dan kelistrikan. Bisa juga servis panggilan ke rumah.",
+      "Suku cadang asli atau setara dengan garansi pemasangan."
+    ],
+    "cta": ["Booking servis", "Tanya estimasi", "Hubungi bengkel"],
+    "featuresTitle": ["Kenapa servis di {brand}"],
+    "features": [
+      {"icon": "clipboard-list", "title": "Estimasi di awal", "text": "Biaya disampaikan sebelum pengerjaan dimulai."},
+      {"icon": "wrench", "title": "Mekanik berpengalaman", "text": "Terbiasa menangani motor matic, bebek, sport, dan mobil."},
+      {"icon": "shield-check", "title": "Garansi pemasangan", "text": "Ada garansi untuk suku cadang yang kami pasang."},
+      {"icon": "house", "title": "Servis panggilan", "text": "Mekanik datang ke rumah untuk servis ringan."},
+      {"icon": "timer", "title": "Bisa ditunggu", "text": "Servis ringan selesai sekitar satu jam."},
+      {"icon": "coffee", "title": "Ruang tunggu nyaman", "text": "Ada kopi, wifi, dan colokan selama menunggu."}
+    ],
+    "itemsTitle": ["Layanan bengkel"],
+    "items": [
+      {"name": "Servis Ringan Motor", "desc": "Cek rem, rantai, busi, dan setel karburator atau injeksi.", "price": 65000, "category": "Motor", "icon": "bike"},
+      {"name": "Ganti Oli", "desc": "Oli sesuai rekomendasi pabrikan, termasuk jasa.", "price": 55000, "category": "Motor", "icon": "droplets"},
+      {"name": "Tune Up Mobil", "desc": "Pemeriksaan menyeluruh dan pembersihan komponen mesin.", "price": 350000, "category": "Mobil", "icon": "car"},
+      {"name": "Spooring dan Balancing", "desc": "Supaya setir lurus dan ban tidak cepat aus.", "price": 150000, "category": "Mobil", "icon": "car"},
+      {"name": "Servis AC Mobil", "desc": "Cek freon, bersihkan evaporator, dan kebocoran.", "price": 250000, "category": "Mobil", "icon": "snowflake"},
+      {"name": "Servis Panggilan", "desc": "Mekanik datang ke rumah untuk servis ringan.", "price": 100000, "category": "Panggilan", "icon": "house"}
+    ],
+    "stepsTitle": ["Cara booking servis"],
+    "steps": [
+      {"title": "Ceritakan keluhan", "text": "Kirim jenis kendaraan dan keluhannya lewat WhatsApp."},
+      {"title": "Dapat estimasi", "text": "Kami beri perkiraan biaya dan waktu pengerjaan."},
+      {"title": "Datang atau dijemput", "text": "Bawa kendaraan sesuai jadwal atau pilih servis panggilan."}
+    ],
+    "aboutTitle": ["Tentang {brand}"],
+    "about": [
+      "{brand} melayani pengendara di {city} sejak bertahun-tahun lalu. Prinsip kami sederhana: jelaskan masalahnya, sebut biayanya, baru kerjakan.",
+      "Kami lebih suka pelanggan paham apa yang diperbaiki. Karena itu setiap penggantian komponen kami tunjukkan dulu."
+    ],
+    "testimonials": [
+      {"text": "Dikasih tahu biayanya dulu, tidak ada tambahan di akhir. Motor jadi enak lagi.", "name": "Agus, ojek daring"},
+      {"text": "AC mobil dingin lagi dan pengerjaannya cepat.", "name": "Bu Ratna"}
+    ],
+    "closing": ["Kendaraan bermasalah?", "Booking servis hari ini"],
+    "closingText": ["Ceritakan keluhannya, kami bantu cari penyebabnya.", "Slot servis pagi masih tersedia."]
+  },
+  {
+    "id": "jasa-les",
+    "kind": "jasa",
+    "label": "Les privat dan bimbel",
+    "prompts": [
+      "les privat matematika sd smp",
+      "bimbel persiapan utbk",
+      "kursus bahasa inggris untuk anak",
+      "guru les mengaji ke rumah",
+      "kursus coding untuk pelajar",
+      "les piano dan gitar"
+    ],
+    "keywords": ["les", "privat", "bimbel", "kursus", "belajar", "guru", "tutor", "utbk", "matematika", "bahasa inggris", "mengaji", "piano", "gitar", "pelajaran"],
+    "brandIcon": "graduation-cap",
+    "templates": ["bersih", "segar", "pastel"],
+    "heroes": ["split", "split-bold", "center"],
+    "feats": ["bento", "list", "grid"],
+    "brandFallback": ["Bimbel {city}", "Rumah Belajar Cerdas", "Les Privat Bintang"],
+    "badges": ["Kelas privat dan kelompok", "Bisa ke rumah", "Uji coba gratis"],
+    "slogans": ["Belajar pelan, paham betul", "Satu guru, fokus padamu"],
+    "headlines": [
+      "Les privat yang menyesuaikan cara belajar anakmu",
+      "Belajar lebih paham dengan pendamping yang sabar",
+      "{brand}: les privat dan kelompok di {city}"
+    ],
+    "subheadlines": [
+      "Guru datang ke rumah atau belajar daring. Materi disesuaikan dengan kurikulum sekolah dan target belajar.",
+      "Kelas kecil maksimal lima siswa supaya setiap anak mendapat perhatian.",
+      "Orang tua mendapat laporan perkembangan setiap bulan."
+    ],
+    "cta": ["Daftar uji coba", "Tanya jadwal", "Konsultasi gratis"],
+    "featuresTitle": ["Kenapa belajar di {brand}"],
+    "features": [
+      {"icon": "users", "title": "Kelas kecil", "text": "Privat satu siswa atau kelompok maksimal lima orang."},
+      {"icon": "house", "title": "Bisa ke rumah", "text": "Guru datang ke rumah atau belajar lewat video call."},
+      {"icon": "clipboard-list", "title": "Laporan bulanan", "text": "Orang tua tahu perkembangan dan bagian yang perlu dilatih."},
+      {"icon": "book-open", "title": "Ikut kurikulum sekolah", "text": "Materi menyesuaikan pelajaran di kelas."},
+      {"icon": "target", "title": "Target jelas", "text": "Dari mengejar nilai rapor sampai persiapan ujian masuk."},
+      {"icon": "smile", "title": "Guru yang sabar", "text": "Kami memilih pengajar yang terbiasa dengan anak-anak."}
+    ],
+    "itemsTitle": ["Program belajar"],
+    "items": [
+      {"name": "Privat SD", "desc": "Matematika, IPA, dan Bahasa, 8 pertemuan per bulan.", "price": 600000, "category": "Privat", "icon": "book-open"},
+      {"name": "Privat SMP", "desc": "Pendampingan PR dan persiapan ujian sekolah.", "price": 750000, "category": "Privat", "icon": "book-open"},
+      {"name": "Persiapan UTBK", "desc": "Latihan soal dan simulasi rutin, kelas kelompok.", "price": 900000, "category": "Kelompok", "icon": "target"},
+      {"name": "Bahasa Inggris Anak", "desc": "Belajar lewat permainan dan percakapan sederhana.", "price": 500000, "category": "Bahasa", "icon": "message-circle"},
+      {"name": "Coding untuk Pelajar", "desc": "Dasar logika dan membuat game sederhana.", "price": 800000, "category": "Teknologi", "icon": "code"},
+      {"name": "Kelas Uji Coba", "desc": "Satu pertemuan untuk mengenal guru dan metodenya.", "price": 0, "category": "Uji coba", "icon": "sparkles"}
+    ],
+    "stepsTitle": ["Cara mendaftar"],
+    "steps": [
+      {"title": "Konsultasi", "text": "Ceritakan kelas, pelajaran, dan target belajar."},
+      {"title": "Kelas uji coba", "text": "Satu pertemuan untuk mencocokkan guru dan jadwal."},
+      {"title": "Mulai belajar", "text": "Jadwal rutin dimulai, laporan dikirim setiap bulan."}
+    ],
+    "aboutTitle": ["Tentang {brand}"],
+    "about": [
+      "{brand} didirikan oleh pengajar di {city} yang percaya setiap anak punya cara belajar sendiri. Kami mencocokkan guru dengan karakter siswa, bukan sebaliknya.",
+      "Kami mulai dari mengajar tetangga sekitar rumah. Sekarang tim pengajar kami melayani siswa SD sampai SMA."
+    ],
+    "testimonials": [
+      {"text": "Nilai matematika anak saya naik dan dia jadi tidak takut lagi dengan pelajaran itu.", "name": "Ibu Rahma"},
+      {"text": "Latihan soal UTBK-nya terarah, saya lolos di pilihan pertama.", "name": "Fikri, alumni"}
+    ],
+    "closing": ["Coba satu kelas dulu", "Konsultasi jadwal belajar"],
+    "closingText": ["Kelas uji coba gratis, tanpa kewajiban mendaftar.", "Ceritakan kebutuhan anakmu, kami carikan guru yang cocok."]
+  },
+  {
+    "id": "jasa-digital",
+    "kind": "jasa",
+    "label": "Jasa digital (website, desain, sosial media)",
+    "prompts": [
+      "jasa pembuatan website untuk umkm",
+      "jasa desain logo dan branding",
+      "agensi digital marketing kecil",
+      "jasa kelola instagram dan konten",
+      "freelance web developer",
+      "jasa edit video dan foto produk",
+      "jasa servis laptop dan instal ulang"
+    ],
+    "keywords": ["website", "web", "desain", "logo", "branding", "digital", "marketing", "sosial media", "instagram", "konten", "seo", "aplikasi", "edit video", "foto produk", "laptop", "it"],
+    "brandIcon": "laptop",
+    "templates": ["tech", "bersih", "neon"],
+    "heroes": ["split-bold", "editorial", "asymmetric"],
+    "feats": ["bento", "grid"],
+    "brandFallback": ["{city} Digital", "Studio Piksel", "Kode Rumah"],
+    "badges": ["Revisi sampai cocok", "Harga paket jelas", "Bisa konsultasi dulu"],
+    "slogans": ["Tampil rapi di internet", "Dari ide sampai online"],
+    "headlines": [
+      "Bisnismu tampil rapi di internet, tanpa pusing teknis",
+      "Website, desain, dan konten untuk usaha kecil",
+      "{brand}: tim digital kecil dari {city}"
+    ],
+    "subheadlines": [
+      "Kami membantu UMKM punya website, logo, dan konten media sosial yang konsisten. Harga paket jelas sejak awal.",
+      "Mulai dari konsultasi gratis. Kami jelaskan pilihan yang sesuai anggaran tanpa istilah yang membingungkan.",
+      "Pengerjaan bertahap dengan revisi, sampai hasilnya sesuai kebutuhanmu."
+    ],
+    "cta": ["Konsultasi gratis", "Lihat paket", "Hubungi kami"],
+    "featuresTitle": ["Cara kami bekerja", "Kenapa {brand}"],
+    "features": [
+      {"icon": "message-circle", "title": "Konsultasi dulu", "text": "Kami dengarkan kebutuhanmu sebelum menyarankan apa pun."},
+      {"icon": "wallet", "title": "Harga paket jelas", "text": "Biaya tertulis di awal, tanpa tagihan kejutan."},
+      {"icon": "rotate-ccw", "title": "Revisi bertahap", "text": "Setiap tahap bisa direvisi sebelum lanjut."},
+      {"icon": "smartphone", "title": "Rapi di HP", "text": "Semua desain dan website dicek di layar ponsel."},
+      {"icon": "trending-up", "title": "Laporan hasil", "text": "Untuk kelola media sosial, ada laporan bulanan."},
+      {"icon": "shield-check", "title": "File milikmu", "text": "Semua file dan akses diserahkan setelah selesai."}
+    ],
+    "itemsTitle": ["Paket layanan"],
+    "items": [
+      {"name": "Website Profil Usaha", "desc": "Lima halaman, domain, dan hosting satu tahun.", "price": 2500000, "category": "Website", "icon": "globe"},
+      {"name": "Toko Online Sederhana", "desc": "Katalog produk dengan tombol pesan WhatsApp.", "price": 3500000, "category": "Website", "icon": "shopping-cart"},
+      {"name": "Desain Logo", "desc": "Tiga konsep awal dan dua kali revisi.", "price": 750000, "category": "Desain", "icon": "pen-tool"},
+      {"name": "Paket Branding", "desc": "Logo, palet warna, font, dan template media sosial.", "price": 1800000, "category": "Desain", "icon": "palette"},
+      {"name": "Kelola Instagram", "desc": "12 konten per bulan termasuk caption.", "price": 1500000, "category": "Sosial media", "icon": "megaphone"},
+      {"name": "Foto Produk", "desc": "Sepuluh produk dengan latar bersih, siap pakai.", "price": 600000, "category": "Konten", "icon": "camera"}
+    ],
+    "stepsTitle": ["Alur kerja"],
+    "steps": [
+      {"title": "Konsultasi", "text": "Ceritakan usaha dan kebutuhanmu, gratis."},
+      {"title": "Penawaran", "text": "Kami kirim paket, harga, dan jadwal pengerjaan."},
+      {"title": "Pengerjaan", "text": "Dikerjakan bertahap dengan revisi sampai selesai."}
+    ],
+    "aboutTitle": ["Tentang {brand}"],
+    "about": [
+      "{brand} adalah tim kecil di {city} yang membantu usaha lokal tampil rapi di internet. Kami terbiasa bekerja dengan pemilik usaha yang belum paham teknis.",
+      "Kami lebih suka proyek yang jelas dan selesai tepat waktu. Karena itu setiap pekerjaan dimulai dari daftar kebutuhan yang disepakati bersama."
+    ],
+    "testimonials": [
+      {"text": "Penjelasannya mudah dipahami, website toko saya jadi dalam dua minggu.", "name": "Mbak Ayu, pemilik toko kue"},
+      {"text": "Logo dan template Instagram-nya bikin akun kami lebih rapi.", "name": "Reza, pemilik kedai kopi"}
+    ],
+    "closing": ["Punya rencana untuk usahamu?", "Ngobrol dulu, gratis"],
+    "closingText": ["Ceritakan usahamu, kami bantu pilih langkah yang paling masuk akal.", "Konsultasi tanpa kewajiban memesan."]
+  },
+  {
+    "id": "jasa-umum",
+    "kind": "jasa",
+    "label": "Jasa dan layanan",
+    "generic": true,
+    "prompts": [
+      "jasa layanan panggilan",
+      "usaha jasa untuk rumah tangga",
+      "layanan perbaikan dan perawatan",
+      "jasa konsultan untuk usaha kecil",
+      "jasa kebersihan rumah dan kantor",
+      "jasa pindahan dan angkut barang"
+    ],
+    "keywords": ["jasa", "layanan", "servis", "panggilan", "konsultan", "kebersihan", "perbaikan", "pindahan", "rental", "sewa", "pijat", "terapi"],
+    "brandIcon": "handshake",
+    "templates": ["bersih", "elegan", "segar", "tech"],
+    "heroes": ["split", "split-bold", "center"],
+    "feats": ["bento", "grid", "list"],
+    "brandFallback": ["Jasa {Product} {city}", "{Product} Kita", "Layanan {Product}"],
+    "badges": ["Bisa dipanggil", "Harga jelas di awal", "Jadwal fleksibel"],
+    "slogans": ["Dikerjakan rapi, harga jelas", "Urusanmu jadi lebih ringan"],
+    "headlines": [
+      "Jasa {product} yang dikerjakan rapi dan tepat waktu",
+      "Serahkan urusan {product} ke {brand}",
+      "Layanan {product} di {city} dengan harga jelas"
+    ],
+    "subheadlines": [
+      "Ceritakan kebutuhanmu, kami beri perkiraan biaya dan jadwal sebelum mulai.",
+      "Tim kami datang sesuai jadwal dan membereskan pekerjaan sampai tuntas.",
+      "Tanpa biaya tersembunyi. Semua yang dikerjakan dijelaskan di awal."
+    ],
+    "cta": ["Tanya jadwal", "Minta penawaran", "Hubungi kami"],
+    "featuresTitle": ["Kenapa memilih {brand}"],
+    "features": [
+      {"icon": "clipboard-list", "title": "Perkiraan di awal", "text": "Biaya dan waktu disampaikan sebelum pekerjaan dimulai."},
+      {"icon": "calendar", "title": "Jadwal fleksibel", "text": "Pilih hari dan jam yang paling cocok untukmu."},
+      {"icon": "users", "title": "Tim berpengalaman", "text": "Pekerjaan ditangani orang yang terbiasa dengan bidangnya."},
+      {"icon": "shield-check", "title": "Ada garansi", "text": "Bila hasilnya kurang, kami perbaiki tanpa biaya tambahan."},
+      {"icon": "message-circle", "title": "Mudah dihubungi", "text": "Tanya kapan saja lewat WhatsApp."},
+      {"icon": "map-pin", "title": "Datang ke lokasi", "text": "Kami datang ke rumah atau kantormu."}
+    ],
+    "itemsTitle": ["Layanan kami"],
+    "items": [
+      {"name": "Layanan {Product} Dasar", "desc": "Untuk kebutuhan rutin dengan durasi singkat.", "price": 150000, "category": "Dasar", "icon": "check"},
+      {"name": "Layanan {Product} Lengkap", "desc": "Pengerjaan menyeluruh dengan pemeriksaan akhir.", "price": 350000, "category": "Lengkap", "icon": "list-checks"},
+      {"name": "Paket Langganan", "desc": "Jadwal rutin setiap bulan dengan harga lebih ringan.", "price": 0, "category": "Langganan", "icon": "calendar"},
+      {"name": "Konsultasi", "desc": "Diskusi kebutuhan dan perkiraan biaya.", "price": 0, "category": "Konsultasi", "icon": "message-circle"}
+    ],
+    "stepsTitle": ["Cara memesan"],
+    "steps": [
+      {"title": "Ceritakan kebutuhan", "text": "Kirim detail pekerjaan lewat WhatsApp."},
+      {"title": "Dapat penawaran", "text": "Kami kirim perkiraan biaya dan jadwal."},
+      {"title": "Kami kerjakan", "text": "Tim datang sesuai jadwal dan menyelesaikan pekerjaan."}
+    ],
+    "aboutTitle": ["Tentang {brand}"],
+    "about": [
+      "{brand} melayani kebutuhan {product} di {city} dan sekitarnya. Kami mengutamakan komunikasi yang jelas dan pekerjaan yang selesai tepat waktu.",
+      "Setiap pekerjaan kami catat dan kami jelaskan, supaya kamu tahu persis apa yang dikerjakan."
+    ],
+    "testimonials": [
+      {"text": "Datang tepat waktu, kerjanya rapi, dan biayanya sesuai yang disampaikan di awal.", "name": "Pak Hadi"},
+      {"text": "Mudah dihubungi dan responsnya cepat.", "name": "Lestari"}
+    ],
+    "closing": ["Butuh bantuan?", "Minta penawaran hari ini"],
+    "closingText": ["Kirim detail pekerjaannya, kami balas dengan perkiraan biaya.", "Jadwal minggu ini masih tersedia."]
+  }
+]

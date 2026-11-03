@@ -113,7 +113,7 @@ export function HeroMockup() {
         <div className="flex gap-3 p-4 sm:gap-4 sm:p-5">
           {/* Sidebar ungu mini (hanya hiasan) */}
           <div
-            className="hidden w-[68px] shrink-0 flex-col items-center gap-3 rounded-[26px] py-5 md:flex"
+            className="hidden w-[68px] shrink-0 flex-col items-center gap-3 rounded-card py-5 md:flex"
             style={{ background: "var(--sidebar-bg)" }}
             aria-hidden="true"
           >
@@ -121,7 +121,7 @@ export function HeroMockup() {
             {SIDE_ICONS.map((Ic, k) => (
               <span
                 key={k}
-                className="grid h-11 w-11 place-items-center rounded-2xl"
+                className="grid h-11 w-11 place-items-center rounded-[14px]"
                 style={
                   k === 2
                     ? { background: "var(--sidebar-active-bg)", color: "var(--sidebar-active-text)" }
@@ -166,38 +166,39 @@ export function HeroMockup() {
             </div>
 
             {/* Hasil pengecekan: kartu putih yang sama dengan KpiCard dashboard */}
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4" aria-live="polite">
-              <div className="surface-solid flex flex-col gap-1 p-5 text-left">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-4" aria-live="polite">
+              <div className="surface-solid flex flex-col gap-1 px-4 py-3 text-left sm:p-5">
                 <span className="text-[13px] font-medium text-text-muted">Terdeteksi</span>
-                <span key={s.type} className="mt-3 text-[22px] font-bold leading-tight tracking-[-0.02em]">
+                <span key={s.type} className="mt-1 text-[20px] font-bold leading-tight tracking-[-0.02em] sm:mt-3 sm:text-[22px]">
                   {s.type}
                 </span>
-                <span className="mt-1 text-[12px] text-text-muted">dibaca dari isi repo</span>
+                <span className="mt-1 hidden text-[12px] text-text-muted sm:block">dibaca dari isi repo</span>
               </div>
               {platforms.map((name) => {
                 const [level, note] = s.verdict[name];
                 const Icon = ICON[level];
                 const PIcon = PLATFORM_ICON[name];
                 return (
-                  <div key={name} className="surface-solid flex flex-col gap-1 p-5 text-left">
+                  // Di HP: satu baris ringkas (nama + status); di layar lebar: kartu penuh seperti KpiCard.
+                  <div key={name} className="surface-solid flex items-center justify-between gap-3 px-4 py-3 text-left sm:flex-col sm:items-stretch sm:justify-start sm:gap-1 sm:p-5">
                     <span className="flex items-center gap-2 text-[13px] font-medium text-text-muted">
                       <PIcon size={15} className="text-lav-text" aria-hidden="true" />
                       {name}
                     </span>
-                    <span className="mt-3">
+                    <span className="sm:mt-3">
                       <Badge tone={BADGE[level]}>
                         <Icon size={13} strokeWidth={level === "ok" ? 3 : 2} aria-hidden="true" />
                         {LABEL[level]}
                       </Badge>
                     </span>
-                    <span className="mt-1 text-[12px] text-text-muted">{note}</span>
+                    <span className="mt-1 hidden text-[12px] text-text-muted sm:block">{note}</span>
                   </div>
                 );
               })}
             </div>
 
-            {/* Daftar deploy (contoh): baris yang sama dengan HistoryTable */}
-            <div className="surface-solid overflow-hidden text-left">
+            {/* Daftar deploy (contoh): baris yang sama dengan HistoryTable. Disembunyikan di HP supaya hero tidak sepanjang satu layar. */}
+            <div className="surface-solid hidden overflow-hidden text-left sm:block">
               <div className="flex items-center justify-between gap-3 px-5 py-4 sm:px-6">
                 <div className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1.5">
                   <span className="text-[16px] font-bold tracking-tight">Deploy terakhir</span>

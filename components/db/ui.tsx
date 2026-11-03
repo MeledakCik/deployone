@@ -149,7 +149,7 @@ export function SecretRow({ label, value }: { label: string; value: string }) {
     <div className="space-y-1">
       <div className="text-xs font-medium text-text-muted">{label}</div>
       <div className="flex items-stretch gap-2">
-        <code className="min-w-0 flex-1 break-all rounded-xl bg-[var(--pill-bg)] px-3 py-2 font-mono text-xs leading-relaxed text-text">{value}</code>
+        <code className="min-w-0 flex-1 break-all rounded-[14px] bg-[var(--pill-bg)] px-3 py-2 font-mono text-xs leading-relaxed text-text">{value}</code>
         <CopyBtn text={value} />
       </div>
     </div>
@@ -182,7 +182,7 @@ export function UsageBar({ used, quota }: { used: number; quota: number }) {
 
 /** Tabel responsif: bungkus dengan scroll horizontal + border halus. */
 export function TableWrap({ children, className }: { children: ReactNode; className?: string }) {
-  return <div className={cx("overflow-x-auto rounded-xl", className)}>{children}</div>;
+  return <div className={cx("overflow-x-auto rounded-[14px]", className)}>{children}</div>;
 }
 
 /** Judul halaman + aksi di kanan; di mobile aksi turun ke bawah dan melebar. */

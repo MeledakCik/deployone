@@ -1,9 +1,9 @@
-/** Eksekusi konversi AI di browser: satu permintaan per file, paralel terbatas, ulang otomatis, bisa dibatalkan. */
+/** Eksekusi konversi (mesin Depup) dari browser: satu permintaan per file, paralel terbatas, ulang otomatis, bisa dibatalkan. */
 
 export type ItemStatus = "queued" | "running" | "done" | "warn" | "error" | "skipped";
 
 export type ConvertPayload =
-  | { mode: "file"; path: string; code: string; from: string; to: string; hint?: string }
+  | { mode: "file"; path: string; code: string; from: string; to: string }
   | {
       mode: "page";
       path: string;
@@ -31,7 +31,7 @@ export interface RunItem {
 
 interface ApiBody {
   ok?: boolean;
-  data?: { code: string; truncated: boolean; source: "own" | "free" };
+  data?: { code: string; truncated: boolean; source: string; warnings?: string[] };
   error?: string;
   code?: string;
 }
@@ -44,7 +44,7 @@ const sleep = (ms: number, signal: AbortSignal): Promise<void> =>
     signal.addEventListener("abort", () => (clearTimeout(t), resolve()), { once: true });
   });
 
-async function callOnce(payload: ConvertPayload, signal: AbortSignal): Promise<{ code: string; truncated: boolean }> {
+async function callOnce(payload: ConvertPayload, signal: AbortSignal): Promise<{ code: string; truncated: boolean; warnings?: string[] }> {
   let res: Response;
   try {
     res = await fetch("/api/convert", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(payload), signal });
@@ -82,7 +82,9 @@ export async function runItems(
           const r = await callOnce(item.payload!, opts.signal);
           opts.onChange(item.id, r.truncated
             ? { status: "warn", output: r.code, message: "Hasil terpotong karena terlalu panjang — periksa bagian akhirnya atau pecah file ini." }
-            : { status: "done", output: r.code });
+            : r.warnings?.length
+              ? { status: "warn", output: r.code, message: r.warnings.join(" · ") }
+              : { status: "done", output: r.code });
           lastErr = "";
           break;
         } catch (e) {

@@ -132,7 +132,7 @@ export function DeployDebugLog({
 
   return (
     <div
-      className={cn("rounded-xl border border-[var(--line)] bg-[var(--dm-log,var(--frame))] text-left", className)}
+      className={cn("rounded-[14px] border border-[var(--line)] bg-[var(--dm-log,var(--frame))] text-left", className)}
       role="log"
       aria-live="off"
       aria-label="Log proses debug"

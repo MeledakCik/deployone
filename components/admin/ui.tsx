@@ -135,7 +135,7 @@ export function Avatar({ src, name }: { src: string | null; name: string }) {
   const [bad, setBad] = React.useState(false);
   if (src && !bad) {
     // eslint-disable-next-line @next/next/no-img-element
-    return <img src={src} alt="" referrerPolicy="no-referrer" onError={() => setBad(true)} className="h-9 w-9 rounded-xl object-cover" />;
+    return <img src={src} alt="" referrerPolicy="no-referrer" onError={() => setBad(true)} className="h-9 w-9 rounded-[14px] object-cover" />;
   }
-  return <span className="grid h-9 w-9 place-items-center rounded-xl bg-tone-lilac text-[12px] font-semibold text-lav-text">{(name || "?").slice(0, 1).toUpperCase()}</span>;
+  return <span className="grid h-9 w-9 place-items-center rounded-[14px] bg-tone-lilac text-[12px] font-semibold text-lav-text">{(name || "?").slice(0, 1).toUpperCase()}</span>;
 }

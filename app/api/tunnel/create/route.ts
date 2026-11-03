@@ -14,6 +14,7 @@ import {
   sha256,
   tunnelBaseDomain,
   tunnelEnabled,
+  tunnelPathHost,
   type TunnelMeta,
 } from "@/app/api/_lib/tunnel";
 
@@ -78,9 +79,14 @@ export const POST = withErrorHandling(async (req: Request) => {
   await recordStat("tunnels");
 
   const base = tunnelBaseDomain();
+  const pathHost = tunnelPathHost();
   let publicBase: string;
   if (base) {
     publicBase = `https://${slug}.${base}`;
+  } else if (pathHost) {
+    // Satu host khusus tunnel (tanpa wildcard DNS), terpisah dari dashboard: https://t.depup.web.id/<slug>
+    const proto = /^(localhost|127\.0\.0\.1)(:\d+)?$/.test(pathHost) ? "http" : "https";
+    publicBase = `${proto}://${pathHost}/${slug}`;
   } else {
     const host = req.headers.get("x-forwarded-host") ?? req.headers.get("host") ?? "";
     const proto = req.headers.get("x-forwarded-proto") ?? "https";
@@ -92,7 +98,7 @@ export const POST = withErrorHandling(async (req: Request) => {
     token,
     url: publicBase + "/",
     publicBase,
-    mode: base ? "subdomain" : "path",
+    mode: base ? "subdomain" : pathHost ? "path-host" : "path",
     expiresAt: meta.expiresAt,
     ttlMinutes: ttlMin,
   });

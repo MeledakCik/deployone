@@ -1,25 +1,22 @@
 import type { NextRequest } from "next/server";
 import { ok, fail, withErrorHandling } from "@/app/api/_lib/response";
 import { getSessionEmail } from "@/app/api/_lib/session";
-import { rateLimit } from "@/app/api/_lib/rate-limit";
-import { groqChatFull, GroqError } from "@/app/api/_lib/groq";
-import { freeAiPerDay, getUserGroqKey } from "@/app/api/_lib/ai-keys";
-import { fileSystemPrompt, fileUserMessage, pageSystemPrompt, pageUserMessage, stripFence, type ContextFile } from "@/app/api/_lib/convert-prompts";
+import { LANGS } from "@/lib/convert/languages";
+import { canConvert, convertFile } from "@/lib/convert/engine/convert-file";
+import { renderJsx, type RenderModule } from "@/lib/convert/engine/jsx-render";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
+export const maxDuration = 30;
 
 const MAX_CODE = 36_000;
 const MAX_CTX_TOTAL = 80_000;
-/** Jatah gratis dihitung per file: tiap 1 "jatah AI" harian = 5 file. */
-const FILES_PER_FREE_UNIT = 5;
 
 const str = (v: unknown, max: number): string => (typeof v === "string" ? v.slice(0, max) : "");
 
-function ctxFiles(v: unknown): ContextFile[] {
+function ctxFiles(v: unknown): RenderModule[] {
   if (!Array.isArray(v)) return [];
-  const out: ContextFile[] = [];
+  const out: RenderModule[] = [];
   let total = 0;
   for (const x of v.slice(0, 40)) {
     const path = str((x as { path?: unknown })?.path, 300);
@@ -31,12 +28,18 @@ function ctxFiles(v: unknown): ContextFile[] {
   return out;
 }
 
+/** Klien lama mengirim nama bahasa versi prompt ("TypeScript (strict)"); terima id maupun nama itu. */
+function langId(v: string): string | null {
+  const t = v.trim();
+  return LANGS.find((l) => l.id === t || l.prompt === t || l.label === t)?.id ?? null;
+}
+
 /**
- * POST /api/convert
- *  { mode: "file", path, code, from, to, hint? }                       → konversi satu file ke bahasa lain
- *  { mode: "page", path, code, context, routeMap, assetPrefix, cssLinks, imageImports, tailwind, hint? }
- *                                                                      → satu halaman Next.js → satu file HTML
- * Mengembalikan { code, truncated, source }. Klien memanggil per file supaya tiap permintaan muat di batas waktu.
+ * POST /api/convert — dikerjakan MESIN DEPUP SENDIRI (lib/convert/engine), tanpa AI luar.
+ *  { mode: "file", path, code, from, to }      → konversi satu file untuk pasangan yang didukung
+ *  { mode: "page", path, code, context, routeMap, assetPrefix, cssLinks, imageImports, tailwind }
+ *                                              → satu halaman Next.js → satu file HTML statis
+ * Mengembalikan { code, truncated: false, source: "engine", warnings }.
  */
 export const POST = withErrorHandling(async (req: NextRequest) => {
   const email = getSessionEmail(req);
@@ -53,74 +56,51 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
   const mode = body.mode === "page" ? "page" : "file";
   const path = str(body.path, 300);
   const code = str(body.code, MAX_CODE + 1);
-  const hint = str(body.hint, 300).replace(/\s+/g, " ").trim();
   if (!code.trim()) return fail("Isi file kosong.", 400, "bad_request");
   if (code.length > MAX_CODE) return fail(`File terlalu besar (batas ${MAX_CODE / 1000} KB per file). Pecah dulu jadi bagian lebih kecil.`, 413, "bad_request");
 
-  let system: string;
-  let user: string;
   if (mode === "page") {
-    const payload = {
-      path,
-      code,
-      context: ctxFiles(body.context),
-      routeMap: Object.fromEntries(Object.entries((body.routeMap as Record<string, unknown>) ?? {}).slice(0, 80).map(([k, v]) => [str(k, 200), str(v, 200)])),
-      assetPrefix: /^(\.\.\/)*$/.test(str(body.assetPrefix, 40)) ? str(body.assetPrefix, 40) : "",
-      cssLinks: Array.isArray(body.cssLinks) ? body.cssLinks.slice(0, 20).map((x) => str(x, 200)) : [],
-      imageImports: Array.isArray(body.imageImports) ? body.imageImports.slice(0, 40).map((x) => str(x, 300)) : [],
-      tailwind: body.tailwind === true,
-      hint,
-    };
-    system = pageSystemPrompt(payload);
-    user = pageUserMessage(payload);
-  } else {
-    const from = str(body.from, 60).trim();
-    const to = str(body.to, 80).trim();
-    if (!from || !to) return fail("Bahasa asal dan tujuan wajib diisi.", 400, "bad_request");
-    system = fileSystemPrompt(from, to, hint);
-    user = fileUserMessage(path, from, code);
-  }
-
-  // Sumber token: milik user (tanpa batas dari Depup) atau jatah gratis harian per file.
-  const ownKey = await getUserGroqKey(email);
-  let source: "own" | "free" = "own";
-  if (!ownKey) {
-    const free = freeAiPerDay();
-    if (free === 0) return fail("Pasang token Groq-mu dulu (gratis di console.groq.com/keys).", 402, "ai_not_configured");
-    const daily = await rateLimit("convert-free-daily", `u:${email}`, free * FILES_PER_FREE_UNIT, 86400);
-    if (!daily.allowed) return fail(`Jatah konversi gratis hari ini (${free * FILES_PER_FREE_UNIT} file) sudah habis. Pasang token Groq-mu sendiri untuk lanjut.`, 429, "rate_limited");
-    source = "free";
-  }
-
-  // Perkiraan token: ~3,2 karakter/token. Keluaran kira-kira sepanjang masukan (HTML dari JSX bisa lebih panjang).
-  const estIn = Math.ceil(code.length / 3.2);
-  const maxTokens = Math.max(2500, Math.min(16_000, Math.round(estIn * (mode === "page" ? 2.2 : 1.5)) + 1500));
-
-  try {
-    const r = await groqChatFull(system, [{ role: "user", content: user }], {
-      apiKey: ownKey ?? undefined,
-      maxTokens,
-      temperature: 0.1,
-      timeoutMs: 52_000,
-      reasoningEffort: "low",
-    });
-    return ok({ code: stripFence(r.text), truncated: r.finishReason === "length", source });
-  } catch (e) {
-    if (e instanceof GroqError) {
-      switch (e.kind) {
-        case "invalid_key":
-          return fail(e.message, 400, "invalid_token");
-        case "rate_limited":
-          return fail(e.message, 429, "ai_unavailable");
-        case "timeout":
-          return fail("AI terlalu lama menjawab untuk file ini. Coba lagi, atau pecah file jadi lebih kecil.", 504, "ai_unavailable");
-        case "not_configured":
-          return fail("Asisten AI belum aktif di server ini.", 503, "ai_not_configured");
-        default:
-          console.error("[convert]", e.message);
-          return fail("AI sedang tidak bisa menjawab. Coba lagi nanti.", 502, "ai_unavailable");
+    const context = ctxFiles(body.context);
+    const isLayout = (p: string) => /(^|\/)(layout|_app)\.(tsx|ts|jsx|js)$/.test(p);
+    const images: Record<string, string> = {};
+    if (Array.isArray(body.imageImports)) {
+      for (const line of body.imageImports.slice(0, 40)) {
+        const m = /^"([^"]+)"\s+\(di [^)]*\)\s+→\s+(.+)$/.exec(str(line, 400));
+        if (m) images[m[1]] = m[2].trim();
       }
     }
-    throw e;
+    const routeMap = Object.fromEntries(
+      Object.entries((body.routeMap as Record<string, unknown>) ?? {})
+        .slice(0, 80)
+        .map(([k, v]) => [str(k, 200), str(v, 200)]),
+    );
+    const assetPrefix = /^(\.\.\/)*$/.test(str(body.assetPrefix, 40)) ? str(body.assetPrefix, 40) : "";
+    try {
+      const r = renderJsx({
+        entry: { path, code },
+        layouts: context.filter((c) => isLayout(c.path)),
+        modules: context.filter((c) => !isLayout(c.path)),
+        routeMap,
+        images,
+        cssLinks: Array.isArray(body.cssLinks) ? body.cssLinks.slice(0, 20).map((x) => str(x, 200)) : [],
+        tailwind: body.tailwind === true,
+      });
+      // Aset publik ("/logo.png") dibuat relatif terhadap lokasi halaman.
+      const html = assetPrefix ? r.html.replace(/(\s(?:src|href|poster)=")\/(?!\/)/g, `$1${assetPrefix}`) : r.html;
+      return ok({ code: html, truncated: false, source: "engine", warnings: r.warnings });
+    } catch (e) {
+      return fail(`Halaman ini belum bisa dikonversi: ${e instanceof Error ? e.message : "kesalahan tak terduga"}.`, 422, "bad_request");
+    }
+  }
+
+  const from = langId(str(body.from, 80));
+  const to = langId(str(body.to, 80));
+  if (!from || !to) return fail("Bahasa asal dan tujuan wajib diisi.", 400, "bad_request");
+  if (!canConvert(from, to)) return fail(`Konversi ${from} → ${to} belum didukung mesin Depup.`, 422, "bad_request");
+  try {
+    const r = await convertFile(from, to, code, path);
+    return ok({ code: r.code, truncated: false, source: "engine", warnings: r.warnings });
+  } catch (e) {
+    return fail(`${path || "File"} gagal dikonversi: ${e instanceof Error ? e.message : "isi tidak valid"}.`, 422, "bad_request");
   }
 });

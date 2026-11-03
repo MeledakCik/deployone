@@ -2,12 +2,13 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { LayoutDashboard, FolderKanban, Rocket, UploadCloud, Link2, Sparkles, RefreshCw, Globe2, KeyRound, BookOpen, Database, Settings2, Heart, Users, LogOut, ShieldCheck } from "@/components/ui/icons";
+import { LayoutDashboard, FolderKanban, Rocket, UploadCloud, Link2, Sparkles, RefreshCw, Globe2, KeyRound, BookOpen, Database, Settings2, Heart, Users, LogOut, ShieldCheck, LayoutGrid } from "@/components/ui/icons";
 import { useAuth } from "@/lib/auth-context";
 import { useDeploy } from "@/lib/deploy-context";
 import { AppSidebar, SIDEBAR_LINK_CLASS, type NavGroup } from "@/components/ui/AppSidebar";
 import { getInitials, avatarColorFor } from "@/lib/utils";
 import type { DashboardView } from "@/types";
+import { PREFER_DESKTOP_KEY } from "@/lib/mobile-routes";
 
 export function Sidebar() {
   const router = useRouter();
@@ -22,7 +23,7 @@ export function Sidebar() {
         label: "Ringkasan",
         items: [
           { id: "dashboard", label: "Beranda", icon: LayoutDashboard, badge: stats.failed, badgeLabel: `${stats.failed} deploy gagal` },
-          { id: "projects", label: "Proyek", icon: FolderKanban },
+          { id: "projects", label: "Project", icon: FolderKanban },
         ],
       },
       {
@@ -39,9 +40,9 @@ export function Sidebar() {
         label: "Konfigurasi",
         items: [
           { id: "domains", label: "Domain", icon: Globe2 },
-          { id: "env", label: "Environment", icon: KeyRound },
+          { id: "env", label: "Variabel env", icon: KeyRound },
           { id: "database", label: "Database", icon: Database },
-          { id: "settings", label: "Settings", icon: Settings2 },
+          { id: "settings", label: "Pengaturan", icon: Settings2 },
         ],
       },
       {
@@ -71,12 +72,12 @@ export function Sidebar() {
       footer={
         <>
           {user && (
-            <div className="flex items-center gap-3 rounded-2xl bg-[var(--sidebar-hover)] p-3 text-white">
+            <div className="flex items-center gap-3 rounded-[14px] bg-[var(--sidebar-card)] p-2.5 text-white">
               {user.picture ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={user.picture} alt={user.name} referrerPolicy="no-referrer" className="h-9 w-9 shrink-0 rounded-xl object-cover" />
+                <img src={user.picture} alt={user.name} referrerPolicy="no-referrer" className="h-9 w-9 shrink-0 rounded-[14px] object-cover" />
               ) : (
-                <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl text-[12px] font-semibold text-white ${avatarColorFor(user.email)}`}>
+                <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-[14px] text-[12px] font-semibold text-white ${avatarColorFor(user.email)}`}>
                   {getInitials(user.name)}
                 </span>
               )}
@@ -91,7 +92,7 @@ export function Sidebar() {
                 onClick={handleLogout}
                 aria-label="Keluar"
                 title="Keluar"
-                className="grid h-9 w-9 shrink-0 place-items-center rounded-xl text-white transition hover:bg-white/15 max-md:h-10 max-md:w-10"
+                className="grid h-9 w-9 shrink-0 place-items-center rounded-[14px] text-white transition hover:bg-white/15 max-md:h-10 max-md:w-10"
               >
                 <LogOut size={18} aria-hidden />
               </button>
@@ -99,9 +100,24 @@ export function Sidebar() {
           )}
           {user?.isAdmin && (
             <a href="/admin" className={SIDEBAR_LINK_CLASS}>
-              <ShieldCheck size={18} /> Panel Admin
+              <ShieldCheck size={18} /> Panel admin
             </a>
           )}
+          {/* Hanya muncul di layar HP, bila pengguna sengaja memilih tampilan desktop. */}
+          <button
+            type="button"
+            className={`${SIDEBAR_LINK_CLASS} md:hidden`}
+            onClick={() => {
+              try {
+                localStorage.removeItem(PREFER_DESKTOP_KEY);
+              } catch {
+                /* abaikan */
+              }
+              router.replace("/m");
+            }}
+          >
+            <LayoutGrid size={18} aria-hidden /> Tampilan HP
+          </button>
           {!user && (
             <button type="button" onClick={handleLogout} className={SIDEBAR_LINK_CLASS}>
               <LogOut size={18} /> Keluar

@@ -35,7 +35,7 @@ const TOKEN_LINKS: Record<Platform, GuideLink> = {
 };
 
 const GITHUB_TOKEN_LINK: GuideLink = {
-  label: "Buat GitHub Token (izin: repo)",
+  label: "Buat token GitHub (izin: repo)",
   url: "https://github.com/settings/tokens/new?scopes=repo&description=Depup",
 };
 
@@ -108,7 +108,7 @@ export function toFriendlyError(err: unknown, ctx: ErrorContext): ErrorGuide {
           message: rawMessage,
           steps: [
             "Periksa lagi penulisan link-nya (nama akun & nama repo).",
-            "Kalau repo ini private, isi GitHub Token di form — tanpa token, repo private terlihat seperti “tidak ada”.",
+            "Kalau repo ini private, isi token GitHub di form — tanpa token, repo private terlihat seperti “tidak ada”.",
           ],
           links: [GITHUB_TOKEN_LINK],
           technical,
@@ -118,7 +118,7 @@ export function toFriendlyError(err: unknown, ctx: ErrorContext): ErrorGuide {
           title: "GitHub menolak akses",
           message: rawMessage,
           steps: [
-            "Kalau repo private: isi GitHub Token dengan izin “repo”.",
+            "Kalau repo private: isi token GitHub dengan izin “repo”.",
             "Kalau sudah mengisi token: periksa apakah token sudah kedaluwarsa, lalu buat yang baru.",
           ],
           links: [GITHUB_TOKEN_LINK],
@@ -130,7 +130,7 @@ export function toFriendlyError(err: unknown, ctx: ErrorContext): ErrorGuide {
           message: rawMessage,
           steps: [
             "Tunggu beberapa menit, lalu klik “Coba lagi”.",
-            "Mengisi GitHub Token di form membuat batasnya jauh lebih longgar.",
+            "Mengisi token GitHub di form membuat batasnya jauh lebih longgar.",
           ],
           links: [GITHUB_TOKEN_LINK],
           technical,
@@ -141,7 +141,7 @@ export function toFriendlyError(err: unknown, ctx: ErrorContext): ErrorGuide {
           message: `${platformName} menolak token yang dipakai. Biasanya karena salah salin, sudah kedaluwarsa, atau izinnya kurang.`,
           steps: [
             "Buat token baru (link di bawah), lalu salin seluruhnya tanpa spasi di awal/akhir.",
-            "Tempel di Settings → Token (atau di form deploy), lalu coba lagi.",
+            "Tempel di Pengaturan → Token (atau di form deploy), lalu coba lagi.",
             ctx.platform === "cloudflare"
               ? "Pastikan token memiliki izin “Cloudflare Pages: Edit”."
               : "Pastikan token tidak dibatasi ke project/team lain.",
@@ -175,7 +175,7 @@ export function toFriendlyError(err: unknown, ctx: ErrorContext): ErrorGuide {
         return {
           title: "Account ID belum dipilih",
           message: "Cloudflare butuh tahu akun mana yang dipakai.",
-          steps: ["Buka Settings, uji token Cloudflare, lalu pilih akun yang diinginkan."],
+          steps: ["Buka Pengaturan, uji token Cloudflare, lalu pilih akun yang diinginkan."],
           technical,
         };
       case "unauthorized":

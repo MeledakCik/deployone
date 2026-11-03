@@ -23,7 +23,7 @@ function DnsField({ label, value }: { label: string; value: string }) {
     }
   }
   return (
-    <div className="flex items-center justify-between gap-3 rounded-xl bg-[var(--row-hover)] px-3 py-1.5">
+    <div className="flex items-center justify-between gap-3 rounded-[14px] bg-[var(--row-hover)] px-3 py-1.5">
       <div className="min-w-0">
         <p className="text-[12px] text-text-faint">{label}</p>
         <p className="mono truncate text-[13px]">{value}</p>
@@ -87,7 +87,7 @@ function AddDomainModal({ open, onClose }: { open: boolean; onClose: () => void 
     <div className="anim-fade fixed inset-0 z-[100] flex items-center justify-center modal-scrim px-4">
       <Surface className="anim-pop w-full max-w-sm p-6">
         <div className="flex items-center justify-between mb-5">
-          <h3 className="text-[16px] font-semibold">Tambah domain</h3>
+          <h2 className="text-[16px] font-semibold">Tambah domain</h2>
           <button
             type="button"
             onClick={onClose}
@@ -145,7 +145,7 @@ function AddDomainModal({ open, onClose }: { open: boolean; onClose: () => void 
 /** Which remote (if any) a domain was pushed to — drives the label in the DNS instructions panel below. */
 function remoteLabelFor(d: DomainItem): string | null {
   if (d.syncedToRailway) return "Railway";
-  if (d.syncedToCloudflare) return "Cloudflare";
+  if (d.syncedToCloudflare) return "Cloudflare Pages";
   if (d.syncedToVercel) return "Vercel";
   return null;
 }
@@ -229,7 +229,7 @@ export function DomainsView() {
   );
 
   const renderDnsDetails = (d: DomainItem, remoteLabel: string | null) => (
-    <div className="space-y-2 rounded-2xl bg-[var(--surface-solid-2)] p-3.5">
+    <div className="space-y-2 rounded-[14px] bg-[var(--surface-solid-2)] p-3.5">
       <p className="text-[12px] text-text-muted">
         {d.status === "Active"
           ? "Sudah aktif. Ini record yang dipakai kalau kamu perlu periksa ulang di DNS provider:"
@@ -295,7 +295,7 @@ export function DomainsView() {
         {safeDomains.length === 0 ? (
           <Surface className="flex flex-col items-center justify-center gap-3 px-6 py-24 text-center">
             <Globe2 size={52} className="text-text-faint" strokeWidth={1.5} />
-            <h3 className="text-[16px] font-semibold">Belum ada domain</h3>
+            <h2 className="text-[16px] font-semibold">Belum ada domain</h2>
             <p className="max-w-xs text-[13px] text-text-muted">
               Tambahkan custom domain dan arahkan DNS kamu ke project Depup.
             </p>
@@ -306,7 +306,7 @@ export function DomainsView() {
             <div className="md:hidden">
               {groupedDomains.map((group, groupIndex) => (
                 <section key={group.project}>
-                  <h3
+                  <h2
                     className={`bg-[var(--row-hover)] px-4 py-2 text-[12px] font-semibold text-text-faint ${groupIndex > 0 ? "border-t" : ""}`}
                     style={{ borderColor: "var(--surface-line)" }}
                   >
@@ -314,7 +314,7 @@ export function DomainsView() {
                     {projectPlatforms.get(group.project) && (
                       <span className="ml-2 font-normal normal-case text-text-faint">({projectPlatforms.get(group.project)})</span>
                     )}
-                  </h3>
+                  </h2>
                   <ul>
                     {group.items.map((d) => (
                       <li key={d.id} className="space-y-3 border-t px-4 py-4 first:border-0" style={{ borderColor: "var(--surface-line)" }}>

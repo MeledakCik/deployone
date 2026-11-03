@@ -116,7 +116,7 @@ export function useCloudStorage<T>(
   const skipSyncRef = useRef(true);
   const emailRef = useRef<string | null>(null);
   // Setiap pemakai hook (mis. SettingsView dan DeployProvider) punya instance sendiri.
-  // Tanpa sinkronisasi, token yang disimpan/dihapus di Settings tidak terbaca oleh
+  // Tanpa sinkronisasi, token yang disimpan/dihapus di Pengaturan tidak terbaca oleh
   // instance lain sampai halaman di-refresh. Id ini mencegah instance membalas eventnya sendiri.
   const instanceIdRef = useRef<string>(Math.random().toString(36).slice(2));
 

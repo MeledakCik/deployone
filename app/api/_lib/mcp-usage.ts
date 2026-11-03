@@ -108,7 +108,7 @@ export async function recordMcpUse(email: string, cid: string | undefined, info:
   try {
     const e = email.trim().toLowerCase();
     const meta = cid ? await readCidMeta(cid) : null;
-    // Tombol "Test Konektor" di Settings memakai label "Test"; itu bukan pemakaian sungguhan.
+    // Tombol "Tes konektor" di Pengaturan memakai label "Test"; itu bukan pemakaian sungguhan.
     if (meta?.name === "Test") return;
     const fam = detectClientFamily(meta?.name, info.clientInfo?.name);
     const now = Date.now();

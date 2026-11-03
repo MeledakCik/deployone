@@ -35,7 +35,7 @@ export function CommunityView() {
                     onClick={(e) => openExternal(e, href)}
                     className="flex items-center gap-4 px-6 py-4 transition-colors hover:bg-[var(--chip-bg)] focus-visible:bg-[var(--chip-bg)]"
                   >
-                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[var(--chip-bg)]">
+                    <span className="grid h-11 w-11 shrink-0 place-items-center rounded-[14px] bg-[var(--chip-bg)]">
                       <Icon size={20} />
                     </span>
                     <span className="min-w-0 flex-1">

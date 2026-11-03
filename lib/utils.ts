@@ -69,7 +69,8 @@ export function getInitials(name: string): string {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-const AVATAR_COLORS = ["bg-violet-500", "bg-blue-500", "bg-emerald-500", "bg-amber-500", "bg-pink-500"];
+// Semua warna lolos kontras WCAG AA (≥ 4,5:1) dengan teks putih, dan tetap dalam palet brand.
+const AVATAR_COLORS = ["bg-violet-700", "bg-violet-800", "bg-violet-900", "bg-midnight", "bg-ink"];
 
 /** Deterministic color per email/name so the same user always gets the same avatar color. */
 export function avatarColorFor(seed: string): string {

@@ -72,7 +72,7 @@ export default function MobileProjects() {
         <EmptyState
           icon={<FolderOpen size={24} aria-hidden />}
           title={projects.length === 0 ? "Belum ada project" : "Tidak ditemukan"}
-          hint={projects.length === 0 ? "Deploy project pertamamu, atau import dari Vercel/Railway/Cloudflare." : "Coba kata kunci atau filter lain."}
+          hint={projects.length === 0 ? "Deploy project pertamamu, atau import dari Vercel, Cloudflare Pages, atau Railway." : "Coba kata kunci atau filter lain."}
           cta={projects.length === 0 ? { href: "/m/deploy", label: "Deploy sekarang" } : undefined}
         />
       ) : (

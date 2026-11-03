@@ -49,12 +49,12 @@ export default function McpDocsPage() {
         <li><code>list_websites</code> — melihat semua Link Instan aktif beserta jumlah tayangan (views) dan daftar filenya.</li>
         <li><code>delete_website</code> — menghapus satu Link Instan.</li>
         <li><code>connector_status</code> — melihat platform deploy mana yang sudah siap dipakai (tanpa menampilkan token).</li>
-        <li><code>deploy_project</code> — men-deploy repo GitHub ke Vercel, Cloudflare Pages, atau Railway memakai token yang kamu simpan di Settings.</li>
+        <li><code>deploy_project</code> — men-deploy repo GitHub ke Vercel, Cloudflare Pages, atau Railway memakai token yang kamu simpan di Pengaturan.</li>
       </ul>
 
       <h2>Cara Memasang di Claude, OpenCode, Cursor, Codex, Gemini &amp; DeepSeek</h2>
       <p>
-        Buka <strong>Settings → Konektor AI (MCP)</strong> di dashboard Depup untuk membuat token otomatis dan menyalin konfigurasi siap pakai:
+        Buka <strong>Pengaturan → Konektor AI (MCP)</strong> di dashboard Depup untuk membuat token otomatis dan menyalin konfigurasi siap pakai:
       </p>
       <ul>
         <li>
@@ -64,7 +64,7 @@ export default function McpDocsPage() {
         <li>
           <strong>Gemini (Web, Google AI Studio, Firebase Studio &amp; Gemini CLI)</strong>:
           <ul>
-            <li><strong>Gemini Web / AI Studio</strong>: Tambahkan server MCP dengan URL <code>{`${SITE}/api/mcp`}</code> dan gunakan OAuth 2.0 (otomatis atau dengan Custom OAuth Client ID &amp; Secret dari Settings Depup) maupun Bearer Token.</li>
+            <li><strong>Gemini Web / AI Studio</strong>: Tambahkan server MCP dengan URL <code>{`${SITE}/api/mcp`}</code> dan gunakan OAuth 2.0 (otomatis atau dengan Custom OAuth Client ID &amp; Secret dari Pengaturan Depup) maupun Bearer Token.</li>
             <li><strong>Gemini CLI / Code Assist</strong>: Jalankan perintah CLI atau tempel ke <code>~/.gemini/settings.json</code>:</li>
           </ul>
           <pre>{`gemini mcp add --transport http depup ${SITE}/api/mcp --header "Authorization: Bearer <TOKEN>"`}</pre>
@@ -74,7 +74,7 @@ export default function McpDocsPage() {
           <pre>{`{\n  "$schema": "https://opencode.ai/config.json",\n  "mcp": {\n    "depup": {\n      "type": "remote",\n      "url": "${SITE}/api/mcp",\n      "enabled": true,\n      "headers": { "Authorization": "Bearer <TOKEN>" }\n    }\n  }\n}`}</pre>
         </li>
         <li>
-          <strong>Cursor (<code>.cursor/mcp.json</code>)</strong>: Klik tombol <strong>Pasang 1-Klik ke Cursor</strong> di Settings Depup, atau tambahkan ke <code>.cursor/mcp.json</code>:
+          <strong>Cursor (<code>.cursor/mcp.json</code>)</strong>: Klik tombol <strong>Pasang 1-Klik ke Cursor</strong> di Pengaturan Depup, atau tambahkan ke <code>.cursor/mcp.json</code>:
           <pre>{`{\n  "mcpServers": {\n    "depup": {\n      "url": "${SITE}/api/mcp",\n      "headers": { "Authorization": "Bearer <TOKEN>" }\n    }\n  }\n}`}</pre>
         </li>
         <li>
@@ -82,7 +82,7 @@ export default function McpDocsPage() {
           <pre>{`[mcp_servers.depup]\nurl = "${SITE}/api/mcp"\nhttp_headers = { "Authorization" = "Bearer <TOKEN>" }`}</pre>
         </li>
         <li>
-          <strong>DeepSeek Harness (<code>dsh</code>)</strong>: memakai paket resmi <code>@deepseek-ai/dsh-mcp-client</code> dan Bearer Token (bukan OAuth otomatis). Buat token di <em>Settings → Konektor AI (MCP) → DeepSeek</em>. DeepSeek Harness masih <em>developer preview</em>, jadi format konfigurasinya bisa berubah antar rilis. Urutannya: pasang paket dulu, baru tulis konfigurasi.
+          <strong>DeepSeek Harness (<code>dsh</code>)</strong>: memakai paket resmi <code>@deepseek-ai/dsh-mcp-client</code> dan Bearer Token (bukan OAuth otomatis). Buat token di <em>Pengaturan → Konektor AI (MCP) → DeepSeek</em>. DeepSeek Harness masih <em>developer preview</em>, jadi format konfigurasinya bisa berubah antar rilis. Urutannya: pasang paket dulu, baru tulis konfigurasi.
           <pre>{`# 1) Pasang paket (ganti VERSI_DSH dengan hasil: dsh --version)\ndsh plugin --profile web add @deepseek-ai/dsh-mcp-client@VERSI_DSH\n\n# 2) Isi token lewat variabel lingkungan, bukan di file YAML\nexport DEPUP_MCP_AUTH="Bearer <TOKEN>"`}</pre>
           Lalu tambahkan ke <code>~/.dsh/profiles/web/cordis.patch.yml</code> (ganti <code>web</code> dengan nama profilmu), dan restart <code>dsh web</code>:
           <pre>{`- insert:\n    - id: mcp-depup\n      name: '@deepseek-ai/dsh-mcp-client'\n      config:\n        serverName: 'depup'\n        transport: streamable-http\n        url: '${SITE}/api/mcp'\n        headers:\n          Authorization: !!js process.env.DEPUP_MCP_AUTH`}</pre>
@@ -97,9 +97,9 @@ export default function McpDocsPage() {
         <li>Saat kamu meminta revisi warna/teks/komponen, AI cukup memanggil <code>update_website</code> (<code>patches</code>) sehingga perubahan tayang dalam milidetik dengan URL yang tetap sama.</li>
       </ol>
 
-      <h2>Buat OAuth Sendiri di Settings (Custom OAuth 2.1)</h2>
+      <h2>Buat OAuth Sendiri di Pengaturan (Custom OAuth 2.1)</h2>
       <ol>
-        <li>Buka <strong>Settings → Konektor AI (MCP)</strong> lalu pilih tab <strong>Buat OAuth Sendiri</strong>.</li>
+        <li>Buka <strong>Pengaturan → Konektor AI (MCP)</strong> lalu pilih tab <strong>Buat OAuth Sendiri</strong>.</li>
         <li>Isi nama aplikasi, pilih metode autentikasi (<strong>Client ID + Secret</strong> atau <strong>Public PKCE</strong>), dan centang preset Redirect URI untuk <strong>Claude</strong>, <strong>Gemini (Web &amp; CLI)</strong>, <strong>Cursor</strong>, <strong>OpenCode</strong>, <strong>Codex</strong>, atau URL kustommu.</li>
         <li>Klik <strong>Buat OAuth Sendiri</strong> untuk mendapatkan <code>Client ID</code> dan <code>Client Secret</code>, atau klik <strong>Buat Bearer Token Langsung</strong> (pilihan masa aktif 1–365 hari).</li>
       </ol>

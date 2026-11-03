@@ -132,7 +132,7 @@ export function Navbar() {
                 key={l.href}
                 href={l.href}
                 onClick={() => setMenuOpen(false)}
-                className="rounded-2xl px-4 py-3 text-[15px] font-medium text-text-muted hover:bg-[var(--pill-bg)] hover:text-text"
+                className="rounded-[14px] px-4 py-3 text-[15px] font-medium text-text-muted hover:bg-[var(--pill-bg)] hover:text-text"
               >
                 {l.label}
               </a>

@@ -458,7 +458,7 @@ export function KuliProyek({ stage, compact = false, speed = 1, className }: Kul
 
   return (
     <div className={cn("kuli-root w-full", compact && "mx-auto max-w-[320px]", !visible && "kuli-paused", className)} style={sv({ "--kuli-d": 1 / safeSpeed })}>
-      <div className="relative overflow-hidden rounded-2xl border border-[var(--line-strong)]">
+      <div className="relative overflow-hidden rounded-[14px] border border-[var(--line-strong)]">
         <div role="img" aria-label={label}>
           <svg viewBox="0 0 400 230" className="block h-auto w-full" aria-hidden="true" focusable="false" preserveAspectRatio="xMidYMax meet">
             <defs>
@@ -507,7 +507,7 @@ export function KuliProyek({ stage, compact = false, speed = 1, className }: Kul
           </span>
         )}
         {stage === "gagal" && (
-          <span aria-hidden="true" style={dly(1.8)} className="kuli-pop pointer-events-none absolute inset-x-3 bottom-3 mx-auto w-fit max-w-full rounded-xl border border-red-500/40 bg-red-950/80 px-3 py-1.5 text-center text-[12px] font-semibold text-red-100">
+          <span aria-hidden="true" style={dly(1.8)} className="kuli-pop pointer-events-none absolute inset-x-3 bottom-3 mx-auto w-fit max-w-full rounded-[14px] border border-red-500/40 bg-red-950/80 px-3 py-1.5 text-center text-[12px] font-semibold text-red-100">
             Proyek mangkrak, cek lognya Bos
           </span>
         )}
@@ -519,7 +519,7 @@ export function KuliProyek({ stage, compact = false, speed = 1, className }: Kul
       </div>
 
       <div aria-live="polite" className={cn("mt-2.5", compact ? "text-[12px]" : "text-[13px]")}>
-        <p key={`${stage}-${tick % lines.length}`} className="kuli-pop flex items-start gap-2 rounded-2xl border border-[var(--line-strong)] bg-[var(--card-hover)] px-3 py-2 leading-snug text-[var(--text)]">
+        <p key={`${stage}-${tick % lines.length}`} className="kuli-pop flex items-start gap-2 rounded-[14px] border border-[var(--line-strong)] bg-[var(--card-hover)] px-3 py-2 leading-snug text-[var(--text)]">
           <span
             aria-hidden="true"
             className={cn("mt-[3px] h-3 w-3 shrink-0 rounded-full border", line.who === "mandor" ? "border-slate-400 bg-white" : "border-yellow-600 bg-yellow-400")}

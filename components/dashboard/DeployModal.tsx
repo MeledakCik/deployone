@@ -116,7 +116,7 @@ export function DeployModal() {
             <div className="flex items-center gap-3">
               <div
                 className={cn(
-                  "w-9 h-9 rounded-xl flex items-center justify-center",
+                  "w-9 h-9 rounded-[14px] flex items-center justify-center",
                   isError
                     ? "bg-bad-bg text-bad-fg"
                     : isDone
@@ -334,7 +334,7 @@ export function DeployModal() {
                 </div>
 
                 {/* logs panel */}
-                <div className="mt-6 p-3 rounded-xl bg-[var(--dm-surface-2)] text-left">
+                <div className="mt-6 p-3 rounded-[14px] bg-[var(--dm-surface-2)] text-left">
                   <div className="text-[12px] text-[var(--text-faint)]">
                     Logs
                   </div>
@@ -481,7 +481,7 @@ function ErrorPanel({
       </div>
 
       {guide && guide.steps.length > 0 && (
-        <div className="mt-5 rounded-2xl bg-[var(--dm-surface-2)] p-4 text-left">
+        <div className="mt-5 rounded-[14px] bg-[var(--dm-surface-2)] p-4 text-left">
           <div className="text-[12px] text-[var(--text-faint)] font-medium mb-2.5">
             Yang bisa kamu lakukan
           </div>
@@ -526,7 +526,7 @@ function ErrorPanel({
           <summary className="cursor-pointer text-[12px] text-[var(--text-faint)] hover:text-[var(--text)] text-center select-none">
             Detail teknis (untuk dilaporkan)
           </summary>
-          <pre className="mt-2 max-h-28 overflow-auto rounded-xl bg-[var(--dm-surface-2)] p-3 text-[12px] text-[var(--text-muted)] whitespace-pre-wrap break-words font-mono">
+          <pre className="mt-2 max-h-28 overflow-auto rounded-[14px] bg-[var(--dm-surface-2)] p-3 text-[12px] text-[var(--text-muted)] whitespace-pre-wrap break-words font-mono">
             {guide.technical}
           </pre>
           <div className="mt-2 text-center">

@@ -8,17 +8,11 @@ import { RepoCheckCard } from "@/components/dashboard/RepoCheckCard";
 import { CARD, PlatformTile } from "@/components/m/ui";
 import { cn } from "@/lib/utils";
 import type { Platform } from "@/types";
+import { PLATFORM_META, PLATFORM_ORDER, suggestRepoName } from "@/lib/platforms";
 
-const PLATFORMS: { id: Platform; name: string; desc: string }[] = [
-  { id: "vercel", name: "Vercel", desc: "Frontend cloud terbaik untuk Next.js, React, Astro & situs statis." },
-  { id: "railway", name: "Railway", desc: "Backend Node, Python, Dockerfile & database." },
-  { id: "cloudflare", name: "Cloudflare", desc: "Pages super cepat di jaringan edge global." },
-];
+const PLATFORMS = PLATFORM_ORDER.map((id) => ({ id, name: PLATFORM_META[id].name, desc: PLATFORM_META[id].desc }));
 
-function suggestName(url: string) {
-  const m = /github\.com\/[^/\s]+\/([^/\s#?]+)/i.exec(url);
-  return m ? m[1].replace(/\.git$/, "").toLowerCase().replace(/[^a-z0-9-]/g, "-") : "";
-}
+const suggestName = suggestRepoName;
 
 /**
  * Deploy dari HP. Memakai mesin deploy yang SAMA dengan dashboard web (deploy-context):
@@ -48,6 +42,21 @@ export default function MobileDeploy() {
     if (githubPat && form.githubPat !== githubPat) setFormField("githubPat", githubPat);
   }, [platform, vercelToken, railwayToken, cloudflareToken, cloudflareAccountId, githubPat, form.platformToken, form.accountId, form.githubPat, setFormField]);
 
+  // Repo dulu, platform kemudian: setelah repo diperiksa, pilihkan platform yang paling cocok (sekali per repo).
+  const validation = repoEnvCheck.status === "ok" ? repoEnvCheck.validation : null;
+  const autoPickedFor = React.useRef<string | null>(null);
+  React.useEffect(() => {
+    if (!validation || autoPickedFor.current === validation.fullName) return;
+    autoPickedFor.current = validation.fullName;
+    const best =
+      PLATFORM_ORDER.find((p) => validation.compat[p].level === "ok") ??
+      PLATFORM_ORDER.find((p) => validation.compat[p].level === "warn");
+    if (best && best !== platform) {
+      setFormField("platform", best);
+      setFormField("platformToken", "");
+    }
+  }, [validation, platform, setFormField]);
+
   function pickPlatform(p: Platform) {
     if (p === platform) return;
     setFormField("platform", p);
@@ -75,7 +84,7 @@ export default function MobileDeploy() {
   const platName = PLATFORMS.find((p) => p.id === platform)?.name ?? "";
 
   // Status tiap langkah dihitung dari isian sebenarnya, supaya pengguna tahu apa yang masih kurang.
-  const stepDone = [hasToken[platform], !!form.githubUrl.trim() && !!form.projectName.trim() && !blocked, false];
+  const stepDone = [!!form.githubUrl.trim() && !!form.projectName.trim() && repoEnvCheck.status === "ok", hasToken[platform] && !blocked, false];
   const currentStep = stepDone.findIndex((d) => !d);
   // Alasan tombol deploy belum aktif (tombol nonaktif tanpa penjelasan membingungkan).
   const reason = busy
@@ -102,7 +111,7 @@ export default function MobileDeploy() {
       className="space-y-5 pb-20 pt-2"
     >
       <ol className="flex items-center gap-2 px-1 text-[12px] font-semibold" aria-label="Langkah deploy">
-        {["Platform", "Sumber kode", "Deploy"].map((s, i, all) => {
+        {["Sumber kode", "Platform", "Deploy"].map((s, i, all) => {
           const done = stepDone[i];
           const active = i === currentStep;
           return (
@@ -123,55 +132,6 @@ export default function MobileDeploy() {
       </ol>
 
       <section className="space-y-3">
-        <h2 className="text-[16px] font-bold tracking-tight">Pilih platform</h2>
-        {PLATFORMS.map((p) => {
-          const sel = platform === p.id;
-          const connected = historyReady && hasToken[p.id];
-          return (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => pickPlatform(p.id)}
-              disabled={busy}
-              aria-pressed={sel}
-              className={cn(CARD, "flex w-full items-start gap-3 p-4 text-left transition active:scale-[0.99] disabled:opacity-60", sel && "ring-2 ring-[color:var(--accent)]")}
-            >
-              <PlatformTile platform={p.id} />
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-[16px] font-bold tracking-tight">{p.name}</p>
-                  {connected ? (
-                    <span className="rounded-full bg-ok-bg px-2 py-0.5 text-[12px] font-semibold text-ok-fg">Terhubung</span>
-                  ) : historyReady ? (
-                    <span className="rounded-full bg-[var(--pill-bg)] px-2 py-0.5 text-[12px] font-semibold text-text-muted">Belum ada token</span>
-                  ) : null}
-                </div>
-                <p className="mt-0.5 text-[13px] leading-snug text-text-muted">{p.desc}</p>
-              </div>
-              {sel ? (
-                <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[var(--ink-fill)] text-white">
-                  <Check size={14} aria-hidden />
-                </span>
-              ) : (
-                <span className="mt-0.5 h-6 w-6 shrink-0 rounded-full border-2 border-[var(--line-strong)]" />
-              )}
-            </button>
-          );
-        })}
-      </section>
-
-      {noToken && (
-        <Link href="/m/pengaturan" className="notice notice-warn items-center active:scale-[0.99]">
-          <CircleAlert size={20} className="shrink-0 text-warn" aria-hidden />
-          <div className="min-w-0 flex-1">
-            <p className="text-[14px] font-semibold">{missing[platform]}</p>
-            <p className="text-[13px] leading-snug">Isi sekali di Settings, lalu deploy dari HP kapan saja.</p>
-          </div>
-          <ChevronRight size={18} className="shrink-0" aria-hidden />
-        </Link>
-      )}
-
-      <section className="space-y-3">
         <h2 className="text-[16px] font-bold tracking-tight">Sumber kode</h2>
         <div className="grid grid-cols-3 gap-1 rounded-[14px] bg-[var(--pill-bg)] p-1 text-[13px] font-semibold">
           <span className="flex h-10 items-center justify-center gap-1.5 rounded-[10px] bg-white text-lav-text shadow-sm">
@@ -188,7 +148,7 @@ export default function MobileDeploy() {
         <div className={`${CARD} space-y-3 p-4`}>
           <label className="block">
             <span className={label}>Link repo GitHub</span>
-            <input className={input} inputMode="url" autoCapitalize="none" autoCorrect="off" placeholder="https://github.com/user/repo" value={form.githubUrl} onChange={(e) => onUrl(e.target.value)} />
+            <input className={input} inputMode="url" autoCapitalize="none" autoCorrect="off" placeholder="https://github.com/nama-akun/nama-repo" value={form.githubUrl} onChange={(e) => onUrl(e.target.value)} />
             <RepoCheckCard platform={platform} />
           </label>
           <label className="block">
@@ -199,18 +159,18 @@ export default function MobileDeploy() {
           {platform === "cloudflare" && (
             <div className="grid grid-cols-2 gap-3">
               <label className="block">
-                <span className={label}>Build command</span>
+                <span className={label}>Perintah build</span>
                 <input className={input} autoCapitalize="none" autoCorrect="off" placeholder="otomatis" value={form.buildCommand} onChange={(e) => setFormField("buildCommand", e.target.value)} />
               </label>
               <label className="block">
-                <span className={label}>Output dir</span>
+                <span className={label}>Folder output</span>
                 <input className={input} autoCapitalize="none" autoCorrect="off" placeholder="otomatis" value={form.outputDir} onChange={(e) => setFormField("outputDir", e.target.value)} />
               </label>
             </div>
           )}
           {platform === "railway" && (
             <label className="block">
-              <span className={label}>Start command (opsional)</span>
+              <span className={label}>Perintah start (opsional)</span>
               <input className={input} autoCapitalize="none" autoCorrect="off" placeholder="npm start" value={form.startCommand} onChange={(e) => setFormField("startCommand", e.target.value)} />
             </label>
           )}
@@ -235,6 +195,69 @@ export default function MobileDeploy() {
           </div>
         </div>
       </section>
+
+      <section className="space-y-3">
+        <h2 className="text-[16px] font-bold tracking-tight">Pilih platform</h2>
+        {validation && <p className="text-[13px] text-text-muted">Platform paling cocok sudah dipilihkan. Kamu tetap bisa menggantinya.</p>}
+        {PLATFORMS.map((p) => {
+          const sel = platform === p.id;
+          const connected = historyReady && hasToken[p.id];
+          return (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => pickPlatform(p.id)}
+              disabled={busy}
+              aria-pressed={sel}
+              className={cn(CARD, "flex w-full items-start gap-3 p-4 text-left transition active:scale-[0.99] disabled:opacity-60", sel && "ring-2 ring-[color:var(--accent)]")}
+            >
+              <PlatformTile platform={p.id} />
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-[16px] font-bold tracking-tight">{p.name}</p>
+                  {validation && (
+                    <span
+                      className={cn(
+                        "rounded-full px-2 py-0.5 text-[12px] font-semibold",
+                        validation.compat[p.id].level === "ok" && "bg-ok-bg text-ok-fg",
+                        validation.compat[p.id].level === "warn" && "bg-warn-bg text-warn-fg",
+                        validation.compat[p.id].level === "blocked" && "bg-bad-bg text-bad-fg",
+                      )}
+                    >
+                      {validation.compat[p.id].level === "ok" ? "Cocok" : validation.compat[p.id].level === "warn" ? "Dengan catatan" : "Tidak cocok"}
+                    </span>
+                  )}
+                  {connected ? (
+                    <span className="rounded-full bg-ok-bg px-2 py-0.5 text-[12px] font-semibold text-ok-fg">Token tersimpan</span>
+                  ) : historyReady ? (
+                    <span className="rounded-full bg-[var(--pill-bg)] px-2 py-0.5 text-[12px] font-semibold text-text-muted">Belum ada token</span>
+                  ) : null}
+                </div>
+                <p className="mt-0.5 text-[13px] leading-snug text-text-muted">{p.desc}</p>
+              </div>
+              {sel ? (
+                <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[var(--ink-fill)] text-white">
+                  <Check size={14} aria-hidden />
+                </span>
+              ) : (
+                <span className="mt-0.5 h-6 w-6 shrink-0 rounded-full border-2 border-[var(--line-strong)]" />
+              )}
+            </button>
+          );
+        })}
+      </section>
+
+      {noToken && (
+        <Link href="/m/pengaturan" className="notice notice-warn items-center active:scale-[0.99]">
+          <CircleAlert size={20} className="shrink-0 text-warn" aria-hidden />
+          <div className="min-w-0 flex-1">
+            <p className="text-[14px] font-semibold">{missing[platform]}</p>
+            <p className="text-[13px] leading-snug">Isi sekali di Pengaturan, lalu deploy dari HP kapan saja.</p>
+          </div>
+          <ChevronRight size={18} className="shrink-0" aria-hidden />
+        </Link>
+      )}
+
 
       <Link href="/m/ai" className={`${CARD} flex items-center gap-3 p-3.5 active:scale-[0.99]`}>
         <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[14px] bg-tone-lilac text-lav-text">

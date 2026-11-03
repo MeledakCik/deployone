@@ -22,7 +22,7 @@ import {
 } from "@/lib/github-upload";
 
 const inputCls =
-  "w-full rounded-xl bg-[var(--pill-bg)] px-3.5 py-2.5 text-[13px] outline-none transition focus:shadow-[inset_0_0_0_2px_var(--ring)]";
+  "w-full rounded-[14px] bg-[var(--pill-bg)] px-3.5 py-2.5 text-[13px] outline-none transition focus:shadow-[inset_0_0_0_2px_var(--ring)]";
 
 function formatBytes(n: number): string {
   if (n < 1024) return `${n} B`;
@@ -80,7 +80,7 @@ export function UploadView() {
   const [progress, setProgress] = React.useState<UploadProgress | null>(null);
   const [result, setResult] = React.useState<UploadResult | null>(null);
 
-  // Platform yang bisa dipakai = yang token-nya sudah tersimpan di Settings.
+  // Platform yang bisa dipakai = yang token-nya sudah tersimpan di Pengaturan.
   const platforms = React.useMemo(() => {
     const list: { id: Platform; label: string }[] = [];
     if (savedVercelToken) list.push({ id: "vercel", label: "Vercel" });
@@ -149,7 +149,7 @@ export function UploadView() {
   async function startUpload() {
     if (!collected) return;
     if (!githubPat.trim()) {
-      setError('GitHub Token belum diisi. Buka menu Settings, isi "GitHub Token" (izin repo), lalu kembali ke sini.');
+      setError('GitHub Token belum diisi. Buka menu Pengaturan, isi "Token GitHub" (izin repo), lalu kembali ke sini.');
       return;
     }
     const name = sanitizeRepoName(repoName);
@@ -251,17 +251,17 @@ export function UploadView() {
   return (
     <ViewFade>
       <div className="mb-6">
-        <PageTitle title="Unggah Proyek" desc={<>Upload zip atau folder project — otomatis diekstrak, dikirim ke repo GitHub baru, dan (kalau mau) langsung
+        <PageTitle title="Unggah project" desc={<>Upload zip atau folder project — otomatis diekstrak, dikirim ke repo GitHub baru, dan (kalau mau) langsung
           dideploy.</>} />
       </div>
 
       {!githubPat.trim() && (
-        <div className="mb-4 flex items-start gap-2.5 rounded-2xl bg-[var(--warn-bg)] px-4 py-3 text-[13px] text-warn-fg">
+        <div className="mb-4 flex items-start gap-2.5 rounded-[14px] bg-[var(--warn-bg)] px-4 py-3 text-[13px] text-warn-fg">
           <CircleAlert size={16} className="mt-0.5 shrink-0" />
           <span>
             Fitur ini butuh <b>GitHub Token</b> (izin <code>repo</code>) untuk membuat repo atas nama kamu.{" "}
             <button type="button" onClick={() => setView("settings")} className="underline underline-offset-4">
-              Isi di Settings
+              Isi di Pengaturan
             </button>
             .
           </span>
@@ -271,7 +271,7 @@ export function UploadView() {
       {error && (
         <div
           role="alert"
-          className="mb-4 flex items-start gap-2.5 rounded-2xl bg-[var(--bad-bg)] px-4 py-3 text-[13px] text-bad-fg"
+          className="mb-4 flex items-start gap-2.5 rounded-[14px] bg-[var(--bad-bg)] px-4 py-3 text-[13px] text-bad-fg"
         >
           <CircleAlert size={16} className="mt-0.5 shrink-0" />
           <span className="min-w-0 flex-1 break-words">{error}</span>
@@ -407,7 +407,7 @@ export function UploadView() {
                     aria-pressed={isPrivate === o.v}
                     onClick={() => setIsPrivate(o.v)}
                     className={cn(
-                      "inline-flex flex-1 items-center justify-center gap-1.5 rounded-xl px-3 py-2.5 text-[13px] transition",
+                      "inline-flex flex-1 items-center justify-center gap-1.5 rounded-[14px] px-3 py-2.5 text-[13px] transition",
                       isPrivate === o.v
                         ? "chip-on"
                         : "bg-[var(--pill-bg)] text-text-muted hover:text-text"
@@ -435,7 +435,7 @@ export function UploadView() {
           </label>
 
           {/* Pilihan deploy */}
-          <div className="mt-5 rounded-2xl bg-[var(--surface-solid-2)] p-4">
+          <div className="mt-5 rounded-[14px] bg-[var(--surface-solid-2)] p-4">
             <p className="text-[12px] font-medium">Setelah upload…</p>
             <div className="mt-2.5 grid gap-2 sm:grid-cols-2">
               {[
@@ -449,7 +449,7 @@ export function UploadView() {
                   aria-pressed={deployNow === o.v}
                   onClick={() => setDeployNow(o.v)}
                   className={cn(
-                    "rounded-xl px-3.5 py-3 text-left transition",
+                    "rounded-[14px] px-3.5 py-3 text-left transition",
                     deployNow === o.v ? "bg-violet-500 text-white [&_.text-text-muted]:!text-violet-100" : "bg-[var(--pill-bg)] hover:brightness-95"
                   )}
                 >
@@ -465,7 +465,7 @@ export function UploadView() {
                   <p className="text-[12px] text-warn-fg">
                     Belum ada token platform yang tersimpan.{" "}
                     <button type="button" onClick={() => setView("settings")} className="underline underline-offset-4">
-                      Isi token Vercel/Cloudflare/Railway di Settings
+                      Isi token Vercel/Cloudflare/Railway di Pengaturan
                     </button>{" "}
                     dulu, atau pilih &ldquo;Upload saja&rdquo;.
                   </p>

@@ -2,13 +2,11 @@ import type { NextRequest } from "next/server";
 import { ok, fail, withErrorHandling } from "@/app/api/_lib/response";
 import { getSessionEmail } from "@/app/api/_lib/session";
 import { redactSecrets } from "@/app/api/_lib/redact";
-import { GroqError } from "@/app/api/_lib/groq";
-import { resolveAiSource, runSiteEdit } from "@/app/api/_lib/ai-site-common";
+import { engineEdit } from "@/lib/site-engine";
 import { normalizeContent, type SiteContent, type SiteKind } from "@/lib/ai-site-templates";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
-export const maxDuration = 60;
 
 const MAX_INSTRUCTION = 600;
 /** Isi website tanpa gambar jarang lebih dari puluhan KB; batas ini hanya menolak kiriman aneh. */
@@ -16,7 +14,7 @@ const MAX_CURRENT_CHARS = 150_000;
 
 /**
  * POST /api/ai/site/edit { current, instruction } → { content, changed, note, source }
- * AI hanya membalas bagian yang berubah; server menggabungkannya ke isi saat ini dan menormalisasi ulang.
+ * Perintah diurai oleh mesin Depup sendiri (lib/site-engine, tanpa AI luar) menjadi perubahan pada isi saat ini.
  * Isi `current` dari klien tidak dipercaya: selalu dinormalisasi dulu.
  */
 export const POST = withErrorHandling(async (req: NextRequest) => {
@@ -43,30 +41,10 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
   const current: SiteContent | null = normalizeContent(body?.current, kind);
   if (!current) return fail("Isi website tidak valid. Buat websitenya dulu, lalu coba ubah lagi.", 400, "bad_request");
 
-  const src = await resolveAiSource(email);
-  if (!src.ok) return src.res;
-  const { ownKey, source } = src;
-
-  try {
-    const out = await runSiteEdit(current, instruction, { apiKey: ownKey ?? undefined, timeoutMs: 40_000 });
-    if (!out) return fail("AI membalas perubahan yang tidak bisa dipakai. Coba kalimat yang lebih spesifik.", 502, "ai_unavailable");
-    return ok({ content: out.content, changed: out.changed, note: out.note, source });
-  } catch (e) {
-    if (e instanceof GroqError) {
-      switch (e.kind) {
-        case "invalid_key":
-          return fail(e.message, 400, "invalid_token");
-        case "rate_limited":
-          return fail(e.message, 429, "ai_unavailable");
-        case "timeout":
-          return fail("AI terlalu lama menjawab. Coba kirim ulang.", 504, "ai_unavailable");
-        case "not_configured":
-          return fail("Asisten AI belum aktif di server ini.", 503, "ai_not_configured");
-        default:
-          console.error("[ai/site/edit]", e.message);
-          return fail("AI sedang tidak bisa menjawab. Coba lagi nanti.", 502, "ai_unavailable");
-      }
-    }
-    throw e;
-  }
+  const out = await engineEdit(current, instruction);
+  if (!out.content) return fail(out.note, 422, "bad_request");
+  const a = current as unknown as Record<string, unknown>;
+  const b = out.content as unknown as Record<string, unknown>;
+  const changed = Object.keys(b).filter((k) => JSON.stringify(a[k] ?? null) !== JSON.stringify(b[k] ?? null));
+  return ok({ content: out.content, changed, note: out.note, source: "engine" });
 });

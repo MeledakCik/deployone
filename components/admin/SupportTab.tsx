@@ -116,7 +116,7 @@ export function SupportTab({ toast }: { toast: (m: string) => void }) {
                         </div>
 
                         {(r.replies ?? []).map((rep, i) => (
-                          <p key={i} className="whitespace-pre-wrap break-words rounded-xl bg-[var(--surface-solid)] px-3.5 py-2.5">
+                          <p key={i} className="whitespace-pre-wrap break-words rounded-[14px] bg-[var(--surface-solid)] px-3.5 py-2.5">
                             <span className="font-medium text-ok-fg">Balasan admin ({fmtDateTime(rep.at)}): </span>
                             {rep.text}
                           </p>

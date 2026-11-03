@@ -119,7 +119,14 @@ async function handle(req: Request, ctx: Ctx): Promise<Response> {
   }
 
   const hostMode = slugFromHost(req.headers.get("host")) === slug;
-  const prefix = hostMode ? "" : `/t/${slug}`;
+  // Awalan URL publik: "" (subdomain), "/t/<slug>" (host utama), atau "/<slug>" (TUNNEL_PATH_HOST).
+  // Diisi middleware dan selalu ditimpa di sana; nilai lain diabaikan.
+  const sentPrefix = req.headers.get("x-depup-prefix");
+  const prefix = hostMode
+    ? ""
+    : sentPrefix === `/${slug}` || sentPrefix === `/t/${slug}`
+      ? sentPrefix
+      : `/t/${slug}`;
 
   // Jalur laporan abuse: <link>/__depup/report -> form laporan di domain utama Depup.
   const appUrl = (process.env.NEXT_PUBLIC_APP_URL ?? "").trim().replace(/\/+$/, "");
@@ -258,6 +265,15 @@ async function handle(req: Request, ctx: Ctx): Promise<Response> {
   for (const [name, value] of first.headers ?? []) {
     const n = name.toLowerCase();
     if (HOP_BY_HOP.has(n) || n === "content-length") continue;
+    // Mode path: redirect ke "/login" dari aplikasi harus tetap di dalam tunnel ("/t/<slug>/login"),
+    // bukan ke halaman Depup (yang berujung login Google Depup).
+    if (n === "location" && prefix && value.startsWith("/") && !value.startsWith("//") && !value.startsWith(prefix + "/") && value !== prefix) {
+      resHeaders.append(name, prefix + value);
+      continue;
+    }
+    // Referrer-Policy aplikasi yang terlalu ketat membuat browser tidak mengirim Referer, padahal Referer-lah
+    // yang dipakai untuk meneruskan aset ber-URL absolut ke tunnel. Di mode path, kita tetapkan sendiri di bawah.
+    if (n === "referrer-policy" && prefix) continue;
     try {
       resHeaders.append(name, n === "set-cookie" ? stripCookieDomain(value) : value);
     } catch {
@@ -266,6 +282,9 @@ async function handle(req: Request, ctx: Ctx): Promise<Response> {
   }
   resHeaders.set("x-robots-tag", "noindex, nofollow");
   resHeaders.set("x-depup-tunnel", "1");
+  // "same-origin": Referer lengkap hanya untuk request ke host yang sama (dibutuhkan routing tunnel),
+  // tidak bocor ke situs lain.
+  if (prefix) resHeaders.set("referrer-policy", "same-origin");
   // Jangan biarkan CDN Vercel menyimpan response localhost orang.
   resHeaders.set("cdn-cache-control", "no-store");
   resHeaders.set("vercel-cdn-cache-control", "no-store");

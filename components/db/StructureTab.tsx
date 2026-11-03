@@ -57,7 +57,7 @@ export default function StructureTab({ id, schema, table, setTable, onChanged }:
         <>
           <section className="space-y-2">
             <h3 className={heading}>Kolom</h3>
-            <div className="overflow-x-auto rounded-xl">
+            <div className="overflow-x-auto rounded-[14px]">
               <table className="w-full min-w-[520px]">
                 <thead className="bg-[var(--pill-bg)]">
                   <tr>
@@ -193,7 +193,7 @@ function CreateTable({ onClose, onSubmit }: { onClose: () => void; onSubmit: (na
         </Field>
         <div className="space-y-2">
           {cols.map((c, i) => (
-            <div key={i} className="grid items-center gap-2 rounded-xl p-2.5 sm:grid-cols-[1fr_7rem_1fr_auto] sm:border-0 sm:p-0">
+            <div key={i} className="grid items-center gap-2 rounded-[14px] p-2.5 sm:grid-cols-[1fr_7rem_1fr_auto] sm:border-0 sm:p-0">
               <input className={inputCls} placeholder="nama_kolom" value={c.name} onChange={(e) => set(i, { name: e.target.value })} aria-label={`Nama kolom ${i + 1}`} />
               <select className={inputCls} value={c.type} onChange={(e) => set(i, { type: e.target.value })} aria-label="Tipe">
                 {TYPES.map((x) => (

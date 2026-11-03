@@ -185,6 +185,70 @@ Yang perlu kamu tahu:
 - Siapa pun yang punya link bisa membuka websitemu. Jangan bagikan project yang berisi data rahasia.
 - Opsi: `--name skripsi` (awalan nama link), `--ttl 240` (masa aktif dalam menit, maks 480).
 
+### Bentuk alamat link (untuk admin server)
+
+Seperti ngrok, link paling aman berada di domain yang terpisah dari dashboard. Depup memilih otomatis:
+
+| Env yang diisi | Bentuk link | Kebutuhan DNS |
+|---|---|---|
+| `TUNNEL_BASE_DOMAIN=depup.web.id` | `https://cantik-x7k2m.depup.web.id/` | wildcard `*.depup.web.id` |
+| `TUNNEL_PATH_HOST=t.depup.web.id` | `https://t.depup.web.id/cantik-x7k2m/` | satu record (CNAME) |
+| (kosong) | `https://<domain-depup>/t/cantik-x7k2m/` | tidak ada (cadangan) |
+
+Pada dua bentuk terakhir (mode path), request ber-URL absolut dari halaman yang dibagikan — `/style.css`,
+`/_next/static/...`, `fetch("/api/...")`, `<a href="/about">`, redirect ke `/login` — dikenali dari header
+Referer lalu diteruskan ke tunnel yang sama. Pengunjung tidak lagi dilempar ke halaman/login Depup.
+
+### Mencoba Link Gaib di laptop (tanpa Upstash)
+
+```bash
+npm run kv:dev          # KV tiruan di memori, port 8079
+# .env.local: KV_REST_API_URL=http://127.0.0.1:8079  KV_REST_API_TOKEN=dev-local
+npm run dev
+npx depup-cli share 5173 --host http://localhost:3000
+```
+
+---
+
+## Mesin AI Depup (AI Web Builder & Konversi) — tanpa AI luar
+
+AI Web Builder dan Konversi tidak lagi memanggil Groq atau layanan AI lain. Keduanya dikerjakan mesin milik Depup
+yang berjalan di server Depup sendiri: tanpa token, tanpa kuota harian, dan kode/deskripsi pengguna tidak keluar dari server.
+
+**AI Web Builder** (`lib/site-engine/`)
+
+- Klasifikasi Naive Bayes (kata + pasangan kata) memilih jenis usaha dari deskripsi; ekstraksi aturan mengambil nama usaha,
+  kota, produk + harga, WhatsApp, email, jam buka, dan alamat; isi disusun dari bank kalimat per jenis usaha.
+- "Ubah dengan perintah" memahami perintah umum: ganti nama/judul/slogan/tombol/kontak, tambah/hapus produk, ubah harga,
+  ganti warna/template/hero, hapus testimoni.
+- **Melatih mesin**
+  1. Tambah atau ubah pengetahuan di `data/site-engine/packs/*.json` (satu paket = satu jenis usaha: contoh deskripsi,
+     kata kunci, kalimat, produk, fitur, langkah, artikel).
+  2. Contoh dari pengguna (website yang mereka terbitkan dan *izinkan* dipakai) masuk ke Panel Admin → **Mesin AI**.
+     Tekan **Latih ulang sekarang** untuk langsung memakai model baru, atau **Ekspor** lalu simpan ke
+     `data/site-engine/feedback/*.jsonl`.
+  3. `npm run engine:train` — memeriksa paket (ikon, ungkapan generik terlarang, kolom wajib), melatih, menulis
+     `lib/site-engine/model.json`, dan menampilkan akurasi klasifikasi (leave-one-out).
+- Tes: `node --experimental-strip-types --test tests/site-engine.test.mjs`
+
+**Konversi** (`lib/convert/engine/`)
+
+| Dari | Ke |
+|---|---|
+| Project Next.js (App/Pages Router) | HTML statis per halaman (layout + komponen digabung) |
+| HTML | Next.js 16 (project), JSX/TSX, Markdown |
+| JSON / YAML / TOML / XML | satu sama lain |
+| TS, TSX | JS, JSX (tipe dihapus) |
+| JS, JSX | TS, TSX (parameter diberi tipe `any`) |
+| SCSS | CSS (dikompilasi) · CSS → SCSS |
+| Markdown | HTML |
+| JSX/TSX (satu komponen) | HTML |
+
+Next.js/JSX → HTML memakai interpreter JSX statis: kode dibaca sebagai AST, tidak dijalankan. Data dari server, `fetch`,
+state hasil klik, dan komponen dari paket pihak ketiga tidak bisa dihitung; bagian itu dilewati dan dicatat sebagai catatan
+di hasil. Pasangan lain (mis. Python → Rust) sengaja tidak ditawarkan karena tidak bisa dibuat pasti tanpa AI.
+Tes: `node --experimental-strip-types --test tests/convert-engine.test.mjs`
+
 ---
 
 ## Asisten Bantuan 💬

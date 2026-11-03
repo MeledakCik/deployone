@@ -59,7 +59,7 @@ export default function AdminPanel({ id }: { id: string }) {
       </div>
       <div className="p-3 sm:p-5">
         {err && <Notice kind="error">{err}</Notice>}
-        {!schema && !err && <div className="space-y-2" aria-busy="true"><div className="h-8 w-40 animate-pulse rounded-lg bg-tone-lilac" /><div className="h-32 animate-pulse rounded-xl bg-tone-lilac" /></div>}
+        {!schema && !err && <div className="space-y-2" aria-busy="true"><div className="h-8 w-40 animate-pulse rounded-lg bg-tone-lilac" /><div className="h-32 animate-pulse rounded-[14px] bg-tone-lilac" /></div>}
         {schema && tab === "tables" && <TablesTab schema={schema} onOpen={(t, to) => { setTable(t); setTab(to); }} onReload={reload} />}
         {schema && tab === "browse" && <BrowseTab id={id} schema={schema} table={table} setTable={setTable} onChanged={reload} />}
         {schema && tab === "structure" && <StructureTab id={id} schema={schema} table={table} setTable={setTable} onChanged={reload} />}

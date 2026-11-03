@@ -249,7 +249,7 @@ export function DonateView() {
             </label>
 
             {error && (
-              <div className="notice notice-bad !rounded-xl" role="alert">{error}</div>
+              <div className="notice notice-bad !rounded-[14px]" role="alert">{error}</div>
             )}
 
             <button
@@ -281,7 +281,7 @@ export function DonateView() {
               alt={`Kode QRIS donasi ${rupiah(donation.amount)}`}
               width={260}
               height={260}
-              className="mx-auto aspect-square h-auto w-full max-w-[260px] rounded-2xl bg-white p-2"
+              className="mx-auto aspect-square h-auto w-full max-w-[260px] rounded-[14px] bg-white p-2"
             />
             <div>
               <p className="text-[22px] font-semibold">{rupiah(donation.totalPaid)}</p>

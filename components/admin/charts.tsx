@@ -166,7 +166,7 @@ export function TimeChart({ days, series, kind, label, height = DEFAULT_H }: { d
 
         {hover !== null && (
           <div
-            className="pointer-events-none absolute top-1 z-10 w-[168px] rounded-xl border border-[var(--line-strong)] bg-[var(--surface-solid-2)] px-3 py-2 text-[12px] shadow-lg"
+            className="pointer-events-none absolute top-1 z-10 w-[168px] rounded-[14px] border border-[var(--line-strong)] bg-[var(--surface-solid-2)] px-3 py-2 text-[12px] shadow-lg"
             style={{ left: tipLeft }}
           >
             <p className="mb-1 font-medium">{shortDay(days[hover])}</p>

@@ -67,7 +67,7 @@ function SitePreview({ url, title }: { url: string; title: string }) {
   return (
     <div
       ref={boxRef}
-      className="relative w-full overflow-hidden rounded-2xl border border-[var(--line)] bg-[var(--pill-bg)]"
+      className="relative w-full overflow-hidden rounded-[14px] border border-[var(--line)] bg-[var(--pill-bg)]"
       style={{ aspectRatio: `${PREVIEW_W} / ${PREVIEW_H}` }}
     >
       {!loaded && <div className="absolute inset-0 animate-pulse bg-[var(--row-hover)]" aria-hidden />}
@@ -213,7 +213,7 @@ function VisitorsCard({ stats }: { stats: SiteStats }) {
         Pengunjung
       </h3>
       <div className="flex items-center gap-3">
-        <span className="grid h-10 w-10 place-items-center rounded-xl bg-tone-lilac text-text">
+        <span className="grid h-10 w-10 place-items-center rounded-[14px] bg-tone-lilac text-text">
           <Users size={18} />
         </span>
         <div>
@@ -224,7 +224,7 @@ function VisitorsCard({ stats }: { stats: SiteStats }) {
 
       <h4 className="mb-2 mt-6 text-[13px] font-medium text-text-muted">Halaman teratas</h4>
       {top.length === 0 ? (
-        <p className="rounded-2xl bg-[var(--pill-bg)] px-4 py-6 text-center text-[13px] text-text-muted">
+        <p className="rounded-[14px] bg-[var(--pill-bg)] px-4 py-6 text-center text-[13px] text-text-muted">
           Belum ada kunjungan. Bagikan linknya, lalu angkanya muncul di sini.
         </p>
       ) : (

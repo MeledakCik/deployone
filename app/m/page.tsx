@@ -1,4 +1,5 @@
 "use client";
+import { greeting } from "@/lib/mobile-routes";
 
 import * as React from "react";
 import Link from "next/link";
@@ -26,14 +27,6 @@ const ACTIONS = [
   { href: "/m/komunitas", label: "Komunitas", Icon: Users, tone: "lemon" },
   { href: "/m/donasi", label: "Donasi", Icon: Heart, tone: "lemon" },
 ] as const;
-
-function greeting() {
-  const h = new Date().getHours();
-  if (h < 11) return "Selamat pagi";
-  if (h < 15) return "Selamat siang";
-  if (h < 19) return "Selamat sore";
-  return "Selamat malam";
-}
 
 export default function MobileHome() {
   const { user } = useAuth();
@@ -66,7 +59,7 @@ export default function MobileHome() {
         <div className="pointer-events-none absolute -left-8 -top-8 h-32 w-32 rounded-full bg-white/15 blur-xl" />
         <div className="relative flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-[13px] font-semibold text-violet-100">Proyek aktif</p>
+            <p className="text-[13px] font-semibold text-violet-100">Project aktif</p>
             <p className="mt-1 flex items-baseline gap-1.5">
               <span className="text-[40px] font-bold leading-none tracking-tight tabular-nums">{loading ? "–" : projects.length}</span>
               <span className="text-[14px] font-semibold text-violet-100">project</span>

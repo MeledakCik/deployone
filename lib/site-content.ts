@@ -83,7 +83,7 @@ export const FEATURES: Feature[] = [
       "Depup membaca isi repo GitHub-mu sebelum deploy dan memberi tahu platform mana yang cocok. Kalau pilihanmu tidak cocok, kamu langsung tahu alasannya, jadi waktu tidak terbuang untuk deploy yang pasti gagal. Setelah itu Depup memantau progres sampai alamat situsmu muncul.",
     audience: "Pelajar, freelancer, dan siapa saja yang ingin website online tanpa mempelajari tiga dashboard sekaligus.",
     points: [
-      "Deploy repo publik maupun private (isi GitHub Token dengan izin repo di Settings).",
+      "Deploy repo publik maupun private (isi GitHub Token dengan izin repo di Pengaturan).",
       "Pemeriksaan repo sebelum deploy: mengenali HTML biasa, Node.js, Next.js, Docker, Python, dan lainnya, lalu menyarankan platform yang cocok.",
       "Tiga tujuan dalam satu form: Vercel, Cloudflare Pages, dan Railway.",
       "Pemantauan progres deploy, daftar Projects, tombol deploy ulang, dan riwayat deploy.",
@@ -99,7 +99,7 @@ export const FEATURES: Feature[] = [
     ],
     steps: [
       "Masuk dengan akun Google di depup.cloud.",
-      "Buka Settings, isi token platform yang ingin dipakai, lalu tekan Test Koneksi.",
+      "Buka Pengaturan, isi token platform yang ingin dipakai, lalu tekan Tes koneksi.",
       "Buka Deploy, tempel link repo GitHub, pilih platform, lalu klik Deploy.",
       "Tunggu progres selesai. Alamat situs dan project-nya muncul di daftar Projects.",
     ],
@@ -138,7 +138,7 @@ export const FEATURES: Feature[] = [
       "File .env tidak dikirim ke GitHub; isinya dipasang ke platform sebagai environment variables.",
     ],
     limits: [
-      "Butuh GitHub Token dengan izin repo di Settings.",
+      "Butuh GitHub Token dengan izin repo di Pengaturan.",
       "Batas ukuran: sampai 3.000 file, total 150 MB, dan maksimal 50 MB per file.",
       "Nama repo yang sudah dipakai ditolak, kecuali kamu mencentang opsi menimpa.",
     ],
@@ -164,7 +164,7 @@ export const FEATURES: Feature[] = [
     slug: "link-instan",
     name: "Link Instan",
     summary:
-      "Upload website statis (HTML, CSS, JavaScript) dan dapatkan link publik sementara di subdomain depup.web.id tanpa repo dan tanpa token platform.",
+      "Upload website statis (HTML, CSS, JavaScript) dan dapatkan link publik sementara di depup.web.id (domain khusus situs pengguna, terpisah dari dashboard depup.cloud) tanpa repo dan tanpa token platform.",
     seoTitle: "Link Instan: Hosting HTML Gratis Sementara",
     seoDescription:
       "Upload file HTML, CSS, dan JavaScript lalu dapatkan link publik sementara dalam hitungan detik. Cocok untuk demo, tugas kuliah, dan preview ke klien.",
@@ -211,12 +211,12 @@ export const FEATURES: Feature[] = [
     slug: "ai-web-builder",
     name: "AI Web Builder",
     summary:
-      "Ceritakan usaha atau topik blogmu; AI menentukan jenis situs, gaya, dan isinya, lalu kamu publish ke Link Instan atau ekspor file.",
+      "Ceritakan usaha atau topik blogmu; mesin Depup menentukan jenis situs, gaya, dan isinya tanpa layanan AI luar, lalu kamu publish ke Link Instan atau ekspor file.",
     seoTitle: "AI Web Builder: Buat Website dengan Deskripsi",
     seoDescription:
-      "Ceritakan usaha atau topikmu, AI di Depup menyusun website lengkap dengan gaya dan isi. Atur tampilan, ubah dengan perintah, lalu publish atau ekspor.",
+      "Ceritakan usahamu, mesin milik Depup menyusun website lengkap tanpa token dan tanpa kuota. Atur tampilan, ubah dengan perintah, lalu publish atau ekspor.",
     tldr:
-      "AI Web Builder membuat website dari deskripsi berbahasa Indonesia. AI memilih jenis situs (UMKM, jasa, portofolio, event, profil, atau artikel), menyusun isi, dan kamu tinggal mengatur palet warna, tata letak, serta gambar. Hasilnya bisa dipublish sebagai Link Instan atau diekspor sebagai file.",
+      "AI Web Builder membuat website dari deskripsi berbahasa Indonesia memakai mesin milik Depup sendiri (bukan layanan AI luar). Mesin memilih jenis situs (UMKM, jasa, portofolio, event, profil, atau artikel), menyusun isi, dan kamu tinggal mengatur palet warna, tata letak, serta gambar. Hasilnya bisa dipublish sebagai Link Instan atau diekspor sebagai file.",
     audience: "Pemilik UMKM, mahasiswa, dan kreator yang butuh website sederhana tanpa menulis kode.",
     points: [
       "Enam jenis situs: UMKM, jasa, portofolio, event, profil, dan artikel/blog.",
@@ -224,23 +224,23 @@ export const FEATURES: Feature[] = [
       "Mode Ubah dengan perintah: revisi cukup dengan kalimat biasa.",
       "Pratinjau langsung sebelum dipublish.",
       "Publish ke Link Instan atau ekspor sebagai file.",
-      "Memakai token Groq milik pengguna (disimpan terenkripsi) atau jatah coba gratis harian per akun bila diaktifkan server.",
+      "Memakai mesin milik Depup yang dilatih dari contoh: tanpa token, tanpa kuota harian, dan deskripsimu tidak dikirim ke layanan lain.",
     ],
     limits: [
       "Hasil berupa situs statis.",
       "Kualitas isi bergantung pada deskripsi yang kamu tulis; periksa kembali sebelum dipublikasikan.",
-      "Jatah coba gratis per hari ditentukan pengelola Depup dan bisa tidak aktif.",
+      "Ubah dengan perintah memahami perintah umum (ganti nama/judul/warna/template, tambah/hapus produk, ubah harga, kontak); permintaan gaya tulisan bebas belum didukung.",
     ],
     steps: [
       "Buka menu AI Web Builder.",
-      "Ceritakan usaha atau topik blogmu dan, bila mau, pasang token Groq.",
+      "Ceritakan usaha atau topik blogmu: nama usaha, kota, produk beserta harga, dan kontak.",
       "Atur tampilan dan gambar pada pratinjau.",
       "Publish ke Link Instan atau ekspor file.",
     ],
     faqs: [
       {
         q: "Apakah AI Web Builder butuh token sendiri?",
-        a: "Kamu bisa memasang token Groq milik sendiri di menu AI Web Builder. Bila pengelola Depup mengaktifkan jatah coba gratis, ada kuota harian per akun yang memakai kunci server.",
+        a: "Tidak. Isi website dibuat oleh mesin milik Depup sendiri yang berjalan di server Depup, jadi tidak perlu token AI dan tidak ada kuota harian. Mesin ini dilatih dari contoh dan makin baik dari website yang pengguna izinkan sebagai contoh.",
       },
       {
         q: "Bisakah mengubah hasil AI tanpa mengulang dari awal?",
@@ -394,10 +394,10 @@ export const FEATURES: Feature[] = [
     limits: [
       "DeepSeek Harness memakai Bearer Token lewat paket resmi @deepseek-ai/dsh-mcp-client (bukan OAuth otomatis) dan masih developer preview, jadi format konfigurasinya bisa berubah.",
       "Aturan Link Instan berlaku: situs statis, link sementara, kuota per akun.",
-      "Deploy repo lewat konektor memakai token platform yang kamu simpan di Settings.",
+      "Deploy repo lewat konektor memakai token platform yang kamu simpan di Pengaturan.",
     ],
     steps: [
-      "Buka Settings, Konektor AI (MCP) di dashboard untuk menyalin URL konektor atau membuat token.",
+      "Buka Pengaturan, Konektor AI (MCP) di dashboard untuk menyalin URL konektor atau membuat token.",
       "Tambahkan URL ke klien AI-mu (misalnya Settings, Connectors di claude.ai) lalu login dengan Google dan izinkan.",
       "Minta AI membuat website lalu bilang \"publish ke Depup\".",
     ],
@@ -408,7 +408,7 @@ export const FEATURES: Feature[] = [
       },
       {
         q: "Bagaimana menghubungkan DeepSeek Harness ke Depup?",
-        a: "Buat Bearer Token di Settings, Konektor AI (MCP), pilih DeepSeek. Pasang paket @deepseek-ai/dsh-mcp-client ke profil dsh, isi token lewat variabel lingkungan, lalu tambahkan blok konfigurasi streamable-http ke cordis.patch.yml. DeepSeek Harness masih developer preview, jadi ikuti panduan terbaru di /docs/mcp.",
+        a: "Buat Bearer Token di Pengaturan, Konektor AI (MCP), pilih DeepSeek. Pasang paket @deepseek-ai/dsh-mcp-client ke profil dsh, isi token lewat variabel lingkungan, lalu tambahkan blok konfigurasi streamable-http ke cordis.patch.yml. DeepSeek Harness masih developer preview, jadi ikuti panduan terbaru di /docs/mcp.",
       },
       {
         q: "Apakah AI bisa melihat token platform saya?",
@@ -510,7 +510,7 @@ export const HOME_FAQS: FeatureFaq[] = [
   },
   {
     q: "Apakah token dan environment variable saya aman?",
-    a: "Kamu masuk lewat akun Google, jadi Depup tidak menyimpan password. Token platform dan nilai environment variable disimpan terenkripsi dan hanya bisa dipakai oleh akunmu. Token yang kamu ketik langsung di form deploy tidak disimpan, dan token yang tersimpan bisa kamu hapus kapan saja di Settings. Token juga tidak pernah dikirim ke AI.",
+    a: "Kamu masuk lewat akun Google, jadi Depup tidak menyimpan password. Token platform dan nilai environment variable disimpan terenkripsi dan hanya bisa dipakai oleh akunmu. Token yang kamu ketik langsung di form deploy tidak disimpan, dan token yang tersimpan bisa kamu hapus kapan saja di Pengaturan. Token juga tidak pernah dikirim ke AI.",
   },
   {
     q: "Bisakah memakai domain sendiri?",
@@ -572,7 +572,7 @@ export function buildLlmsFullTxt(): string {
   lines.push(NAMING_NOTE, "");
   lines.push("## Ringkasan dalam satu paragraf", "");
   lines.push(
-    "Depup membantu orang menayangkan website ke internet tanpa belajar tiga dashboard sekaligus. Pengguna masuk dengan akun Google, menyimpan token platform di Settings, lalu menempelkan link repo GitHub atau mengupload ZIP. Depup memeriksa isi repo, menyarankan platform yang cocok, men-deploy ke Vercel, Cloudflare Pages, atau Railway, dan memantau prosesnya. Setelah live, domain, environment variables, dan riwayat deploy dikelola dari satu tempat. Di luar deploy, Depup menyediakan Link Instan (hosting statis sementara), AI Web Builder, Database SQLite (Turso), Link Gaib untuk membagikan localhost, konektor MCP untuk AI, dan Asisten Bantuan. Depup gratis dipakai; donasi bersifat sukarela.",
+    "Depup membantu orang menayangkan website ke internet tanpa belajar tiga dashboard sekaligus. Pengguna masuk dengan akun Google, menyimpan token platform di Pengaturan, lalu menempelkan link repo GitHub atau mengupload ZIP. Depup memeriksa isi repo, menyarankan platform yang cocok, men-deploy ke Vercel, Cloudflare Pages, atau Railway, dan memantau prosesnya. Setelah live, domain, environment variables, dan riwayat deploy dikelola dari satu tempat. Di luar deploy, Depup menyediakan Link Instan (hosting statis sementara), AI Web Builder, Database SQLite (Turso), Link Gaib untuk membagikan localhost, konektor MCP untuk AI, dan Asisten Bantuan. Depup gratis dipakai; donasi bersifat sukarela.",
     "",
   );
   lines.push("## Platform tujuan deploy");
@@ -595,7 +595,7 @@ export function buildLlmsFullTxt(): string {
   lines.push("", "## Fitur pendukung");
   lines.push("- Dashboard: ringkasan jumlah deploy, yang berhasil dan gagal, serta riwayat deploy terbaru.");
   lines.push("- Projects: semua project yang pernah di-deploy, dapat dibuka, di-deploy ulang, dihapus, atau diimpor dari Vercel, Cloudflare, dan Railway.");
-  lines.push("- Settings: menyimpan token platform dengan tombol Test Koneksi dan Hapus.");
+  lines.push("- Settings: menyimpan token platform dengan tombol Tes koneksi dan Hapus.");
   lines.push("- Docs: panduan di dalam aplikasi untuk token, GitHub-ke-Cloudflare, jenis repo, dan pemecahan masalah.");
   lines.push("- Komunitas dan Donasi: saluran WhatsApp, Instagram, TikTok, LinkedIn, dan donasi QRIS lewat Saweria.");
   lines.push("- Tampilan mobile khusus di /m untuk penggunaan lewat ponsel.");

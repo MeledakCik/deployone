@@ -148,7 +148,7 @@ export function HistoryTable({ filter, onFilterChange }: { filter: HistoryFilter
                     <tr key={item.id} className="surface-solid-row border-t border-[var(--surface-line)]">
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
-                          <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${m.iconClass}`}>
+                          <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-[14px] ${m.iconClass}`}>
                             <m.Icon size={16} />
                           </span>
                           <div className="min-w-0">
@@ -183,7 +183,7 @@ export function HistoryTable({ filter, onFilterChange }: { filter: HistoryFilter
               return (
                 <li key={item.id} className="border-t border-[var(--surface-line)] px-5 py-4 first:border-0">
                   <div className="flex items-start gap-3">
-                    <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl ${m.iconClass}`}>
+                    <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-[14px] ${m.iconClass}`}>
                       <m.Icon size={16} />
                     </span>
                     <div className="min-w-0 flex-1">

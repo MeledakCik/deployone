@@ -117,7 +117,7 @@ function DiagnosticsCard({ checks }: { checks: DiagCheckView[] }) {
     unknown: <Info size={14} className="mt-0.5 shrink-0 text-text-muted" aria-label="Tidak diketahui" />,
   } as const;
   return (
-    <div className="w-full max-w-[92%] rounded-2xl bg-[var(--pill-bg)] px-3.5 py-3">
+    <div className="w-full max-w-[92%] rounded-[14px] bg-[var(--pill-bg)] px-3.5 py-3">
       <p className="mb-2 text-[12px] font-semibold text-text-muted">Hasil pemeriksaan akunmu</p>
       <ul className="space-y-1.5">
         {checks.map((c) => (
@@ -326,7 +326,7 @@ export function SupportChat() {
         <section
           role="dialog"
           aria-label="Chat bantuan Depup"
-          className={`surface-solid morph ${closing ? "morph-close" : "morph-open"} fixed inset-0 z-[60] flex flex-col overflow-hidden !rounded-none shadow-2xl sm:inset-auto sm:bottom-[var(--edge)] sm:right-[var(--edge)] sm:h-[600px] sm:max-h-[calc(100dvh-var(--edge)*2)] sm:w-[400px] sm:!rounded-[24px]`}
+          className={`surface-solid morph ${closing ? "morph-close" : "morph-open"} fixed inset-0 z-[60] flex flex-col overflow-hidden !rounded-none shadow-2xl sm:inset-auto sm:bottom-[var(--edge)] sm:right-[var(--edge)] sm:h-[600px] sm:max-h-[calc(100dvh-var(--edge)*2)] sm:w-[400px] sm:!rounded-card`}
           style={fabBox ? ({ "--fab-w": `${fabBox.w}px`, "--fab-h": `${fabBox.h}px` } as React.CSSProperties) : undefined}
         >
           {/* Salinan tombol Bantuan: jembatan visual antara tombol dan panel */}
@@ -337,7 +337,7 @@ export function SupportChat() {
 
           {/* Header */}
           <header className="flex items-center gap-3 border-b border-[var(--line)] px-4 py-3">
-            <span className="bot-wiggle grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-lav text-ink">
+            <span className="bot-wiggle grid h-9 w-9 shrink-0 place-items-center rounded-[14px] bg-lav text-ink">
               <Bot size={18} />
             </span>
             <div className="min-w-0 flex-1">
@@ -380,7 +380,7 @@ export function SupportChat() {
           <div ref={listRef} role="log" aria-live="polite" className="flex-1 space-y-3 overflow-y-auto px-4 py-4">
             {messages.length === 0 && (
               <div className="space-y-4">
-                <div className="bubble-in-l rounded-2xl rounded-tl-md bg-[var(--pill-bg)] px-3.5 py-3 text-[14px] leading-relaxed">
+                <div className="bubble-in-l rounded-[14px] rounded-tl-md bg-[var(--pill-bg)] px-3.5 py-3 text-[14px] leading-relaxed">
                   Halo{user?.name ? `, ${user.name.split(" ")[0]}` : ""}! Aku asisten Depup. Tanya soal deploy, token, domain, atau
                   error yang kamu temui.
                 </div>
@@ -403,14 +403,14 @@ export function SupportChat() {
             {messages.map((m, i) =>
               m.role === "user" ? (
                 <div key={i} className="flex justify-end">
-                  <div className="bubble-in-r max-w-[85%] whitespace-pre-wrap break-words rounded-2xl rounded-tr-md bg-lav px-3.5 py-2.5 text-[14px] leading-relaxed text-ink">
+                  <div className="bubble-in-r max-w-[85%] whitespace-pre-wrap break-words rounded-[14px] rounded-tr-md bg-lav px-3.5 py-2.5 text-[14px] leading-relaxed text-ink">
                     {m.content}
                   </div>
                 </div>
               ) : (
                 <div key={i} className="flex flex-col items-start gap-2">
                   {m.diagnostics && m.diagnostics.length > 0 && <DiagnosticsCard checks={m.diagnostics} />}
-                  <div className="bubble-in-l max-w-[92%] break-words rounded-2xl rounded-tl-md bg-[var(--pill-bg)] px-3.5 py-2.5 text-[14px] leading-relaxed">
+                  <div className="bubble-in-l max-w-[92%] break-words rounded-[14px] rounded-tl-md bg-[var(--pill-bg)] px-3.5 py-2.5 text-[14px] leading-relaxed">
                     <RichText text={m.content} />
                   </div>
                   {m.reportId && (
@@ -424,7 +424,7 @@ export function SupportChat() {
 
             {sending && (
               <div className="flex" aria-label="Asisten sedang mengetik">
-                <div className="bubble-in-l flex items-center gap-1 rounded-2xl rounded-tl-md bg-[var(--pill-bg)] px-4 py-3.5">
+                <div className="bubble-in-l flex items-center gap-1 rounded-[14px] rounded-tl-md bg-[var(--pill-bg)] px-4 py-3.5">
                   {[0, 1, 2].map((d) => (
                     <span
                       key={d}
@@ -437,7 +437,7 @@ export function SupportChat() {
             )}
 
             {error && !sending && (
-              <div className="rounded-2xl bg-[var(--bad-bg)] px-3.5 py-3 text-[13px] text-bad-fg">
+              <div className="rounded-[14px] bg-[var(--bad-bg)] px-3.5 py-3 text-[13px] text-bad-fg">
                 <p>{error}</p>
                 {messages.length > 0 && messages[messages.length - 1].role === "user" && (
                   <button type="button" onClick={retry} className="mt-2 font-semibold underline underline-offset-2">
@@ -449,7 +449,7 @@ export function SupportChat() {
 
             {hasReply && !sending && (
               reportedId ? (
-                <p className="rounded-2xl bg-[var(--ok-bg)] px-3.5 py-2.5 text-center text-[13px] text-ok-fg">
+                <p className="rounded-[14px] bg-[var(--ok-bg)] px-3.5 py-2.5 text-center text-[13px] text-ok-fg">
                   Laporan sudah diterima developer · <span className="font-mono">{reportedId}</span>
                 </p>
               ) : (

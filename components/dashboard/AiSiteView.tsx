@@ -71,11 +71,12 @@ interface KeyStatus {
 
 /** Contoh perintah ubah, disesuaikan jenis situs. */
 function editSuggestions(kind: SiteKind): string[] {
-  const base = ["Buat headline lebih singkat dan to the point", "Ubah gaya tulisan jadi lebih santai", "Pakai warna yang lebih gelap"];
-  if (kind === "artikel") return ["Tambah 2 artikel lagi tentang topik serupa", ...base];
+  // Hanya perintah yang dipahami mesin Depup (lib/site-engine/core.ts → editSite).
+  const base = ["Ganti warna jadi hijau", "Pakai template gelap", "Hapus testimoni"];
+  if (kind === "artikel") return ["Pakai template jurnal", "Ganti warna jadi navy", "Ganti tombol jadi Mulai membaca"];
   if (kind === "umkm") return ["Tambah 3 menu minuman", ...base];
-  if (kind === "event") return ["Tambah satu langkah cara daftar", ...base];
-  return ["Tambah satu keunggulan baru", ...base];
+  if (kind === "event") return ["Ganti tombol jadi Daftar sekarang", ...base];
+  return ["Ganti tombol jadi Hubungi kami", ...base];
 }
 
 const EXAMPLES: { label: string; text: string }[] = [
@@ -240,9 +241,14 @@ export function AiSiteView() {
   const [reloadTick, setReloadTick] = React.useState(0);
   const [hydrated, setHydrated] = React.useState(false);
 
-  const [keyDraft, setKeyDraft] = React.useState("");
-  const [savingKey, setSavingKey] = React.useState(false);
-  const [editingKey, setEditingKey] = React.useState(false);
+  const [trainConsent, setTrainConsent] = React.useState(false);
+  React.useEffect(() => {
+    try {
+      setTrainConsent(localStorage.getItem("depup-engine-consent") === "1");
+    } catch {
+      /* penyimpanan tidak tersedia */
+    }
+  }, []);
 
   const [prompt, setPrompt] = React.useState("");
   const [kindPick, setKindPick] = React.useState<SiteKind | "auto">("auto");
@@ -308,7 +314,6 @@ export function AiSiteView() {
 
   const [previewVisible, setPreviewVisible] = React.useState(true);
   const previewRef = React.useRef<HTMLElement>(null);
-  const tokenRef = React.useRef<HTMLDivElement>(null);
   const promptRef = React.useRef<HTMLTextAreaElement>(null);
   const editRef = React.useRef<HTMLTextAreaElement>(null);
   const pendingFocusRef = React.useRef(false);
@@ -320,9 +325,10 @@ export function AiSiteView() {
     setLoadErr(null);
     (async () => {
       try {
-        const [k, c] = await Promise.all([api<KeyStatus>("/api/ai/key"), fetchSites()]);
+        // Mesin lokal: tidak ada token atau jatah harian yang perlu dicek.
+        const c = await fetchSites();
         if (!alive) return;
-        setKeyStatus(k);
+        setKeyStatus({ hasKey: true, masked: null, freePerDay: 0 });
         setCfg(c);
         setTtlHours(c.defaultTtlHours);
         setSiteCount(c.sites.length);
@@ -403,7 +409,7 @@ export function AiSiteView() {
   const shopActive = !!content && hasShop(content) && shopOn;
   const imgBytes = totalImageBytes(images);
 
-  const canUseAi = !!keyStatus && (keyStatus.hasKey || keyStatus.freePerDay > 0);
+  const canUseAi = true;
   const promptReady = prompt.trim().length >= 10;
   const canGenerate = canUseAi && promptReady;
   const editReady = editText.trim().length >= 4;
@@ -427,7 +433,7 @@ export function AiSiteView() {
       fontsOpt.body.weight !== null);
   const dirtyMedia = !!content && html !== savedHtml && (Object.keys(images).length > 0 || photos.length > 0);
 
-  const noAiMsg = "Jatah gratis hari ini habis. Pasang token Groq di kartu di atas untuk lanjut.";
+  const noAiMsg = "";
   const genHint = !canUseAi ? noAiMsg : !promptReady ? "Tulis minimal 10 karakter di kolom Deskripsi untuk mulai." : "";
   const editHint = !canUseAi ? noAiMsg : !editReady ? "Tulis perintahnya minimal 4 karakter." : "";
 
@@ -629,43 +635,6 @@ export function AiSiteView() {
     });
   }
 
-  /* ---------- token Groq ---------- */
-
-  async function saveKey() {
-    setSavingKey(true);
-    try {
-      const r = await api<{ hasKey: boolean; masked: string }>("/api/ai/key", {
-        method: "PUT",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ key: keyDraft.trim() }),
-      });
-      setKeyStatus((s) => ({ hasKey: r.hasKey, masked: r.masked, freePerDay: s?.freePerDay ?? 0 }));
-      setKeyDraft("");
-      setEditingKey(false);
-      showToast("Token Groq tersimpan dan terverifikasi.");
-    } catch (e) {
-      showToast((e as Error).message);
-    } finally {
-      setSavingKey(false);
-    }
-  }
-
-  async function removeKey() {
-    const { ok } = await confirm({
-      title: "Hapus token Groq?",
-      description: "Token dihapus dari akunmu. Kamu bisa memasangnya lagi kapan saja.",
-      confirmLabel: "Ya, hapus",
-    });
-    if (!ok) return;
-    try {
-      const r = await api<{ hasKey: boolean; masked: null }>("/api/ai/key", { method: "DELETE" });
-      setKeyStatus((s) => ({ hasKey: r.hasKey, masked: null, freePerDay: s?.freePerDay ?? 0 }));
-      showToast("Token Groq dihapus.");
-    } catch (e) {
-      showToast((e as Error).message);
-    }
-  }
-
   /* ---------- publish ---------- */
 
   async function publish(c: SiteContent, h: string) {
@@ -714,6 +683,14 @@ export function AiSiteView() {
           showToast("Website online, tapi link lama gagal dimatikan. Hapus manual di menu Link Instan.");
         }
       }
+      // Contoh latih untuk mesin Depup: hanya bila pengguna mengizinkan. Gagal = diam, tidak mengganggu publish.
+      if (trainConsent && prompt.trim().length >= 10) {
+        void fetch("/api/ai/site/feedback", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ prompt: prompt.trim(), content: c }),
+        }).catch(() => undefined);
+      }
       if (prev && replaced) showToast("Website online di link baru. Link sebelumnya sudah dimatikan.");
       else if (!prev) showToast("Website sudah online!");
       say("Website sudah online. Link tersedia di kartu pratinjau.");
@@ -734,7 +711,7 @@ export function AiSiteView() {
     setBusy("ai");
     const v = again ? variant + 1 : 0;
     try {
-      const r = await api<{ content: SiteContent; source: "own" | "free" }>("/api/ai/site", {
+      const r = await api<{ content: SiteContent; source: string }>("/api/ai/site", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ prompt, variant: v, kind: kindPick === "auto" ? undefined : kindPick, photoCount: photos.length }),
@@ -802,12 +779,7 @@ export function AiSiteView() {
 
   function explainGenerate() {
     say(genHint);
-    if (!canUseAi) {
-      tokenRef.current?.scrollIntoView({ block: "center", behavior: reduced ? "auto" : "smooth" });
-      tokenRef.current?.focus({ preventScroll: true });
-    } else {
-      promptRef.current?.focus();
-    }
+    promptRef.current?.focus();
   }
 
   async function requestGenerate(again: boolean) {
@@ -820,7 +792,7 @@ export function AiSiteView() {
       const { ok } = await confirm({
         title: again ? "Coba gaya lain?" : "Buat ulang dari deskripsi?",
         description:
-          "Hasil dan pengaturan yang sekarang akan diganti dengan hasil baru, dan ini memakai 1 jatah AI. Kalau tidak cocok, tombol Urungkan di kartu Pratinjau mengembalikannya.",
+          "Hasil dan pengaturan yang sekarang akan diganti dengan hasil baru. Kalau tidak cocok, tombol Urungkan di kartu Pratinjau mengembalikannya.",
         confirmLabel: "Ya, buat ulang",
       });
       if (!ok) return;
@@ -936,11 +908,15 @@ export function AiSiteView() {
   if (loadErr) {
     return (
       <ViewFade>
-        <PageHead title="AI Web Builder" />
+        <PageHead title="AI Web Builder" desc="Ceritakan usaha atau topik blogmu; AI menyusun situsnya, lalu kamu publish ke Link Instan atau ekspor file." />
         <div className="notice notice-bad mt-6" role="alert">
-          <CircleAlert size={16} className="mt-0.5 shrink-0" aria-hidden /> <span className="min-w-0">{loadErr}</span>
+          <CircleAlert size={16} className="mt-0.5 shrink-0" aria-hidden />
+          <span className="min-w-0">
+            <span className="block font-semibold">AI Web Builder belum bisa dimuat.</span>
+            <span className="block">{loadErr} Kalau masih gagal setelah dicoba lagi, tanyakan lewat tombol Bantuan di pojok kanan bawah.</span>
+          </span>
         </div>
-        <div className="mt-3">
+        <div className="mt-3 flex flex-wrap gap-2">
           <Btn onClick={() => { setKeyStatus(null); setCfg(null); setReloadTick((n) => n + 1); }}>
             <RefreshCw size={13} /> Coba lagi
           </Btn>
@@ -961,94 +937,49 @@ export function AiSiteView() {
 
   /* ---------- potongan tampilan ---------- */
 
-  const showKeyForm = !keyStatus.hasKey || editingKey;
   const busyLabel =
-    busy === "edit" ? "AI sedang mengubah…" : busy === "ai" ? progress || "AI sedang merancang…" : busy === "publish" ? progress || "Mempublikasikan…" : null;
+    busy === "edit" ? "Mesin sedang mengubah…" : busy === "ai" ? progress || "Mesin sedang menyusun…" : busy === "publish" ? progress || "Mempublikasikan…" : null;
   const kindName = content ? KIND_OPTIONS.find((k) => k.id === content.kind)?.name ?? content.kind : "";
   const kindNote = content ? KIND_LABEL[content.kind].match(/\((.*)\)/)?.[1] ?? "" : "";
   const heroName = HERO_LAYOUTS.find((l) => l.id === heroEff)?.name ?? heroEff;
   const featName = FEAT_LAYOUTS.find((l) => l.id === featEff)?.name ?? featEff;
 
-  const tokenForm = (
-    <>
+  // Izin memakai website ini sebagai contoh latih mesin Depup (default mati, diingat per perangkat).
+  const trainConsentBox = (
+    <label className="flex items-start gap-2.5 text-[13px] leading-relaxed text-text-muted">
       <input
-        type="password"
-        autoComplete="off"
-        spellCheck={false}
-        placeholder="gsk_…"
-        aria-label="Token Groq"
-        aria-describedby="groq-help"
-        value={keyDraft}
-        onChange={(e) => setKeyDraft(e.target.value)}
-        className="input-solid mono h-11 w-full px-3.5 text-[14px]"
+        type="checkbox"
+        className="mt-1"
+        checked={trainConsent}
+        onChange={(e) => {
+          setTrainConsent(e.target.checked);
+          try {
+            localStorage.setItem("depup-engine-consent", e.target.checked ? "1" : "0");
+          } catch {
+            /* abaikan */
+          }
+        }}
       />
-      <div className="flex flex-wrap items-center gap-2">
-        <Btn variant="primary" busy={savingKey} disabled={keyDraft.trim().length < 20} softDisabled onClick={saveKey}>
-          Simpan &amp; cek
-        </Btn>
-        {editingKey && (
-          <Btn onClick={() => { setEditingKey(false); setKeyDraft(""); }}>Batal</Btn>
-        )}
-        {keyDraft.length > 0 && keyDraft.trim().length < 20 && <span className={hintCls}>Token biasanya diawali gsk_ dan cukup panjang.</span>}
+      <span>
+        Izinkan website ini dipakai sebagai contoh untuk melatih mesin Depup. Yang dikirim hanya deskripsi dan teks website, tanpa
+        gambar, nomor WhatsApp, email, dan alamat.
+      </span>
+    </label>
+  );
+
+  const engineCard = (
+    <Card title="Tentang mesin pembuat isi" action={<Badge tone="good" dot>Tanpa AI luar</Badge>}>
+      <div className="space-y-3 px-6 py-5 text-[14px] leading-relaxed">
+        <p className="text-text-muted">
+          Isi website disusun oleh mesin milik Depup sendiri: ia mengenali jenis usahamu, mengambil nama, kota, produk, harga, dan kontak dari
+          deskripsimu, lalu menyusun teks dari contoh yang sudah dilatihkan. Tidak butuh token, tidak ada jatah harian, dan deskripsimu tidak dikirim
+          ke layanan lain.
+        </p>
+        <p className="text-text-muted">
+          Supaya hasilnya pas, sebut nama usaha, kota, produk beserta harga, dan kontak. Perubahan lanjutan bisa lewat kolom “Ubah dengan perintah”.
+        </p>
+        {trainConsentBox}
       </div>
-      <p id="groq-help" className={`leading-relaxed ${hintCls}`}>
-        Groq adalah layanan AI yang dipakai untuk menulis isi websitemu. Token adalah kunci akses gratis dari akunmu sendiri. Buat di{" "}
-        <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" className="font-medium text-text underline">
-          console.groq.com/keys<span className="sr-only"> (buka di tab baru)</span>
-        </a>
-        , lalu tempel di sini. Disimpan terenkripsi dan tidak ditampilkan lagi. Token dicek ke Groq tanpa memakai kuota.
-      </p>
-    </>
-  );
-
-  const tokenMasked = (
-    <>
-      <div className={cn("flex items-center gap-3 rounded-[14px] bg-[var(--pill-bg)] px-3.5 py-2", ON_MIST)}>
-        <KeyRound size={14} className="shrink-0" aria-hidden />
-        <span className="mono min-w-0 flex-1 truncate text-[13px]">{keyStatus.masked}</span>
-        <Btn onClick={() => setEditingKey(true)}>Ganti</Btn>
-        <Btn variant="danger" onClick={removeKey} aria-label="Hapus token Groq">
-          <Trash2 size={13} />
-        </Btn>
-      </div>
-      <p className={`leading-relaxed ${hintCls}`}>Semua pembuatan website memakai kuota Groq-mu sendiri, jadi tidak mengurangi kuota orang lain.</p>
-    </>
-  );
-
-  // Token tidak lagi jadi "langkah 1": tampil menonjol hanya bila jatah gratis habis; selain itu opsional di bagian bawah.
-  const tokenCardTop = (
-    <div ref={tokenRef} tabIndex={-1} className="scroll-mt-4 outline-none">
-      <Card title="Pasang token Groq dulu" action={<Badge tone="warn" dot>Belum ada</Badge>}>
-        <div className="space-y-3 px-6 py-5 text-[14px]">
-          <p className="leading-relaxed">Jatah gratis hari ini sudah habis. Untuk lanjut membuat website, pasang token Groq milikmu sendiri.</p>
-          {tokenForm}
-        </div>
-      </Card>
-    </div>
-  );
-
-  const tokenCardBottom = (
-    <Card
-      title={keyStatus.hasKey ? "Token Groq" : "Token Groq (opsional)"}
-      action={keyStatus.hasKey ? <Badge tone="good" dot>Terpasang</Badge> : <Badge tone="neutral">Belum dipasang</Badge>}
-    >
-      {keyStatus.hasKey || showKeyForm ? (
-        keyStatus.hasKey && !showKeyForm ? (
-          <div className="space-y-3 px-6 py-5 text-[14px]">{tokenMasked}</div>
-        ) : keyStatus.hasKey ? (
-          <div className="space-y-3 px-6 py-5 text-[14px]">{tokenForm}</div>
-        ) : (
-          <details className="group px-6 py-5 text-[14px]">
-            <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-3 text-[14px] font-medium [&::-webkit-details-marker]:hidden">
-              <span className="min-w-0">
-                Kamu masih punya {keyStatus.freePerDay}x coba gratis per hari. Pakai token sendiri?
-              </span>
-              <ChevronDown size={16} className="shrink-0 transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden />
-            </summary>
-            <div className="mt-3 space-y-3">{tokenForm}</div>
-          </details>
-        )
-      ) : null}
     </Card>
   );
 
@@ -1070,7 +1001,7 @@ export function AiSiteView() {
             }
           }}
           aria-describedby="ai-edit-hint edit-hint"
-          placeholder="Contoh: tambah 3 menu minuman, headline lebih santai, warna lebih gelap"
+          placeholder="Contoh: ganti nama jadi Kopi Fajar, tambah menu Es Teh 5rb, ganti warna jadi hijau"
           className="input-solid w-full resize-y px-3.5 py-3 text-[14px] leading-relaxed"
         />
         <div className="flex flex-wrap gap-1.5">
@@ -1138,7 +1069,7 @@ export function AiSiteView() {
               </Btn>
               <Btn
                 busy={exporting === "zip"}
-                onClick={() => void runExport("zip", () => downloadZip(content, tplId, accentEff, renderOpts), "Proyek ZIP diunduh.")}
+                onClick={() => void runExport("zip", () => downloadZip(content, tplId, accentEff, renderOpts), "ZIP project diunduh.")}
               >
                 <Package size={13} /> Unduh ZIP
               </Btn>
@@ -1249,7 +1180,7 @@ export function AiSiteView() {
     <ViewFade>
       <PageHead
         title="AI Web Builder"
-        desc="Ceritakan usahamu atau topik blogmu. AI menentukan jenis situs, gaya, dan isinya. Kamu tinggal atur tampilan dan gambar, lalu publish ke Link Instan atau ekspor file."
+        desc="Ceritakan usahamu atau topik blogmu. Mesin Depup menentukan jenis situs, gaya, dan isinya — tanpa layanan AI luar. Kamu tinggal atur tampilan dan gambar, lalu publish ke Link Instan atau ekspor file."
       />
       <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">{announce}</div>
 
@@ -1268,7 +1199,6 @@ export function AiSiteView() {
         </section>
 
         <div className="min-w-0 space-y-5 xl:col-start-1 xl:row-start-1">
-          {!canUseAi && tokenCardTop}
           {editCard}
 
           <Card title="1. Ceritakan websitemu" action={content ? <Btn onClick={() => void resetAll()}>Mulai baru</Btn> : undefined}>
@@ -1320,7 +1250,7 @@ export function AiSiteView() {
                 />
               </Field>
 
-              <Field label="Jenis situs" htmlFor="ai-kind" hint={kindPick === "auto" ? "AI memilih sendiri dari deskripsimu." : KIND_LABEL[kindPick]}>
+              <Field label="Jenis situs" htmlFor="ai-kind" hint={kindPick === "auto" ? "Mesin memilih sendiri dari deskripsimu." : KIND_LABEL[kindPick]}>
                 <Select value={kindPick} onValueChange={(v) => setKindPick(v as SiteKind | "auto")}>
                   <SelectTrigger id="ai-kind" aria-label="Jenis situs">
                     <SelectValue />
@@ -1399,7 +1329,7 @@ export function AiSiteView() {
                 <p id="gen-hint" className={cn(hintCls, "min-h-[1.1rem]")}>{genHint}</p>
                 {content && (
                   <p className={`leading-relaxed ${hintCls}`}>
-                    &ldquo;Buat ulang dari deskripsi&rdquo; mengganti hasil sekarang. &ldquo;Coba gaya lain&rdquo; memakai deskripsi yang sama, tetapi AI memilih template, tata letak, dan warna yang berbeda (isi tulisan bisa ikut berubah).
+                    &ldquo;Buat ulang dari deskripsi&rdquo; mengganti hasil sekarang. &ldquo;Coba gaya lain&rdquo; memakai deskripsi yang sama, tetapi mesin memilih template, tata letak, dan warna yang berbeda (isi tulisan bisa ikut berubah).
                     Keduanya bisa dibatalkan dengan tombol Urungkan.
                   </p>
                 )}
@@ -1729,8 +1659,8 @@ export function AiSiteView() {
             <Card title="Ekspor file">
               <div className="space-y-3 px-6 py-5">
                 <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-                  <Btn variant="primary" busy={exporting === "zip"} onClick={() => void runExport("zip", () => downloadZip(content, tplId, accentEff, renderOpts), "Proyek ZIP diunduh.")}>
-                    <Package size={13} /> Unduh ZIP proyek
+                  <Btn variant="primary" busy={exporting === "zip"} onClick={() => void runExport("zip", () => downloadZip(content, tplId, accentEff, renderOpts), "ZIP project diunduh.")}>
+                    <Package size={13} /> Unduh ZIP project
                   </Btn>
                   <Btn busy={exporting === "html"} onClick={() => void runExport("html", () => downloadHtml(content, tplId, accentEff, renderOpts), "File HTML diunduh.")}>
                     <FileCode2 size={13} /> Unduh index.html
@@ -1759,7 +1689,7 @@ export function AiSiteView() {
             </Card>
           )}
 
-          {canUseAi && tokenCardBottom}
+          {engineCard}
         </div>
       </div>
 

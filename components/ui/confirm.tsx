@@ -81,7 +81,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
               </p>
             )}
             {o.impact && o.impact.length > 0 && (
-              <ul className="mt-4 space-y-2 rounded-2xl bg-[var(--chip-bg)] p-4 text-[13px]">
+              <ul className="mt-4 space-y-2 rounded-[14px] bg-[var(--chip-bg)] p-4 text-[13px]">
                 {o.impact.map((line) => (
                   <li key={line} className="flex gap-2.5">
                     <span className={cn("mt-[7px] h-1.5 w-1.5 shrink-0 rounded-full", danger ? "bg-bad" : "bg-violet-500")} />

@@ -1,7 +1,7 @@
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
 import { kv } from "@vercel/kv";
 
-export { tunnelEnabled, tunnelBaseDomain, slugFromHost, SLUG_RE, TUNNEL_RESERVED } from "@/app/api/_lib/tunnel-host";
+export { tunnelEnabled, tunnelBaseDomain, tunnelPathHost, slugFromHost, SLUG_RE, TUNNEL_RESERVED } from "@/app/api/_lib/tunnel-host";
 
 /* ---------- konfigurasi ---------- */
 

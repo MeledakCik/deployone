@@ -12,10 +12,11 @@ import { collectFromZip, collectFromFileList, collectFromDataTransfer, UploadErr
 import { convertHtmlProject } from "@/lib/convert/html-to-next";
 import { analyzeNextProject, detectNext, MAX_PAGE_SOURCE } from "@/lib/convert/next-to-html";
 import {
-  LANGS, GROUP_LABEL, CUSTOM_ID, langById, langOfPath, guessLangFromCode, targetFromLang, customTarget, targetPath, isNoise,
+  LANGS, GROUP_LABEL, langById, langOfPath, guessLangFromCode, targetFromLang, targetPath, isNoise,
   type Lang, type LangGroup, type TargetSpec,
 } from "@/lib/convert/languages";
 import { runItems, buildZip, saveBlob, type RunItem, type ItemStatus } from "@/lib/convert/run";
+import { SUPPORTED, canConvert } from "@/lib/convert/engine/pairs";
 
 const inputCls =
   "input-solid w-full px-3.5 py-2.5 text-[13px]";
@@ -25,12 +26,6 @@ const HTML_ID = "html";
 
 const dec = new TextDecoder();
 const enc = new TextEncoder();
-
-interface KeyStatus {
-  hasKey: boolean;
-  masked: string | null;
-  freePerDay: number;
-}
 
 interface Det {
   files: { path: string; data: string | Uint8Array }[];
@@ -64,7 +59,6 @@ const TEXT_OUT = /\.(html?|css|scss|js|mjs|ts|tsx|jsx|json|md|txt|vue|svelte|ast
 
 export function ConvertView() {
   const { showToast } = useToast();
-  const { setView } = useDeploy();
 
   const zipRef = React.useRef<HTMLInputElement>(null);
   const folderRef = React.useRef<HTMLInputElement>(null);
@@ -80,9 +74,6 @@ export function ConvertView() {
   const [error, setError] = React.useState<string | null>(null);
 
   const [targetId, setTargetId] = React.useState<string>(NEXT16);
-  const [customName, setCustomName] = React.useState("");
-  const [customExt, setCustomExt] = React.useState("");
-  const [hint, setHint] = React.useState("");
   const [selected, setSelected] = React.useState<Set<string>>(new Set());
   const [includeOthers, setIncludeOthers] = React.useState(false);
 
@@ -95,14 +86,7 @@ export function ConvertView() {
   const [preview, setPreview] = React.useState<string | null>(null);
   const [copied, setCopied] = React.useState(false);
 
-  const [keyStatus, setKeyStatus] = React.useState<KeyStatus | null>(null);
-  const [keyInput, setKeyInput] = React.useState("");
-  const [savingKey, setSavingKey] = React.useState(false);
-
   React.useEffect(() => () => abortRef.current?.abort(), []);
-  React.useEffect(() => {
-    api<KeyStatus>("/api/ai/key").then(setKeyStatus).catch(() => setKeyStatus({ hasKey: false, masked: null, freePerDay: 0 }));
-  }, []);
 
   /* ---------- analisis sumber ---------- */
 
@@ -117,14 +101,13 @@ export function ConvertView() {
 
   const target: TargetSpec | null = React.useMemo(() => {
     if (targetId === NEXT16) return { id: NEXT16, label: "Next.js 16", ext: "tsx", prompt: "Next.js 16" };
-    if (targetId === CUSTOM_ID) return customName.trim() ? customTarget(customName, customExt) : null;
     const l = langById(targetId);
     return l ? targetFromLang(l) : null;
-  }, [targetId, customName, customExt]);
+  }, [targetId]);
 
   const projectHtml = targetId === HTML_ID && !!nextKind && tab === "upload";
-  const needsAi = targetId !== NEXT16;
-  const aiReady = !!keyStatus && (keyStatus.hasKey || keyStatus.freePerDay > 0);
+  // Semua konversi dikerjakan mesin Depup sendiri (lib/convert/engine), tanpa AI luar.
+  const perFile = targetId !== NEXT16 && !projectHtml;
 
   const langStats = React.useMemo(() => {
     const m = new Map<string, number>();
@@ -144,7 +127,7 @@ export function ConvertView() {
   // Pilihan awal: semua file kode yang bukan bahasa tujuan dan muat di batas AI.
   React.useEffect(() => {
     if (projectHtml || targetId === NEXT16) return;
-    setSelected(new Set(candidates.filter((c) => c.lang.id !== targetId && c.size <= MAX_FILE_CHARS * 3).map((c) => c.path)));
+    setSelected(new Set(candidates.filter((c) => canConvert(c.lang.id, targetId) && c.size <= MAX_FILE_CHARS * 3).map((c) => c.path)));
   }, [candidates, targetId, projectHtml]);
 
   /* ---------- membaca sumber ---------- */
@@ -170,7 +153,8 @@ export function ConvertView() {
       setSource(res);
       const hasHtml = res.files.some((f) => /\.html?$/i.test(f.path));
       const next = detectNext(res.files);
-      setTargetId(hasHtml && !next ? NEXT16 : next ? HTML_ID : "ts");
+      const firstLang = res.files.map((f) => langOfPath(f.path)).find((l) => l && SUPPORTED[l.id]);
+      setTargetId(hasHtml && !next ? NEXT16 : next ? HTML_ID : firstLang ? SUPPORTED[firstLang.id][0] : "js");
     } catch (e) {
       setSource(null);
       setError(e instanceof UploadError ? e.message : "Gagal membaca file. Coba lagi atau pakai zip lain.");
@@ -215,12 +199,13 @@ export function ConvertView() {
       const name = pasteName.trim() || `kode.${from?.ext ?? "txt"}`;
       if (targetId === NEXT16) {
         const out = convertHtmlProject({ files: [{ path: "index.html", data: enc.encode(pasteCode) }], projectName: "proyek-next" });
-        return { items: [], det: { files: out.files, warnings: out.warnings, note: "Satu halaman HTML → proyek Next.js 16 lengkap." }, skipped: [] };
+        return { items: [], det: { files: out.files, warnings: out.warnings, note: "Satu halaman HTML → project Next.js 16 lengkap." }, skipped: [] };
       }
       if (pasteCode.length > MAX_FILE_CHARS) return `Kodenya terlalu panjang (${Math.round(pasteCode.length / 1000)} KB; batas ${MAX_FILE_CHARS / 1000} KB). Bagi jadi beberapa bagian.`;
-      if (!from) return "Bahasa asal tidak terdeteksi. Isi nama file dengan ekstensi yang benar, mis. app.py.";
+      if (!from) return "Bahasa asal tidak terdeteksi. Isi nama file dengan ekstensi yang benar, mis. config.yaml.";
+      if (!canConvert(from.id, targetId)) return `${from.label} → ${target.label} belum didukung. Pilih tujuan yang tersedia di daftar.`;
       return {
-        items: [{ id: name, path: name, outPath: targetPath(name, target), status: "queued", payload: { mode: "file", path: name, code: pasteCode, from: from.prompt, to: target.prompt, hint: hint.trim() || undefined } }],
+        items: [{ id: name, path: name, outPath: targetPath(name, target), status: "queued", payload: { mode: "file", path: name, code: pasteCode, from: from.id, to: targetId } }],
         det: null,
         skipped: [],
       };
@@ -233,7 +218,7 @@ export function ConvertView() {
       const out = convertHtmlProject({ files, projectName: source.strippedRoot ?? "proyek-next" });
       return {
         items: [],
-        det: { files: out.files, warnings: out.warnings, note: `${out.pages.length} halaman HTML → proyek Next.js 16 (App Router, TypeScript).` },
+        det: { files: out.files, warnings: out.warnings, note: `${out.pages.length} halaman HTML → project Next.js 16 (App Router, TypeScript).` },
         skipped: [],
       };
     }
@@ -248,7 +233,7 @@ export function ConvertView() {
         status: "queued",
         payload: {
           mode: "page", path: j.sourcePath, code: j.code, context: j.context, routeMap: j.routeMap, assetPrefix: j.assetPrefix,
-          cssLinks: j.cssLinks, imageImports: j.imageImports, tailwind: j.tailwind, hint: hint.trim() || undefined,
+          cssLinks: j.cssLinks, imageImports: j.imageImports, tailwind: j.tailwind,
         },
       }));
       return {
@@ -259,8 +244,8 @@ export function ConvertView() {
     }
 
     if (!target) return "Isi nama bahasa tujuan.";
-    const chosen = candidates.filter((c) => selected.has(c.path));
-    if (chosen.length === 0) return "Centang minimal satu file untuk dikonversi.";
+    const chosen = candidates.filter((c) => selected.has(c.path) && canConvert(c.lang.id, targetId));
+    if (chosen.length === 0) return "Centang minimal satu file yang bisa dikonversi ke tujuan ini.";
     const sk: { path: string; reason: string }[] = [];
     const its: RunItem[] = [];
     for (const c of chosen) {
@@ -275,7 +260,7 @@ export function ConvertView() {
       }
       its.push({
         id: c.path, path: c.path, outPath: targetPath(c.path, target), status: "queued",
-        payload: { mode: "file", path: c.path, code, from: c.lang.prompt, to: target.prompt, hint: hint.trim() || undefined },
+        payload: { mode: "file", path: c.path, code, from: c.lang.id, to: targetId },
       });
     }
     if (its.length === 0) return "Semua file yang dipilih dilewati (terlalu besar atau kosong).";
@@ -305,7 +290,6 @@ export function ConvertView() {
     setError(null);
     const p = plan();
     if (typeof p === "string") return setError(p);
-    if (needsAi && !aiReady) return setError("Pasang token Groq dulu (kartu di bawah), lalu coba lagi.");
     resetResults();
     setItems(p.items);
     setDet(p.det);
@@ -364,7 +348,7 @@ export function ConvertView() {
     for (const i of items) lines.push(`- ${STATUS[i.status].label}: \`${i.path}\` → \`${i.outPath}\`${i.message ? ` — ${i.message}` : ""}`);
     for (const s of skipped) lines.push(`- Dilewati: \`${s.path}\` — ${s.reason}`);
     if (det?.warnings.length) lines.push("", "## Catatan", "", ...det.warnings.map((w) => `- ${w}`));
-    lines.push("", "Hasil konversi AI perlu diperiksa dan diuji sebelum dipakai.", "");
+    lines.push("", "Dikonversi oleh mesin Depup (tanpa AI). Periksa catatan di atas dan uji hasilnya sebelum dipakai.", "");
     return lines.join("\n");
   }
 
@@ -394,28 +378,15 @@ export function ConvertView() {
     }
   }
 
-  async function saveKey() {
-    setSavingKey(true);
-    try {
-      const r = await api<{ hasKey: boolean; masked: string }>("/api/ai/key", {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ key: keyInput.trim() }),
-      });
-      setKeyStatus((s) => ({ hasKey: r.hasKey, masked: r.masked, freePerDay: s?.freePerDay ?? 0 }));
-      setKeyInput("");
-      setFatal(null);
-      showToast("Token Groq tersimpan dan terverifikasi.");
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Token gagal disimpan.");
-    } finally {
-      setSavingKey(false);
-    }
-  }
-
   /* ---------- tampilan ---------- */
 
-  const groups = (["web", "bahasa", "data"] as LangGroup[]).map((g) => ({ g, list: LANGS.filter((l) => l.group === g) }));
+  // Tujuan yang ditawarkan = yang bisa dicapai mesin dari sumber ini.
+  const sourceIds = tab === "paste" ? (pasteLang ? [pasteLang.id] : []) : [...new Set(candidates.map((c) => c.lang.id))];
+  const reachable = new Set(sourceIds.flatMap((id) => SUPPORTED[id] ?? []));
+  if (projectHtml) reachable.add(HTML_ID);
+  const groups = (["web", "data"] as LangGroup[])
+    .map((g) => ({ g, list: LANGS.filter((l) => l.group === g && reachable.has(l.id)) }))
+    .filter((x) => x.list.length > 0);
   const hasInput = tab === "paste" ? pasteCode.trim().length > 0 : !!source;
   const busy = reading || running;
   const showResults = items.length > 0 || det !== null;
@@ -423,17 +394,17 @@ export function ConvertView() {
   const modeNote = !hasInput
     ? null
     : targetId === NEXT16
-      ? "Tanpa AI: dikonversi langsung di browser, gratis dan tanpa kuota. Tiap halaman jadi app/…/page.tsx, aset masuk public/, skrip lama tetap jalan."
+      ? "Dikonversi langsung di browser, gratis dan tanpa kuota. Tiap halaman jadi app/…/page.tsx, aset masuk public/, skrip lama tetap jalan."
       : projectHtml
-        ? "Proyek Next.js terdeteksi. Tiap halaman jadi satu file HTML lengkap (layout + komponen digabung) oleh AI; CSS dan aset publik disalin otomatis. Rute dinamis ([param]) dilewati."
-        : "AI mengonversi file satu per satu dengan menjaga struktur dan perilakunya. Hasil perlu dicek sebelum dipakai.";
+        ? "Project Next.js terdeteksi. Mesin Depup membaca kode JSX-nya (tanpa menjalankannya) dan menggabungkan layout + komponen jadi satu file HTML per halaman; CSS dan aset publik disalin. Rute dinamis ([param]), data dari server, dan interaksi JavaScript tidak ikut dan dicatat di hasil."
+        : "Mesin Depup mengonversi file satu per satu dengan aturan pasti (tanpa AI), jadi hasilnya bisa diulang persis. Hanya pasangan yang hasilnya bisa dipastikan benar yang tersedia.";
 
   return (
     <ViewFade>
       <div className="mb-6">
         <PageTitle
           title="Konversi"
-          desc="Ubah HTML ke Next.js 16, Next.js ke HTML statis, atau kode ke bahasa dan format lain — dari zip, folder, file, atau tempel langsung."
+          desc="Ubah HTML ke Next.js 16, Next.js ke HTML statis, JSON/YAML/TOML/XML, TS ↔ JS, SCSS ke CSS, dan Markdown ↔ HTML — dari zip, folder, file, atau tempel langsung. Dikerjakan mesin Depup sendiri, tanpa AI luar."
         />
       </div>
 
@@ -462,7 +433,7 @@ export function ConvertView() {
                 onClick={() => {
                   setTab(t);
                   resetResults();
-                  setTargetId(t === "paste" ? "ts" : source ? (detectNext(files) ? HTML_ID : htmlPages ? NEXT16 : "ts") : NEXT16);
+                  setTargetId(t === "paste" ? "js" : source ? (detectNext(files) ? HTML_ID : htmlPages ? NEXT16 : "js") : NEXT16);
                 }}
                 className={chipCls(tab === t, true)}
               >
@@ -533,7 +504,7 @@ export function ConvertView() {
             <div className="grid gap-3 sm:grid-cols-[1fr_auto] sm:items-end">
               <div>
                 <label htmlFor="cv-name" className="mb-1.5 block text-[12px] font-medium">Nama file (opsional)</label>
-                <input id="cv-name" value={pasteName} disabled={busy} onChange={(e) => setPasteName(e.target.value)} placeholder="app.py, index.html, Button.tsx …" className={inputCls} autoComplete="off" spellCheck={false} />
+                <input id="cv-name" value={pasteName} disabled={busy} onChange={(e) => setPasteName(e.target.value)} placeholder="config.yaml, index.html, Button.tsx …" className={inputCls} autoComplete="off" spellCheck={false} />
               </div>
               <p className="pb-2.5 text-[12px] text-text-muted">
                 Bahasa asal: <b>{pasteLang?.label ?? "belum terdeteksi"}</b>
@@ -542,7 +513,7 @@ export function ConvertView() {
             <div>
               <label htmlFor="cv-code" className="mb-1.5 block text-[12px] font-medium">Kode</label>
               <textarea id="cv-code" value={pasteCode} disabled={busy} onChange={(e) => setPasteCode(e.target.value)} rows={10} spellCheck={false} placeholder="Tempel kode di sini…" className={cn(inputCls, "resize-y font-mono text-[13px] leading-relaxed")} />
-              <p className="mt-1 text-[12px] text-text-muted">{pasteCode.length.toLocaleString("id-ID")} karakter · batas {MAX_FILE_CHARS.toLocaleString("id-ID")} untuk konversi AI</p>
+              <p className="mt-1 text-[12px] text-text-muted">{pasteCode.length.toLocaleString("id-ID")} karakter · batas {MAX_FILE_CHARS.toLocaleString("id-ID")} per file</p>
             </div>
           </div>
         )}
@@ -568,7 +539,7 @@ export function ConvertView() {
             <div>
               <label htmlFor="cv-target" className="mb-1.5 block text-[12px] font-medium">Tujuan</label>
               <select id="cv-target" value={targetId} disabled={busy} onChange={(e) => { setTargetId(e.target.value); resetResults(); }} className={inputCls}>
-                <optgroup label="Proyek utuh">
+                <optgroup label="Project utuh">
                   <option value={NEXT16} disabled={tab === "upload" ? htmlPages === 0 : pasteLang?.id !== "html"}>
                     Next.js 16 (dari HTML){(tab === "upload" ? htmlPages === 0 : pasteLang?.id !== "html") ? " — butuh sumber HTML" : ""}
                   </option>
@@ -577,40 +548,18 @@ export function ConvertView() {
                   <optgroup key={g} label={GROUP_LABEL[g]}>
                     {list.map((l) => (
                       <option key={l.id} value={l.id}>
-                        {l.id === HTML_ID && nextKind && tab === "upload" ? "HTML statis (dari proyek Next.js)" : l.label}
+                        {l.id === HTML_ID && nextKind && tab === "upload" ? "HTML statis (dari project Next.js)" : l.label}
                       </option>
                     ))}
                   </optgroup>
                 ))}
-                <optgroup label="Lainnya">
-                  <option value={CUSTOM_ID}>Ketik sendiri…</option>
-                </optgroup>
               </select>
             </div>
-            {targetId === CUSTOM_ID && (
-              <div className="grid grid-cols-[1fr_6rem] gap-2">
-                <div>
-                  <label htmlFor="cv-cname" className="mb-1.5 block text-[12px] font-medium">Bahasa / format</label>
-                  <input id="cv-cname" value={customName} disabled={busy} onChange={(e) => setCustomName(e.target.value)} placeholder="Elixir, Twig, Zig …" className={inputCls} autoComplete="off" />
-                </div>
-                <div>
-                  <label htmlFor="cv-cext" className="mb-1.5 block text-[12px] font-medium">Ekstensi</label>
-                  <input id="cv-cext" value={customExt} disabled={busy} onChange={(e) => setCustomExt(e.target.value)} placeholder="ex" className={inputCls} autoComplete="off" spellCheck={false} />
-                </div>
-              </div>
-            )}
           </div>
-
-          {needsAi && (
-            <div className="mt-4">
-              <label htmlFor="cv-hint" className="mb-1.5 block text-[12px] font-medium">Instruksi tambahan (opsional)</label>
-              <input id="cv-hint" value={hint} maxLength={300} disabled={busy} onChange={(e) => setHint(e.target.value)} placeholder="mis. pakai Tailwind, gunakan async/await, tanpa dependensi eksternal" className={inputCls} />
-            </div>
-          )}
 
           {modeNote && (
             <p className="mt-4 flex items-start gap-2 text-[13px] leading-relaxed text-text-muted">
-              {needsAi ? <Sparkles size={15} className="mt-0.5 shrink-0" /> : <ArrowRight size={15} className="mt-0.5 shrink-0" />}
+              {perFile ? <Sparkles size={15} className="mt-0.5 shrink-0" /> : <ArrowRight size={15} className="mt-0.5 shrink-0" />}
               {modeNote}
             </p>
           )}
@@ -621,7 +570,7 @@ export function ConvertView() {
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <p className="text-[13px] font-medium">File yang dikonversi <span className="font-normal text-text-muted">({selected.size} dari {candidates.length})</span></p>
                 <div className="flex gap-3 text-[12px]">
-                  <button type="button" className="underline underline-offset-4" disabled={busy} onClick={() => setSelected(new Set(candidates.filter((c) => c.lang.id !== targetId).map((c) => c.path)))}>Pilih semua</button>
+                  <button type="button" className="underline underline-offset-4" disabled={busy} onClick={() => setSelected(new Set(candidates.filter((c) => canConvert(c.lang.id, targetId)).map((c) => c.path)))}>Pilih semua</button>
                   <button type="button" className="underline underline-offset-4" disabled={busy} onClick={() => setSelected(new Set())}>Kosongkan</button>
                 </div>
               </div>
@@ -631,17 +580,18 @@ export function ConvertView() {
                 <ul className="mt-2 max-h-64 space-y-0.5 overflow-y-auto rounded-[14px] bg-[var(--pill-bg)] p-2" aria-label="Daftar file">
                   {candidates.slice(0, 400).map((c) => {
                     const big = c.size > MAX_FILE_CHARS * 3;
+                    const able = canConvert(c.lang.id, targetId);
                     return (
                       <li key={c.path}>
-                        <label className={cn("flex cursor-pointer items-center gap-2.5 rounded-xl px-2.5 py-1.5 text-[13px] hover:bg-[var(--card-hover)]", big && "opacity-60")}>
+                        <label className={cn("flex items-center gap-2.5 rounded-[14px] px-2.5 py-1.5 text-[13px]", able ? "cursor-pointer hover:bg-[var(--card-hover)]" : "cursor-not-allowed text-text-muted", big && "opacity-60")}>
                           <input
                             type="checkbox"
-                            checked={selected.has(c.path)}
-                            disabled={busy}
+                            checked={able && selected.has(c.path)}
+                            disabled={busy || !able}
                             onChange={(e) => setSelected((s) => { const n = new Set(s); if (e.target.checked) n.add(c.path); else n.delete(c.path); return n; })}
                           />
                           <span className="min-w-0 flex-1 truncate font-mono" title={c.path}>{c.path}</span>
-                          <span className="shrink-0 text-text-muted">{c.lang.label} · {formatBytes(c.size)}</span>
+                          <span className="shrink-0 text-text-muted">{able ? `${c.lang.label} · ${formatBytes(c.size)}` : `${c.lang.label} · tidak bisa ke tujuan ini`}</span>
                         </label>
                       </li>
                     );
@@ -656,29 +606,8 @@ export function ConvertView() {
             </div>
           )}
 
-          {/* token AI */}
-          {needsAi && keyStatus && !aiReady && (
-            <div className="mt-5 rounded-[14px] bg-[var(--warn-bg)] p-4 text-[13px] text-warn-fg">
-              <p className="font-medium">Konversi AI butuh token Groq (gratis).</p>
-              <p className="mt-1 leading-relaxed">
-                Buat di{" "}
-                <a href="https://console.groq.com/keys" target="_blank" rel="noopener noreferrer" className="underline">console.groq.com/keys<span className="sr-only"> (buka di tab baru)</span></a>
-                , lalu tempel di sini. Disimpan terenkripsi dan dipakai juga oleh AI Web Builder.
-              </p>
-              <div className="mt-3 flex flex-wrap gap-2">
-                <label htmlFor="cv-key" className="sr-only">Token Groq</label>
-                <input id="cv-key" type="password" autoComplete="off" spellCheck={false} value={keyInput} onChange={(e) => setKeyInput(e.target.value)} placeholder="gsk_…" className={cn(inputCls, "min-w-0 flex-1 !bg-[var(--surface-solid)]")} />
-                <Btn variant="primary" busy={savingKey} disabled={!keyInput.trim()} onClick={saveKey}>Simpan token</Btn>
-              </div>
-            </div>
-          )}
-          {needsAi && keyStatus?.hasKey && <p className="mt-4 text-[12px] text-text-muted">Memakai token Groq-mu ({keyStatus.masked}). Kuota mengikuti akun Groq-mu.</p>}
-          {needsAi && keyStatus && !keyStatus.hasKey && keyStatus.freePerDay > 0 && (
-            <p className="mt-4 text-[12px] text-text-muted">Jatah gratis: {keyStatus.freePerDay * 5} file per hari. Pasang token sendiri di <button type="button" className="underline underline-offset-4" onClick={() => setView("ai")}>AI Web Builder</button> untuk tanpa batas dari Depup.</p>
-          )}
-
           <div className="mt-5 flex flex-wrap items-center gap-3">
-            <Btn variant="primary" onClick={start} busy={running} disabled={reading || (needsAi && !aiReady)} className="!px-6 !py-2.5 !text-[13px]">
+            <Btn variant="primary" onClick={start} busy={running} disabled={reading || (tab === "paste" && !!pasteLang && targetId !== NEXT16 && !canConvert(pasteLang.id, targetId))} className="!px-6 !py-2.5 !text-[13px]">
               {running ? "Mengonversi…" : finished || showResults ? "Konversi ulang" : "Mulai konversi"}
             </Btn>
             {running && <Btn onClick={cancel}>Batalkan</Btn>}
@@ -795,8 +724,8 @@ export function ConvertView() {
               </ul>
             </details>
           )}
-          {stats.warn + stats.done > 0 && needsAi && (
-            <p className="mt-4 text-[12px] text-text-muted">Hasil AI bukan jaminan 100% benar. Jalankan, uji, dan baca ulang sebelum dipakai di produksi.</p>
+          {stats.warn + stats.done > 0 && perFile && (
+            <p className="mt-4 text-[12px] text-text-muted">Konversi memakai aturan pasti, tetapi tetap uji hasilnya sebelum dipakai di produksi. Catatan per file tampil di bawah nama file.</p>
           )}
         </section>
       )}

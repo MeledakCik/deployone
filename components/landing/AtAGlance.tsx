@@ -18,37 +18,42 @@ export function AtAGlance() {
         <p className="lp-lead">{SITE_DEFINITION}</p>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="surface-solid rounded-card p-6 sm:p-7 lg:col-span-2">
+      {/* Ringkas: nama fitur saja (penjelasan lengkap ada di /fitur dan di grid fitur di bawah),
+          supaya bagian ini tidak mengulang isi FeaturesGrid. */}
+      <div className="surface-solid grid gap-6 rounded-card p-6 sm:p-7 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:gap-10">
+        <div>
           <h3 className="text-[18px] font-bold tracking-[-0.02em]">Yang bisa kamu lakukan</h3>
-          <ul className="mt-4 grid gap-x-6 gap-y-3 sm:grid-cols-2">
+          <ul className="mt-4 flex flex-wrap gap-2">
             {FEATURES.map((f) => (
-              <li key={f.slug} className="text-[14px] leading-relaxed">
-                <Link href={`/fitur/${f.slug}`} className="font-semibold underline-offset-4 hover:underline">
+              <li key={f.slug}>
+                <Link
+                  href={`/fitur/${f.slug}`}
+                  title={f.summary}
+                  className="pill inline-flex min-h-[40px] items-center px-4 text-[14px] font-semibold"
+                >
                   {f.name}
                 </Link>
-                <span className="block text-text-muted">{f.summary}</span>
               </li>
             ))}
           </ul>
         </div>
 
-        <div className="surface-solid flex flex-col rounded-card p-6 sm:p-7">
+        <div>
           <h3 className="text-[18px] font-bold tracking-[-0.02em]">Platform tujuan</h3>
-          <ul className="mt-4 space-y-3">
+          <ul className="mt-4 space-y-2.5">
             {PLATFORMS.map((p) => (
-              <li key={p.name} className="text-[14px] leading-relaxed">
-                <span className="block font-semibold">{p.name}</span>
-                <span className="text-text-muted">{p.fit}</span>
+              <li key={p.name} className="text-[14px] leading-snug">
+                <span className="font-semibold">{p.name}</span>
+                <span className="text-text-muted"> — {p.fit}</span>
               </li>
             ))}
           </ul>
-          <p className="mt-5 text-[13px] leading-relaxed text-text-muted">
-            Gratis dipakai. Masuk dengan akun Google, tanpa password baru.
+          <p className="mt-4 text-[14px] leading-relaxed text-text-muted">
+            Gratis dipakai. Masuk dengan akun Google, tanpa password baru.{" "}
+            <Link href="/fitur" className="font-semibold text-text underline underline-offset-4">
+              Lihat semua fitur
+            </Link>
           </p>
-          <Link href="/fitur" className="mt-auto pt-5 text-[13px] font-semibold underline underline-offset-4">
-            Lihat semua fitur
-          </Link>
         </div>
       </div>
     </section>

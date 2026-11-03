@@ -7,6 +7,7 @@ import { SESSION_EXPIRED_EVENT } from "@/lib/session-expired";
 import { useToast } from "@/components/ui/Toast";
 import { useDeploy } from "@/lib/deploy-context";
 import { BrandLoader } from "@/components/ui/BrandLoader";
+import { PREFER_DESKTOP_KEY, VIEW_ROUTE } from "@/lib/mobile-routes";
 import { Sidebar } from "@/components/dashboard/Sidebar";
 import { DashboardHomeView } from "@/components/dashboard/DashboardHomeView";
 import { DeployFormView } from "@/components/dashboard/DeployFormView";
@@ -61,6 +62,34 @@ export default function DashboardPage() {
     if (ready && !user) router.replace("/");
   }, [ready, user, router]);
 
+  // ?view= saat halaman pertama dibuka (alur login bisa menghapus query sebelum efek di bawah jalan).
+  const initialViewRef = React.useRef<string | null>(null);
+  React.useEffect(() => {
+    initialViewRef.current = new URLSearchParams(window.location.search).get("view");
+  }, []);
+
+  // Di layar HP, pakai app mobile /m (bottom nav, deploy bertahap) — satu pengalaman untuk semua pengguna HP.
+  // Bisa dimatikan dengan ?desktop=1 (diingat di perangkat ini) atau tombol "Tampilan desktop" di /m/akun.
+  React.useEffect(() => {
+    if (!ready || !user) return;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("desktop") === "1") {
+        localStorage.setItem(PREFER_DESKTOP_KEY, "1");
+        return;
+      }
+      if (localStorage.getItem(PREFER_DESKTOP_KEY) === "1") return;
+    } catch {
+      /* storage tidak tersedia: tetap alihkan */
+    }
+    if (!window.matchMedia("(max-width: 767px)").matches) return;
+    // Baca ?view= langsung dari URL: state `view` bisa belum terisi saat efek ini jalan pertama kali.
+    const target = new URLSearchParams(window.location.search).get("view") ?? initialViewRef.current ?? view;
+    router.replace(VIEW_ROUTE[target] ?? "/m");
+    // hanya saat pertama dibuka; navigasi berikutnya di HP sudah terjadi di /m
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ready, user]);
+
   if (!ready || !user) {
     return <BrandLoader />;
   }
@@ -69,7 +98,7 @@ export default function DashboardPage() {
     <div className="app-canvas">
       <div className="app-frame flex flex-col md:flex-row md:items-start md:gap-4">
         <Sidebar />
-        <div className="min-w-0 flex-1 px-2 py-4 sm:px-4 sm:py-5 lg:px-6">
+        <main id="main" className="min-w-0 flex-1 px-2 py-4 sm:px-4 sm:py-5 lg:px-6">
           <div className="mx-auto max-w-6xl">
             <AnnouncementBanner />
           </div>
@@ -89,7 +118,7 @@ export default function DashboardPage() {
             {view === "donate" && <DonateView />}
             {view === "community" && <CommunityView />}
           </div>
-        </div>
+        </main>
       </div>
 
       <DeployModal />

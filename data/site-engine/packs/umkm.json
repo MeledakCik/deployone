@@ -1,0 +1,419 @@
+[
+  {
+    "id": "umkm-bakso-mie",
+    "kind": "umkm",
+    "label": "Bakso dan mi ayam",
+    "prompts": [
+      "warung bakso di malang",
+      "jualan bakso urat dan mie ayam",
+      "kedai mie ayam pangsit dekat kampus",
+      "bakso beranak dan bakso mercon pedas",
+      "usaha mi ayam bakso keluarga sejak lama",
+      "warung bakso solo kuah bening",
+      "mie ayam ceker dan es teh manis",
+      "bakso goreng dan cuanki untuk camilan"
+    ],
+    "keywords": ["bakso", "mie ayam", "mi ayam", "pangsit", "urat", "cuanki", "kuah", "tetelan", "ceker", "mercon"],
+    "brandIcon": "soup",
+    "templates": ["bakso", "hangat", "tegas"],
+    "heroes": ["split-bold", "asymmetric", "split"],
+    "feats": ["bento", "grid"],
+    "brandFallback": ["Bakso {city}", "Warung Bakso Sido Mampir", "Mie Ayam Pak Kumis"],
+    "badges": ["Buka setiap hari", "Kuah dimasak sejak subuh", "Bisa pesan antar"],
+    "slogans": ["Kuah hangat, porsi jujur", "Semangkuk penuh, harga bersahabat", "Dari dapur keluarga"],
+    "headlines": [
+      "Bakso urat kuah bening, langsung dari dapur {brand}",
+      "Semangkuk bakso hangat yang bikin balik lagi",
+      "Mie ayam dan bakso racikan {brand} di {city}"
+    ],
+    "subheadlines": [
+      "Daging sapi digiling sendiri setiap pagi, kuah kaldu tulang dimasak berjam-jam. Makan di tempat atau pesan lewat WhatsApp.",
+      "Porsi mengenyangkan dengan harga yang ramah kantong pelajar dan pekerja. Sambal dibuat baru tiap hari.",
+      "Resep keluarga yang dijaga rasanya sejak warung pertama dibuka. Tinggal pilih menu, kami siapkan."
+    ],
+    "cta": ["Pesan lewat WhatsApp", "Lihat menu", "Pesan sekarang"],
+    "featuresTitle": ["Kenapa {brand}", "Yang bikin beda", "Rahasia semangkuk {brand}"],
+    "features": [
+      {"icon": "beef", "title": "Daging sapi giling sendiri", "text": "Daging dipilih dan digiling setiap pagi, tanpa campuran tepung berlebihan."},
+      {"icon": "flame", "title": "Kuah tulang berjam-jam", "text": "Kaldu tulang sapi direbus sejak subuh supaya gurihnya keluar alami."},
+      {"icon": "wallet", "title": "Harga bersahabat", "text": "Porsi kenyang mulai belasan ribu, cocok untuk makan siang tiap hari."},
+      {"icon": "truck", "title": "Bisa pesan antar", "text": "Pesan lewat WhatsApp, kami antar ke rumah atau kantor terdekat."},
+      {"icon": "clock", "title": "Buka sampai malam", "text": "Mampir sepulang kerja, kuah masih panas dan sambal masih segar."},
+      {"icon": "users", "title": "Muat untuk rombongan", "text": "Meja panjang untuk keluarga atau teman satu kantor."}
+    ],
+    "itemsTitle": ["Menu andalan", "Pilihan menu", "Menu {brand}"],
+    "items": [
+      {"name": "Bakso Urat Spesial", "desc": "Bakso urat besar, bakso halus, tahu, dan bihun dalam kuah kaldu.", "price": 18000, "category": "Bakso", "icon": "soup"},
+      {"name": "Bakso Mercon", "desc": "Bakso isi cabai rawit untuk yang suka pedas menantang.", "price": 20000, "category": "Bakso", "icon": "flame"},
+      {"name": "Mie Ayam Pangsit", "desc": "Mi kenyal dengan topping ayam kecap dan pangsit goreng.", "price": 15000, "category": "Mie", "icon": "utensils"},
+      {"name": "Mie Ayam Ceker", "desc": "Mie ayam dengan ceker empuk yang dimasak bumbu.", "price": 17000, "category": "Mie", "icon": "drumstick"},
+      {"name": "Bakso Beranak", "desc": "Satu bakso besar berisi bakso-bakso kecil di dalamnya.", "price": 25000, "category": "Bakso", "icon": "soup"},
+      {"name": "Bakso Goreng", "desc": "Camilan renyah, cocok untuk teman ngobrol.", "price": 12000, "category": "Camilan", "icon": "cookie"},
+      {"name": "Es Teh Manis", "desc": "Teh tubruk diseduh pekat dengan es batu.", "price": 4000, "category": "Minuman", "icon": "cup-soda"},
+      {"name": "Es Jeruk Peras", "desc": "Jeruk segar diperas saat dipesan.", "price": 7000, "category": "Minuman", "icon": "citrus"}
+    ],
+    "stepsTitle": ["Cara pesan", "Pesan dalam tiga langkah"],
+    "steps": [
+      {"title": "Pilih menu", "text": "Lihat daftar menu dan catat yang kamu mau."},
+      {"title": "Kirim pesanan", "text": "Kirim lewat WhatsApp beserta alamat atau jam ambil."},
+      {"title": "Tinggal santap", "text": "Kami siapkan hangat, ambil di warung atau diantar."}
+    ],
+    "aboutTitle": ["Cerita {brand}", "Tentang {brand}"],
+    "about": [
+      "{brand} berawal dari gerobak kecil di {city}. Resep kuahnya tidak pernah berubah: tulang sapi, bawang putih goreng, dan kesabaran. Sekarang kami melayani pelanggan lama dan baru dengan rasa yang sama.",
+      "Kami percaya semangkuk bakso yang enak dimulai dari daging yang segar. Karena itu setiap pagi kami menggiling sendiri dan memasak kuah sejak subuh."
+    ],
+    "testimonials": [
+      {"text": "Kuahnya bening tapi gurih, baksonya terasa dagingnya. Jadi langganan tiap Jumat.", "name": "Rina, pelanggan"},
+      {"text": "Mie ayamnya kenyal, porsinya pas untuk makan siang. Harganya masuk akal.", "name": "Dimas, karyawan"}
+    ],
+    "closing": ["Lapar? Pesan sekarang", "Mampir ke warung kami"],
+    "closingText": ["Kirim pesanan lewat WhatsApp, kami siapkan selagi kuahnya panas.", "Datang langsung atau pesan antar, rasanya tetap sama."]
+  },
+  {
+    "id": "umkm-kopi",
+    "kind": "umkm",
+    "label": "Kedai kopi",
+    "prompts": [
+      "coffee shop kecil di bandung",
+      "kedai kopi susu gula aren",
+      "jualan kopi kekinian dan non kopi",
+      "kafe tempat nongkrong mahasiswa",
+      "kopi manual brew biji lokal",
+      "usaha kopi kemasan literan",
+      "warung kopi dengan wifi dan colokan"
+    ],
+    "keywords": ["kopi", "coffee", "kafe", "cafe", "espresso", "latte", "gula aren", "barista", "manual brew", "arabika", "robusta"],
+    "brandIcon": "coffee",
+    "templates": ["hangat", "elegan", "gelap"],
+    "heroes": ["split-bold", "editorial", "asymmetric"],
+    "feats": ["bento", "editorial"],
+    "brandFallback": ["Kopi {city}", "Kopi Senja", "Kedai Kopi Teras"],
+    "badges": ["Biji lokal pilihan", "Buka sampai malam", "Wifi dan colokan tersedia"],
+    "slogans": ["Seduh pelan, ngobrol lama", "Kopi lokal, rasa jujur", "Teman kerja dan ngobrol"],
+    "headlines": [
+      "Kopi susu gula aren yang pas manisnya",
+      "Tempat ngopi santai di {city}",
+      "Biji kopi lokal, diseduh dengan sabar"
+    ],
+    "subheadlines": [
+      "Kami memakai biji arabika dan robusta dari petani lokal, disangrai kecil-kecil supaya selalu segar.",
+      "Meja lebar, colokan di setiap sudut, dan menu yang tidak bikin dompet kaget. Cocok untuk kerja atau ngobrol.",
+      "Pesan untuk diminum di tempat, dibawa pulang, atau versi literan untuk stok di kantor."
+    ],
+    "cta": ["Lihat menu", "Pesan lewat WhatsApp", "Pesan kopi literan"],
+    "featuresTitle": ["Kenapa ngopi di {brand}", "Yang kami jaga"],
+    "features": [
+      {"icon": "leaf", "title": "Biji dari petani lokal", "text": "Kami membeli langsung dari kebun di Jawa Barat dan Aceh."},
+      {"icon": "flame", "title": "Disangrai mingguan", "text": "Sangrai kecil setiap minggu supaya aroma tetap segar."},
+      {"icon": "laptop", "title": "Nyaman untuk kerja", "text": "Wifi kencang dan colokan di hampir setiap meja."},
+      {"icon": "milk", "title": "Pilihan non kopi", "text": "Cokelat, matcha, dan teh untuk yang tidak minum kopi."},
+      {"icon": "package", "title": "Kopi literan", "text": "Stok kopi susu satu liter untuk di rumah atau kantor."},
+      {"icon": "clock", "title": "Buka sampai malam", "text": "Mampir sepulang kerja atau kuliah, kopi tetap tersedia."}
+    ],
+    "itemsTitle": ["Menu favorit", "Daftar menu"],
+    "items": [
+      {"name": "Kopi Susu Gula Aren", "desc": "Espresso, susu segar, dan gula aren cair.", "price": 18000, "category": "Kopi", "icon": "coffee"},
+      {"name": "Americano", "desc": "Espresso dan air panas atau dingin, tanpa gula.", "price": 15000, "category": "Kopi", "icon": "coffee"},
+      {"name": "Caffe Latte", "desc": "Espresso dengan susu yang lembut.", "price": 22000, "category": "Kopi", "icon": "coffee"},
+      {"name": "V60 Biji Lokal", "desc": "Seduh manual, biji bisa dipilih sesuai stok.", "price": 25000, "category": "Manual brew", "icon": "droplets"},
+      {"name": "Cokelat Panas", "desc": "Cokelat pekat untuk yang tidak minum kopi.", "price": 20000, "category": "Non kopi", "icon": "cup-soda"},
+      {"name": "Matcha Latte", "desc": "Matcha dengan susu, manisnya bisa diatur.", "price": 24000, "category": "Non kopi", "icon": "leaf"},
+      {"name": "Kopi Susu Literan", "desc": "Satu liter kopi susu untuk stok seminggu di kulkas.", "price": 85000, "category": "Literan", "icon": "package"},
+      {"name": "Roti Bakar Cokelat Keju", "desc": "Teman ngopi yang mengenyangkan.", "price": 16000, "category": "Makanan", "icon": "croissant"}
+    ],
+    "stepsTitle": ["Cara pesan"],
+    "steps": [
+      {"title": "Pilih minuman", "text": "Lihat menu dan tentukan ukuran serta tingkat manis."},
+      {"title": "Kirim pesanan", "text": "Pesan lewat WhatsApp, sebut jam ambil atau alamat."},
+      {"title": "Ambil atau diantar", "text": "Kami seduh saat pesanan masuk supaya tetap segar."}
+    ],
+    "aboutTitle": ["Tentang {brand}", "Cerita di balik {brand}"],
+    "about": [
+      "{brand} dimulai dari meja kecil di teras rumah di {city}. Kami ingin kopi lokal yang enak bisa dinikmati tanpa harus mahal. Sampai sekarang biji yang kami pakai berasal dari petani yang kami kenal langsung.",
+      "Kami menyangrai sendiri dalam jumlah kecil dan mencatat setiap batch. Tujuannya sederhana: rasa yang konsisten di setiap cangkir."
+    ],
+    "testimonials": [
+      {"text": "Kopi susu aren-nya pas, tidak terlalu manis. Tempatnya enak untuk kerja seharian.", "name": "Fajar, desainer lepas"},
+      {"text": "Pesan literan untuk kantor tiap Senin, semua orang suka.", "name": "Nadia, admin kantor"}
+    ],
+    "closing": ["Mampir ngopi", "Pesan kopi literan untuk minggu ini"],
+    "closingText": ["Kirim pesan, kopi kamu kami seduh saat itu juga.", "Satu liter cukup untuk lima sampai enam gelas."]
+  },
+  {
+    "id": "umkm-kue-roti",
+    "kind": "umkm",
+    "label": "Kue dan roti rumahan",
+    "prompts": [
+      "toko kue ulang tahun custom",
+      "jualan brownies dan kue kering lebaran",
+      "bakery roti sobek rumahan",
+      "kue basah tradisional untuk acara",
+      "usaha cookies dan cake di rumah",
+      "jual kue tart, bolu, dan donat",
+      "home bakery terima pesanan hampers"
+    ],
+    "keywords": ["kue", "roti", "cake", "brownies", "cookies", "bolu", "tart", "bakery", "kue kering", "donat", "hampers", "nastar"],
+    "brandIcon": "cake",
+    "templates": ["kue", "pastel", "hangat"],
+    "heroes": ["asymmetric", "split-bold", "center"],
+    "feats": ["bento", "grid"],
+    "brandFallback": ["Dapur Kue {city}", "Rumah Kue Manis", "Oven Ibu"],
+    "badges": ["Dibuat setelah dipesan", "Terima pesanan hampers", "Tanpa pengawet"],
+    "slogans": ["Manisnya pas, dibuat hari ini", "Dari oven rumah ke mejamu", "Kue untuk setiap perayaan"],
+    "headlines": [
+      "Kue rumahan yang dibuat setelah kamu pesan",
+      "Brownies, cookies, dan kue ulang tahun dari {brand}",
+      "Kue untuk perayaan kecil maupun besar di {city}"
+    ],
+    "subheadlines": [
+      "Semua kue dipanggang di dapur kami sendiri dengan mentega asli dan tanpa pengawet. Pesan H-2 supaya kami bisa menyiapkan yang terbaik untukmu.",
+      "Ada kue ulang tahun dengan hiasan sesuai tema, kue kering untuk hari raya, sampai hampers untuk kantor.",
+      "Tinggal pilih ukuran dan rasa, sebut tanggal acaranya, sisanya biar dapur kami yang bekerja."
+    ],
+    "cta": ["Pesan kue", "Tanya ketersediaan", "Lihat katalog"],
+    "featuresTitle": ["Kenapa pesan di {brand}", "Yang kami jaga di setiap loyang"],
+    "features": [
+      {"icon": "egg", "title": "Bahan asli", "text": "Mentega, telur, dan cokelat asli. Tanpa pengawet dan pewarna berlebih."},
+      {"icon": "calendar", "title": "Dibuat sesuai tanggal", "text": "Kue dipanggang mendekati hari acara supaya tetap lembut."},
+      {"icon": "pen-tool", "title": "Hiasan sesuai tema", "text": "Tulisan, warna, dan figur bisa disesuaikan dengan acaramu."},
+      {"icon": "gift", "title": "Hampers siap kirim", "text": "Kemasan rapi untuk hadiah ke keluarga, rekan, atau klien."},
+      {"icon": "truck", "title": "Antar dalam kota", "text": "Pengantaran hati-hati supaya kue sampai dalam keadaan utuh."},
+      {"icon": "heart", "title": "Resep keluarga", "text": "Beberapa resep kami turun dari nenek dan tidak pernah diubah."}
+    ],
+    "itemsTitle": ["Katalog kue", "Pilihan kue"],
+    "items": [
+      {"name": "Brownies Panggang", "desc": "Brownies cokelat pekat dengan kulit tipis renyah, loyang 20x20.", "price": 85000, "category": "Brownies", "icon": "cake"},
+      {"name": "Kue Ulang Tahun 18 cm", "desc": "Sponge lembut, krim, dan hiasan sesuai tema.", "price": 250000, "category": "Kue tart", "icon": "cake"},
+      {"name": "Nastar Toples 500 g", "desc": "Selai nanas dimasak sendiri, kulit lumer.", "price": 120000, "category": "Kue kering", "icon": "cookie"},
+      {"name": "Chocolate Chip Cookies", "desc": "Isi 20 keping, renyah di luar, lembut di dalam.", "price": 60000, "category": "Cookies", "icon": "cookie"},
+      {"name": "Roti Sobek Susu", "desc": "Roti lembut isi 12 sobek, cocok untuk sarapan.", "price": 35000, "category": "Roti", "icon": "croissant"},
+      {"name": "Bolu Pandan", "desc": "Bolu lembut dengan aroma pandan asli.", "price": 55000, "category": "Bolu", "icon": "cake"},
+      {"name": "Hampers Lebaran", "desc": "Tiga toples kue kering dalam kotak hadiah.", "price": 350000, "category": "Hampers", "icon": "gift"},
+      {"name": "Donat Kentang Isi 6", "desc": "Donat empuk dengan topping campur.", "price": 40000, "category": "Donat", "icon": "candy"}
+    ],
+    "stepsTitle": ["Cara pesan kue", "Pesan dalam tiga langkah"],
+    "steps": [
+      {"title": "Pilih kue", "text": "Tentukan jenis, ukuran, dan rasa dari katalog."},
+      {"title": "Sebut tanggal", "text": "Kirim tanggal acara dan detail hiasan lewat WhatsApp."},
+      {"title": "Ambil atau diantar", "text": "Kue siap di hari yang disepakati, bisa diantar dalam kota."}
+    ],
+    "aboutTitle": ["Dari dapur {brand}", "Tentang {brand}"],
+    "about": [
+      "{brand} lahir dari kebiasaan memanggang kue untuk keluarga di {city}. Lama-lama tetangga dan teman ikut memesan. Sampai sekarang setiap kue tetap kami buat sendiri, satu per satu.",
+      "Kami memanggang dalam jumlah terbatas setiap hari. Karena itu pesanan sebaiknya masuk dua hari sebelumnya, supaya kami bisa menyiapkannya dengan teliti."
+    ],
+    "testimonials": [
+      {"text": "Kue ulang tahun anak saya sesuai banget dengan contoh gambar, rasanya juga tidak terlalu manis.", "name": "Bu Sari"},
+      {"text": "Nastarnya lumer, selainya terasa nanas asli. Pesan lagi untuk tahun depan.", "name": "Andi"}
+    ],
+    "closing": ["Ada acara sebentar lagi?", "Pesan kue untuk minggu ini"],
+    "closingText": ["Kirim tanggal dan jenis kuenya, kami cek jadwal oven.", "Slot pesanan terbatas setiap hari, pesan lebih awal ya."]
+  },
+  {
+    "id": "umkm-katering",
+    "kind": "umkm",
+    "label": "Katering dan makanan rumahan",
+    "prompts": [
+      "katering nasi kotak untuk acara kantor",
+      "jualan nasi box dan tumpeng",
+      "catering harian untuk anak kos",
+      "warung nasi padang dan lauk rumahan",
+      "usaha ayam geprek dan nasi goreng",
+      "makanan rumahan frozen food",
+      "katering diet sehat mingguan"
+    ],
+    "keywords": ["katering", "catering", "nasi kotak", "nasi box", "tumpeng", "ayam geprek", "nasi goreng", "lauk", "rantangan", "frozen", "rendang", "warteg"],
+    "brandIcon": "chef-hat",
+    "templates": ["hangat", "segar", "bakso"],
+    "heroes": ["split-bold", "split", "asymmetric"],
+    "feats": ["bento", "grid", "list"],
+    "brandFallback": ["Dapur {city}", "Katering Bunda", "Rantang Rumah"],
+    "badges": ["Masak setiap pagi", "Terima pesanan acara", "Bisa langganan mingguan"],
+    "slogans": ["Masakan rumah, porsi pas", "Lauk hangat setiap hari", "Rasa rumah untuk acaramu"],
+    "headlines": [
+      "Nasi kotak dan masakan rumahan untuk acaramu",
+      "Lauk rumahan dari {brand}, dimasak setiap pagi",
+      "Katering harian di {city} tanpa ribet"
+    ],
+    "subheadlines": [
+      "Pesan nasi kotak untuk rapat, pengajian, atau ulang tahun. Menu bisa disesuaikan dengan anggaran.",
+      "Langganan rantangan mingguan dengan menu berganti setiap hari. Diantar sebelum jam makan siang.",
+      "Bumbu diulek sendiri dan bahan dibeli segar dari pasar setiap pagi."
+    ],
+    "cta": ["Tanya menu dan harga", "Pesan lewat WhatsApp", "Mulai langganan"],
+    "featuresTitle": ["Kenapa {brand}", "Yang membuat pelanggan kembali"],
+    "features": [
+      {"icon": "carrot", "title": "Bahan dari pasar pagi", "text": "Sayur dan daging dibeli segar setiap pagi sebelum dimasak."},
+      {"icon": "chef-hat", "title": "Bumbu diulek sendiri", "text": "Tanpa bumbu instan, rasanya seperti masakan rumah."},
+      {"icon": "users", "title": "Untuk 10 sampai 500 porsi", "text": "Rapat kecil sampai acara besar, jumlah bisa disesuaikan."},
+      {"icon": "calendar", "title": "Langganan mingguan", "text": "Menu berganti setiap hari, diantar tepat waktu."},
+      {"icon": "wallet", "title": "Menyesuaikan anggaran", "text": "Sebut anggaran per porsi, kami susun menunya."},
+      {"icon": "truck", "title": "Antar tepat waktu", "text": "Pesanan acara datang sebelum jam yang disepakati."}
+    ],
+    "itemsTitle": ["Pilihan menu", "Paket populer"],
+    "items": [
+      {"name": "Nasi Kotak Ayam Bakar", "desc": "Nasi, ayam bakar, sayur, sambal, kerupuk, dan buah.", "price": 30000, "category": "Nasi kotak", "icon": "drumstick"},
+      {"name": "Nasi Kotak Rendang", "desc": "Rendang sapi empuk dengan sayur dan sambal hijau.", "price": 38000, "category": "Nasi kotak", "icon": "beef"},
+      {"name": "Tumpeng Mini 10 Orang", "desc": "Tumpeng kuning dengan tujuh lauk pelengkap.", "price": 450000, "category": "Tumpeng", "icon": "party-popper"},
+      {"name": "Rantangan Mingguan", "desc": "Lima hari makan siang, menu berganti setiap hari.", "price": 175000, "category": "Langganan", "icon": "calendar"},
+      {"name": "Ayam Geprek Sambal Bawang", "desc": "Ayam goreng tepung dengan sambal bawang pedas.", "price": 18000, "category": "Lauk", "icon": "flame"},
+      {"name": "Nasi Goreng Kampung", "desc": "Nasi goreng dengan telur, ayam suwir, dan kerupuk.", "price": 20000, "category": "Lauk", "icon": "utensils"},
+      {"name": "Snack Box Isi 3", "desc": "Tiga kue basah untuk rapat atau pengajian.", "price": 12000, "category": "Snack", "icon": "package"}
+    ],
+    "stepsTitle": ["Cara pesan"],
+    "steps": [
+      {"title": "Sebut acaranya", "text": "Kirim tanggal, jumlah porsi, dan anggaran lewat WhatsApp."},
+      {"title": "Pilih menu", "text": "Kami kirim pilihan menu yang sesuai, kamu tinggal setuju."},
+      {"title": "Kami antar", "text": "Pesanan datang hangat sebelum acara dimulai."}
+    ],
+    "aboutTitle": ["Tentang {brand}"],
+    "about": [
+      "{brand} berawal dari dapur rumah di {city} yang sering diminta memasak untuk acara tetangga. Sekarang kami melayani pesanan kantor, pengajian, dan langganan harian dengan rasa yang tetap rumahan.",
+      "Kami memasak setiap pagi dengan bahan segar dari pasar. Menu bisa disesuaikan dengan selera dan anggaranmu."
+    ],
+    "testimonials": [
+      {"text": "Pesan 120 nasi kotak untuk rapat, datang tepat waktu dan rasanya enak semua.", "name": "Bu Lia, staf HRD"},
+      {"text": "Langganan rantangan sudah tiga bulan, menunya tidak membosankan.", "name": "Rizky, mahasiswa"}
+    ],
+    "closing": ["Ada acara minggu ini?", "Mulai langganan makan siang"],
+    "closingText": ["Kirim jumlah porsi dan anggaran, kami bantu susun menunya.", "Menu berganti setiap hari, diantar sebelum jam makan siang."]
+  },
+  {
+    "id": "umkm-fashion",
+    "kind": "umkm",
+    "label": "Fashion dan pakaian",
+    "prompts": [
+      "toko baju muslim dan hijab online",
+      "jualan kaos sablon custom",
+      "butik pakaian wanita",
+      "brand streetwear lokal",
+      "jual batik tulis dan kemeja batik",
+      "thrift shop baju bekas pilihan",
+      "konveksi seragam dan jaket komunitas"
+    ],
+    "keywords": ["baju", "kaos", "hijab", "jilbab", "gamis", "kemeja", "batik", "jaket", "celana", "fashion", "butik", "sablon", "thrift", "konveksi", "pakaian", "outfit"],
+    "brandIcon": "shirt",
+    "templates": ["elegan", "pastel", "tegas"],
+    "heroes": ["editorial", "asymmetric", "split-bold"],
+    "feats": ["bento", "editorial"],
+    "brandFallback": ["{city} Wear", "Rupa Busana", "Kain & Kata"],
+    "badges": ["Stok terbatas", "Bisa custom", "Kirim ke seluruh Indonesia"],
+    "slogans": ["Nyaman dipakai seharian", "Dijahit rapi, dipakai lama", "Gaya sederhana, bahan jelas"],
+    "headlines": [
+      "Pakaian yang nyaman dipakai dari pagi sampai malam",
+      "Koleksi terbaru {brand} sudah tersedia",
+      "Bahan adem, jahitan rapi, harga masuk akal"
+    ],
+    "subheadlines": [
+      "Kami memilih bahan yang adem untuk iklim tropis dan menjahitnya di {city}. Setiap ukuran ada tabelnya supaya tidak salah pilih.",
+      "Koleksi dirilis dalam jumlah terbatas. Pesan lewat WhatsApp, kirim ke seluruh Indonesia.",
+      "Bisa custom sablon atau bordir untuk komunitas, kantor, dan acara."
+    ],
+    "cta": ["Lihat koleksi", "Pesan lewat WhatsApp", "Tanya ukuran"],
+    "featuresTitle": ["Kenapa {brand}", "Yang kami perhatikan"],
+    "features": [
+      {"icon": "shirt", "title": "Bahan adem", "text": "Katun dan rayon pilihan yang nyaman untuk cuaca panas."},
+      {"icon": "scissors", "title": "Jahitan rapi", "text": "Dijahit penjahit berpengalaman dan dicek satu per satu."},
+      {"icon": "clipboard-list", "title": "Tabel ukuran jelas", "text": "Ukuran lengkap dengan lingkar dada dan panjang badan."},
+      {"icon": "brush", "title": "Bisa custom", "text": "Sablon, bordir, atau warna khusus untuk pesanan grup."},
+      {"icon": "truck", "title": "Kirim ke seluruh Indonesia", "text": "Dikemas rapi dan dikirim dengan nomor resi."},
+      {"icon": "recycle", "title": "Bisa tukar ukuran", "text": "Ukuran tidak pas? Tukar dalam tujuh hari selama label masih terpasang."}
+    ],
+    "itemsTitle": ["Koleksi pilihan", "Katalog"],
+    "items": [
+      {"name": "Kaos Basic Katun 30s", "desc": "Kaos polos adem, tersedia delapan warna.", "price": 79000, "category": "Kaos", "icon": "shirt"},
+      {"name": "Kemeja Batik Lengan Pendek", "desc": "Batik cap motif klasik, bahan katun primisima.", "price": 185000, "category": "Kemeja", "icon": "shirt"},
+      {"name": "Hijab Voal Polos", "desc": "Mudah dibentuk, tidak menerawang, 115 x 115 cm.", "price": 55000, "category": "Hijab", "icon": "flower"},
+      {"name": "Gamis Rayon Harian", "desc": "Gamis jatuh dan ringan untuk dipakai sehari-hari.", "price": 165000, "category": "Gamis", "icon": "shirt"},
+      {"name": "Jaket Coach", "desc": "Jaket ringan anti angin dengan furing jaring.", "price": 225000, "category": "Jaket", "icon": "shirt"},
+      {"name": "Kaos Sablon Custom", "desc": "Minimal 12 pcs, desain dari kamu atau kami bantu.", "price": 95000, "category": "Custom", "icon": "brush"},
+      {"name": "Totebag Kanvas", "desc": "Tas kanvas tebal untuk kerja atau kuliah.", "price": 65000, "category": "Aksesori", "icon": "shopping-bag"}
+    ],
+    "stepsTitle": ["Cara pesan"],
+    "steps": [
+      {"title": "Pilih produk", "text": "Catat nama produk, warna, dan ukuran."},
+      {"title": "Konfirmasi", "text": "Kirim pesanan lewat WhatsApp, kami cek stok dan ongkir."},
+      {"title": "Dikirim", "text": "Setelah pembayaran, paket dikirim dengan nomor resi."}
+    ],
+    "aboutTitle": ["Tentang {brand}", "Cerita {brand}"],
+    "about": [
+      "{brand} dimulai dari keinginan punya pakaian harian yang nyaman tanpa harus mahal. Semua produk kami dijahit di {city} bersama penjahit lokal.",
+      "Kami merilis koleksi dalam jumlah kecil supaya kualitas tiap potong tetap terjaga."
+    ],
+    "testimonials": [
+      {"text": "Bahannya adem dan jahitannya rapi, ukurannya sesuai tabel.", "name": "Mega"},
+      {"text": "Pesan kaos sablon untuk komunitas, hasilnya bagus dan tepat waktu.", "name": "Arif, ketua komunitas"}
+    ],
+    "closing": ["Cari ukuranmu", "Pesan sebelum stok habis"],
+    "closingText": ["Tanya ukuran atau stok lewat WhatsApp, kami balas secepatnya.", "Koleksi terbatas, setiap warna hanya diproduksi sekali."]
+  },
+  {
+    "id": "umkm-umum",
+    "kind": "umkm",
+    "label": "Toko dan UMKM",
+    "generic": true,
+    "prompts": [
+      "toko online produk rumahan",
+      "jualan produk lokal buatan sendiri",
+      "usaha kecil menjual barang",
+      "toko kelontong dan sembako",
+      "jual kerajinan tangan dan souvenir",
+      "usaha camilan keripik kemasan"
+    ],
+    "keywords": ["jual", "jualan", "toko", "produk", "umkm", "online shop", "olshop", "sembako", "kerajinan", "souvenir", "camilan", "keripik", "kemasan", "reseller"],
+    "brandIcon": "store",
+    "templates": ["segar", "hangat", "pastel", "bersih"],
+    "heroes": ["split-bold", "asymmetric", "split"],
+    "feats": ["bento", "grid"],
+    "brandFallback": ["{Product} {city}", "Toko {Product}", "Rumah {Product}"],
+    "badges": ["Produk lokal", "Bisa pesan antar", "Terima reseller"],
+    "slogans": ["Buatan lokal, untuk dipakai sehari-hari", "Pesan mudah, kirim cepat"],
+    "headlines": [
+      "{Product} buatan {brand}, langsung dari pembuatnya",
+      "Belanja {product} di {brand} tanpa ribet",
+      "{Product} pilihan untuk kebutuhanmu di {city}"
+    ],
+    "subheadlines": [
+      "Semua produk kami siapkan sendiri dan dicek sebelum dikirim. Pesan lewat WhatsApp, bayar, lalu tunggu paketnya.",
+      "Harga langsung dari pembuat, tanpa perantara. Ada harga khusus untuk reseller.",
+      "Lihat katalog di bawah, tanyakan stok, dan pesan dalam hitungan menit."
+    ],
+    "cta": ["Lihat katalog", "Pesan lewat WhatsApp", "Tanya stok"],
+    "featuresTitle": ["Kenapa belanja di {brand}"],
+    "features": [
+      {"icon": "hand-heart", "title": "Dibuat sendiri", "text": "Produk kami siapkan sendiri, jadi kualitasnya bisa kami jaga."},
+      {"icon": "wallet", "title": "Harga dari pembuat", "text": "Tanpa perantara, harganya lebih masuk akal."},
+      {"icon": "truck", "title": "Kirim ke mana saja", "text": "Dikemas aman dan dikirim dengan nomor resi."},
+      {"icon": "handshake", "title": "Terima reseller", "text": "Harga khusus untuk pembelian jumlah banyak."},
+      {"icon": "message-circle", "title": "Cepat dibalas", "text": "Pertanyaan lewat WhatsApp kami balas di jam kerja."},
+      {"icon": "shield-check", "title": "Garansi tukar", "text": "Barang rusak saat diterima kami ganti."}
+    ],
+    "itemsTitle": ["Katalog produk", "Produk kami"],
+    "items": [
+      {"name": "{Product} Kemasan Kecil", "desc": "Pas untuk dicoba pertama kali.", "price": 25000, "category": "Kemasan", "icon": "package"},
+      {"name": "{Product} Kemasan Besar", "desc": "Lebih hemat untuk stok di rumah.", "price": 60000, "category": "Kemasan", "icon": "package"},
+      {"name": "Paket Hemat {Product}", "desc": "Tiga kemasan dengan harga lebih ringan.", "price": 70000, "category": "Paket", "icon": "gift"},
+      {"name": "Paket Reseller", "desc": "Minimal 10 kemasan, harga khusus.", "price": 0, "category": "Reseller", "icon": "handshake"},
+      {"name": "Paket Hadiah", "desc": "Dikemas dalam kotak dengan kartu ucapan.", "price": 95000, "category": "Hadiah", "icon": "gift"},
+      {"name": "Edisi Spesial", "desc": "Varian terbatas yang dibuat sesekali.", "price": 45000, "category": "Spesial", "icon": "star"}
+    ],
+    "stepsTitle": ["Cara belanja"],
+    "steps": [
+      {"title": "Pilih produk", "text": "Lihat katalog dan catat produk serta jumlahnya."},
+      {"title": "Kirim pesanan", "text": "Kirim lewat WhatsApp, kami hitung total dan ongkir."},
+      {"title": "Terima paket", "text": "Paket dikirim setelah pembayaran dikonfirmasi."}
+    ],
+    "aboutTitle": ["Tentang {brand}"],
+    "about": [
+      "{brand} adalah usaha kecil di {city} yang membuat dan menjual {product}. Kami mengerjakan semuanya sendiri, dari menyiapkan produk sampai mengemas pesanan.",
+      "Kami percaya produk lokal bisa bersaing kalau dikerjakan dengan teliti. Setiap pesanan kami cek sebelum dikirim."
+    ],
+    "testimonials": [
+      {"text": "Barangnya sesuai foto, pengirimannya cepat dan kemasannya rapi.", "name": "Wulan"},
+      {"text": "Sudah langganan untuk dijual lagi, pelanggan saya suka.", "name": "Hendra, reseller"}
+    ],
+    "closing": ["Siap pesan?", "Tanya stok hari ini"],
+    "closingText": ["Kirim pesan lewat WhatsApp, kami bantu sampai pesananmu sampai.", "Stok kami perbarui setiap hari."]
+  }
+]

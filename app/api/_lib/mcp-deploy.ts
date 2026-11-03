@@ -29,8 +29,8 @@ import type { Platform, SettingsTokens } from "@/types";
  * Deploy ke Vercel / Cloudflare Pages / Railway lewat MCP.
  *
  * Token platform TIDAK PERNAH dikirim lewat argumen tool dan tidak pernah dikembalikan ke Claude: dibaca di
- * server dari Settings user (settingsTokens, terenkripsi), sama seperti yang dipakai dashboard. Claude juga
- * hanya boleh memakai platform yang dicentang user di Settings → Konektor Claude (`mcpDeployPlatforms`).
+ * server dari Pengaturan user (settingsTokens, terenkripsi), sama seperti yang dipakai dashboard. Claude juga
+ * hanya boleh memakai platform yang dicentang user di Pengaturan → Konektor Claude (`mcpDeployPlatforms`).
  */
 
 export const MCP_PLATFORMS: readonly Platform[] = ["vercel", "cloudflare", "railway"];
@@ -42,7 +42,7 @@ const TOKEN_FIELD: Record<Platform, keyof SettingsTokens> = {
   railway: "railwayToken",
 };
 
-const SETTINGS_HINT = "Buka Depup → Settings → Konektor Claude.";
+const SETTINGS_HINT = "Buka Depup → Pengaturan → Konektor Claude.";
 
 type Tokens = Partial<SettingsTokens>;
 
@@ -56,7 +56,7 @@ export function allowedPlatforms(tokens: Tokens): Platform[] {
 export interface PlatformStatus {
   platform: Platform;
   label: string;
-  /** Token sudah diisi di Settings. */
+  /** Token sudah diisi di Pengaturan. */
   tokenSaved: boolean;
   /** User mengizinkan Claude memakai platform ini. */
   allowed: boolean;
@@ -120,7 +120,7 @@ function describeError(e: unknown, platform: Platform): string {
   if (e instanceof GithubApiError || e instanceof BadRequestError) return e.message;
   if (e instanceof VercelApiError || e instanceof CloudflareApiError || e instanceof RailwayApiError) {
     if (e.code === "invalid_token") {
-      return `Token ${PLATFORM_LABEL[platform]} di Settings ditolak (salah atau kedaluwarsa). Perbarui di Depup → Settings.`;
+      return `Token ${PLATFORM_LABEL[platform]} di Pengaturan ditolak (salah atau kedaluwarsa). Perbarui di Depup → Settings.`;
     }
     return e.message;
   }
@@ -143,7 +143,7 @@ export async function deployProject(email: string, input: DeployInput): Promise<
     return fail((e as Error).message);
   }
 
-  // Token & izin dibaca dari Settings user — bukan dari argumen tool.
+  // Token & izin dibaca dari Pengaturan user — bukan dari argumen tool.
   const { settingsTokens: tokens } = await getUserData(email);
   const token = tokens[TOKEN_FIELD[platform]];
   if (!has(token)) return fail(`Token ${label} belum disimpan. ${SETTINGS_HINT} Isi token ${label}, lalu coba lagi.`);
@@ -200,7 +200,7 @@ export async function deployProject(email: string, input: DeployInput): Promise<
         const accounts = await getCloudflareAccounts(token);
         if (accounts.length === 0) return fail("Token Cloudflare valid tetapi tidak punya akses ke akun manapun.");
         accountId = accounts[0].id;
-        if (accounts.length > 1) notes.push(`Token Cloudflare punya ${accounts.length} akun; dipakai "${accounts[0].name}". Pilih akun lain di Settings kalau perlu.`);
+        if (accounts.length > 1) notes.push(`Token Cloudflare punya ${accounts.length} akun; dipakai "${accounts[0].name}". Pilih akun lain di Pengaturan kalau perlu.`);
       }
       const preset = cloudflareBuildPreset(validation.framework, validation.project);
       if (preset.warning) notes.push(preset.warning);
@@ -242,8 +242,8 @@ export async function deployProject(email: string, input: DeployInput): Promise<
             "Kalau tidak, pengguna bisa menambahkan file itu sendiri lalu minta deploy lagi.",
         );
       }
-      if (!githubPat) return fail("Menambahkan file ke repo butuh GitHub PAT (izin repo) di Settings. Isi dulu, lalu coba lagi.");
-      if (!preview.canWrite) return fail("GitHub PAT di Settings hanya bisa membaca repo ini, jadi file yang kurang tidak bisa ditambahkan. Pakai PAT dengan izin tulis, atau tambahkan file-nya sendiri.");
+      if (!githubPat) return fail("Menambahkan file ke repo butuh GitHub PAT (izin repo) di Pengaturan. Isi dulu, lalu coba lagi.");
+      if (!preview.canWrite) return fail("GitHub PAT di Pengaturan hanya bisa membaca repo ini, jadi file yang kurang tidak bisa ditambahkan. Pakai PAT dengan izin tulis, atau tambahkan file-nya sendiri.");
       const autofix = await autofixRepoForRailway(validation, githubPat);
       if (autofix.status === "committed") {
         notes.push(`Atas persetujuan pengguna, Depup meng-commit file ke repo: ${autofix.files.map((f) => f.path).join(", ")}.`);

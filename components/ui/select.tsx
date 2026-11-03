@@ -41,7 +41,7 @@ const SelectContent = React.forwardRef<
       position={position}
       sideOffset={6}
       className={cn(
-        "surface-solid z-[200] overflow-hidden !rounded-2xl text-text shadow-lg data-[state=open]:anim-pop",
+        "surface-solid z-[200] overflow-hidden !rounded-[14px] text-text shadow-lg data-[state=open]:anim-pop",
         position === "popper" &&
           "min-w-[var(--radix-select-trigger-width)] translate-y-0",
         className
@@ -61,7 +61,7 @@ const SelectItem = React.forwardRef<
   <SelectPrimitive.Item
     ref={ref}
     className={cn(
-      "relative flex w-full cursor-pointer select-none items-center rounded-xl py-2.5 pl-8 pr-3 text-[13px] outline-none",
+      "relative flex w-full cursor-pointer select-none items-center rounded-[14px] py-2.5 pl-8 pr-3 text-[13px] outline-none",
       "hover:bg-[var(--card-hover)] focus:bg-[var(--card-hover)] data-[state=checked]:bg-tone-lilac",
       "data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
       className

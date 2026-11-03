@@ -111,7 +111,7 @@ export function jsonCors(body: unknown, status = 200, extra: Record<string, stri
 /**
  * Request dari server Claude (cloud Anthropic) tidak membawa header Origin, jadi tanpa Origin = diizinkan.
  * Kalau Origin ada (klien berbasis browser), hanya host Claude (claude.ai / claude.com, plus MCP_REDIRECT_HOSTS),
- * origin Depup sendiri (untuk tombol Test Koneksi di Settings), dan loopback (MCP Inspector / uji lokal) yang diterima.
+ * origin Depup sendiri (untuk tombol Tes koneksi di Pengaturan), dan loopback (MCP Inspector / uji lokal) yang diterima.
  * Selain itu ditolak 403.
  */
 export function isAllowedMcpOrigin(origin: string | null, hostHeader?: string | null): boolean {

@@ -51,7 +51,7 @@ function DocsLink({ children }: { children: React.ReactNode }) {
 }
 
 /**
- * Kartu "Depup CLI · Share" di Settings, tepat di bawah Konektor AI (MCP).
+ * Kartu "Depup CLI · Share" di Pengaturan, tepat di bawah Konektor AI (MCP).
  * Hanya ringkasan yang dipakai langsung; panduan lengkap ada di Docs → "Link Gaib".
  */
 export function CliShareCard() {
@@ -95,7 +95,7 @@ export function CliShareCard() {
         <CodeBlock title="Perintah di terminal" code={COMMANDS} onCopy={() => void copy(COMMANDS)} />
       </div>
 
-      <div className="mt-4 overflow-hidden rounded-2xl border border-[var(--line)]">
+      <div className="mt-4 overflow-hidden rounded-[14px] border border-[var(--line)]">
         <p className="bg-[var(--surface-solid-2)] px-4 py-2.5 text-[14px] font-semibold">Opsi</p>
         <ul className="divide-y divide-[var(--line)] border-t border-[var(--line)]">
           {OPTIONS.map((o) => (

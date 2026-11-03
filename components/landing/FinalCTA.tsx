@@ -50,7 +50,7 @@ export function FinalCTA() {
               ["Private", "repo pun bisa, lewat GitHub Token"],
               ["Google", "masuk tanpa membuat akun baru"],
             ].map(([big, small]) => (
-              <li key={big} className="flex items-center justify-between gap-4 rounded-2xl bg-night-15 p-4 sm:gap-6">
+              <li key={big} className="flex items-center justify-between gap-4 rounded-[14px] bg-night-15 p-4 sm:gap-6">
                 <span className="shrink-0 text-[22px] font-bold tracking-[-0.02em]">{big}</span>
                 <span className="min-w-0 text-right text-[13px] leading-snug text-night-80">{small}</span>
               </li>

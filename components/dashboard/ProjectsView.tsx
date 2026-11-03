@@ -156,7 +156,7 @@ function DeleteProjectModal({
   const isRailwayProject = project.platform === "railway";
   const busy = deletingProject === project.name;
 
-  const platformLabel = isVercelProject ? "Vercel" : isCloudflareProject ? "Cloudflare" : isRailwayProject ? "Railway" : null;
+  const platformLabel = isVercelProject ? "Vercel" : isCloudflareProject ? "Cloudflare Pages" : isRailwayProject ? "Railway" : null;
   const canDeleteRemote = isVercelProject
     ? Boolean(vercelToken)
     : isCloudflareProject
@@ -206,13 +206,13 @@ function DeleteProjectModal({
             <X size={16} />
           </button>
         </div>
-        <h3 className="text-[16px] font-semibold mb-2">Hapus &quot;{project.name}&quot;?</h3>
+        <h2 className="text-[16px] font-semibold mb-2">Hapus &quot;{project.name}&quot;?</h2>
         <p className="text-[13px] leading-relaxed text-text-muted mb-5">
           Secara default, project hanya dihapus dari daftar Depup. Project di platform dan repo GitHub kamu tidak
           disentuh. Nyalakan saklar di bawah kalau ingin ikut menghapusnya.
         </p>
 
-        <div className="mb-5 space-y-4 rounded-2xl bg-[var(--surface-solid-2)] p-4">
+        <div className="mb-5 space-y-4 rounded-[14px] bg-[var(--surface-solid-2)] p-4">
           <DeleteSwitch
             id="deleteAlsoDepup"
             title="Hapus di Depup"
@@ -229,7 +229,7 @@ function DeleteProjectModal({
               description={
                 canDeleteRemote
                   ? `Project di ${platformLabel} dihapus permanen beserta deployment-nya.`
-                  : `Hubungkan ${platformLabel} Token di Settings dulu untuk menghapus di ${platformLabel}.`
+                  : `Hubungkan ${platformLabel} Token di Pengaturan dulu untuk menghapus di ${platformLabel}.`
               }
               checked={deleteRemote}
               disabled={busy || !canDeleteRemote}
@@ -243,7 +243,7 @@ function DeleteProjectModal({
             description={
               canDeleteGithub
                 ? "Repo di GitHub dihapus permanen. Token harus memiliki izin delete_repo (lihat Docs)."
-                : "Isi GitHub PAT di Settings dulu untuk menghapus repo di GitHub."
+                : "Isi GitHub PAT di Pengaturan dulu untuk menghapus repo di GitHub."
             }
             checked={deleteGithub}
             disabled={busy || !canDeleteGithub}
@@ -263,7 +263,7 @@ function DeleteProjectModal({
                 placeholder="nama-akun/nama-repo"
                 spellCheck={false}
                 autoComplete="off"
-                className="mono w-full rounded-xl bg-[var(--surface-solid-2)] px-3 py-2 text-[13px] outline-none focus:shadow-[inset_0_0_0_2px_var(--bad-line)]"
+                className="mono w-full rounded-[14px] bg-[var(--surface-solid-2)] px-3 py-2 text-[13px] outline-none focus:shadow-[inset_0_0_0_2px_var(--bad-line)]"
               />
               <p className="mt-1 text-[12px] text-text-faint">
                 {repoLookup === "loading"
@@ -279,7 +279,7 @@ function DeleteProjectModal({
         </div>
 
         {deleteGithub && canDeleteGithub && (
-          <div className="mb-4 rounded-xl bg-[var(--warn-bg)] px-3 py-2.5 text-[12px] leading-relaxed text-warn-fg">
+          <div className="mb-4 rounded-[14px] bg-[var(--warn-bg)] px-3 py-2.5 text-[12px] leading-relaxed text-warn-fg">
             <p className="flex items-start gap-2 font-medium">
               <ShieldAlert size={14} className="mt-0.5 shrink-0" />
               Pastikan GitHub Token kamu boleh menghapus repo.
@@ -303,7 +303,7 @@ function DeleteProjectModal({
         )}
 
         {destructive && (
-          <p className="mb-4 flex items-start gap-2 rounded-xl bg-[var(--bad-bg)] px-3 py-2 text-[12px] leading-relaxed text-bad-fg">
+          <p className="mb-4 flex items-start gap-2 rounded-[14px] bg-[var(--bad-bg)] px-3 py-2 text-[12px] leading-relaxed text-bad-fg">
             <AlertTriangle size={14} className="mt-0.5 shrink-0" />
             Penghapusan di {targets.slice(1).join(" dan ")} tidak bisa dibatalkan.
           </p>
@@ -315,7 +315,7 @@ function DeleteProjectModal({
             onClick={() => void handleDelete()}
             disabled={busy || !githubReady}
             className={`w-full py-2.5 text-[13px] font-medium disabled:opacity-50 ${
-              destructive ? "rounded-xl bg-bad text-white hover:brightness-110" : "pill hover:brightness-110"
+              destructive ? "rounded-[14px] bg-bad text-white hover:brightness-110" : "pill hover:brightness-110"
             }`}
           >
             {buttonLabel}
@@ -355,14 +355,14 @@ function ImportProjectModal({ open, onClose }: { open: boolean; onClose: () => v
   >([]);
   const [importingName, setImportingName] = React.useState<string | null>(null);
 
-  const platformLabel = tab === "vercel" ? "Vercel" : tab === "cloudflare" ? "Cloudflare" : "Railway";
+  const platformLabel = tab === "vercel" ? "Vercel" : tab === "cloudflare" ? "Cloudflare Pages" : "Railway";
   const connected =
     tab === "vercel" ? Boolean(vercelToken) : tab === "cloudflare" ? Boolean(savedCloudflareToken) : Boolean(savedRailwayToken);
 
   React.useEffect(() => {
     if (!open) return;
     if (!connected) {
-      setError(`Hubungkan ${platformLabel} Token di Settings dulu untuk terhubung ke ${platformLabel}.`);
+      setError(`Hubungkan ${platformLabel} Token di Pengaturan dulu untuk terhubung ke ${platformLabel}.`);
       setCandidates([]);
       return;
     }
@@ -403,7 +403,7 @@ function ImportProjectModal({ open, onClose }: { open: boolean; onClose: () => v
     <div className="anim-fade fixed inset-0 z-[100] flex items-center justify-center modal-scrim px-4">
       <Surface className="anim-pop w-full max-w-md p-6">
         <div className="flex items-center justify-between mb-5">
-          <h3 className="text-[16px] font-semibold">Import Project</h3>
+          <h2 className="text-[16px] font-semibold">Import project</h2>
           <button
             type="button"
             onClick={onClose}
@@ -420,7 +420,7 @@ function ImportProjectModal({ open, onClose }: { open: boolean; onClose: () => v
               key={t}
               type="button"
               onClick={() => setTab(t)}
-              className={`rounded-xl px-3.5 py-1.5 text-[13px] font-medium capitalize transition-colors ${
+              className={`rounded-[14px] px-3.5 py-1.5 text-[13px] font-medium capitalize transition-colors ${
                 tab === t
                   ? "chip-on"
                   : "bg-[var(--surface-solid-2)] text-text-muted hover:text-text"
@@ -458,7 +458,7 @@ function ImportProjectModal({ open, onClose }: { open: boolean; onClose: () => v
             {candidates.map((p) => (
               <div
                 key={p.id}
-                className="flex items-center justify-between gap-3 rounded-2xl bg-[var(--surface-solid-2)] px-3.5 py-2.5"
+                className="flex items-center justify-between gap-3 rounded-[14px] bg-[var(--surface-solid-2)] px-3.5 py-2.5"
               >
                 <div className="min-w-0">
                   <p className="truncate text-[13px] font-medium">{p.name}</p>
@@ -528,7 +528,7 @@ export function ProjectsView() {
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <PageTitle title="Proyek" desc={<>{projects.length} project {platformTab !== "all" ? `(${platformTab}) ` : ""}unik dari riwayat deployment kamu.</>} />
+            <PageTitle title="Project" desc={<>{projects.length} project {platformTab !== "all" ? `(${platformTab}) ` : ""}unik dari riwayat deployment kamu.</>} />
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <button
@@ -550,7 +550,7 @@ export function ProjectsView() {
               </button>
             ) : (
               <span className="inline-flex items-center gap-1.5 text-[12px] text-text-faint">
-                <ShieldAlert size={13} /> Konek-kan token di Settings untuk sinkronisasi otomatis
+                <ShieldAlert size={13} /> Konek-kan token di Pengaturan untuk sinkronisasi otomatis
               </span>
             )}
           </div>
@@ -576,7 +576,7 @@ export function ProjectsView() {
         {projects.length === 0 ? (
           <Surface className="flex flex-col items-center justify-center gap-3 px-6 py-24 text-center">
             <FolderOpen size={52} className="text-text-faint" strokeWidth={1.5} />
-            <h3 className="text-lg font-semibold">Manajemen Proyek</h3>
+            <h2 className="text-lg font-semibold">Kelola project</h2>
             <p className="max-w-xs text-sm text-text-muted">
               Belum ada project. Deploy project pertamamu untuk melihatnya di sini.
             </p>

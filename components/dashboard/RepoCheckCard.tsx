@@ -43,7 +43,7 @@ export function RepoCheckCard({ platform }: { platform: Platform }) {
 
   if (status === "error") {
     return (
-      <div className="mt-3 rounded-xl bg-[var(--bad-bg)] p-3 text-[12px] sm:text-[12px]">
+      <div className="mt-3 rounded-[14px] bg-[var(--bad-bg)] p-3 text-[12px] sm:text-[12px]">
         <div className="flex items-start gap-2 text-bad-fg">
           <CircleAlert className="w-3.5 h-3.5 shrink-0 mt-0.5" />
           <div>
@@ -97,7 +97,7 @@ export function RepoCheckCard({ platform }: { platform: Platform }) {
         : "bg-[var(--ok-bg)] text-ok-fg";
 
   return (
-    <div className={cn("mt-3 rounded-xl p-3 text-[12px] sm:text-[12px]", tone)}>
+    <div className={cn("mt-3 rounded-[14px] p-3 text-[12px] sm:text-[12px]", tone)}>
       <div className="flex items-start gap-2">
         {level === "ok" ? (
           <Check className="w-3.5 h-3.5 shrink-0 mt-0.5" strokeWidth={3} />

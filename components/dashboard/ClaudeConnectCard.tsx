@@ -353,7 +353,7 @@ function Section({
   children: React.ReactNode;
 }) {
   return (
-    <div className="overflow-hidden rounded-2xl border border-[var(--line)]">
+    <div className="overflow-hidden rounded-[14px] border border-[var(--line)]">
       <button
         type="button"
         onClick={onToggle}
@@ -381,7 +381,7 @@ export function CodeBlock({ title, code, onCopy }: { title: string; code: string
           <Copy size={12} /> Salin
         </button>
       </div>
-      <pre className="max-w-full overflow-x-auto rounded-xl border border-[var(--line)] bg-[var(--pill-bg)] p-3 font-mono text-[12px] leading-relaxed">
+      <pre className="max-w-full overflow-x-auto rounded-[14px] border border-[var(--line)] bg-[var(--pill-bg)] p-3 font-mono text-[12px] leading-relaxed">
         {code}
       </pre>
     </div>
@@ -389,7 +389,7 @@ export function CodeBlock({ title, code, onCopy }: { title: string; code: string
 }
 
 /**
- * Kartu "Konektor AI (MCP)" di Settings.
+ * Kartu "Konektor AI (MCP)" di Pengaturan.
  * Hanya berisi yang dipakai langsung: URL, token, konfigurasi, OAuth, dan izin deploy.
  * Penjelasan, tutorial per aplikasi, dan contoh prompt ada di Docs → "Konektor AI (MCP)".
  */
@@ -420,7 +420,7 @@ export function ClaudeConnectCard({
   const [ttlDays, setTtlDays] = React.useState<number>(30);
   const [busy, setBusy] = React.useState(false);
 
-  // State Test Konektor Interaktif
+  // State Tes konektor Interaktif
   const [testState, setTestState] = React.useState<
     | { status: "idle" }
     | { status: "testing" }
@@ -675,13 +675,13 @@ export function ClaudeConnectCard({
             className="pill inline-flex shrink-0 items-center justify-center gap-1.5 px-3.5 py-2 text-[12px] font-medium disabled:opacity-50"
           >
             {testState.status === "testing" ? <Loader2 size={13} className="animate-spin" /> : <Zap size={13} />}
-            Test Konektor
+            Tes konektor
           </button>
         }
       />
 
       {testState.status === "ok" && (
-        <div className="mt-3 flex items-start gap-2 rounded-2xl bg-[var(--ok-bg)] px-3.5 py-2.5 text-[12px] text-ok-fg">
+        <div className="mt-3 flex items-start gap-2 rounded-[14px] bg-[var(--ok-bg)] px-3.5 py-2.5 text-[12px] text-ok-fg">
           <ShieldCheck size={14} className="mt-0.5 shrink-0" />
           <span>
             Server MCP v{testState.version} aktif · {testState.toolCount} tool, {testState.promptCount} prompt · {testState.latencyMs} ms
@@ -689,7 +689,7 @@ export function ClaudeConnectCard({
         </div>
       )}
       {testState.status === "error" && (
-        <div className="mt-3 rounded-2xl bg-[var(--bad-bg)] px-3.5 py-2.5 text-[12px] text-bad-fg">
+        <div className="mt-3 rounded-[14px] bg-[var(--bad-bg)] px-3.5 py-2.5 text-[12px] text-bad-fg">
           Gagal menguji endpoint MCP: {testState.message}
         </div>
       )}
@@ -701,7 +701,7 @@ export function ClaudeConnectCard({
           value={mcpUrl ?? "Memuat…"}
           aria-label="URL konektor MCP Depup"
           onFocus={(e) => e.currentTarget.select()}
-          className="min-w-0 flex-1 rounded-xl border border-[var(--line)] bg-[var(--pill-bg)] px-3.5 py-2.5 font-mono text-[13px] outline-none"
+          className="min-w-0 flex-1 rounded-[14px] border border-[var(--line)] bg-[var(--pill-bg)] px-3.5 py-2.5 font-mono text-[13px] outline-none"
         />
         <button
           type="button"
@@ -743,7 +743,7 @@ export function ClaudeConnectCard({
                     setShowMoreSnippets(false);
                   }}
                   className={cn(
-                    "shrink-0 rounded-xl border px-3.5 py-2 text-left text-[13px] font-semibold transition sm:shrink",
+                    "shrink-0 rounded-[14px] border px-3.5 py-2 text-left text-[13px] font-semibold transition sm:shrink",
                     active
                       ? "border-violet-500 bg-violet-500/15 text-text"
                       : "border-[var(--line)] bg-[var(--pill-bg)] text-text-muted hover:border-[var(--line-strong)] hover:text-text",
@@ -756,7 +756,7 @@ export function ClaudeConnectCard({
           </div>
 
           {(selectedClient === "claude" || selectedClient === "gemini") && (
-            <p className="rounded-xl bg-[var(--pill-bg)] px-3.5 py-2.5 text-[12px] leading-relaxed text-text-muted">
+            <p className="rounded-[14px] bg-[var(--pill-bg)] px-3.5 py-2.5 text-[12px] leading-relaxed text-text-muted">
               {currentClientMeta.label} Web memakai OAuth otomatis: cukup tempel URL MCP di atas, tanpa token.
               Token di bawah hanya untuk CLI atau file konfigurasi.{" "}
               <DocsLink className="font-medium text-lav-text underline-offset-4 hover:underline">Langkah lengkap</DocsLink>
@@ -764,7 +764,7 @@ export function ClaudeConnectCard({
           )}
 
           {selectedClient === "deepseek" && (
-            <p className="rounded-xl bg-[var(--pill-bg)] px-3.5 py-2.5 text-[12px] leading-relaxed text-text-muted">
+            <p className="rounded-[14px] bg-[var(--pill-bg)] px-3.5 py-2.5 text-[12px] leading-relaxed text-text-muted">
               DeepSeek Harness memakai Bearer Token (bukan login OAuth otomatis). Urutannya: buat token di bawah,
               jalankan langkah terminal di &quot;Cara lain&quot; (ganti &lt;VERSI_DSH&gt; dengan hasil <code>dsh --version</code>),
               tempel YAML ini ke <code>cordis.patch.yml</code> (kalau sudah ada <code>- insert:</code>, tambahkan blok
@@ -781,7 +781,7 @@ export function ClaudeConnectCard({
               aria-label="Durasi Token MCP"
               value={ttlDays}
               onChange={(e) => setTtlDays(Number(e.target.value))}
-              className="input-solid h-10 rounded-xl px-2.5 text-[12px] sm:w-auto"
+              className="input-solid h-10 rounded-[14px] px-2.5 text-[12px] sm:w-auto"
             >
               {TOKEN_TTL_OPTIONS.map((o) => (
                 <option key={o.days} value={o.days}>
@@ -891,7 +891,7 @@ export function ClaudeConnectCard({
                       type="button"
                       onClick={() => setWithSecret(m.on)}
                       className={cn(
-                        "h-10 rounded-xl px-2 text-[12px] font-semibold transition",
+                        "h-10 rounded-[14px] px-2 text-[12px] font-semibold transition",
                         withSecret === m.on ? "bg-violet-500 text-white" : "bg-[var(--pill-bg)] text-text-muted hover:text-text",
                       )}
                     >
@@ -960,7 +960,7 @@ export function ClaudeConnectCard({
           </form>
 
           {newlyCreated && (
-            <div className="space-y-3 rounded-2xl border border-violet-500/40 bg-violet-500/10 p-3.5 text-[12px]">
+            <div className="space-y-3 rounded-[14px] border border-violet-500/40 bg-violet-500/10 p-3.5 text-[12px]">
               <p className="flex items-center gap-1.5 text-[13px] font-semibold">
                 <Check size={15} /> &ldquo;{newlyCreated.client.name}&rdquo; siap dipakai
               </p>
@@ -1016,7 +1016,7 @@ export function ClaudeConnectCard({
           )}
 
           {generatedToken && (
-            <div className="space-y-2 rounded-2xl border border-[var(--line-strong)] bg-[var(--pill-bg)] p-3.5 text-[12px]">
+            <div className="space-y-2 rounded-[14px] border border-[var(--line-strong)] bg-[var(--pill-bg)] p-3.5 text-[12px]">
               <span className="block font-semibold">
                 Bearer Token ({generatedToken.clientName}) · aktif {Math.round(generatedToken.expiresIn / 86400) || 1} hari
               </span>
@@ -1053,7 +1053,7 @@ export function ClaudeConnectCard({
                 { label: "Authorization URL", value: endpoints.authorizationEndpoint },
                 { label: "Token URL", value: endpoints.tokenEndpoint },
               ].map((e) => (
-                <div key={e.label} className="flex items-center justify-between gap-2 rounded-xl bg-[var(--pill-bg)] px-3 py-2">
+                <div key={e.label} className="flex items-center justify-between gap-2 rounded-[14px] bg-[var(--pill-bg)] px-3 py-2">
                   <div className="min-w-0">
                     <span className="block text-[12px] text-text-muted">{e.label}</span>
                     <code className="block truncate text-[12px]">{e.value}</code>
@@ -1078,7 +1078,7 @@ export function ClaudeConnectCard({
             ) : (
               <ul className="mt-2.5 space-y-2.5">
                 {customClients.map((c) => (
-                  <li key={c.id} className="space-y-2.5 rounded-2xl border border-[var(--line)] bg-[var(--pill-bg)] p-3.5 text-[12px]">
+                  <li key={c.id} className="space-y-2.5 rounded-[14px] border border-[var(--line)] bg-[var(--pill-bg)] p-3.5 text-[12px]">
                     <div className="min-w-0 space-y-1">
                       <div className="flex flex-wrap items-center gap-2">
                         <strong className="text-[13px]">{c.name}</strong>

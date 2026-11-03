@@ -12,7 +12,7 @@ export const ACCESS_TTL_SECONDS = 60 * 60; // 1 jam (default alur OAuth standar)
 export const REFRESH_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 hari
 export const CODE_TTL_SECONDS = 5 * 60; // 5 menit
 
-/** Pilihan durasi token langsung untuk konfigurasi OpenCode / Cursor / Codex / Gemini / Claude Code di Settings. */
+/** Pilihan durasi token langsung untuk konfigurasi OpenCode / Cursor / Codex / Gemini / Claude Code di Pengaturan. */
 export const DIRECT_TOKEN_TTL_DAYS = [1, 7, 30, 90, 365] as const;
 
 function secret(): string {
@@ -69,13 +69,13 @@ export interface ClientInfo {
 }
 
 export interface CustomClientInfo extends ClientInfo {
-  /** ID pendek untuk manajemen Custom OAuth di Settings */
+  /** ID pendek untuk manajemen Custom OAuth di Pengaturan */
   kid?: string;
   /** Email pemilik jika dibuat lewat Settings -> Buat OAuth Sendiri */
   owner?: string;
   /** HMAC hash dari client_secret (jika menggunakan client_secret) */
   sh?: string;
-  /** Penanda bahwa client ini dibuat manual oleh user terautentikasi di Settings */
+  /** Penanda bahwa client ini dibuat manual oleh user terautentikasi di Pengaturan */
   custom?: boolean;
   iat?: number;
 }
@@ -247,7 +247,7 @@ export function isAllowedRedirectUri(raw: unknown): boolean {
 }
 
 /**
- * Validasi redirect_uri untuk Custom OAuth yang dibuat langsung oleh user di Settings.
+ * Validasi redirect_uri untuk Custom OAuth yang dibuat langsung oleh user di Pengaturan.
  * Mengizinkan semua domain https:// yang valid (tanpa hash/kredensial), http:// loopback,
  * atau custom URI scheme aplikasi desktop (cursor://, opencode://, codex://, gemini://, claude://, vscode://).
  */

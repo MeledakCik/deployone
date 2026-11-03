@@ -111,7 +111,7 @@ export function PreviewFrame({ html, device }: { html: string; device: "desktop"
           </Btn>
         </div>
       )}
-      <div className={cn(fs ? "min-h-0 flex-1 overflow-auto px-2 pb-2" : "rounded-xl")}>
+      <div className={cn(fs ? "min-h-0 flex-1 overflow-auto px-2 pb-2" : "rounded-[14px]")}>
         <ScaledFrame
           html={html}
           title={`Pratinjau website, tampilan ${device === "desktop" ? "desktop" : "HP"}`}
@@ -119,7 +119,7 @@ export function PreviewFrame({ html, device }: { html: string; device: "desktop"
           vh={vh}
           fitHeight={fs ? Math.max(240, winH - 56) : undefined}
           sandbox="allow-scripts allow-downloads allow-popups allow-popups-to-escape-sandbox"
-          className={fs ? undefined : "rounded-xl"}
+          className={fs ? undefined : "rounded-[14px]"}
         />
       </div>
       {!fs && canFs && (

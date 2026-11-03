@@ -97,7 +97,7 @@ export function OverviewTab({ goto }: { goto: (tab: string) => void }) {
       {/* Yang butuh tindakan didahulukan: warna hanya muncul di sini saat ada sesuatu yang harus dikerjakan */}
       {t.abuseOpen > 0 && (
         <div className="notice notice-bad flex-wrap items-center !rounded-[28px] !p-5 sm:!p-6" role="alert">
-          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[var(--tone-chip)]">
+          <span className="grid h-12 w-12 shrink-0 place-items-center rounded-[14px] bg-[var(--tone-chip)]">
             <ShieldAlert size={22} />
           </span>
           <div className="min-w-0 flex-1">

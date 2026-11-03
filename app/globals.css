@@ -70,6 +70,8 @@
   --sidebar-text: #ffffff;
   --sidebar-muted: rgba(255, 255, 255, 0.98);
   --sidebar-hover: rgba(255, 255, 255, 0.14);
+  /* Kartu profil di kaki sidebar: lebih gelap dari sidebar supaya teks putih lolos kontras AA. */
+  --sidebar-card: rgba(18, 11, 46, 0.22);
   --sidebar-line: rgba(255, 255, 255, 0.22);
   --sidebar-active-bg: #ffffff;
   --sidebar-active-text: #5a39c0;
@@ -155,6 +157,7 @@
   --sidebar-text: #ffffff;
   --sidebar-muted: #b2aec4;
   --sidebar-hover: #30245e;
+  --sidebar-card: #30245e;
   --sidebar-line: #342962;
   --sidebar-active-bg: #7b50ff;
   --sidebar-active-text: #ffffff;
@@ -364,7 +367,7 @@ textarea {
     background: var(--row-hover);
   }
   .stat-card-glass {
-    border-radius: 26px;
+    border-radius: 28px;
     transition: transform 260ms var(--ease-out);
   }
   .stat-card-glass:hover {
@@ -416,7 +419,10 @@ textarea {
     transform: scale(0.98);
   }
   /* Tombol aksen lime (Midnight di atas Lime, kontras 13:1).
-     */
+     Peran lime dibatasi dua hal saja supaya tidak bersaing dengan violet:
+       1. CTA utama yang berada di atas permukaan Midnight (violet kurang kontras di sana).
+       2. Tombol Bantuan (FAB) — selalu lime, supaya bantuan mudah ditemukan di semua halaman.
+     CTA utama di latar terang selalu .btn-primary (violet/ink). */
   .btn-lime {
     background: var(--lime);
     color: var(--lime-text);

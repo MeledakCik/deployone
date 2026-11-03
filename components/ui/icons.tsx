@@ -177,6 +177,8 @@ export const ArrowLeft = lineIcon("ArrowLeft", <><path d="M19 12H5M11 6l-6 6 6 6
 export const ArrowRight = lineIcon("ArrowRight", <><path d="M5 12h14M13 6l6 6-6 6" /></>);
 export const ArrowUpRight = lineIcon("ArrowUpRight", <><path d="M7 17L17 7M9 7h8v8" /></>);
 export const Minus = lineIcon("Minus", <><path d="M6 12h12" /></>);
+// Tanda tambah polos (tanpa kotak) untuk akordeon; Plus dari pack berbentuk "kotak +" yang terbaca sebagai "tambah baru".
+export const PlusPlain = lineIcon("PlusPlain", <><path d="M12 5v14M5 12h14" /></>);
 // Sparkles punya gambar sendiri: sebelumnya beralias ke Pack00 (sama dengan Rocket), sehingga menu "Deploy" dan "AI Web Builder" tampil dengan ikon identik.
 export const Sparkles = lineIcon("Sparkles", <><path d="M10.5 4.5c.7 4.4 3.1 6.8 7.5 7.5-4.4.7-6.8 3.1-7.5 7.5-.7-4.4-3.1-6.8-7.5-7.5 4.4-.7 6.8-3.1 7.5-7.5z" /><path d="M19 3v4M17 5h4" /></>);
 // PlayCircle juga sebelumnya beralias ke Pack00 (jendela-panah); "Lihat cara kerja" dan "Jalankan audit" butuh simbol putar.

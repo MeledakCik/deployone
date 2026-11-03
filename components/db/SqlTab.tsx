@@ -42,7 +42,7 @@ export default function SqlTab({ id, onChanged }: { id: string; onChanged: () =>
         }}
         spellCheck={false}
         rows={7}
-        className="w-full rounded-xl bg-[#1e1150] p-3.5 font-mono text-[13px] leading-relaxed text-white caret-lime-400 focus:outline-none focus:ring-2 ring-[var(--ring)]"
+        className="w-full rounded-[14px] bg-[#1e1150] p-3.5 font-mono text-[13px] leading-relaxed text-white caret-lime-400 focus:outline-none focus:ring-2 ring-[var(--ring)]"
       />
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
         <Btn variant="primary" onClick={run} disabled={busy || !sql.trim()}>
@@ -61,7 +61,7 @@ export default function SqlTab({ id, onChanged }: { id: string; onChanged: () =>
                 <Notice kind="error">{r.error}</Notice>
               ) : r.columns.length ? (
                 <>
-                  <div className="max-h-[60vh] overflow-auto rounded-xl">
+                  <div className="max-h-[60vh] overflow-auto rounded-[14px]">
                     <table className="w-full">
                       <thead className="bg-[var(--pill-bg)]">
                         <tr>

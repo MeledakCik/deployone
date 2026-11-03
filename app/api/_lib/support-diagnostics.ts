@@ -80,7 +80,7 @@ function classifyError(e: unknown, platformLabel: string): Pick<DiagCheck, "stat
   const code = (e as { code?: string })?.code;
   const msg = e instanceof Error ? e.message : "";
   if (code === "invalid_token" || code === "github_auth_required") {
-    return { status: "problem", blame: "user", detail: "Token ditolak (tidak valid / kedaluwarsa / izin kurang). Perbarui di Settings." };
+    return { status: "problem", blame: "user", detail: "Token ditolak (tidak valid / kedaluwarsa / izin kurang). Perbarui di Pengaturan." };
   }
   if (msg === "timeout") {
     return { status: "warn", blame: "platform", detail: `${platformLabel} tidak merespons dalam 7 detik.` };
@@ -234,7 +234,7 @@ export async function runDiagnostics(email: string, focusInput: Platform[]): Pro
           }
           const chosen = tokens.cloudflareAccountId?.trim();
           if (chosen && !accounts.some((a) => a.id === chosen)) {
-            return { id: "token-cloudflare", label: "Token Cloudflare", status: "problem", blame: "user", detail: "Token valid, tapi akun Cloudflare yang dipilih di Settings tidak ada di token ini. Klik Test Koneksi di Settings untuk memilih ulang." } as DiagCheck;
+            return { id: "token-cloudflare", label: "Token Cloudflare", status: "problem", blame: "user", detail: "Token valid, tapi akun Cloudflare yang dipilih di Pengaturan tidak ada di token ini. Klik Tes koneksi di Pengaturan untuk memilih ulang." } as DiagCheck;
           }
           return { id: "token-cloudflare", label: "Token Cloudflare", status: "ok", blame: "none", detail: `Valid (${accounts.length} akun terlihat).` } as DiagCheck;
         } catch (e) {
@@ -328,7 +328,7 @@ function notSet(id: string, label: string, focus: Platform[]): DiagCheck {
     label: `Token ${label}`,
     status: asked ? "problem" : "unknown",
     blame: asked ? "user" : "none",
-    detail: asked ? `Belum diisi di Settings — deploy ke ${label} tidak bisa jalan tanpa token.` : "Belum diisi di Settings.",
+    detail: asked ? `Belum diisi di Pengaturan — deploy ke ${label} tidak bisa jalan tanpa token.` : "Belum diisi di Pengaturan.",
   };
 }
 

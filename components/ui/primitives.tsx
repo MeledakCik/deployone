@@ -17,7 +17,7 @@ import { cn } from "@/lib/utils";
 export function PageTitle({ title, desc }: { title: string; desc?: React.ReactNode }) {
   return (
     <div className="min-w-0">
-      <h2 className="page-title">{title}</h2>
+      <h1 className="page-title">{title}</h1>
       {desc && <p className="mt-1.5 max-w-2xl text-[14px] leading-relaxed text-text-muted">{desc}</p>}
     </div>
   );
@@ -40,7 +40,7 @@ export function Card({ title, action, children, className }: { title?: string; a
     <section className={cn("surface-solid overflow-hidden", className)}>
       {(title || action) && (
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--surface-line)] px-6 py-5">
-          <h3 className="text-[16px] font-bold tracking-tight">{title}</h3>
+          <h2 className="text-[16px] font-bold tracking-tight">{title}</h2>
           {action}
         </div>
       )}
@@ -50,7 +50,7 @@ export function Card({ title, action, children, className }: { title?: string; a
 }
 
 /**
- * Kepala kartu bagian (mis. di Settings): ikon dalam kotak lilac, judul, deskripsi singkat,
+ * Kepala kartu bagian (mis. di Pengaturan): ikon dalam kotak lilac, judul, deskripsi singkat,
  * dan aksi opsional di kanan. Satu bentuk supaya semua kartu pengaturan terlihat sama.
  */
 export function SectionHead({
@@ -75,9 +75,9 @@ export function SectionHead({
           </span>
         )}
         <div className="min-w-0">
-          <h3 id={id} className="text-[16px] font-bold tracking-tight">
+          <h2 id={id} className="text-[16px] font-bold tracking-tight">
             {title}
-          </h3>
+          </h2>
           {desc && <p className="mt-0.5 text-[13px] leading-relaxed text-text-muted">{desc}</p>}
         </div>
       </div>
@@ -201,7 +201,7 @@ export function Loading({ label = "Memuat…" }: { label?: string }) {
 
 /** Kerangka pemuatan: blok abu-abu berdenyut yang meniru bentuk konten akhir. */
 export function Skeleton({ className }: { className?: string }) {
-  return <div aria-hidden className={cn("animate-pulse rounded-xl bg-[var(--pill-bg)]", className)} />;
+  return <div aria-hidden className={cn("animate-pulse rounded-[14px] bg-[var(--pill-bg)]", className)} />;
 }
 
 export function ErrorBox({ message, onRetry }: { message: string; onRetry?: () => void }) {
@@ -237,7 +237,7 @@ export function Empty({
           <Icon size={22} />
         </span>
       )}
-      {title && <h3 className="text-[16px] font-bold tracking-tight">{title}</h3>}
+      {title && <h2 className="text-[16px] font-bold tracking-tight">{title}</h2>}
       {children && <p className="max-w-sm text-[13px] leading-relaxed text-text-muted">{children}</p>}
       {action && <div className="mt-1 flex flex-wrap items-center justify-center gap-2">{action}</div>}
     </div>

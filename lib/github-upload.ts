@@ -4,7 +4,7 @@
  * Kenapa dari browser, bukan lewat route /api? Fungsi serverless di Vercel
  * membatasi body request ±4,5MB, jadi zip/folder project biasa langsung
  * ditolak. GitHub REST API mengizinkan CORS, dan PAT user memang sudah
- * tersimpan di Settings, jadi file dikirim langsung ke api.github.com.
+ * tersimpan di Pengaturan, jadi file dikirim langsung ke api.github.com.
  *
  * Alur: baca file → filter → buat repo (auto_init) → buat blob per file →
  * buat tree → commit → geser ref branch ke commit itu.
@@ -449,7 +449,7 @@ function ghMessage(data: unknown): string {
 
 function failFor(status: number, data: unknown, fallback: string): UploadError {
   if (status === 401) {
-    return new UploadError("GitHub Token tidak valid atau sudah kedaluwarsa. Perbarui di Settings.", 401);
+    return new UploadError("GitHub Token tidak valid atau sudah kedaluwarsa. Perbarui di Pengaturan.", 401);
   }
   if (status === 403) {
     return new UploadError(
@@ -485,7 +485,7 @@ export async function uploadToGithub(files: UploadFile[], opts: UploadOptions): 
   const report = (p: UploadProgress) => onProgress?.(p);
   const repoName = sanitizeRepoName(opts.repoName);
   if (!repoName) throw new UploadError("Nama repo belum valid. Pakai huruf, angka, titik, strip, atau underscore.");
-  if (!pat.trim()) throw new UploadError("GitHub Token belum diisi. Isi di Settings dulu.");
+  if (!pat.trim()) throw new UploadError("GitHub Token belum diisi. Isi di Pengaturan dulu.");
 
   /* ---- 1. Akun & repo ---- */
   report({ phase: "repo", done: 0, total: 1, message: "Menghubungkan ke GitHub…" });

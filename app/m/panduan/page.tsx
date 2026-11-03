@@ -8,25 +8,25 @@ const GUIDES = [
   {
     Icon: KeyRound,
     title: "Ambil token Vercel",
-    steps: ["Buka halaman Tokens di Vercel.", "Buat token baru (Scope: akun kamu).", "Salin lalu tempel di Settings."],
+    steps: ["Buka halaman Tokens di Vercel.", "Buat token baru (Scope: akun kamu).", "Salin lalu tempel di Pengaturan."],
     link: { href: "https://vercel.com/account/tokens", label: "Buka vercel.com/account/tokens" },
   },
   {
     Icon: KeyRound,
     title: "Ambil token Railway",
-    steps: ["Buka Account → Tokens di Railway.", "Buat Account token baru (bukan project token).", "Tempel di Settings, lalu pilih Railway di tab Deploy."],
+    steps: ["Buka Account → Tokens di Railway.", "Buat Account token baru (bukan project token).", "Tempel di Pengaturan, lalu pilih Railway di tab Deploy."],
     link: { href: "https://railway.com/account/tokens", label: "Buka railway.com/account/tokens" },
   },
   {
     Icon: KeyRound,
     title: "Ambil token Cloudflare",
-    steps: ["Buka My Profile → API Tokens di Cloudflare.", "Buat token dengan izin Cloudflare Pages: Edit.", "Tempel di Settings dan pilih akun Cloudflare-mu di sana."],
+    steps: ["Buka My Profile → API Tokens di Cloudflare.", "Buat token dengan izin Cloudflare Pages: Edit.", "Tempel di Pengaturan dan pilih akun Cloudflare-mu di sana."],
     link: { href: "https://dash.cloudflare.com/profile/api-tokens", label: "Buka dash.cloudflare.com/profile/api-tokens" },
   },
   {
     Icon: GitBranch,
     title: "Ambil GitHub token (repo privat)",
-    steps: ["Buka Settings → Developer settings → Tokens.", "Buat token dengan izin baca repo (contents).", "Tempel di Settings. Repo publik tidak butuh token."],
+    steps: ["Buka Pengaturan → Developer settings → Tokens.", "Buat token dengan izin baca repo (contents).", "Tempel di Pengaturan. Repo publik tidak butuh token."],
     link: { href: "https://github.com/settings/tokens", label: "Buka github.com/settings/tokens" },
   },
   {

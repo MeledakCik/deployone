@@ -10,9 +10,10 @@ import { DeployModal } from "@/components/dashboard/DeployModal";
 import { useAuth } from "@/lib/auth-context";
 import type { AuthUser } from "@/types";
 import { GoogleMark } from "@/components/landing/GoogleLoginModal";
+import { VIEW_ROUTE } from "@/lib/mobile-routes";
 const TABS = [
   { href: "/m", label: "Beranda", Icon: LayoutDashboard },
-  { href: "/m/proyek", label: "Proyek", Icon: FolderKanban },
+  { href: "/m/proyek", label: "Project", Icon: FolderKanban },
   { href: "/m/deploy", label: "Deploy", Icon: Rocket, fab: true },
   { href: "/m/panduan", label: "Panduan", Icon: BookOpen },
   { href: "/m/akun", label: "Akun", Icon: UserRound },
@@ -20,39 +21,24 @@ const TABS = [
 
 const TITLES: Record<string, string> = {
   "/m": "Beranda",
-  "/m/proyek": "Proyek",
+  "/m/proyek": "Project",
   "/m/deploy": "Deploy",
   "/m/panduan": "Panduan",
   "/m/akun": "Akun",
-  "/m/riwayat": "Riwayat Deploy",
-  "/m/kelola": "Kelola proyek",
-  "/m/upload": "Unggah Proyek",
+  "/m/riwayat": "Riwayat deploy",
+  "/m/kelola": "Kelola project",
+  "/m/upload": "Unggah project",
   "/m/link-instan": "Link Instan",
   "/m/ai": "AI Web Builder",
   "/m/convert": "Konversi",
   "/m/domain": "Domain",
-  "/m/env": "Environment",
-  "/m/pengaturan": "Settings",
+  "/m/env": "Variabel env",
+  "/m/pengaturan": "Pengaturan",
   "/m/donasi": "Donasi",
   "/m/komunitas": "Komunitas",
   "/m/docs": "Dokumentasi",
 };
 
-/** Halaman web dashboard yang di app ditampilkan sebagai sub-halaman /m/*. */
-const VIEW_ROUTE: Record<string, string> = {
-  deploy: "/m/deploy",
-  projects: "/m/kelola",
-  domains: "/m/domain",
-  env: "/m/env",
-  docs: "/m/docs",
-  settings: "/m/pengaturan",
-  donate: "/m/donasi",
-  community: "/m/komunitas",
-  upload: "/m/upload",
-  hosting: "/m/link-instan",
-  ai: "/m/ai",
-  convert: "/m/convert",
-};
 export default function MobileLayout({ children }: { children: React.ReactNode }) {
   const { user, ready, login, loggingIn, loginError } = useAuth();
   const pathname = usePathname();

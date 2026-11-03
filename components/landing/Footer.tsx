@@ -3,11 +3,13 @@ import Image from "next/image";
 import { DashboardLink } from "./DashboardLink";
 import { InstagramIcon, LinkedInIcon, TikTokIcon, WhatsAppIcon, XIcon } from "./SocialIcons";
 import { COMMUNITY_LINKS, type CommunityKey } from "@/lib/community";
+import { Users } from "@/components/ui/icons";
 
 /** Akun resmi DepUp. Daftar tautannya ada di lib/community.ts. */
 const ICONS: Record<CommunityKey, React.ComponentType<{ size?: number }>> = {
   "wa-channel": WhatsAppIcon,
-  "wa-community": WhatsAppIcon,
+  // Ikon berbeda dari Saluran WhatsApp, supaya dua tautan WhatsApp bisa dibedakan tanpa membaca label.
+  "wa-community": Users,
   x: XIcon,
   instagram: InstagramIcon,
   tiktok: TikTokIcon,
@@ -17,7 +19,8 @@ const ICONS: Record<CommunityKey, React.ComponentType<{ size?: number }>> = {
 /** Footer berada di atas kanvas ungu, jadi teksnya putih (token sidebar), bukan Ink. */
 export function Footer() {
   return (
-    <footer style={{ color: "var(--sidebar-text)" }}>
+    // Latar sedikit digelapkan (Ink 18%) di atas kanvas ungu: teks putih 13px jadi ≥ 5:1 (sebelumnya ±4,2:1, di bawah WCAG AA).
+    <footer style={{ color: "var(--sidebar-text)", background: "rgba(18, 11, 46, 0.18)" }}>
       <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 px-5 py-10 sm:px-8 md:flex-row md:items-center">
         <div className="flex flex-col gap-3">
           <div className="flex items-center gap-2.5">

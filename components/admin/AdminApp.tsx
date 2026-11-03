@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { LayoutDashboard, ShieldAlert, Link2, Users, MessageCircle, Settings2, History, ShieldCheck, LogOut, ArrowLeft, Database, Network } from "@/components/ui/icons";
+import { LayoutDashboard, ShieldAlert, Link2, Users, MessageCircle, Settings2, History, ShieldCheck, LogOut, ArrowLeft, Database, Network, Bot } from "@/components/ui/icons";
 import { Megaphone } from "lucide-react";
 import { useAuth } from "@/lib/auth-context";
 import { useToast } from "@/components/ui/Toast";
@@ -23,6 +23,7 @@ import { AuditTab } from "./AuditTab";
 import { HealthTab } from "./HealthTab";
 import { DatabasesTab } from "./DatabasesTab";
 import { McpTab } from "./McpTab";
+import { EngineTab } from "./EngineTab";
 
 const TABS = [
   { id: "overview", label: "Ringkasan", icon: LayoutDashboard },
@@ -31,6 +32,7 @@ const TABS = [
   { id: "users", label: "Pengguna", icon: Users },
   { id: "databases", label: "Database", icon: Database },
   { id: "mcp", label: "Konektor MCP", icon: Network },
+  { id: "engine", label: "Mesin AI", icon: Bot },
   { id: "support", label: "Bantuan", icon: MessageCircle },
   { id: "promo", label: "Promosi", icon: Megaphone },
   { id: "health", label: "Audit sistem", icon: ShieldCheck },
@@ -120,12 +122,12 @@ export function AdminApp({ name, email }: { name: string; email: string }) {
           onCloseDrawerRef={closeRef}
           footer={
             <>
-              <div className="flex items-center gap-3 rounded-2xl bg-[var(--sidebar-hover)] p-3 text-white">
+              <div className="flex items-center gap-3 rounded-[14px] bg-[var(--sidebar-hover)] p-3 text-white">
                 {picture ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={picture} alt={name} referrerPolicy="no-referrer" className="h-9 w-9 shrink-0 rounded-xl object-cover" />
+                  <img src={picture} alt={name} referrerPolicy="no-referrer" className="h-9 w-9 shrink-0 rounded-[14px] object-cover" />
                 ) : (
-                  <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-xl text-[12px] font-semibold text-white ${avatarColorFor(email)}`}>{getInitials(name)}</span>
+                  <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-[14px] text-[12px] font-semibold text-white ${avatarColorFor(email)}`}>{getInitials(name)}</span>
                 )}
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-[13px] font-semibold">{name}</span>
@@ -153,6 +155,7 @@ export function AdminApp({ name, email }: { name: string; email: string }) {
               {tab === "users" && <UsersTab toast={showToast} />}
               {tab === "databases" && <DatabasesTab toast={showToast} />}
               {tab === "mcp" && <McpTab />}
+              {tab === "engine" && <EngineTab toast={showToast} />}
               {tab === "support" && <SupportTab toast={showToast} />}
               {tab === "promo" && <PromoTab toast={showToast} />}
               {tab === "health" && <HealthTab toast={showToast} />}

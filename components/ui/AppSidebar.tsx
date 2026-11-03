@@ -33,7 +33,7 @@ export function BrandMark({ size, className }: { size: number; className: string
 
 /** Kelas untuk item menu sekunder di footer sidebar (Logout, Panel Admin, dst.). */
 export const SIDEBAR_LINK_CLASS =
-  "flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-[14px] font-medium text-[var(--sidebar-muted)] transition hover:bg-[var(--sidebar-hover)] hover:text-white";
+  "flex w-full items-center gap-3 rounded-[14px] px-3.5 py-3 text-[14px] font-medium text-[var(--sidebar-muted)] transition hover:bg-[var(--sidebar-hover)] hover:text-white";
 
 /**
  * Sidebar bersama Dashboard dan Panel Admin: top bar + drawer di mobile, kolom melayang di desktop,
@@ -130,7 +130,7 @@ export function AppSidebar({
           type="button"
           onClick={() => setOpen(true)}
           aria-label="Buka menu"
-          className="relative grid h-10 w-10 place-items-center justify-self-start rounded-xl text-[var(--sidebar-muted)] transition hover:bg-[var(--sidebar-hover)] hover:text-white"
+          className="relative grid h-10 w-10 place-items-center justify-self-start rounded-[14px] text-[var(--sidebar-muted)] transition hover:bg-[var(--sidebar-hover)] hover:text-white"
         >
           <Menu size={19} />
           {mobileDot && <span className="absolute right-1.5 top-1.5 h-2.5 w-2.5 rounded-full bg-bad ring-2 ring-[var(--sidebar-bg)]" role="img" aria-label={mobileDotLabel} />}
@@ -152,7 +152,7 @@ export function AppSidebar({
       >
         <div className="mb-4 flex items-center justify-between px-1.5 py-2">
           <div className="flex items-center gap-2.5">
-            <BrandMark size={36} className="h-9 w-9 rounded-xl" />
+            <BrandMark size={36} className="h-9 w-9 rounded-[14px]" />
             <span className="leading-tight">
               <span className="block text-[18px] font-bold tracking-tight">Depup</span>
               {tag && <span className="mt-1 inline-block rounded-full bg-[var(--lime)] px-2 py-0.5 text-[12px] font-bold text-[var(--lime-text)]">{tag}</span>}
@@ -170,8 +170,8 @@ export function AppSidebar({
 
         <nav ref={navRef} className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain pr-0.5 [mask-image:linear-gradient(to_bottom,#000_calc(100%-28px),transparent)]" aria-label={navLabel}>
           {groups.map((g, gi) => (
-            <div key={g.label ?? gi} className={gi === 0 ? "space-y-1" : "mt-4 space-y-1"}>
-              {g.label && <p className="px-3.5 pb-1 text-[12px] font-semibold text-[var(--sidebar-muted)]">{g.label}</p>}
+            <div key={g.label ?? gi} className={gi === 0 ? "space-y-0.5" : "mt-3 space-y-0.5"}>
+              {g.label && <p className="px-3.5 pb-0.5 text-[12px] font-semibold text-[var(--sidebar-muted)]">{g.label}</p>}
               {g.items.map((item) => {
                 const isActive = active === item.id;
                 return (
@@ -183,7 +183,7 @@ export function AppSidebar({
                     type="button"
                     data-view={item.id}
                     aria-current={isActive ? "page" : undefined}
-                    className={`nav relative z-10 flex w-full items-center gap-3 rounded-2xl px-3.5 py-3 text-[14px] font-medium transition ${
+                    className={`nav relative z-10 flex w-full items-center gap-3 rounded-[14px] px-3.5 py-3 text-[14px] font-medium transition md:py-2 ${
                       isActive ? "text-[var(--sidebar-active-text)]" : "text-[var(--sidebar-muted)] hover:bg-[var(--sidebar-hover)] hover:text-white"
                     }`}
                     onClick={() => onSelect(item.id)}

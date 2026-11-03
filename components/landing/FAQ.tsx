@@ -1,13 +1,17 @@
 "use client";
 
 import * as React from "react";
-import { Plus } from "@/components/ui/icons";
+import { PlusPlain } from "@/components/ui/icons";
 import { DashboardLink } from "./DashboardLink";
 import { HOME_FAQS as FAQS } from "@/lib/site-content";
 import { jsonLdString } from "@/lib/seo";
 
 export function FAQ() {
   const [open, setOpen] = React.useState<number | null>(0);
+  // Tampilkan pertanyaan terpenting dulu; sisanya di balik satu tombol supaya halaman tidak terlalu panjang.
+  const INITIAL = 6;
+  const [showAll, setShowAll] = React.useState(false);
+  const visible = showAll ? FAQS : FAQS.slice(0, INITIAL);
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -29,10 +33,10 @@ export function FAQ() {
       </div>
 
       <div className="mx-auto flex max-w-3xl flex-col gap-3">
-        {FAQS.map((f, i) => {
+        {visible.map((f, i) => {
           const isOpen = open === i;
           return (
-            <div key={f.q} className={`rounded-[24px] transition-colors ${isOpen ? "bg-tone-lilac" : "bg-[var(--frame)]"}`}>
+            <div key={f.q} className={`rounded-card transition-colors ${isOpen ? "bg-tone-lilac" : "bg-[var(--frame)]"}`}>
               <h3>
                 <button
                   type="button"
@@ -40,7 +44,7 @@ export function FAQ() {
                   aria-expanded={isOpen}
                   aria-controls={`faq-a-${i}`}
                   onClick={() => setOpen(isOpen ? null : i)}
-                  className="flex w-full items-center justify-between gap-4 rounded-[24px] px-5 py-5 text-left sm:px-7"
+                  className="flex w-full items-center justify-between gap-4 rounded-card px-5 py-5 text-left sm:px-7"
                 >
                   <span className="text-[16px] font-semibold tracking-[-0.01em] text-text sm:text-[18px]">{f.q}</span>
                   <span
@@ -49,7 +53,7 @@ export function FAQ() {
                     style={{ background: "var(--ink-fill)", color: "var(--ink-fill-text)" }}
                     aria-hidden="true"
                   >
-                    <Plus size={16} />
+                    <PlusPlain size={16} />
                   </span>
                 </button>
               </h3>
@@ -62,6 +66,22 @@ export function FAQ() {
           );
         })}
       </div>
+
+      {FAQS.length > INITIAL && (
+        <div className="mt-4 flex justify-center">
+          <button
+            type="button"
+            onClick={() => {
+              setShowAll((v) => !v);
+              if (showAll && open !== null && open >= INITIAL) setOpen(null);
+            }}
+            aria-expanded={showAll}
+            className="pill btn-md font-semibold"
+          >
+            {showAll ? "Tampilkan lebih sedikit" : `Lihat ${FAQS.length - INITIAL} pertanyaan lain`}
+          </button>
+        </div>
+      )}
 
       <p className="mt-8 text-center text-[14px] text-text-muted">
         Siap mencoba?{" "}

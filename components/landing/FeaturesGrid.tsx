@@ -18,7 +18,7 @@ function Icon({ children, dark }: { children: React.ReactNode; dark?: boolean })
 
 /** Cuplikan kecil di dasar kartu: putih solid, radius 16. */
 function Mini({ children, className = "" }: { children: React.ReactNode; className?: string }) {
-  return <div className={`rounded-2xl bg-[var(--surface-solid)] p-3.5 font-mono text-[12px] break-words ${className}`}>{children}</div>;
+  return <div className={`rounded-[14px] bg-[var(--surface-solid)] p-3.5 font-mono text-[12px] break-words ${className}`}>{children}</div>;
 }
 
 const CARD = "flex flex-col justify-between rounded-card p-6 sm:p-7";
@@ -64,7 +64,7 @@ export function FeaturesGrid() {
               ["Cloudflare Pages", "Situs statis & SPA"],
               ["Railway", "Server, Docker, bahasa lain"],
             ].map(([name, note]) => (
-              <div key={name} className="flex flex-col gap-1.5 rounded-2xl bg-night-15 p-4">
+              <div key={name} className="flex flex-col gap-1.5 rounded-[14px] bg-night-15 p-4">
                 <span className="text-[14px] font-semibold text-white">{name}</span>
                 <span className="text-[13px] text-night-80">{note}</span>
                 <span className="mt-1 self-start">
@@ -175,7 +175,7 @@ export function FeaturesGrid() {
             <h3 className={H3}>Riwayat deploy</h3>
             <p className={P}>Lihat deploy terakhir, hasilnya, dan buka lagi dengan satu klik.</p>
           </div>
-          <div className="flex h-14 items-end gap-1.5 rounded-2xl bg-[var(--surface-solid)] p-2.5" aria-hidden="true">
+          <div className="flex h-14 items-end gap-1.5 rounded-[14px] bg-[var(--surface-solid)] p-2.5" aria-hidden="true">
             {[
               "h-[40%] bg-violet-200",
               "h-[60%] bg-violet-200",

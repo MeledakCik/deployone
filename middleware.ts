@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 import { rateLimit, clientIp } from "@/app/api/_lib/rate-limit";
-import { slugFromHost, SLUG_RE } from "@/app/api/_lib/tunnel-host";
+import { slugFromHost, slugFromReferer, isTunnelSlug, tunnelPathHost, sameHost, SLUG_RE } from "@/app/api/_lib/tunnel-host";
 import { isAdminEmail } from "@/app/api/_lib/admin-config";
 import { kv } from "@vercel/kv";
 export const config = {
@@ -11,10 +11,41 @@ export const config = {
       source: "/:path*",
       has: [{ type: "host", value: "[a-z0-9-]*-[a-hj-km-np-z2-9]{5}\\..+" }],
     },
+    // Link Gaib mode path: aset & request ber-URL absolut dari halaman tunnel (/_next/static, /logo.png, dst.)
+    // juga harus lewat middleware supaya diteruskan ke tunnel, bukan dilayani Depup.
+    {
+      source: "/:path*",
+      has: [{ type: "header", key: "referer", value: ".*/t/[a-z0-9-]*-[a-hj-km-np-z2-9]{5}([/?#].*)?" }],
+    },
+    {
+      source: "/:path*",
+      has: [{ type: "header", key: "referer", value: "https?://[^/]+/[a-z0-9-]*-[a-hj-km-np-z2-9]{5}([/?#].*)?" }],
+    },
   ],
 };
 
 const SESSION_COOKIE = "depup_session";
+
+/**
+ * Teruskan request ke handler tunnel /t/<slug>. x-depup-target = path asli pengunjung,
+ * x-depup-prefix = awalan URL publik tunnel (untuk menulis ulang redirect & cookie). Keduanya selalu
+ * ditimpa di sini, jadi tidak bisa dipalsukan klien.
+ */
+// Penanda internal: request hasil rewrite tunnelRewrite bisa melewati middleware lagi (path /t/...).
+// Nilainya acak per proses, jadi klien tidak bisa memalsukannya.
+const TUNNEL_RW_NONCE = crypto.randomUUID();
+
+function tunnelRewrite(req: NextRequest, slug: string, target: string, prefix: string): NextResponse {
+  const headers = new Headers(req.headers);
+  headers.set("x-depup-rw", TUNNEL_RW_NONCE);
+  headers.set("x-depup-target", target);
+  headers.set("x-depup-prefix", prefix);
+  const path = target.split("?")[0];
+  const rewritten = new URL(`/t/${slug}${path === "/" ? "" : path}`, req.url);
+  const res = NextResponse.rewrite(rewritten, { request: { headers } });
+  res.headers.set("X-Robots-Tag", "noindex, nofollow");
+  return res;
+}
 function isPublicPath(pathname: string): boolean {
   return (
     pathname === "/api/auth" ||
@@ -54,7 +85,7 @@ const CUSTOM_LIMITS: Record<string, { limit: number; windowSeconds: number }> = 
   "support/report": { limit: 5, windowSeconds: 60 },
   "donate/create": { limit: 6, windowSeconds: 60 },
   "donate/status": { limit: 30, windowSeconds: 60 },
-  "ai/site": { limit: 6, windowSeconds: 60 },
+  "ai/site": { limit: 30, windowSeconds: 60 }, // mesin lokal: murah, tidak memanggil AI luar
   "ai/key": { limit: 10, windowSeconds: 60 },
   convert: { limit: 40, windowSeconds: 60 },
   "tunnel/create": { limit: 20, windowSeconds: 60 },
@@ -168,6 +199,7 @@ export async function middleware(req: NextRequest) {
   if (hostSlug) {
     const headers = new Headers(req.headers);
     headers.set("x-depup-target", pathname + search);
+    headers.set("x-depup-prefix", "");
     const rewritten = new URL(`/t/${hostSlug}${pathname === "/" ? "" : pathname}`, req.url);
     const res = NextResponse.rewrite(rewritten, { request: { headers } });
     if (isDepushSubdomain) {
@@ -176,10 +208,62 @@ export async function middleware(req: NextRequest) {
     return res;
   }
 
+  /* ---------- Link Gaib mode path (ala ngrok) ---------- */
+  const reqHost = req.headers.get("host");
+  const pathHost = tunnelPathHost();
+  const onPathHost = !!pathHost && sameHost(reqHost, pathHost);
+
+  // Host khusus tunnel (TUNNEL_PATH_HOST): /<slug>/... -> /t/<slug>/...
+  if (onPathHost) {
+    const pm = /^\/([^/]+)(\/.*)?$/.exec(pathname);
+    if (pm && isTunnelSlug(pm[1])) {
+      return tunnelRewrite(req, pm[1], (pm[2] ?? "/") + search, "/" + pm[1]);
+    }
+  }
+
+  // Request ber-URL absolut dari halaman tunnel ("/style.css", "/_next/...", fetch("/api/..."), <a href="/about">)
+  // dikenali dari Referer, lalu diteruskan ke tunnel yang sama. Tanpa ini request itu jatuh ke route Depup:
+  // 404, atau "Sesi login habis" / login Google Depup untuk /api dan /dashboard.
+  const isTunnelPath = /^\/t\/[^/]+(\/|$)/.test(pathname);
+  if (!isTunnelPath && pathname !== "/laporkan") {
+    const refSlug = slugFromReferer(req.headers.get("referer"), reqHost, onPathHost);
+    if (refSlug) {
+      const prefix = onPathHost ? `/${refSlug}` : `/t/${refSlug}`;
+      const mode = req.headers.get("sec-fetch-mode");
+      const dest = req.headers.get("sec-fetch-dest");
+      const isNavigation = mode === "navigate" || dest === "document" || dest === "iframe";
+      if (isNavigation) {
+        // Navigasi: arahkan ke URL tunnel yang benar supaya address bar & Referer berikutnya tetap di dalam tunnel.
+        // Location relatif: tetap di host yang dibuka pengunjung (req.nextUrl bisa memakai nama host lain di dev/proxy).
+        // Origin diambil dari Referer (sudah dipastikan host-nya sama), supaya pengunjung tetap di host yang ia buka.
+        const location = `${new URL(req.headers.get("referer") as string).origin}${prefix}${pathname}${search}`;
+        return new NextResponse(null, {
+          status: 307,
+          headers: { location, "cache-control": "no-store", "x-robots-tag": "noindex, nofollow" },
+        });
+      }
+      return tunnelRewrite(req, refSlug, pathname + search, prefix);
+    }
+  }
+
+  // Host khusus tunnel tidak melayani halaman Depup lain.
+  if (onPathHost) {
+    return new NextResponse("Link tidak ditemukan. Periksa lagi alamat Link Gaib-nya.", {
+      status: 404,
+      headers: { "content-type": "text/plain; charset=utf-8", "x-robots-tag": "noindex, nofollow" },
+    });
+  }
+
   const tm = /^\/t\/([^/]+)(\/.*)?$/.exec(pathname);
+  if (tm && SLUG_RE.test(tm[1]) && req.headers.get("x-depup-rw") === TUNNEL_RW_NONCE) {
+    // Sudah diproses tunnelRewrite: pertahankan target & awalan yang ditetapkan di sana.
+    return NextResponse.next();
+  }
   if (tm && SLUG_RE.test(tm[1])) {
     const headers = new Headers(req.headers);
+    headers.delete("x-depup-rw");
     headers.set("x-depup-target", (tm[2] ?? "/") + search); // selalu ditimpa -> tidak bisa dipalsukan klien
+    headers.set("x-depup-prefix", `/t/${tm[1]}`);
     const res = NextResponse.next({ request: { headers } });
     if (isDepushSubdomain) {
       res.headers.set("X-Robots-Tag", "noindex, nofollow");

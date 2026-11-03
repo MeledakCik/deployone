@@ -1,4 +1,5 @@
 "use client";
+import { greeting } from "@/lib/mobile-routes";
 
 import * as React from "react";
 import { Boxes, CheckCircle2, XCircle, Plus, Rocket, UploadCloud, AlertTriangle, X, Users } from "@/components/ui/icons";
@@ -43,7 +44,7 @@ export function DashboardHomeView() {
   }, []);
 
   const deployButton = (
-    <button type="button" onClick={() => setView("deploy")} className="btn-lime btn-md inline-flex items-center gap-2 whitespace-nowrap">
+    <button type="button" onClick={() => setView("deploy")} className="btn-primary btn-md inline-flex items-center gap-2 whitespace-nowrap">
       <Plus size={16} /> Deploy baru
     </button>
   );
@@ -53,10 +54,10 @@ export function DashboardHomeView() {
     return (
       <ViewFade>
         <div className="space-y-5">
-          <PageHead title={`Halo, ${firstName}`} desc="Memuat riwayat deploy kamu…" />
+          <PageHead title={`${greeting()}, ${firstName}`} desc="Memuat riwayat deploy kamu…" />
           <div className="grid gap-4 sm:grid-cols-3 md:grid-cols-1 lg:grid-cols-3" aria-hidden>
             {[0, 1, 2].map((i) => (
-              <Skeleton key={i} className="h-[148px] !rounded-[26px]" />
+              <Skeleton key={i} className="h-[148px] !rounded-card" />
             ))}
           </div>
           <HistoryTableSkeleton />
@@ -70,7 +71,7 @@ export function DashboardHomeView() {
     return (
       <ViewFade>
         <div className="space-y-5">
-          <PageHead title={`Halo, ${firstName}`} desc="Mulai dari satu project. Riwayat dan statusnya akan muncul di sini." />
+          <PageHead title={`${greeting()}, ${firstName}`} desc="Mulai dari satu project. Riwayat dan statusnya akan muncul di sini." />
           <Card>
             <Empty
               icon={Rocket}
@@ -80,13 +81,13 @@ export function DashboardHomeView() {
                   <button type="button" onClick={() => setView("deploy")} className="btn-primary btn-md inline-flex items-center gap-2">
                     <Rocket size={16} /> Deploy project
                   </button>
-                  <Btn onClick={() => setView("upload")}>
-                    <UploadCloud size={14} /> Upload zip
-                  </Btn>
+                  <button type="button" onClick={() => setView("upload")} className="pill btn-md inline-flex items-center gap-2 font-semibold">
+                    <UploadCloud size={16} /> Unggah zip
+                  </button>
                 </>
               }
             >
-              Deploy repo GitHub ke Vercel, Cloudflare, atau Railway. Atau upload zip project dan Depup yang mengurus sisanya.
+              Deploy repo GitHub ke Vercel, Cloudflare Pages, atau Railway. Atau unggah zip project dan biarkan Depup mengurus sisanya.
             </Empty>
           </Card>
         </div>
@@ -99,12 +100,12 @@ export function DashboardHomeView() {
   return (
     <ViewFade>
       <div className="space-y-5">
-        <PageHead title={`Halo, ${firstName}`} desc={`Ringkasan ${stats.total} deploy terakhir kamu. Depup menyimpan maksimal 10 riwayat.`} right={deployButton} />
+        <PageHead title={`${greeting()}, ${firstName}`} desc={`Ringkasan ${stats.total} deploy terakhir kamu. Depup menyimpan maksimal 10 riwayat.`} right={deployButton} />
 
         {/* Yang butuh tindakan didahulukan. Tidak ada banner bila semuanya sehat. */}
         {stats.failed > 0 && (
           <div className="notice notice-bad flex-wrap items-center !rounded-[28px] !p-5" role="alert">
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[var(--tone-chip)]">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-[14px] bg-[var(--tone-chip)]">
               <AlertTriangle size={20} />
             </span>
             <div className="min-w-0 flex-1">
@@ -137,7 +138,7 @@ export function DashboardHomeView() {
 
         {stats.ready > 0 && !communityHidden && (
           <div className="notice notice-info flex-wrap items-center !rounded-[28px] !p-5" role="region" aria-label="Ajakan gabung komunitas">
-            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[var(--tone-chip)]">
+            <span className="grid h-11 w-11 shrink-0 place-items-center rounded-[14px] bg-[var(--tone-chip)]">
               <Users size={20} />
             </span>
             <div className="min-w-0 flex-1">

@@ -30,7 +30,7 @@ export default function BrowseTab({ id, schema, table, setTable, onChanged }: { 
   useEffect(() => setPage(1), [table]);
 
   const pages = data ? Math.max(1, Math.ceil(data.total / data.pageSize)) : 1;
-  if (!schema.tables.length) return <p className="rounded-xl bg-[var(--pill-bg)] px-4 py-8 text-center text-sm text-text-muted">Belum ada tabel.</p>;
+  if (!schema.tables.length) return <p className="rounded-[14px] bg-[var(--pill-bg)] px-4 py-8 text-center text-sm text-text-muted">Belum ada tabel.</p>;
 
   return (
     <div className="space-y-3">
@@ -51,7 +51,7 @@ export default function BrowseTab({ id, schema, table, setTable, onChanged }: { 
       {err && <Notice kind="error">{err}</Notice>}
       {data && !data.editable && <Notice kind="info">View / tabel WITHOUT ROWID: hanya bisa dibaca di sini.</Notice>}
       {data && (
-        <div className="max-h-[70vh] overflow-auto rounded-xl">
+        <div className="max-h-[70vh] overflow-auto rounded-[14px]">
           <table className="w-full">
             <thead className="sticky top-0 bg-[var(--pill-bg)]">
               <tr>

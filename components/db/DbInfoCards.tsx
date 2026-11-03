@@ -78,7 +78,7 @@ function ApiCard({ id }: { id: string }) {
     <section className={`${surface} min-w-0 space-y-4 p-4 sm:p-5`}>
       <h2 className={heading}>REST API</h2>
       <SecretRow label="Endpoint (POST)" value={endpoint} />
-      <pre className="overflow-x-auto rounded-xl bg-[#1e1150] p-3 font-mono text-[12px] leading-relaxed text-white sm:text-xs">{`curl -X POST ${endpoint} \\
+      <pre className="overflow-x-auto rounded-[14px] bg-[#1e1150] p-3 font-mono text-[12px] leading-relaxed text-white sm:text-xs">{`curl -X POST ${endpoint} \\
   -H "Authorization: Bearer <api_key>" \\
   -H "Content-Type: application/json" \\
   -d '{"sql":"SELECT * FROM users WHERE id = ?","args":[1]}'`}</pre>
@@ -88,7 +88,7 @@ function ApiCard({ id }: { id: string }) {
           <SecretRow label="API key" value={fresh.key} />
         </div>
       )}
-      <ul className="divide-y divide-[var(--line)] rounded-xl px-3 text-sm">
+      <ul className="divide-y divide-[var(--line)] rounded-[14px] px-3 text-sm">
         {keys.map((k) => (
           <li key={k.id} className="flex items-center justify-between gap-3 py-2.5">
             <div className="min-w-0">
@@ -160,7 +160,7 @@ function EnvCard({ id }: { id: string }) {
   const [msg, setMsg] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
   const [busy, setBusy] = useState(false);
 
-  // Best-effort: pakai token Vercel yang sudah tersimpan di Settings (bentuk data /api/user-data bisa berbeda).
+  // Best-effort: pakai token Vercel yang sudah tersimpan di Pengaturan (bentuk data /api/user-data bisa berbeda).
   useEffect(() => {
     api<any>("/api/user-data")
       .then((d) => {

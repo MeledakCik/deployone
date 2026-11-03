@@ -50,6 +50,7 @@ function TokenField({
   id,
   label,
   value,
+  saved,
   onChange,
   check,
   onTest,
@@ -58,6 +59,8 @@ function TokenField({
   id: string;
   label: string;
   value: string;
+  /** Nilai yang sudah tersimpan di akun (bukan isian yang sedang diketik). */
+  saved: string;
   onChange: (v: string) => void;
   check: CheckState;
   onTest?: () => void;
@@ -72,40 +75,47 @@ function TokenField({
     if (!value?.trim()) setConfirming(false);
   }, [value]);
 
+  const filled = !!value?.trim();
+  const isSaved = !!saved?.trim();
+  const dirty = (value ?? "") !== (saved ?? "");
+  // Status yang selalu terlihat, supaya kolom kosong tidak pernah terlihat seperti sudah terisi.
+  const status: { text: string; tone: string } =
+    check.status === "ok"
+      ? { text: "Terverifikasi", tone: "bg-ok-bg text-ok-fg" }
+      : check.status === "error"
+        ? { text: "Token ditolak", tone: "bg-bad-bg text-bad-fg" }
+        : dirty && filled
+          ? { text: "Belum disimpan", tone: "bg-warn-bg text-warn-fg" }
+          : isSaved
+            ? { text: "Tersimpan", tone: "bg-ok-bg text-ok-fg" }
+            : { text: "Belum diisi", tone: "bg-[var(--pill-bg)] text-text-muted" };
+
   return (
     <div>
-      <div className="mb-1.5 flex items-center justify-between">
-        <label htmlFor={id} className="block text-[12px] font-medium text-text-muted">
-          {label}
-        </label>
-        <div className="flex items-center gap-3">
-          {onRemove && value?.trim() && !confirming && (
-            <button
-              type="button"
-              onClick={() => setConfirming(true)}
-              aria-label={`Hapus ${label}`}
-              className="inline-flex items-center gap-1 text-[12px] font-medium text-bad-fg hover:brightness-110"
-            >
-              <Trash2 size={11} /> Hapus
-            </button>
-          )}
-          {onTest && (
-            <button
-              type="button"
-              onClick={onTest}
-              disabled={!value?.trim() || check.status === "checking"}
-              className="inline-flex items-center gap-1 text-[12px] font-medium text-lav-text hover:brightness-110 disabled:opacity-40"
-            >
-              {check.status === "checking" && <Loader2 size={11} className="animate-spin" />}
-              Test Koneksi
-            </button>
-          )}
+      <div className="mb-1.5 flex flex-wrap items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <label htmlFor={id} className="block text-[14px] font-medium text-text">
+            {label}
+          </label>
+          <span id={`${id}-status`} className={cn("rounded-full px-2 py-0.5 text-[12px] font-semibold", status.tone)}>
+            {status.text}
+          </span>
         </div>
+        {onRemove && isSaved && !confirming && (
+          <button
+            type="button"
+            onClick={() => setConfirming(true)}
+            aria-label={`Hapus ${label}`}
+            className="inline-flex min-h-[32px] items-center gap-1 text-[13px] font-medium text-bad-fg hover:brightness-110"
+          >
+            <Trash2 size={13} /> Hapus
+          </button>
+        )}
       </div>
       {confirming && onRemove && (
         <div
           role="alert"
-          className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-xl bg-[var(--bad-bg)] px-3 py-2 text-[12px] text-bad-fg"
+          className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-[14px] bg-[var(--bad-bg)] px-3 py-2 text-[13px] text-bad-fg"
         >
           <span>Hapus {label} dari akunmu? Deploy ke platform ini tidak bisa jalan sampai diisi lagi.</span>
           <span className="flex gap-3">
@@ -125,32 +135,48 @@ function TokenField({
           </span>
         </div>
       )}
-      <div className="relative">
-        <input
-          id={id}
-          type={visible ? "text" : "password"}
-          placeholder="••••••••••••••••••••"
-          value={value ?? ""}
-          onChange={(e) => onChange(e.target.value)}
-          className="input-solid mono h-11 w-full px-3.5 pr-11 text-[13px]"
-        />
-        <button
-          type="button"
-          onClick={() => setVisible((v) => !v)}
-          aria-label={visible ? `Sembunyikan ${label}` : `Tampilkan ${label}`}
-          className="absolute right-2 top-1/2 -translate-y-1/2 grid h-7 w-7 place-items-center rounded-full text-text-muted hover:bg-[var(--row-hover)] hover:text-text"
-        >
-          {visible ? <EyeOff size={15} /> : <Eye size={15} />}
-        </button>
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <div className="relative min-w-0 flex-1">
+          <input
+            id={id}
+            type={visible ? "text" : "password"}
+            placeholder="Belum diisi — tempel token di sini"
+            autoComplete="off"
+            spellCheck={false}
+            value={value ?? ""}
+            onChange={(e) => onChange(e.target.value)}
+            aria-describedby={`${id}-status`}
+            className="input-solid mono h-11 w-full px-3.5 pr-11 text-[14px] placeholder:font-sans"
+          />
+          <button
+            type="button"
+            onClick={() => setVisible((v) => !v)}
+            aria-label={visible ? `Sembunyikan ${label}` : `Tampilkan ${label}`}
+            className="absolute right-2 top-1/2 -translate-y-1/2 grid h-8 w-8 place-items-center rounded-full text-text-muted hover:bg-[var(--row-hover)] hover:text-text"
+          >
+            {visible ? <EyeOff size={16} /> : <Eye size={16} />}
+          </button>
+        </div>
+        {onTest && (
+          <button
+            type="button"
+            onClick={onTest}
+            disabled={!filled || check.status === "checking"}
+            className="pill btn-md inline-flex shrink-0 items-center justify-center gap-1.5 font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {check.status === "checking" && <Loader2 size={14} className="animate-spin" />}
+            Tes koneksi
+          </button>
+        )}
       </div>
       {check.status === "ok" && (
-        <p className="mt-1.5 inline-flex items-center gap-1.5 text-[12px] text-ok-fg">
-          <ShieldCheck size={13} /> {check.label}
+        <p className="mt-1.5 inline-flex items-center gap-1.5 text-[13px] text-ok-fg">
+          <ShieldCheck size={14} /> {check.label}
         </p>
       )}
       {check.status === "error" && (
-        <p className="mt-1.5 inline-flex items-center gap-1.5 text-[12px] text-bad-fg">
-          <ShieldAlert size={13} /> {check.message}
+        <p className="mt-1.5 inline-flex items-center gap-1.5 text-[13px] text-bad-fg" role="alert">
+          <ShieldAlert size={14} /> {check.message}
         </p>
       )}
     </div>
@@ -176,14 +202,14 @@ function SwitchRow({
   return (
     <div className="flex items-center justify-between gap-4">
       <div className="flex min-w-0 items-start gap-3">
-        <div className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-tone-lilac text-text">
+        <div className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-[14px] bg-tone-lilac text-text">
           {icon}
         </div>
         <div className="min-w-0">
           <label htmlFor={id} className="block cursor-pointer text-[14px] font-medium">
             {title}
           </label>
-          <p className="text-[12px] leading-relaxed text-text-muted">{description}</p>
+          <p className="text-[13px] leading-relaxed text-text-muted">{description}</p>
         </div>
       </div>
       <Switch id={id} checked={checked} onChange={onChange} />
@@ -237,16 +263,16 @@ function AppearanceSettings() {
                 aria-checked={selected}
                 onClick={() => updatePrefs({ deployAnimation: opt.value })}
                 className={cn(
-                  "flex items-start gap-3 rounded-2xl p-3.5 text-left transition-colors",
+                  "flex items-start gap-3 rounded-[14px] p-3.5 text-left transition-colors",
                   selected
-                    ? "bg-violet-500 text-white [&_.text-text-muted]:!text-violet-100 [&_.text-lav-text]:!text-white"
+                    ? "bg-tone-lilac ring-2 ring-[color:var(--accent)]"
                     : "bg-[var(--surface-solid-2)] hover:brightness-95"
                 )}
               >
                 <span className={cn("mt-0.5", selected ? "text-lav-text" : "text-text-muted")}>{opt.icon}</span>
                 <span>
-                  <span className="block text-[13px] font-medium">{opt.label}</span>
-                  <span className="block text-[12px] leading-relaxed text-text-muted">{opt.hint}</span>
+                  <span className="block text-[14px] font-medium">{opt.label}</span>
+                  <span className="block text-[13px] leading-relaxed text-text-muted">{opt.hint}</span>
                 </span>
               </button>
             );
@@ -374,9 +400,9 @@ export function SettingsView() {
     <ViewFade>
       <div className="space-y-4 sm:space-y-5">
         <div>
-          <PageTitle title="Settings" desc={<>Token global ini dipakai sebagai default saat kamu deploy project baru. Klik{" "}
-            <span className="font-medium text-text">Test Koneksi</span> untuk memastikan token-nya benar-benar
-            valid ke akun kamu.</>} />
+          <PageTitle title="Pengaturan" desc={<>Token di sini dipakai otomatis setiap kali kamu deploy. Tekan{" "}
+            <span className="font-medium text-text">Tes koneksi</span> untuk memastikan token-nya benar-benar
+            terhubung ke akunmu.</>} />
         </div>
 
         {/* 1. Token platform */}
@@ -385,25 +411,27 @@ export function SettingsView() {
             <SectionHead
               icon={KeyRound}
               title="Token platform"
-              desc="Vercel, Cloudflare, GitHub, dan Railway. Disimpan di akun Depup-mu."
+              desc="Vercel, Cloudflare Pages, Railway, dan GitHub. Disimpan di akun Depup-mu."
             />
             <div className="grid gap-4">
               <TokenField
                 id="settingsVercelToken"
-                label="Vercel Token"
+                label="Token Vercel"
                 value={draft.vercelToken}
+                saved={tokens.vercelToken}
                 onChange={(v) => {
                   setDraft((prev) => ({ ...prev, vercelToken: v }));
                   setVercelCheck({ status: "idle" });
                 }}
                 check={vercelCheck}
                 onTest={testVercel}
-                onRemove={() => removeToken("vercelToken", "Vercel Token", () => setVercelCheck({ status: "idle" }))}
+                onRemove={() => removeToken("vercelToken", "Token Vercel", () => setVercelCheck({ status: "idle" }))}
               />
               <TokenField
                 id="settingsCloudflareToken"
-                label="Cloudflare Token"
+                label="Token Cloudflare"
                 value={draft.cloudflareToken}
+                saved={tokens.cloudflareToken}
                 onChange={(v) => {
                   setDraft((prev) => ({ ...prev, cloudflareToken: v }));
                   setCloudflareCheck({ status: "idle" });
@@ -412,7 +440,7 @@ export function SettingsView() {
                 check={cloudflareCheck}
                 onTest={testCloudflare}
                 onRemove={() =>
-                  removeToken("cloudflareToken", "Cloudflare Token", () => {
+                  removeToken("cloudflareToken", "Token Cloudflare", () => {
                     setCloudflareCheck({ status: "idle" });
                     setCloudflareAccounts([]);
                   })
@@ -420,14 +448,14 @@ export function SettingsView() {
               />
               {cloudflareAccounts.length > 1 && (
                 <div>
-                  <label htmlFor="cloudflareAccount" className="mb-1.5 block text-[12px] font-medium text-text-muted">
+                  <label htmlFor="cloudflareAccount" className="mb-1.5 block text-[14px] font-medium text-text">
                     Akun Cloudflare aktif
                   </label>
                   <select
                     id="cloudflareAccount"
                     value={draft.cloudflareAccountId}
                     onChange={(e) => setDraft((prev) => ({ ...prev, cloudflareAccountId: e.target.value }))}
-                    className="input-solid h-11 w-full px-3.5 text-[13px]"
+                    className="input-solid h-11 w-full px-3.5 text-[14px]"
                   >
                     {cloudflareAccounts.map((a) => (
                       <option key={a.id} value={a.id}>
@@ -435,39 +463,41 @@ export function SettingsView() {
                       </option>
                     ))}
                   </select>
-                  <p className="mt-1.5 text-[12px] text-text-faint">
+                  <p className="mt-1.5 text-[13px] text-text-muted">
                     Token ini memiliki akses ke beberapa akun — pilih satu untuk dipakai deploy Cloudflare Pages.
                   </p>
                 </div>
               )}
               <TokenField
                 id="settingsGithubPat"
-                label="GitHub PAT"
+                label="Token GitHub"
                 value={draft.githubPat}
+                saved={tokens.githubPat}
                 onChange={(v) => {
                   setDraft((prev) => ({ ...prev, githubPat: v }));
                   setGithubCheck({ status: "idle" });
                 }}
                 check={githubCheck}
                 onTest={testGithub}
-                onRemove={() => removeToken("githubPat", "GitHub PAT", () => setGithubCheck({ status: "idle" }))}
+                onRemove={() => removeToken("githubPat", "Token GitHub", () => setGithubCheck({ status: "idle" }))}
               />
               <TokenField
                 id="settingsRailwayToken"
-                label="Railway Token"
+                label="Token Railway"
                 value={draft.railwayToken}
+                saved={tokens.railwayToken}
                 onChange={(v) => {
                   setDraft((prev) => ({ ...prev, railwayToken: v }));
                   setRailwayCheck({ status: "idle" });
                 }}
                 check={railwayCheck}
                 onTest={testRailway}
-                onRemove={() => removeToken("railwayToken", "Railway Token", () => setRailwayCheck({ status: "idle" }))}
+                onRemove={() => removeToken("railwayToken", "Token Railway", () => setRailwayCheck({ status: "idle" }))}
               />
             </div>
             <div>
               <button type="submit" className="btn-primary btn-md inline-flex w-full items-center justify-center gap-2 sm:w-auto">
-                <Save size={15} /> Simpan
+                <Save size={15} /> Simpan token
               </button>
             </div>
           </form>

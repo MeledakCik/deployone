@@ -7,50 +7,27 @@ import * as React from "react";
 import { HelpCircle, Loader2, ShieldCheck, Terminal, Check, Rocket, ArrowRight, ArrowLeft, X, Globe, KeyRound, CircleAlert, ExternalLink, Hammer, FolderOutput } from "@/components/ui/icons";
 import { Github } from "lucide-react";
 import { ViewFade } from "@/components/ui/ViewFade";
+import { PageTitle } from "@/components/ui/primitives";
 import { cn } from "@/lib/utils";
 import { useDeploy } from "@/lib/deploy-context";
 import type { Platform } from "@/types";
 import { RepoCheckCard } from "@/components/dashboard/RepoCheckCard";
+import { PLATFORM_META, PLATFORM_ORDER, suggestRepoName } from "@/lib/platforms";
 
 /* ---------------- Platform config ---------------- */
 
-const PLATFORMS: {
-  id: Platform;
-  label: string;
-  desc: string;
-  accent: string;
-  tone: string;
-  toneVar: string;
-  Icon: any;
-}[] = [
-  {
-    id: "vercel",
-    label: "Vercel",
-    desc: "Frontend Cloud terbaik untuk Next.js",
-    accent: "#120B2E", // di-override CSS var di render
-    tone: "bg-tone-peri",
-    toneVar: "--tone-peri",
-    Icon: VercelIcon,
-  },
-  {
-    id: "railway",
-    label: "Railway",
-    desc: "Deploy app & database tanpa repot",
-    accent: "#7b50ff",
-    tone: "bg-tone-lilac",
-    toneVar: "--tone-lilac",
-    Icon: RailwayIcon,
-  },
-  {
-    id: "cloudflare",
-    label: "Cloudflare",
-    desc: "Pages & Workers global edge network",
-    accent: "#f6821f",
-    tone: "bg-tone-peach",
-    toneVar: "--tone-peach",
-    Icon: CloudflareIcon,
-  },
-];
+const PLATFORM_ICON: Record<Platform, any> = {
+  vercel: VercelIcon,
+  cloudflare: CloudflareIcon,
+  railway: RailwayIcon,
+};
+
+const PLATFORMS = PLATFORM_ORDER.map((id) => ({
+  id,
+  label: PLATFORM_META[id].name,
+  desc: PLATFORM_META[id].desc,
+  Icon: PLATFORM_ICON[id],
+}));
 
 /** Best-effort preview domain suffix per platform — mirrors `resolveDomain` in lib/utils.ts. */
 function domainSuffixFor(p: Platform): string {
@@ -62,13 +39,13 @@ function domainSuffixFor(p: Platform): string {
 /* ---------------- Shared classes ---------------- */
 
 const inputCls =
-  "w-full h-11 sm:h-[46px] rounded-[14px] bg-[var(--dc-input)] border border-transparent px-3.5 sm:px-4 text-[14px] sm:text-[14px] text-[var(--dc-text)] placeholder:text-[var(--dc-text-faint)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)] focus:bg-[var(--dc-input-focus)] transition-colors";
+  "w-full h-11 sm:h-[46px] rounded-[14px] bg-[var(--dc-input)] border border-transparent px-3.5 sm:px-4 text-[16px] sm:text-[14px] text-[var(--dc-text)] placeholder:text-[var(--dc-text-faint)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)] focus:bg-[var(--dc-input-focus)] transition-colors";
 
 const textareaCls =
   "w-full rounded-[14px] bg-[var(--dc-input)] border border-transparent px-3.5 sm:px-4 py-2.5 sm:py-3 text-[13px] sm:text-[13px] text-[var(--dc-text)] placeholder:text-[var(--dc-text-faint)] focus:outline-none focus:ring-2 focus:ring-[var(--ring)] focus:bg-[var(--dc-input-focus)] transition-colors resize-none font-mono";
 
 const labelCls =
-  "block text-[12px] text-[var(--dc-text-muted)] font-medium";
+  "block text-[14px] text-[var(--dc-text)] font-medium";
 
 /* ---------------- Step definitions ---------------- */
 
@@ -85,17 +62,10 @@ function getStepsForPlatform(p: Platform): StepDef[] {
   const base: StepDef[] = [
     {
       id: "projectName",
-      title: "Nama Project",
-      desc: "Nama unik untuk project-mu. Nama ini akan menjadi subdomain situsmu nanti.",
+      title: "Nama project",
+      desc: "Nama unik untuk project-mu. Nama ini menjadi subdomain situsmu nanti.",
       required: true,
       icon: Rocket,
-    },
-    {
-      id: "githubUrl",
-      title: "GitHub URL",
-      desc: "Link repository GitHub yang ingin dideploy. Pastikan repo-nya public, atau isi GitHub Token untuk repo private.",
-      required: true,
-      icon: Github,
     },
   ];
 
@@ -104,14 +74,14 @@ function getStepsForPlatform(p: Platform): StepDef[] {
       ...base,
       {
         id: "platformToken",
-        title: "Vercel Token",
-        desc: "Token untuk menghubungkan Depup ke akun Vercel-mu. Kalau sudah tersimpan di Settings, langsung pakai saja.",
+        title: "Token Vercel",
+        desc: "Token untuk menghubungkan Depup ke akun Vercel-mu. Kalau sudah tersimpan di Pengaturan, langsung pakai saja.",
         required: true,
         icon: KeyRound,
       },
       {
         id: "githubPat",
-        title: "GitHub Token",
+        title: "Token GitHub",
         desc: "Hanya untuk repo private. Lewati saja kalau repo-mu public.",
         optional: true,
         icon: Github,
@@ -122,28 +92,28 @@ function getStepsForPlatform(p: Platform): StepDef[] {
       ...base,
       {
         id: "platformToken",
-        title: "Cloudflare Token",
-        desc: "API Token Cloudflare dengan permission Pages:Edit",
+        title: "Token Cloudflare",
+        desc: "API token Cloudflare dengan izin Pages:Edit.",
         required: true,
         icon: KeyRound,
       },
       {
         id: "accountId",
-        title: "Account ID",
-        desc: "ID akun Cloudflare-mu. Terisi otomatis kalau tokennya diambil dari Settings.",
+        title: "ID akun Cloudflare",
+        desc: "ID akun Cloudflare-mu. Terisi otomatis kalau tokennya diambil dari Pengaturan.",
         required: true,
         icon: Globe,
       },
       {
         id: "build",
-        title: "Build Config",
+        title: "Pengaturan build",
         desc: "Opsional. Kosongkan agar framework (Next.js, Vite, dll.) terdeteksi otomatis.",
         optional: true,
         icon: Hammer,
       },
       {
         id: "githubPat",
-        title: "GitHub Token",
+        title: "Token GitHub",
         desc: "Untuk repo private. Boleh dilewati.",
         optional: true,
         icon: Github,
@@ -154,15 +124,15 @@ function getStepsForPlatform(p: Platform): StepDef[] {
       ...base,
       {
         id: "platformToken",
-        title: "Railway Token",
+        title: "Token Railway",
         desc: "Token akun Railway-mu.",
         required: true,
         icon: KeyRound,
       },
       {
         id: "env",
-        title: "Environment Variables",
-        desc: "Opsional. Format KEY=value per baris.",
+        title: "Variabel environment",
+        desc: "Opsional. Format KEY=value, satu per baris.",
         optional: true,
         icon: FolderOutput,
       },
@@ -241,7 +211,7 @@ function VercelTokenField() {
         <FieldLabel htmlFor="platformToken" required>
           Vercel Token
         </FieldLabel>
-        <div className="rounded-xl sm:rounded-[14px] bg-[var(--dc-green-bg)] p-3.5 sm:p-4">
+        <div className="rounded-[14px] sm:rounded-[14px] bg-[var(--dc-green-bg)] p-3.5 sm:p-4">
           <div className="flex items-center gap-3">
             <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[var(--ok-bg)] dark:bg-[var(--ok-bg)] flex items-center justify-center shrink-0">
               <ShieldCheck
@@ -258,7 +228,7 @@ function VercelTokenField() {
                 Terhubung sebagai @{savedVercelToken.username}
               </div>
               <div className="text-[12px] sm:text-[12px] text-[var(--dc-green-fg-muted)] mt-0.5">
-                Token dari Settings • aman
+                Token dari Pengaturan • aman
               </div>
             </div>
           </div>
@@ -292,7 +262,7 @@ function VercelTokenField() {
         <input
           id="platformToken"
           type="password"
-          placeholder="••••••••••••••••"
+          placeholder="Tempel token di sini"
           value={form.platformToken}
           onChange={(e) => setFormField("platformToken", e.target.value)}
           className={cn(inputCls, "pr-10 font-mono text-[13px] sm:text-[13px]")}
@@ -346,7 +316,7 @@ function CloudflareTokenField() {
         <FieldLabel htmlFor="platformToken" required>
           Cloudflare Token
         </FieldLabel>
-        <div className="rounded-xl sm:rounded-[14px] bg-[var(--dc-green-bg)] p-3.5 sm:p-4">
+        <div className="rounded-[14px] sm:rounded-[14px] bg-[var(--dc-green-bg)] p-3.5 sm:p-4">
           <div className="flex items-center gap-3">
             <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[var(--ok-bg)] dark:bg-[var(--ok-bg)] flex items-center justify-center shrink-0">
               <ShieldCheck
@@ -363,7 +333,7 @@ function CloudflareTokenField() {
                 {savedCloudflareToken.accountName}
               </div>
               <div className="text-[12px] sm:text-[12px] text-[var(--dc-green-fg-muted)] mt-0.5">
-                Token dari Settings
+                Token dari Pengaturan
               </div>
             </div>
           </div>
@@ -397,7 +367,7 @@ function CloudflareTokenField() {
         <input
           id="platformToken"
           type="password"
-          placeholder="••••••••••••••••"
+          placeholder="Tempel token di sini"
           value={form.platformToken}
           onChange={(e) => setFormField("platformToken", e.target.value)}
           className={cn(inputCls, "pr-10 font-mono text-[13px] sm:text-[13px]")}
@@ -444,7 +414,7 @@ function RailwayTokenField() {
         <FieldLabel htmlFor="platformToken" required>
           Railway Token
         </FieldLabel>
-        <div className="rounded-xl sm:rounded-[14px] bg-[var(--dc-green-bg)] p-3.5 sm:p-4">
+        <div className="rounded-[14px] sm:rounded-[14px] bg-[var(--dc-green-bg)] p-3.5 sm:p-4">
           <div className="flex items-center gap-3">
             <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[var(--ok-bg)] dark:bg-[var(--ok-bg)] flex items-center justify-center shrink-0">
               <ShieldCheck
@@ -461,7 +431,7 @@ function RailwayTokenField() {
                 {savedRailwayToken.name}
               </div>
               <div className="text-[12px] sm:text-[12px] text-[var(--dc-green-fg-muted)] mt-0.5">
-                Token dari Settings
+                Token dari Pengaturan
               </div>
             </div>
           </div>
@@ -495,7 +465,7 @@ function RailwayTokenField() {
         <input
           id="platformToken"
           type="password"
-          placeholder="••••••••••••••••"
+          placeholder="Tempel token di sini"
           value={form.platformToken}
           onChange={(e) => setFormField("platformToken", e.target.value)}
           className={cn(inputCls, "pr-10 font-mono text-[13px] sm:text-[13px]")}
@@ -515,16 +485,44 @@ function RailwayTokenField() {
   );
 }
 
+function StepHeading({ n, id, done, children }: { n: number; id: string; done: boolean; children: React.ReactNode }) {
+  return (
+    <h2 id={id} className="flex items-center gap-2.5 text-[18px] font-semibold tracking-[-0.01em] text-[var(--dc-text)]">
+      <span
+        aria-hidden="true"
+        className={cn(
+          "grid h-7 w-7 place-items-center rounded-full text-[13px] font-bold",
+          done ? "bg-[var(--accent)] text-white" : "bg-tone-lilac text-lav-text",
+        )}
+      >
+        {done ? <Check className="h-3.5 w-3.5" strokeWidth={3} /> : n}
+      </span>
+      {children}
+    </h2>
+  );
+}
+
 /* ================================================================ */
 /*  MAIN VIEW                                                       */
 /* ================================================================ */
 
 export function DeployFormView() {
-  const { form, setFormField, submitDeploy, repoEnvCheck } = useDeploy();
+  const {
+    form,
+    setFormField,
+    submitDeploy,
+    repoEnvCheck,
+    setView,
+    vercelToken,
+    cloudflareToken,
+    cloudflareAccountId,
+    railwayToken,
+  } = useDeploy();
 
   const [isModalOpen, setModalOpen] = React.useState(false);
   const [currentStep, setCurrentStep] = React.useState(0);
   const [dir, setDir] = React.useState<1 | -1>(1);
+  const [nameTouched, setNameTouched] = React.useState(false);
 
   const platform = (form.platform || "vercel") as Platform;
   const steps = React.useMemo(() => getStepsForPlatform(platform), [platform]);
@@ -536,7 +534,40 @@ export function DeployFormView() {
     if (!form.platform) setFormField("platform", "vercel");
   }, [form.platform, setFormField]);
 
-  /* scroll body dikunci oleh useDialogA11y (ref-counted), tidak perlu kunci kedua di sini */
+  const hasToken: Record<Platform, boolean> = {
+    vercel: !!vercelToken,
+    cloudflare: !!cloudflareToken && !!cloudflareAccountId,
+    railway: !!railwayToken,
+  };
+
+  const validation = repoEnvCheck.status === "ok" ? repoEnvCheck.validation : null;
+  const compatOf = (p: Platform) => validation?.compat[p] ?? null;
+
+  /*
+   * Begitu repo selesai diperiksa, pilihkan platform yang paling cocok
+   * (urutan: "ok" dulu, lalu "warn"). Hanya sekali per repo, supaya pilihan
+   * manual pengguna sesudahnya tidak ditimpa.
+   */
+  const autoPickedFor = React.useRef<string | null>(null);
+  React.useEffect(() => {
+    if (!validation) return;
+    if (autoPickedFor.current === validation.fullName) return;
+    autoPickedFor.current = validation.fullName;
+    const best =
+      PLATFORM_ORDER.find((p) => validation.compat[p].level === "ok") ??
+      PLATFORM_ORDER.find((p) => validation.compat[p].level === "warn");
+    if (best) setFormField("platform", best);
+  }, [validation, setFormField]);
+
+  const onRepoChange = (v: string) => {
+    setFormField("githubUrl", v);
+    if (!nameTouched) setFormField("projectName", suggestRepoName(v));
+  };
+
+  const repoReady =
+    !!form.githubUrl?.trim() &&
+    repoEnvCheck.status === "ok" &&
+    compatOf(platform)?.level !== "blocked";
 
   /* Validation */
   const canNext = React.useMemo(() => {
@@ -547,14 +578,6 @@ export function DeployFormView() {
         return (
           !!form.projectName?.trim() && form.projectName.trim().length >= 3
         );
-      case "githubUrl":
-        // Jangan lanjut sebelum repo selesai dicek dan terbukti cocok dengan platform tujuan.
-        return (
-          !!form.githubUrl?.trim() &&
-          form.githubUrl.includes("github.com") &&
-          repoEnvCheck.status === "ok" &&
-          repoEnvCheck.validation?.compat[platform].level !== "blocked"
-        );
       case "platformToken":
         return !!form.platformToken?.trim();
       case "accountId":
@@ -562,19 +585,7 @@ export function DeployFormView() {
       default:
         return true;
     }
-  }, [step, form, repoEnvCheck.status, repoEnvCheck.validation, platform]);
-
-  const repoHost = React.useMemo(() => {
-    const raw = form.githubUrl?.trim();
-    if (!raw) return "github.com/username/repo";
-    try {
-      const u = new URL(raw.startsWith("http") ? raw : `https://${raw}`);
-      const host = u.hostname + u.pathname;
-      return host.length > 32 ? host.slice(0, 30) + "…" : host;
-    } catch {
-      return raw.length > 32 ? raw.slice(0, 30) + "…" : raw;
-    }
-  }, [form.githubUrl]);
+  }, [step, form]);
 
   const previewDomain = `${(form.projectName || "my-project")
     .toLowerCase()
@@ -582,6 +593,7 @@ export function DeployFormView() {
 
   /* Navigation */
   const openWizard = () => {
+    if (!repoReady) return;
     setCurrentStep(0);
     setDir(1);
     setModalOpen(true);
@@ -621,10 +633,6 @@ export function DeployFormView() {
     setDir(1);
     submitDeploy(e);
   };
-
-  /* Vercel accent mengikuti tema (putih di dark, gelap di light) */
-  const accentFor = (p: (typeof PLATFORMS)[number]) =>
-    p.id === "vercel" ? "var(--dc-text)" : p.accent;
 
   /* ---------------------------------------------------------------- */
 
@@ -679,98 +687,174 @@ export function DeployFormView() {
 
       <div className="dc-root relative mx-auto w-full text-[var(--dc-text)] overflow-hidden font-sans selection:bg-[var(--dc-pill)]">
         <div className="relative z-10">
-          {/* ---------- HERO ---------- */}
-          <div className="text-center mb-8 sm:mb-10 px-1">
-            <h1 className="page-title text-[var(--dc-text)]">
-              Pilih Platform Deploy
-            </h1>
-            <p className="mx-auto mt-1.5 max-w-[460px] text-[14px] leading-relaxed text-[var(--dc-text-muted)]">
-              Pilih platform favoritmu. Depup akan memandu proses deploy otomatis
-              langkah demi langkah.
-            </p>
+          {/* ---------- HEADER ---------- */}
+          <div className="mb-6">
+            <PageTitle
+              title="Deploy dari GitHub"
+              desc="Tempel link repo. Depup memeriksa isinya, lalu menyarankan platform yang cocok sebelum deploy dimulai."
+            />
           </div>
 
-          {/* ---------- PLATFORM LIST ---------- */}
-          <div className="flex flex-col gap-4 sm:gap-6 max-w-[720px] mx-auto" role="radiogroup" aria-label="Platform deploy">
-            {PLATFORMS.map((p) => {
-              const selected = platform === p.id;
-              return (
-                <button
-                  key={p.id}
-                  type="button"
-                  role="radio"
-                  aria-checked={selected}
-                  onClick={() => setFormField("platform", p.id)}
-                  className={cn(
-                    "group block w-full text-left rounded-[24px] sm:rounded-[28px] p-5 sm:p-6 min-h-[132px] sm:min-h-[152px]",
-                    "flex flex-col justify-between transition-all duration-300 active:scale-[0.995]",
-                    selected
-                      ? "bg-violet-500 shadow-[0_18px_36px_-22px_rgba(123,80,255,0.8)]"
-                      : "bg-white dark:bg-[#1e1150] shadow-[0_10px_30px_-20px_rgba(30,17,80,0.35)] dark:shadow-none sm:hover:-translate-y-0.5",
-                  )}
-                >
-                  <div className="flex items-center gap-3.5 min-w-0">
-                    <div
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)] lg:items-start max-w-5xl">
+            {/* ---------- 1. REPO ---------- */}
+            <section aria-labelledby="deploy-step-repo" className="surface-solid p-5 sm:p-6">
+              <StepHeading n={1} id="deploy-step-repo" done={repoEnvCheck.status === "ok"}>
+                Tempel link repo
+              </StepHeading>
+              <label htmlFor="githubUrl" className="mt-4 block text-[14px] font-medium text-[var(--dc-text)]">
+                Link repo GitHub
+              </label>
+              <input
+                id="githubUrl"
+                type="url"
+                inputMode="url"
+                autoComplete="off"
+                spellCheck={false}
+                placeholder="https://github.com/nama-akun/nama-repo"
+                value={form.githubUrl}
+                onChange={(e) => onRepoChange(e.target.value)}
+                aria-describedby="githubUrl-hint"
+                className={cn(inputCls, "mt-2 font-mono")}
+              />
+              <p id="githubUrl-hint" className="mt-2 text-[13px] text-[var(--dc-text-muted)]">
+                Repo private? Isi{" "}
+                <button type="button" onClick={() => setView("settings")} className="font-medium text-lav-text underline underline-offset-4">
+                  token GitHub di Pengaturan
+                </button>{" "}
+                dulu.
+              </p>
+              {form.githubUrl && !form.githubUrl.includes("github.com") && (
+                <p className="mt-2 text-[13px] text-warn-fg flex items-center gap-1.5" role="alert">
+                  <CircleAlert className="w-3.5 h-3.5 shrink-0" /> Link harus dari github.com
+                </p>
+              )}
+              <div aria-live="polite">
+                <RepoCheckCard platform={platform} />
+              </div>
+              {repoEnvCheck.status === "ok" && repoEnvCheck.detectedEnvVars.length > 0 && (
+                <p className="mt-2 text-[13px] text-lav-text flex items-start gap-1.5">
+                  <CircleAlert className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                  <span>
+                    Repo ini butuh variabel:{" "}
+                    <span className="font-mono">{repoEnvCheck.detectedEnvVars.join(", ")}</span>. Nanti tinggal isi nilainya.
+                  </span>
+                </p>
+              )}
+              {repoEnvCheck.status === "ok" &&
+                repoEnvCheck.warnings.map((w, i) => (
+                  <p key={i} className="mt-2 text-[13px] text-warn-fg flex items-start gap-1.5">
+                    <CircleAlert className="w-3.5 h-3.5 shrink-0 mt-0.5" />
+                    <span>{w}</span>
+                  </p>
+                ))}
+            </section>
+
+            {/* ---------- 2. PLATFORM ---------- */}
+            <section aria-labelledby="deploy-step-platform" className="surface-solid p-5 sm:p-6">
+              <StepHeading n={2} id="deploy-step-platform" done={false}>
+                Pilih platform
+              </StepHeading>
+              <p className="mt-1 text-[13px] text-[var(--dc-text-muted)]">
+                {validation
+                  ? "Platform yang paling cocok sudah dipilihkan. Kamu tetap bisa menggantinya."
+                  : "Kecocokan tiap platform muncul setelah repo diperiksa."}
+              </p>
+
+              <div className="mt-4 flex flex-col gap-2.5" role="radiogroup" aria-labelledby="deploy-step-platform">
+                {PLATFORMS.map((p) => {
+                  const selected = platform === p.id;
+                  const compat = compatOf(p.id);
+                  const blocked = compat?.level === "blocked";
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      aria-describedby={`plat-${p.id}-status`}
+                      onClick={() => setFormField("platform", p.id)}
                       className={cn(
-                        "w-10 h-10 sm:w-[42px] sm:h-[42px] rounded-[12px] flex items-center justify-center shrink-0 transition-colors duration-300",
+                        "flex w-full items-start gap-3 rounded-[14px] p-4 text-left transition-colors",
                         selected
-                          ? "bg-white text-violet-600"
-                          : "bg-violet-100 text-violet-500 dark:bg-white dark:text-[#1e1150]",
+                          ? "bg-tone-lilac ring-2 ring-[color:var(--accent)]"
+                          : "bg-[var(--dc-surface-2)] hover:bg-[var(--dc-hover)]",
                       )}
                     >
-                      <p.Icon size={22} />
-                    </div>
-                    <div className="min-w-0">
-                      <div
-                        className={cn(
-                          "text-[16px] sm:text-[16px] font-semibold tracking-[-0.01em] leading-none transition-colors duration-300",
-                          selected ? "text-white" : "text-ink dark:text-[#c9c2e6]",
-                        )}
-                      >
-                        {p.label}
-                      </div>
-                      <div
-                        className={cn(
-                          "mt-1.5 text-[12px] leading-[1.35] transition-colors duration-300",
-                          selected ? "text-violet-100" : "text-[var(--dc-text-muted)]",
-                        )}
-                      >
-                        {p.desc}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 flex items-center gap-2 text-[12px] font-medium">
-                    {["Deploy otomatis", "GitHub"].map((chip) => (
-                      <span
-                        key={chip}
-                        className={cn(
-                          "px-2.5 py-1 rounded-full transition-colors duration-300",
-                          selected
-                            ? "bg-lime-500 text-[#1e1150]"
-                            : "bg-mist text-ink dark:bg-ink dark:text-[#b9b3d8]",
-                        )}
-                      >
-                        {chip}
+                      <span className="grid h-10 w-10 shrink-0 place-items-center rounded-[12px] bg-[var(--surface-solid)] text-lav-text">
+                        <p.Icon size={20} />
                       </span>
-                    ))}
-                  </div>
-                </button>
-              );
-            })}
-          </div>
+                      <span className="min-w-0 flex-1">
+                        <span className="block text-[16px] font-semibold tracking-[-0.01em] text-[var(--dc-text)]">{p.label}</span>
+                        <span className="mt-0.5 block text-[13px] leading-snug text-[var(--dc-text-muted)]">{p.desc}</span>
+                        <span id={`plat-${p.id}-status`} className="mt-2 flex flex-wrap gap-1.5">
+                          {compat && (
+                            <span
+                              className={cn(
+                                "rounded-full px-2 py-0.5 text-[12px] font-semibold",
+                                compat.level === "ok" && "bg-ok-bg text-ok-fg",
+                                compat.level === "warn" && "bg-warn-bg text-warn-fg",
+                                blocked && "bg-bad-bg text-bad-fg",
+                              )}
+                            >
+                              {compat.level === "ok" ? "Cocok" : compat.level === "warn" ? "Dengan catatan" : "Tidak cocok"}
+                            </span>
+                          )}
+                          <span
+                            className={cn(
+                              "rounded-full px-2 py-0.5 text-[12px] font-semibold",
+                              hasToken[p.id] ? "bg-ok-bg text-ok-fg" : "bg-[var(--dc-pill)] text-[var(--dc-text-muted)]",
+                            )}
+                          >
+                            {hasToken[p.id] ? "Token tersimpan" : "Belum ada token"}
+                          </span>
+                        </span>
+                      </span>
+                      <span
+                        aria-hidden="true"
+                        className={cn(
+                          "mt-1 grid h-5 w-5 shrink-0 place-items-center rounded-full",
+                          selected ? "bg-[var(--accent)] text-white" : "border-2 border-[var(--dc-line-strong)]",
+                        )}
+                      >
+                        {selected && <Check className="h-3 w-3" strokeWidth={3} />}
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
 
-          {/* ---------- START BUTTON ---------- */}
-          <div className="max-w-[720px] mx-auto mt-6 sm:mt-8 flex justify-center">
-            <button
-              type="button"
-              onClick={openWizard}
-              className="group relative w-full sm:w-auto sm:px-8 h-12 sm:h-[48px] rounded-full font-medium text-[14px] flex items-center justify-center gap-2.5 transition-all duration-300 bg-[var(--dc-btn-bg)] text-[var(--dc-btn-fg)] hover:opacity-90 shadow-[var(--dc-shadow-btn)] active:scale-[0.98]"
-            >
-              <Rocket className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
-              Mulai deploy
-              <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-0.5" />
-            </button>
+              <button
+                type="button"
+                onClick={openWizard}
+                disabled={!repoReady}
+                aria-describedby="deploy-start-hint"
+                className={cn(
+                  "mt-5 w-full h-12 rounded-full font-semibold text-[15px] flex items-center justify-center gap-2 transition-all",
+                  repoReady
+                    ? "bg-[var(--dc-btn-bg)] text-[var(--dc-btn-fg)] hover:opacity-90 shadow-[var(--dc-shadow-btn)] active:scale-[0.98]"
+                    : "bg-[var(--dc-pill)] text-[var(--dc-text-muted)] cursor-not-allowed",
+                )}
+              >
+                <Rocket className="w-4 h-4" />
+                Lanjut deploy ke {activePlatformInfo?.label}
+                <ArrowRight className="w-4 h-4" />
+              </button>
+              <p id="deploy-start-hint" className="mt-2 text-center text-[13px] text-[var(--dc-text-muted)]">
+                {!form.githubUrl?.trim()
+                  ? "Tempel link repo dulu."
+                  : repoEnvCheck.status === "checking"
+                    ? "Sedang memeriksa repo…"
+                    : repoEnvCheck.status === "error"
+                      ? "Repo belum bisa diperiksa. Lihat penjelasannya di langkah 1."
+                      : repoEnvCheck.status !== "ok"
+                      ? "Tunggu sampai repo selesai diperiksa."
+                      : compatOf(platform)?.level === "blocked"
+                        ? `Repo ini tidak cocok untuk ${activePlatformInfo?.label}. Pilih platform lain.`
+                        : !hasToken[platform]
+                          ? `Token ${activePlatformInfo?.label} bisa diisi di langkah berikutnya.`
+                          : "Siap. Tinggal beri nama project."}
+              </p>
+            </section>
           </div>
         </div>
 
@@ -811,7 +895,7 @@ export function DeployFormView() {
               <div className="px-4 sm:px-7 md:px-8 pt-4 sm:pt-6 pb-3 sm:pb-5 flex items-center justify-between gap-3 shrink-0">
                 <div className="flex items-center gap-2.5 sm:gap-3 min-w-0">
                   <div
-                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-violet-100 text-violet-500 dark:bg-white dark:text-[#1e1150] flex items-center justify-center shrink-0"
+                    className="w-8 h-8 sm:w-9 sm:h-9 rounded-[14px] bg-violet-100 text-violet-500 dark:bg-white dark:text-[#1e1150] flex items-center justify-center shrink-0"
                   >
                     {activePlatformInfo && (
                       <activePlatformInfo.Icon size={17} />
@@ -880,12 +964,6 @@ export function DeployFormView() {
                     );
                   })}
                 </div>
-                <div className="mt-1.5 sm:mt-2 flex justify-between text-[12px] text-[var(--dc-text-faint)]">
-                  <span>1. Mulai</span>
-                  <span className="hidden xs:inline">2. Input + Penjelasan</span>
-                  <span className="xs:hidden">2. Input</span>
-                  <span>3. Token</span>
-                </div>
               </div>
 
               <div className="h-[1px] bg-[var(--dc-line)] mx-4 sm:mx-7 md:mx-8 shrink-0" />
@@ -902,7 +980,7 @@ export function DeployFormView() {
                     }}
                   >
                     <div className="flex items-start gap-3 sm:gap-3.5 mb-4 sm:mb-6">
-                      <div className="mt-0.5 w-8 h-8 sm:w-9 sm:h-9 shrink-0 rounded-xl bg-[var(--dc-surface-solid)] flex items-center justify-center text-[var(--dc-text-muted)]">
+                      <div className="mt-0.5 w-8 h-8 sm:w-9 sm:h-9 shrink-0 rounded-[14px] bg-[var(--dc-surface-solid)] flex items-center justify-center text-[var(--dc-text-muted)]">
                         <step.icon className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -914,7 +992,7 @@ export function DeployFormView() {
                             </span>
                           )}
                         </h3>
-                        <p className="mt-1 sm:mt-1.5 text-[12px] sm:text-[13px] leading-[1.5] text-[var(--dc-text-muted)]">
+                        <p className="mt-1 sm:mt-1.5 text-[13px] sm:text-[14px] leading-[1.5] text-[var(--dc-text-muted)]">
                           {step.desc}
                         </p>
                       </div>
@@ -928,7 +1006,7 @@ export function DeployFormView() {
                       {step.id === "projectName" && (
                         <div>
                           <FieldLabel htmlFor="projectName" required>
-                            Nama Project
+                            Nama project
                           </FieldLabel>
                           <div className="relative">
                             <input
@@ -937,9 +1015,10 @@ export function DeployFormView() {
                               autoFocus
                               placeholder="acme-storefront"
                               value={form.projectName}
-                              onChange={(e) =>
-                                setFormField("projectName", e.target.value)
-                              }
+                              onChange={(e) => {
+                                setNameTouched(true);
+                                setFormField("projectName", e.target.value);
+                              }}
                               className={cn(inputCls, "pr-24")}
                             />
                             {(form.projectName || "").length > 0 && (
@@ -948,7 +1027,7 @@ export function DeployFormView() {
                               </div>
                             )}
                           </div>
-                          <div className="mt-2.5 sm:mt-3 rounded-xl sm:rounded-[10px] bg-[var(--dc-surface-2)] px-3 py-2 sm:py-2.5 flex items-center gap-2 text-[12px] sm:text-[12px] text-[var(--dc-text-faint)]">
+                          <div className="mt-2.5 sm:mt-3 rounded-[14px] sm:rounded-[10px] bg-[var(--dc-surface-2)] px-3 py-2 sm:py-2.5 flex items-center gap-2 text-[12px] sm:text-[12px] text-[var(--dc-text-faint)]">
                             <Globe className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
                             <span className="truncate">
                               Preview:{" "}
@@ -957,60 +1036,6 @@ export function DeployFormView() {
                               </span>
                             </span>
                           </div>
-                        </div>
-                      )}
-
-                      {step.id === "githubUrl" && (
-                        <div>
-                          <FieldLabel htmlFor="githubUrl" required>
-                            GitHub URL
-                          </FieldLabel>
-                          <input
-                            id="githubUrl"
-                            type="text"
-                            autoFocus
-                            placeholder="https://github.com/username/repo"
-                            value={form.githubUrl}
-                            onChange={(e) =>
-                              setFormField("githubUrl", e.target.value)
-                            }
-                            className={cn(
-                              inputCls,
-                              "font-mono text-[12px] sm:text-[13px]",
-                            )}
-                          />
-                          {form.githubUrl &&
-                            !form.githubUrl.includes("github.com") && (
-                              <div className="mt-2 text-[12px] sm:text-[12px] text-warn-fg flex items-center gap-1.5">
-                                <CircleAlert className="w-3 h-3 shrink-0" /> URL
-                                harus mengandung github.com
-                              </div>
-                            )}
-                          <RepoCheckCard platform={platform} />
-                          {repoEnvCheck.status === "ok" &&
-                            repoEnvCheck.detectedEnvVars.length > 0 && (
-                              <div className="mt-2 text-[12px] sm:text-[12px] text-lav-text flex items-start gap-1.5">
-                                <CircleAlert className="w-3 h-3 shrink-0 mt-0.5" />
-                                <span>
-                                  Repo ini butuh env var:{" "}
-                                  <span className="font-mono">
-                                    {repoEnvCheck.detectedEnvVars.join(", ")}
-                                  </span>{" "}
-                                  — sudah terisi otomatis di bagian Environment
-                                  Variables, tinggal isi nilainya.
-                                </span>
-                              </div>
-                            )}
-                          {repoEnvCheck.status === "ok" &&
-                            repoEnvCheck.warnings.map((w, i) => (
-                              <div
-                                key={i}
-                                className="mt-2 text-[12px] sm:text-[12px] text-warn-fg flex items-start gap-1.5"
-                              >
-                                <CircleAlert className="w-3 h-3 shrink-0 mt-0.5" />
-                                <span>{w}</span>
-                              </div>
-                            ))}
                         </div>
                       )}
 
@@ -1025,7 +1050,7 @@ export function DeployFormView() {
                       {step.id === "accountId" && (
                         <div>
                           <FieldLabel htmlFor="accountId" required>
-                            Account ID
+                            ID akun Cloudflare
                           </FieldLabel>
                           <input
                             id="accountId"
@@ -1048,7 +1073,7 @@ export function DeployFormView() {
                         <div className="grid gap-3 sm:gap-4 sm:grid-cols-2">
                           <div>
                             <FieldLabel htmlFor="buildCommand" optional>
-                              Build Cmd
+                              Perintah build
                             </FieldLabel>
                             <input
                               id="buildCommand"
@@ -1067,7 +1092,7 @@ export function DeployFormView() {
                           </div>
                           <div>
                             <FieldLabel htmlFor="outputDir" optional>
-                              Output Dir
+                              Folder output
                             </FieldLabel>
                             <input
                               id="outputDir"
@@ -1093,14 +1118,14 @@ export function DeployFormView() {
                             optional
                             help="GitHub Token"
                           >
-                            GitHub Token
+                            Token GitHub
                           </FieldLabel>
                           <div className="relative">
                             <input
                               id="githubPat"
                               type="password"
                               autoFocus
-                              placeholder="ghp_•••••••••••••••• (repo private)"
+                              placeholder="ghp_… (khusus repo private)"
                               value={form.githubPat}
                               onChange={(e) =>
                                 setFormField("githubPat", e.target.value)
@@ -1122,7 +1147,7 @@ export function DeployFormView() {
                       {step.id === "env" && (
                         <div>
                           <FieldLabel htmlFor="envText" optional>
-                            Environment Variables
+                            Variabel environment
                           </FieldLabel>
                           {repoEnvCheck.status === "ok" &&
                             repoEnvCheck.detectedEnvVars.length > 0 && (
@@ -1174,7 +1199,7 @@ export function DeployFormView() {
                   )}
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
-                  <span className="hidden xs:inline">Prev</span>
+                  <span className="hidden xs:inline">Kembali</span>
                 </button>
 
                 <div className="flex items-center gap-2 min-w-0">
@@ -1194,7 +1219,7 @@ export function DeployFormView() {
                       form="deployForm"
                       className="h-10 sm:h-9 px-5 rounded-full text-[13px] sm:text-[13px] font-medium flex items-center gap-1.5 transition-all bg-[var(--dc-btn-bg)] text-[var(--dc-btn-fg)] hover:opacity-90 shadow-[var(--dc-shadow-btn)] active:scale-[0.97] shrink-0"
                     >
-                      <span className="whitespace-nowrap">Deploy Project</span>
+                      <span className="whitespace-nowrap">Deploy sekarang</span>
                       <Rocket className="w-3.5 h-3.5" />
                     </button>
                   ) : (
@@ -1209,7 +1234,7 @@ export function DeployFormView() {
                           : "bg-[var(--dc-pill)] text-[var(--dc-text-faint)] cursor-not-allowed",
                       )}
                     >
-                      Next <ArrowRight className="w-3.5 h-3.5" />
+                      Lanjut <ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   )}
                 </div>
