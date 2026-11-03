@@ -90,7 +90,7 @@ function TemplateCard({
 }) {
   const build = React.useCallback(() => {
     const colors = palette ?? defaultPalette(t.id);
-    const opts: RenderOpts = { palette: palette ?? undefined, shop: false, images: {} };
+    const opts: RenderOpts = { palette: palette ?? undefined, shop: false, images: {}, look: false };
     return renderSite(preview, t.id, colors[0], opts);
   }, [preview, palette, t.id]);
 

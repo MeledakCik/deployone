@@ -14,6 +14,9 @@ export const ENGINE_PACKS_KEY = "engine:site:packs";
 /** Batas paket impor (jumlah dan ukuran total), supaya model tetap muat di satu nilai KV. */
 export const ENGINE_PACKS_MAX = 60;
 export const ENGINE_PACKS_MAX_BYTES = 400_000;
+/** Paket gaya visual hasil impor (array StylePack, JSON). */
+export const ENGINE_STYLES_KEY = "engine:site:styles";
+export const ENGINE_STYLES_MAX = 20;
 /** Batas contoh pengguna yang disimpan (yang lama dibuang). */
 export const ENGINE_FEEDBACK_MAX = 2000;
 

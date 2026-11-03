@@ -1,0 +1,71 @@
+[
+  {
+    "type": "style",
+    "id": "brutalism",
+    "label": "Brutalism",
+    "desc": "Poster tipografi: nama raksasa, blok warna terbalik, grid sel bergaris tebal, sudut lancip, satu aksen keras, label kecil kapital, elemen teknis (target, barcode, panah).",
+    "prompts": [
+      "website gaya brutalism untuk brand streetwear",
+      "landing page ala poster hitam merah dengan huruf raksasa",
+      "desain brutalis untuk acara musik techno",
+      "portofolio desainer gaya swiss poster",
+      "tampilan berani tipografi besar untuk studio kreatif",
+      "web event rave dengan huruf besar dan warna kontras",
+      "website raw dan edgy untuk komunitas skate",
+      "desain industrial hitam oranye untuk bengkel custom"
+    ],
+    "keywords": [
+      "brutal", "brutalis", "brutalism", "brutalisme", "neo brutalism",
+      "gaya poster", "ala poster", "seperti poster", "gaya swiss", "swiss style",
+      "tipografi besar", "huruf raksasa", "huruf besar", "desain berani", "tampilan berani", "desain tegas", "tampilan tegas",
+      "kontras tinggi", "streetwear", "underground", "edgy", "industrial", "mentah", "raw", "techno", "rave", "hitam merah", "hitam oranye"
+    ],
+    "fit": {
+      "domains": ["event-musik", "event-bazar", "event-lari", "umkm-fashion", "jasa-konveksi", "portofolio-desain", "portofolio-developer", "jasa-digital", "jasa-barbershop", "jasa-gym-fitness", "jasa-fotografi", "portofolio-penulis"],
+      "kinds": ["event"],
+      "chance": 0.4
+    },
+    "palettes": [
+      { "name": "Poster merah", "bg": "#efebe3", "fg": "#0b0b0b", "ink": "#0b0b0b", "accent": "#e0261d", "accent2": "#0b0b0b" },
+      { "name": "Dossier oranye", "bg": "#e6e5e1", "fg": "#121212", "ink": "#121212", "accent": "#ff5a0a", "accent2": "#121212" },
+      { "name": "Dossier gelap", "bg": "#141414", "fg": "#ecebe7", "ink": "#ecebe7", "accent": "#ff5a0a", "accent2": "#ff5a0a" },
+      { "name": "Klub oranye", "bg": "#0a0a0a", "fg": "#e3dfd6", "ink": "#e3dfd6", "accent": "#ff7a00", "accent2": "#ff3d00" },
+      { "name": "Klub teal", "bg": "#e3dfd6", "fg": "#0a0a0a", "ink": "#0a0a0a", "accent": "#0e8783", "accent2": "#ff3d00" },
+      { "name": "Klub navy", "bg": "#0b2236", "fg": "#e3dfd6", "ink": "#e3dfd6", "accent": "#ff3d00", "accent2": "#ff7a00" },
+      { "name": "Violet lime", "bg": "#ffffff", "fg": "#000000", "ink": "#000000", "accent": "#7d39eb", "accent2": "#c6ff33" },
+      { "name": "Lime malam", "bg": "#000000", "fg": "#ffffff", "ink": "#ffffff", "accent": "#c6ff33", "accent2": "#7d39eb" },
+      { "name": "Neon jalanan", "bg": "#0a0a0a", "fg": "#ffffff", "ink": "#ffffff", "accent": "#e6ff00", "accent2": "#e6ff00" }
+    ],
+    "fonts": {
+      "title": { "family": "condensed", "weight": 900, "upper": true, "tracking": -0.005, "scale": 1.2, "leading": 0.86 },
+      "sub": { "family": "condensed", "weight": 900, "upper": true, "tracking": 0, "leading": 0.92 },
+      "body": { "family": "grotesk", "weight": 400 },
+      "label": { "family": "mono", "weight": 700, "upper": true, "tracking": 0.06 }
+    },
+    "typeSets": [
+      {
+        "title": { "family": "grotesk", "weight": 900, "upper": true, "tracking": -0.045, "scale": 1.1, "leading": 0.9 },
+        "sub": { "family": "grotesk", "weight": 800, "upper": false, "tracking": -0.04, "leading": 0.98 },
+        "body": { "family": "grotesk", "weight": 400 },
+        "label": { "family": "grotesk", "weight": 700, "upper": true, "tracking": 0.02 }
+      },
+      {
+        "title": { "family": "condensed", "weight": 900, "upper": true, "tracking": 0, "scale": 1.15, "leading": 0.88 },
+        "sub": { "family": "grotesk", "weight": 900, "upper": true, "tracking": -0.03, "leading": 0.95 },
+        "body": { "family": "grotesk", "weight": 400 },
+        "label": { "family": "mono", "weight": 500, "upper": true, "tracking": 0.12 }
+      }
+    ],
+    "shape": { "radius": 0, "border": 3, "shadow": "none", "gap": 0, "pad": 24, "width": 1240, "section": 96 },
+    "layouts": { "hero": ["poster", "poster", "editorial"], "feat": ["index", "index", "bento"] },
+    "elements": {
+      "always": ["meta", "index", "arrow"],
+      "pool": ["bands", "ticker", "crosshair", "barcode", "sunburst", "asterisk", "halftone", "plus-grid"]
+    },
+    "copy": {
+      "meta": ["{city}", "Edisi {year}", "Arsip No. 05", "Tanpa basa-basi", "Dibuat lokal", "Sektor kreatif", "Arah, bukan tren", "Lihat lebih dekat", "Dibuat untuk diingat"],
+      "kicker": ["Bukan sekadar tampil. Ini sikap.", "Jelas, tegas, tanpa basa-basi.", "Arah, bukan sekadar inspirasi.", "Dibuat untuk diingat.", "Tetap penasaran. Tetap jalan."],
+      "ticker": ["{brand} / edisi {year}", "Tanpa basa-basi", "Dibuat untuk diingat", "Lihat lebih dekat", "Arah, bukan tren"]
+    }
+  }
+]

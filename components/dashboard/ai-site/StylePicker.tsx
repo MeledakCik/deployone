@@ -93,7 +93,7 @@ function StyleCard({
   onPick: (id: DesignStyleId) => void;
 }) {
   const build = React.useCallback(() => {
-    const opts: RenderOpts = { palette: palette ?? undefined, fonts, shop: false, images: {}, style: s.id };
+    const opts: RenderOpts = { palette: palette ?? undefined, fonts, shop: false, images: {}, style: s.id, look: false };
     return renderSite(preview, template, accent, opts);
   }, [preview, template, accent, palette, fonts, s.id]);
 

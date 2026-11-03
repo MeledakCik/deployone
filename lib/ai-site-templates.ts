@@ -11,12 +11,15 @@
  */
 import { LUCIDE, isIconName, svgIcon } from "@/lib/lucide-icons";
 import { SHOP_RUNTIME_JS } from "@/lib/ai-site-runtime";
+import { contrast as lookContrast, normalizeLook, type LookFont, type LookFontFamily, type SiteLook } from "@/lib/site-look";
+
+export type { SiteLook } from "@/lib/site-look";
 
 export type TemplateId = "bersih" | "gelap" | "hangat" | "tegas" | "segar" | "elegan" | "pastel" | "neon" | "bakso" | "kue" | "barber" | "tech" | "majalah" | "jurnal";
 export type SiteKind = "umkm" | "jasa" | "portofolio" | "event" | "profil" | "artikel";
 /** center/left/split = lawas; split-bold (60/40 + tumpukan kartu), asymmetric (1 kartu besar + 2 kecil), editorial (headline raksasa) = baru. */
-export type HeroLayout = "center" | "left" | "split" | "split-bold" | "asymmetric" | "editorial";
-export type FeatLayout = "grid" | "bento" | "list" | "editorial";
+export type HeroLayout = "center" | "left" | "split" | "split-bold" | "asymmetric" | "editorial" | "poster";
+export type FeatLayout = "grid" | "bento" | "list" | "editorial" | "index";
 export type HoverEffect = "lift" | "tilt";
 
 export interface SiteFeature {
@@ -103,6 +106,8 @@ export interface SiteContent {
   hover?: HoverEffect;
   /** Kosong = bagian testimoni tidak ditampilkan. */
   testimonial?: { text: string; name: string };
+  /** Gaya visual hasil latihan (paket gaya), mis. brutalism. Kosong = ikut Template. */
+  look?: SiteLook;
 }
 
 export const KIND_LABEL: Record<SiteKind, string> = {
@@ -159,6 +164,7 @@ export const HERO_LAYOUTS: { id: HeroLayout; name: string }[] = [
   { id: "split-bold", name: "Split 60/40" },
   { id: "asymmetric", name: "Asimetris" },
   { id: "editorial", name: "Editorial" },
+  { id: "poster", name: "Poster" },
 ];
 
 export const FEAT_LAYOUTS: { id: FeatLayout; name: string }[] = [
@@ -166,6 +172,7 @@ export const FEAT_LAYOUTS: { id: FeatLayout; name: string }[] = [
   { id: "bento", name: "Bento" },
   { id: "list", name: "Daftar" },
   { id: "editorial", name: "Editorial 01" },
+  { id: "index", name: "Indeks bernomor" },
 ];
 
 const KINDS: SiteKind[] = ["umkm", "jasa", "portofolio", "event", "profil", "artikel"];
@@ -174,10 +181,10 @@ export function isTemplateId(v: unknown): v is TemplateId {
   return typeof v === "string" && TEMPLATES.some((t) => t.id === v);
 }
 export function isHeroLayout(v: unknown): v is HeroLayout {
-  return v === "center" || v === "left" || v === "split" || v === "split-bold" || v === "asymmetric" || v === "editorial";
+  return v === "center" || v === "left" || v === "split" || v === "split-bold" || v === "asymmetric" || v === "editorial" || v === "poster";
 }
 export function isFeatLayout(v: unknown): v is FeatLayout {
-  return v === "grid" || v === "bento" || v === "list" || v === "editorial";
+  return v === "grid" || v === "bento" || v === "list" || v === "editorial" || v === "index";
 }
 export function isHexColor(v: unknown): v is string {
   return typeof v === "string" && /^#[0-9a-fA-F]{6}$/.test(v);
@@ -466,6 +473,7 @@ export function normalizeContent(raw: unknown, forceKind?: SiteKind): SiteConten
     featuresTitle: str(r.featuresTitle, 50) || "Keunggulan",
     closing: str(r.closing, 60) || "Hubungi kami",
     closingText: str(r.closingText, 120),
+    ...(normalizeLook(r.look) ? { look: normalizeLook(r.look) } : {}),
   };
 }
 
@@ -829,6 +837,232 @@ export function defaultPalette(template: TemplateId): [string, string] {
   return [tpl.accent, second];
 }
 
+/* ------------------------------------------------------------------ */
+/* Gaya hasil latihan (SiteContent.look): token, elemen, dan CSS-nya   */
+/* ------------------------------------------------------------------ */
+
+/** Huruf condensed tanpa unduhan font: Impact/Bebas di desktop, HelveticaNeue-CondensedBlack di iOS, sans-serif-condensed di Android. */
+const CONDENSED = `"Bebas Neue","Anton","Oswald","League Gothic",Impact,Haettenschweiler,"HelveticaNeue-CondensedBlack","Arial Narrow Bold","Arial Narrow","sans-serif-condensed",sans-serif`;
+/** Grotesk rapat ala poster Swiss. */
+const GROTESK = `"Helvetica Neue","Neue Haas Grotesk Display Pro",Helvetica,Arial,"Inter",sans-serif`;
+const LOOK_STACK: Record<LookFontFamily, string> = { condensed: CONDENSED, grotesk: GROTESK, sans: SANS, serif: SERIF, slab: SLAB, mono: MONO, display: DISPLAY };
+/** Perkiraan lebar rata-rata huruf kapital (em) per keluarga, untuk menghitung ukuran judul raksasa supaya muat. */
+const LOOK_WIDTH: Record<LookFontFamily, number> = { condensed: 0.47, grotesk: 0.66, display: 0.76, sans: 0.64, serif: 0.62, slab: 0.68, mono: 0.62 };
+
+/** Campur dua warna hex, k = porsi warna b (0..1). */
+function mixHex(a: string, b: string, k: number): string {
+  const x = parseInt(a.slice(1), 16);
+  const y = parseInt(b.slice(1), 16);
+  const ch = (s: number) => Math.round(((x >> s) & 255) * (1 - k) + ((y >> s) & 255) * k);
+  return "#" + [16, 8, 0].map((s) => ch(s).toString(16).padStart(2, "0")).join("");
+}
+
+/** Terapkan gaya hasil latihan ke tema: warna, huruf, bentuk. Elemen & tata letak ditangani buildSite/lookCss. */
+function applyLook(t: Theme, L: SiteLook): Theme {
+  const dark = relLum(L.bg) < 0.4;
+  let muted = mixHex(L.fg, L.bg, 0.28);
+  if (lookContrast(muted, L.bg) < 4.5) muted = L.fg;
+  const sh = L.shape;
+  return {
+    ...t,
+    bg: L.bg,
+    fg: L.fg,
+    muted,
+    card: L.bg,
+    line: L.ink,
+    navBg: rgb(L.bg),
+    dark,
+    radius: `${sh.radius}px`,
+    pill: `${sh.radius}px`,
+    shadow: sh.shadow === "hard" ? `6px 6px 0 ${L.ink}` : sh.shadow === "soft" ? "0 14px 34px rgba(0,0,0,.14)" : "none",
+    display: LOOK_STACK[L.fonts.title.family],
+    sub: LOOK_STACK[L.fonts.sub.family],
+    body: LOOK_STACK[L.fonts.body.family],
+    mono: LOOK_STACK[L.fonts.label.family],
+    headWeight: L.fonts.title.weight,
+    subWeight: L.fonts.sub.weight,
+    bodyWeight: L.fonts.body.weight,
+    upper: !!L.fonts.title.upper,
+    tracking: `${L.fonts.title.tracking ?? 0}em`,
+    heroScale: L.fonts.title.scale ?? 1,
+    gradientHead: false,
+    brutal: false,
+    glass: false,
+    noise: false,
+    deco: "none",
+    borderW: sh.border,
+    gridGap: `${sh.gap}px`,
+    cardPad: `${sh.pad}px`,
+    maxWidth: sh.width,
+    sectionGap: `clamp(${Math.round(sh.section * 0.55)}px,${(sh.section / 14).toFixed(1)}vw,${sh.section}px)`,
+    acc2: L.accent2,
+    ib: L.accent,
+  };
+}
+
+const svgOpen = (vb: string, extra = "") => `<svg viewBox="${vb}" aria-hidden="true" focusable="false"${extra}>`;
+
+/** Elemen dekoratif SVG (warna ikut currentColor / var(--a) / var(--ink)). */
+function lookSvg(id: string, seed = 7): string {
+  switch (id) {
+    case "arrow":
+      return `${svgOpen("0 0 48 48", ' fill="none" stroke="currentColor" stroke-width="5" stroke-linecap="square"')}<path d="M11 37 35 13M15 12h21v21"/></svg>`;
+    case "crosshair":
+      return `${svgOpen("0 0 200 200", ' fill="none" stroke="currentColor" stroke-width="1.6"')}<path d="M0 100H200M100 0V200"/><circle cx="100" cy="100" r="22"/><circle cx="100" cy="100" r="44"/><circle cx="100" cy="100" r="66"/><circle cx="100" cy="100" r="88"/><circle cx="100" cy="100" r="8" fill="var(--a)" stroke="none"/><circle cx="36" cy="64" r="5.5" fill="currentColor" stroke="none"/><circle cx="153" cy="104" r="5.5" fill="currentColor" stroke="none"/><circle cx="126" cy="154" r="4.5" fill="currentColor" stroke="none"/><circle cx="118" cy="16" r="2.5" fill="currentColor" stroke="none"/></svg>`;
+    case "barcode": {
+      let x = 0;
+      let h = seed >>> 0;
+      const bars: string[] = [];
+      while (x < 188) {
+        h = (Math.imul(h ^ (h >>> 13), 1103515245) + 12345) >>> 0;
+        const w = 1 + (h % 4);
+        if ((h >> 5) % 3) bars.push(`<rect x="${x}" y="0" width="${w}" height="92"/>`);
+        x += w + 1 + ((h >> 9) % 2);
+      }
+      const digits = String(seed).padStart(12, "0").slice(-12);
+      return `${svgOpen("0 0 190 116", ' fill="currentColor"')}${bars.join("")}<text x="0" y="112" font-family="ui-monospace,Menlo,monospace" font-size="15" letter-spacing="3">${digits.slice(0, 1)} ${digits.slice(1, 7)} ${digits.slice(7)}</text></svg>`;
+    }
+    case "sunburst": {
+      const lines: string[] = [];
+      for (let i = 0; i <= 18; i++) {
+        const ang = Math.PI * (i / 18);
+        lines.push(`<path d="M100 200L${(100 - Math.cos(ang) * 140).toFixed(1)} ${(200 - Math.sin(ang) * 140).toFixed(1)}"/>`);
+      }
+      for (let i = 0; i < 9; i++) lines.push(`<path d="M${20 + i * 20} 0V${50 - Math.abs(4 - i) * 6}"/>`);
+      return `${svgOpen("0 0 200 200", ' fill="none" stroke="currentColor" stroke-width="3"')}${lines.join("")}</svg>`;
+    }
+    case "asterisk":
+      return `${svgOpen("0 0 100 100")}<rect width="100" height="100" fill="var(--a)"/><path d="M50 13V87M13 50H87M23.8 23.8 76.2 76.2M76.2 23.8 23.8 76.2" stroke="var(--ink)" stroke-width="11"/></svg>`;
+    case "halftone": {
+      const dots: string[] = [];
+      for (let y = -46; y <= 46; y += 6)
+        for (let x = -46; x <= 46; x += 6) {
+          const d = Math.hypot(x, y);
+          if (d > 46) continue;
+          const shade = 1 - Math.hypot(x + 18, y + 18) / 96;
+          const r = Math.max(0.5, 2.4 * shade);
+          dots.push(`<circle cx="${50 + x}" cy="${50 + y}" r="${r.toFixed(2)}"/>`);
+        }
+      return `${svgOpen("0 0 100 100", ' fill="currentColor"')}${dots.join("")}</svg>`;
+    }
+    case "plus-grid": {
+      const p: string[] = [];
+      for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++) p.push(`<path d="M${12 + c * 26} ${18 + r * 26}h12M${18 + c * 26} ${12 + r * 26}v12"/>`);
+      return `${svgOpen("0 0 110 84", ' fill="none" stroke="currentColor" stroke-width="2"')}${p.join("")}</svg>`;
+    }
+    default:
+      return "";
+  }
+}
+
+const fontCss = (f: LookFont, size: string): string =>
+  `font:${f.weight} ${size}/${f.leading ?? 1.06} ${LOOK_STACK[f.family]};letter-spacing:${f.tracking ?? 0}em;text-transform:${f.upper ? "uppercase" : "none"}`;
+
+/** CSS tata letak "poster" & "index" (berlaku juga tanpa gaya latihan, memakai warna template). */
+function posterCss(t: Theme): string {
+  return `.h-poster{padding:clamp(18px,3vw,34px) 0 clamp(28px,4vw,48px);text-align:left}
+.pst-meta{display:grid;grid-template-columns:1.2fr .9fr 1fr auto 1fr;gap:22px;align-items:start;padding-bottom:20px;border-bottom:var(--bw) solid var(--ink)}
+.pst-meta p{margin:0}
+.pm-k{font:${t.headWeight} clamp(15px,1.7vw,21px)/1.04 ${t.display};text-transform:uppercase;letter-spacing:${t.tracking ?? "-.01em"};max-width:16ch}
+.pm-ln{display:flex;align-items:center;margin-top:12px}.pm-ln i{height:2px;flex:1;background:var(--fg)}.pm-ln b{width:18px;height:18px;border-radius:50%;background:var(--a);flex:none}
+.pm-s{font:600 12px/1.4 ${t.mono};text-transform:uppercase;letter-spacing:.05em;max-width:22ch}
+.pm-n{font:${t.headWeight} clamp(34px,4.8vw,62px)/.84 ${t.display};color:var(--at);padding-left:18px;border-left:2px solid var(--fg);letter-spacing:-.02em}
+.pm-l{list-style:none;margin:0;padding:0;font:600 12px/1.95 ${t.mono};text-transform:uppercase;letter-spacing:.06em}
+.pm-l li{display:flex;align-items:center;gap:8px}.pm-l svg{width:13px;height:13px;color:var(--at)}
+.pst-g{display:flex;flex-direction:column;margin:clamp(14px,2vw,24px) 0 0;font-family:${t.display};font-weight:${t.headWeight};text-transform:${t.upper ? "uppercase" : "none"};color:var(--fg)}
+.pst-g{gap:clamp(4px,.8vw,10px)}.pst-g span{display:block;padding:clamp(4px,.7vw,10px) 0}.pst-g svg{display:block;width:100%;height:auto;overflow:visible}
+.pst-g.tone .inv{background:var(--ink);color:var(--bg);box-shadow:0 0 0 100vmax var(--ink);clip-path:inset(0 -100vmax)}
+.pst-grid{display:grid;grid-template-columns:1fr 2fr 1fr;border:var(--bw) solid var(--ink);margin-top:clamp(16px,2.6vw,30px);background:var(--bg)}
+.pc{position:relative;min-width:0;padding:clamp(18px,2.4vw,28px);border-right:var(--bw) solid var(--ink)}.pc:last-child{border-right:0}
+.pc-ink{background:var(--ink);color:var(--bg)}
+.h-poster .pc-ink .sub{color:inherit;opacity:.92;margin:0 0 18px;font-size:15px;max-width:none}
+.pc-rule{display:block;width:44px;height:4px;background:var(--a);margin-bottom:18px}
+.pc-ink svg{width:min(150px,70%);height:auto;margin-top:6px}
+.pc-acc{background:var(--a);color:var(--on);padding-bottom:clamp(64px,7vw,84px)}
+.h-poster .pc-acc h1{font-size:clamp(28px,3.7vw,54px);line-height:.98;margin:0 0 22px;max-width:none;color:inherit;-webkit-text-fill-color:currentColor;background:none}
+.h-poster .pc-acc .row{justify-content:flex-start}
+.pc-acc .btn{background:var(--ink);color:var(--bg);border-color:var(--ink);box-shadow:none}
+.pc-acc .btn.ghost{background:transparent;color:inherit;border-color:currentColor}
+.pc-arw{position:absolute;right:18px;bottom:16px;width:46px;height:46px;color:currentColor}
+.pc-el{display:grid;place-items:center;color:var(--fg);min-height:200px;overflow:hidden}
+.pc-el svg{width:100%;max-width:230px;height:auto}
+.pc-el img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.idx{display:grid;grid-template-columns:.9fr 1.4fr;border:var(--bw) solid var(--ink)}
+.idx-h{display:flex;flex-direction:column;gap:14px;padding:clamp(20px,3vw,36px);border-right:var(--bw) solid var(--ink)}
+.idx-n{font:${t.headWeight} clamp(80px,13vw,170px)/.8 ${t.display};color:var(--at);letter-spacing:-.03em}
+.idx-h h2{margin:0}.idx-h p{margin:0;color:var(--muted)}
+.idx-l{list-style:none;margin:0;padding:0}
+.idx-l li{display:grid;grid-template-columns:auto 1fr;gap:18px;padding:clamp(16px,2vw,22px) clamp(18px,2.6vw,30px);border-bottom:var(--bw) solid var(--ink);transition:background .15s,color .15s}
+.idx-l li:last-child{border-bottom:0}
+.idx-i{font:700 13px ${t.mono};color:var(--at);padding-top:5px}
+.idx-l h3{font-size:clamp(18px,2vw,24px);line-height:1.1;margin:0 0 6px;${t.upper ? "text-transform:uppercase;" : ""}}
+.idx-l p{margin:0;color:var(--muted)}
+.idx-l li:hover{background:var(--a);color:var(--on)}.idx-l li:hover p,.idx-l li:hover .idx-i{color:inherit}
+.tick{overflow:hidden;background:var(--a);color:var(--on);border-bottom:var(--bw) solid var(--ink)}
+.tk{display:flex;width:max-content;animation:tk 36s linear infinite;padding:12px 0;font:700 14px/1 ${t.mono};text-transform:uppercase;letter-spacing:.08em;white-space:nowrap}
+.tk span{padding-right:30px}
+@keyframes tk{to{transform:translateX(-50%)}}
+@media(max-width:900px){.pst-meta{grid-template-columns:1fr auto}.pm-ln,.pm-s,.pm-l{display:none}.pst-grid{grid-template-columns:1fr}.pc{border-right:0;border-bottom:var(--bw) solid var(--ink)}.pc:last-child{border-bottom:0}.pc-el{min-height:180px}.idx{grid-template-columns:1fr}.idx-h{border-right:0;border-bottom:var(--bw) solid var(--ink)}}`;
+}
+
+/** CSS tambahan saat gaya hasil latihan aktif: semua komponen ikut karakter gaya (huruf, garis, sudut, blok terbalik). */
+function lookCss(L: SiteLook): string {
+  const B = L.shape.border;
+  const R = L.shape.radius;
+  const F = L.fonts;
+  const hard = L.shape.shadow === "hard";
+  const gap0 = L.shape.gap === 0;
+  const arrow = L.elements.includes("arrow");
+  const lbl = (size: string) => fontCss({ ...F.label, leading: 1.2 }, size);
+  return `
+.lk .nav{background:var(--bg);border-bottom:${B}px solid var(--ink)}
+.lk .brand{${fontCss({ ...F.title, leading: 1 }, "19px")}}
+.lk .brand i{border-radius:${R}px;background:var(--ink);color:var(--bg);border:0}
+.lk .links{${lbl("12.5px")};color:var(--fg)}
+.lk .badge{${lbl("12px")};color:var(--fg);border:${Math.max(1, B - 1)}px solid var(--ink);border-radius:${R}px;padding:6px 10px}
+.lk .btn{border-radius:${R}px;border:${B}px solid var(--ink);${lbl("13.5px")};padding:14px 20px;box-shadow:${hard ? "4px 4px 0 var(--ink)" : "none"};transition:background .12s,color .12s,transform .12s}
+.lk .btn.ghost{background:transparent;color:var(--fg);border-color:var(--ink);box-shadow:none}
+.lk .btn:hover{opacity:1;background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.lk .btn.sm{padding:9px 13px;font-size:12px}
+${arrow ? `.lk .btn:not(.sm):not(.cartbtn):after{content:"\\2197";font-size:1.25em;line-height:.8;margin-left:2px}` : ""}
+.lk h2{${fontCss(F.sub, `clamp(34px,6.2vw,${Math.round(82 * (F.title.scale ?? 1))}px)`)}}
+.lk .card{border:${B}px solid var(--ink);border-radius:${R}px;box-shadow:${hard ? "6px 6px 0 var(--ink)" : "none"};background:var(--card)}
+.lk .card h3,.lk .pbody h3{${fontCss({ ...F.sub, leading: 1.08 }, "clamp(19px,1.9vw,23px)")}}
+.lk .ico,.lk .pico,.lk .vrow i,.lk .ci i,.lk .acard i,.lk .tqh .ico{border-radius:${R}px;background:var(--a);color:var(--on)}
+.lk .feat:hover,.lk .prod:hover,.lk .scard:hover,.lk .acard:hover,.lk .post:hover{transform:none;box-shadow:${hard ? "8px 8px 0 var(--ink)" : "none"};border-color:var(--ink)}
+.lk .feat:hover{background:var(--a);color:var(--on)}.lk .feat:hover p{color:inherit}.lk .feat:hover .ico{background:var(--ink);color:var(--bg)}
+.lk .bento .feat:first-child{background:var(--ink);color:var(--bg)}.lk .bento .feat:first-child .ico{background:var(--a);color:var(--on)}
+.lk .prod.large{background:var(--a);color:var(--on)}.lk .prod.large p,.lk .prod.large .pprice,.lk .prod.large .ptag{color:inherit;border-color:currentColor}
+.lk .ptag{${lbl("11px")};border:1px solid var(--ink);border-radius:${R}px;color:var(--fg)}
+.lk .ptag.hot{background:var(--ink);color:var(--bg)}
+.lk .pprice{font-family:${LOOK_STACK[F.title.family]};font-weight:${F.title.weight};font-size:20px}
+.lk .hero{border-bottom:${B}px solid var(--ink)}
+.lk main>section{border-bottom:${B}px solid var(--ink)}
+.lk .steps li{border-top:${B}px solid var(--ink);padding-top:16px}
+.lk .steps b{${fontCss({ ...F.title, leading: 0.9 }, "clamp(44px,6vw,76px)")};color:var(--at);margin-bottom:12px}
+.lk .ci small,.lk footer{${lbl("12px")}}
+.lk .lead{color:var(--fg)}
+.lk .tq blockquote p{${fontCss({ ...F.sub, leading: 1.1 }, "clamp(24px,3.4vw,40px)")}}
+.lk .band{border-radius:${R}px;background:var(--ink);color:var(--bg);border:${B}px solid var(--ink);box-shadow:none}
+.lk .band h2{${fontCss(F.title, "clamp(36px,6.4vw,84px)")};color:inherit}
+.lk .band .btn{background:var(--a);color:var(--on);border-color:var(--a)}
+.lk .band .btn.ghost{background:transparent;color:var(--bg);border-color:var(--bg)}
+.lk .band .btn:hover{background:var(--bg);color:var(--ink);border-color:var(--bg)}
+.bd-el{position:absolute;right:clamp(14px,3vw,36px);top:clamp(14px,3vw,30px);width:clamp(44px,6vw,72px);height:auto;z-index:0;opacity:.95}
+.bd-el svg{width:100%;height:auto}
+.lk .band>*:not(.bd-el){z-index:1}
+.lk footer{border-top:0;color:var(--fg)}
+.lk ::selection{background:var(--a);color:var(--on)}
+.lk .glow,.lk .orn{display:none}
+${gap0 ? `.lk-g0 .grid,.lk-g0 .items,.lk-g0 .bento,.lk-g0 .frows,.lk-g0 .posts{gap:0}
+.lk-g0 .grid>.card,.lk-g0 .items>.card,.lk-g0 .bento>.card,.lk-g0 .frows>.card,.lk-g0 .posts>.card{margin:0 -${B}px -${B}px 0;box-shadow:none}
+.lk-g0 .steps{gap:0 24px}` : ""}
+.lk-idx main{counter-reset:sec}.lk-idx main>section{counter-increment:sec}
+.lk-idx main>section h2:before{content:"(" counter(sec,decimal-leading-zero) ")";display:block;margin-bottom:14px;${lbl("12px")};color:var(--at)}
+.lk-idx .band h2:before{color:inherit;opacity:.7}.lk-idx .idx-h h2:before{display:none}
+.lk .steps li{padding:18px 20px 22px}`;
+}
+
 export interface RenderOpts {
   hero?: HeroLayout;
   feat?: FeatLayout;
@@ -852,6 +1086,8 @@ export interface RenderOpts {
     sub?: { family?: FontRoleId; weight?: FontWeightId };
     body?: { family?: FontRoleId; weight?: FontWeightId };
   };
+  /** false = abaikan gaya hasil latihan (content.look), mis. karena pengguna memilih Template/warna sendiri. */
+  look?: boolean;
   /** Gambar unggahan (data URL). */
   images?: SiteImages;
   /** "inline" (default) = data URL tertanam di HTML; "files" = berkas terpisah di assets/img (untuk ZIP). */
@@ -884,7 +1120,7 @@ const RUNTIME_UI_ICONS = ["plus", "minus", "pencil", "trash-2", "x", "check", "d
 
 const fmtRp = (n: number): string => "Rp " + String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 
-function buildCss(t: Theme, a: string, hero: HeroLayout, shop: boolean, hover: HoverEffect, extra: string[], article: boolean): string {
+function buildCss(t: Theme, a: string, hero: HeroLayout, shop: boolean, hover: HoverEffect, extra: string[], article: boolean, look?: SiteLook, poster = false): string {
   const A = rgb(a);
   const aText = readable(a, t.dark, t.bg);
   const bd = t.brutal ? "3px solid #0a0a0a" : `${t.borderW ?? 1}px solid ${t.line}`;
@@ -893,7 +1129,7 @@ function buildCss(t: Theme, a: string, hero: HeroLayout, shop: boolean, hover: H
     : "";
   const heroLeft = hero !== "center";
 
-  return `:root{--bg:${t.bg};--fg:${t.fg};--muted:${t.muted};--card:${t.card};--line:${t.line};--a:${a};--at:${aText};--a-soft:rgba(${A},${t.dark ? ".16" : ".11"});--on:${onColor(a)};--r:${t.radius};--sh:${t.shadow};--pill:${t.pill};--a2:${t.acc2 ?? a};--ib:${t.ib ?? "var(--a-soft)"}}
+  return `:root{--bg:${t.bg};--fg:${t.fg};--muted:${t.muted};--card:${t.card};--line:${t.line};--a:${a};--at:${aText};--a-soft:rgba(${A},${t.dark ? ".16" : ".11"});--on:${onColor(a)};--r:${t.radius};--sh:${t.shadow};--pill:${t.pill};--a2:${t.acc2 ?? a};--ib:${t.ib ?? "var(--a-soft)"};--ink:${look?.ink ?? (t.brutal ? "#0a0a0a" : t.fg)};--bw:${look ? look.shape.border : t.brutal ? 3 : Math.max(2, t.borderW ?? 1)}px}
 *{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:96px}
 body{margin:0;background:var(--bg);color:var(--fg);font:${t.bodyWeight ?? 400} 16px/1.65 ${t.body};-webkit-font-smoothing:antialiased;overflow-x:hidden}
 .wrap{max-width:${t.maxWidth ?? 1120}px;margin:0 auto;padding:0 24px;position:relative}
@@ -1034,6 +1270,8 @@ h2{font-size:clamp(${Math.round(28 * (t.heroScale ?? 1))}px,${4.4 * (t.heroScale
 footer{padding:34px 0 44px;border-top:${bd};color:var(--muted);font-size:13.5px}
 footer .wrap{display:flex;flex-wrap:wrap;gap:8px 20px;justify-content:space-between}
 ${extraCss(t, bd, hover, extra)}
+${poster ? posterCss(t) : ""}
+${look ? lookCss(look) : ""}
 ${article ? articleCss(t, bd) : ""}
 ${shop ? shopCss(t, bd) : ""}
 
@@ -1252,11 +1490,21 @@ function decodeDataUrl(u: string): { ext: string; data: Uint8Array } | null {
 export function buildSite(content: SiteContent, template: TemplateId, accent?: string, opts: RenderOpts = {}): SiteBundle {
   const base = THEMES[template];
   const custom = (opts.palette ?? []).filter(isHexColor).map((x) => x.toLowerCase()).slice(0, MAX_PALETTE);
+  // Gaya hasil latihan: dipakai kecuali dimatikan (pengguna memilih Template/warna/gaya sendiri).
+  const look = opts.look === false ? undefined : content.look;
   const a =
     custom[0] ??
-    (isHexColor(accent) ? accent : isHexColor(content.accent) && content.accent ? content.accent : TEMPLATES.find((x) => x.id === template)!.accent);
+    (look
+      ? isHexColor(content.accent) && content.accent
+        ? content.accent
+        : look.accent
+      : isHexColor(accent)
+        ? accent
+        : isHexColor(content.accent) && content.accent
+          ? content.accent
+          : TEMPLATES.find((x) => x.id === template)!.accent);
   // Palet kustom: warna ke-2 menggantikan aksen kedua template; warna ke-3 dst. menjadi warna tambahan (ikon bergantian + sorot hero).
-  let t: Theme = base;
+  let t: Theme = look ? applyLook(base, look) : base;
   // Warna latar kustom (mode "Atur manual"): diterapkan lebih dulu, supaya aksen/gaya/huruf di bawah ini
   // semuanya menimpa di atas latar yang benar (termasuk status terang/gelap untuk kontras teks & kartu).
   if (opts.bg && isHexColor(opts.bg)) t = { ...t, ...surfaceFromBg(opts.bg) };
@@ -1359,6 +1607,43 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
   const ctaRow = `<div class="row"><a class="btn" href="${ctaHref}">${esc(c.ctaLabel)}</a>${ghost ? `<a class="btn ghost" href="${ghost.href}">${ghost.label}</a>` : ""}</div>`;
   const heroText = `${badgeHtml}<h1>${esc(c.headline)}</h1>${subHtml}${ctaRow}`;
 
+  /* Poster: baris meta, nama raksasa (dua nada bila "bands"), lalu grid sel bergaris: teks terbalik | blok aksen + judul + tombol | elemen. */
+  const els = new Set<string>(look ? look.elements : ["meta", "arrow", "crosshair"]);
+  const posterHero = (): string => {
+    const year = String(new Date().getFullYear());
+    const metaLabels = (look?.meta.length ? look.meta : c.features.slice(0, 4).map((f) => clip(f.title, 26))).slice(0, 4);
+    const numTxt = (look?.num || year).slice(0, 4);
+    const kicker = look?.kicker || c.slogan || c.badge || "";
+    const meta = els.has("meta")
+      ? `<div class="pst-meta"><p class="pm-k">${esc(c.slogan || c.brand)}</p><span class="pm-ln" aria-hidden="true"><i></i><b></b></span><p class="pm-s">${esc(c.badge || kicker)}</p><p class="pm-n" aria-hidden="true">${esc(numTxt.slice(0, 2))}<br>${esc(numTxt.slice(2))}</p><ul class="pm-l">${metaLabels
+          .map((m) => `<li>${lookSvg("arrow")}${esc(m)}</li>`)
+          .join("")}</ul></div>`
+      : "";
+    // Judul raksasa = nama usaha, satu kata per baris (≤ 3 kata). Ukuran dihitung dari kata terpanjang supaya muat.
+    const giant = (t.upper ? c.brand.toUpperCase() : c.brand).split(/\s+/).filter(Boolean);
+    const fam: LookFontFamily = look?.fonts.title.family ?? (t.display === DISPLAY ? "display" : t.display === SERIF ? "serif" : "sans");
+    const lines = giant.length <= 3 ? giant : [giant.slice(0, Math.ceil(giant.length / 2)).join(" "), giant.slice(Math.ceil(giant.length / 2)).join(" ")];
+    // Tiap baris = SVG dengan textLength: huruf dirapatkan/diregangkan tepat selebar kolom, di font apa pun (tanpa unduhan font).
+    const tone = els.has("bands") && lines.length >= 2;
+    const half = Math.ceil(lines.length / 2);
+    const fw = look?.fonts.title.weight ?? t.headWeight;
+    const giantHtml = `<div class="pst-g${tone ? " tone" : ""}" aria-hidden="true">${lines
+      .map((w, i) => {
+        const n = Math.max(3, Array.from(w).length);
+        const fs = Math.min(300, Math.round(1000 / (n * LOOK_WIDTH[fam])));
+        const up = t.upper;
+        const h = Math.round(fs * (up ? 0.8 : 1.02));
+        const y = Math.round(fs * (up ? 0.77 : 0.8));
+        return `<span${tone && i < half ? ' class="inv"' : ""}><svg viewBox="0 0 1000 ${h}" focusable="false"><text x="0" y="${y}" textLength="1000" lengthAdjust="spacingAndGlyphs" font-size="${fs}" font-weight="${fw}" fill="currentColor" style="font-family:${esc(t.display).replace(/&quot;/g, "'")}">${esc(w)}</text></svg></span>`;
+      })
+      .join("")}</div>`;
+    const inkArt = els.has("halftone") ? lookSvg("halftone") : els.has("plus-grid") ? lookSvg("plus-grid") : "";
+    const elId = ["crosshair", "barcode", "sunburst", "asterisk"].find((x) => els.has(x));
+    const elArt = heroImg ? `<img src="${esc(heroImg)}" alt="${esc(c.brand)}">` : elId ? lookSvg(elId, hash(c.brand) % 1e12) : lookSvg("crosshair");
+    const grid = `<div class="pst-grid"><div class="pc pc-ink">${c.subheadline ? `<p class="sub">${esc(c.subheadline)}</p>` : ""}<span class="pc-rule" aria-hidden="true"></span>${inkArt}</div><div class="pc pc-acc">${c.badge && !els.has("meta") ? badgeHtml : ""}<h1>${esc(c.headline)}</h1>${ctaRow}${els.has("arrow") ? `<span class="pc-arw" aria-hidden="true">${lookSvg("arrow")}</span>` : ""}</div><div class="pc pc-el">${elArt}</div></div>`;
+    return `<div class="pst">${meta}${giantHtml}${grid}</div>`;
+  };
+
   let heroInner = heroText + himg;
   if (heroL === "split") {
     heroInner = `<div class="hsplit"><div>${heroText}</div><div class="visual">${himg}${visualRows}</div></div>`;
@@ -1372,11 +1657,17 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
       `<div class="acard ${cls}"><i>${ico(r.icon, 20)}</i><div><b>${esc(r.title)}</b><small>${esc(clip(r.text, n))}</small></div>${r.tail ? `<span class="ap">${esc(r.tail)}</span>` : ""}</div>`;
     const cards = heroRows.map((r, i) => card(r, i === 0 ? "big" : "", i === 0 ? 100 : 48)).join("");
     heroInner = `<div class="hsplit hasym"><div>${heroText}</div><div class="agrid">${himg}${cards}</div></div>`;
+  } else if (heroL === "poster") {
+    heroInner = posterHero();
   } else if (heroL === "editorial") {
     heroInner = `<div class="hed"><div class="hed-top"><span class="slo">${esc(c.slogan || c.brand)}</span>${c.badge ? badgeHtml : ""}</div><h1>${esc(c.headline)}</h1><div class="hed-bot">${subHtml}${ctaRow}</div></div>${himg}`;
   }
 
-  const hero = `<div class="hero h-${heroL}"><div class="glow"></div>${ornamentMarkup(t.deco)}<div class="wrap">${heroInner}</div></div>`;
+  const tickText = look?.elements.includes("ticker") ? look.ticker || c.slogan || c.brand : "";
+  const ticker = tickText
+    ? `<div class="tick" aria-hidden="true"><div class="tk">${Array.from({ length: 12 }, () => `<span>${esc(tickText)}</span><span>\u25CF</span>`).join("")}</div></div>`
+    : "";
+  const hero = `<div class="hero h-${heroL}"><div class="glow"></div>${ornamentMarkup(t.deco)}<div class="wrap">${heroInner}</div></div>${ticker}`;
 
   /* ----- katalog / layanan ----- */
   const priceLabel = (i: SiteItem) => (i.price > 0 ? fmtRp(i.price) : "Tanya harga");
@@ -1427,8 +1718,13 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
 
   /* ----- fitur ----- */
   const featCard = (f: SiteFeature, n: number, cls = "") => `<article class="card feat ${cls}${f.span === 2 ? " s2" : ""}"${toneStyle(n + 1)}><div class="ico">${ico(f.icon, 20)}</div><div><h3>${esc(f.title)}</h3><p>${esc(f.text)}</p></div></article>`;
+  const pad2 = (n: number) => String(n).padStart(2, "0");
   const featBody =
-    featL === "bento"
+    featL === "index"
+      ? `<div class="idx"><div class="idx-h"><b class="idx-n" aria-hidden="true">${pad2(c.features.length)}</b><h2>${esc(c.featuresTitle)}</h2>${c.slogan ? `<p>${esc(c.slogan)}</p>` : ""}</div><ol class="idx-l">${c.features
+          .map((f, i) => `<li><span class="idx-i">${pad2(i + 1)}</span><div><h3>${esc(f.title)}</h3><p>${esc(f.text)}</p></div></li>`)
+          .join("")}</ol></div>`
+      : featL === "bento"
       ? `<h2>${esc(c.featuresTitle)}</h2><div class="bento ${c.features.some((f) => f.span === 2) ? "bx" : `b${c.features.length}`}">${c.features.map((f, n) => featCard(f, n)).join("")}</div>`
       : featL === "editorial"
         ? `<div class="flist"><div class="head"><h2>${esc(c.featuresTitle)}</h2>${c.slogan ? `<p>${esc(c.slogan)}</p>` : ""}</div><ol class="fedlist">${c.features
@@ -1471,7 +1767,7 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
   ].join("");
 
   const band = buttons
-    ? `<section id="kontak"><div class="wrap"><div class="band">${ornamentMarkup(t.deco)}<div><h2>${esc(c.closing)}</h2>${c.closingText ? `<p>${esc(c.closingText)}</p>` : ""}</div><div class="row">${buttons}</div></div></div></section>`
+    ? `<section id="kontak"><div class="wrap"><div class="band">${ornamentMarkup(t.deco)}${look && (els.has("asterisk") || els.has("arrow")) ? `<span class="bd-el" aria-hidden="true">${lookSvg(els.has("asterisk") ? "asterisk" : "arrow")}</span>` : ""}<div><h2>${esc(c.closing)}</h2>${c.closingText ? `<p>${esc(c.closingText)}</p>` : ""}</div><div class="row">${buttons}</div></div></div></section>`
     : "";
 
   /* ----- urutan bagian: UMKM = katalog dulu; artikel = daftar artikel dulu; lainnya = keunggulan dulu ----- */
@@ -1501,9 +1797,12 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
     })}</script>`;
   }
 
-  const css = buildCss(t, a, heroL, shop, c.hover ?? "lift", extra, isArticle);
+  const css = buildCss(t, a, heroL, shop, c.hover ?? "lift", extra, isArticle, look, heroL === "poster" || featL === "index" || !!ticker);
   const js = shop ? SHOP_RUNTIME_JS : "";
 
+  const bodyCls = look
+    ? ` class="lk lk-${esc(look.style)}${look.shape.gap === 0 ? " lk-g0" : ""}${look.elements.includes("index") ? " lk-idx" : ""}"`
+    : "";
   const head = `<meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${esc(c.brand)} | ${esc(c.headline)}</title>
@@ -1528,7 +1827,7 @@ ${head}
 ${css}
 </style>
 </head>
-<body>
+<body${bodyCls}>
 ${body}
 ${js ? `<script>\n${js}\n</script>` : ""}
 </body>
@@ -1540,7 +1839,7 @@ ${js ? `<script>\n${js}\n</script>` : ""}
 ${head}
 <link rel="stylesheet" href="assets/style.css">
 </head>
-<body>
+<body${bodyCls}>
 ${body}
 ${js ? `<script src="assets/app.js" defer></script>` : ""}
 </body>

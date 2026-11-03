@@ -6,6 +6,7 @@
  * scripts/train-site-engine.mjs, supaya aturan validasinya satu.
  */
 import { KINDS, type DomainPack, type FeedbackExample, type Kind } from "./core.ts";
+import { isStylePack, validateStyle, type StylePack } from "../site-look.ts";
 
 export interface PackRules {
   icons: ReadonlySet<string>;
@@ -17,6 +18,8 @@ export interface PackRules {
 
 export interface ParsedImport {
   packs: DomainPack[];
+  /** Paket gaya visual (type: "style"). */
+  styles: StylePack[];
   feedback: FeedbackExample[];
   /** Masalah yang membuat satu paket/contoh ditolak. */
   errors: string[];
@@ -45,7 +48,7 @@ const looksLikeFeedback = (v: unknown) => isObj(v) && typeof v.prompt === "strin
  *  - campuran: `{"packs": [...], "feedback": [...]}`
  */
 export function parseImport(text: string): ParsedImport {
-  const out: ParsedImport = { packs: [], feedback: [], errors: [], notes: [] };
+  const out: ParsedImport = { packs: [], styles: [], feedback: [], errors: [], notes: [] };
   const src = text.replace(/^﻿/, "").trim();
   if (!src) {
     out.errors.push("Isi impor kosong.");
@@ -55,7 +58,8 @@ export function parseImport(text: string): ParsedImport {
   let values: unknown[] = [];
   try {
     const v = JSON.parse(src);
-    if (isObj(v) && (Array.isArray(v.packs) || Array.isArray(v.feedback))) values = [...((v.packs as unknown[]) ?? []), ...((v.feedback as unknown[]) ?? [])];
+    if (isObj(v) && (Array.isArray(v.packs) || Array.isArray(v.feedback) || Array.isArray(v.styles)))
+      values = [...((v.packs as unknown[]) ?? []), ...((v.styles as unknown[]) ?? []), ...((v.feedback as unknown[]) ?? [])];
     else values = Array.isArray(v) ? v : [v];
   } catch {
     // Bukan satu dokumen JSON: coba JSONL.
@@ -70,13 +74,17 @@ export function parseImport(text: string): ParsedImport {
   }
 
   values.forEach((v, i) => {
+    if (isStylePack(v)) {
+      out.styles.push(v as unknown as StylePack);
+      return;
+    }
     if (looksLikeFeedback(v)) {
       const f = v as Record<string, unknown>;
       const prompt = String(f.prompt).trim().slice(0, 1400);
       if (prompt.length < 10) out.errors.push(`Contoh #${i + 1}: "prompt" terlalu pendek (minimal 10 huruf).`);
       else out.feedback.push({ prompt, content: f.content as Record<string, unknown>, at: typeof f.at === "number" ? f.at : Date.now() });
     } else if (looksLikePack(v)) out.packs.push(v as unknown as DomainPack);
-    else out.errors.push(`Entri #${i + 1}: tidak dikenali. Paket butuh "id" dan "prompts"; contoh butuh "prompt" dan "content".`);
+    else out.errors.push(`Entri #${i + 1}: tidak dikenali. Paket domain butuh "id" dan "prompts"; paket gaya butuh "type": "style"; contoh butuh "prompt" dan "content".`);
   });
   return out;
 }
@@ -170,4 +178,14 @@ export function mergePacks(bundled: DomainPack[], imported: DomainPack[]): Domai
 
 export function isKind(v: unknown): v is Kind {
   return KINDS.includes(v as Kind);
+}
+
+export { validateStyle };
+export type { StylePack };
+
+/** Gabungkan gaya bawaan dengan gaya impor (id sama = impor menggantikan). */
+export function mergeStyles(bundled: StylePack[], imported: StylePack[]): StylePack[] {
+  const byId = new Map(bundled.map((x) => [x.id, x]));
+  for (const x of imported) byId.set(x.id, x);
+  return [...byId.values()];
 }

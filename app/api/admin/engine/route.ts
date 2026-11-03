@@ -3,7 +3,7 @@ import { kv } from "@vercel/kv";
 import { fail, ok, withErrorHandling } from "@/app/api/_lib/response";
 import { adminFromReq, audit } from "@/app/api/_lib/admin";
 import { trainModel, type DomainPack, type FeedbackExample, type SiteModel } from "@/lib/site-engine/core";
-import { completePack, mergePacks, parseImport, validatePack, type PackRules } from "@/lib/site-engine/import";
+import { completePack, mergePacks, mergeStyles, parseImport, validatePack, validateStyle, type PackRules, type StylePack } from "@/lib/site-engine/import";
 import {
   ENGINE_FEEDBACK_KEY,
   ENGINE_FEEDBACK_MAX,
@@ -11,6 +11,8 @@ import {
   ENGINE_PACKS_KEY,
   ENGINE_PACKS_MAX,
   ENGINE_PACKS_MAX_BYTES,
+  ENGINE_STYLES_KEY,
+  ENGINE_STYLES_MAX,
   bundledModel,
   loadModel,
   resetModelCache,
@@ -47,6 +49,16 @@ async function readFeedback(): Promise<FeedbackExample[]> {
     .filter((r) => r && typeof r.prompt === "string" && r.content && typeof r.content === "object");
 }
 
+/** Gaya bawaan = yang ikut di model.json (hasil `npm run engine:train` dengan data/site-engine/styles/). */
+const BUNDLED_STYLES = Object.values(bundledModel().styles ?? {});
+const BUNDLED_STYLE_IDS = new Set(BUNDLED_STYLES.map((x) => x.id));
+
+async function readImportedStyles(): Promise<StylePack[]> {
+  const v = await kv.get<StylePack[] | string>(ENGINE_STYLES_KEY).catch(() => null);
+  const list = typeof v === "string" ? (JSON.parse(v) as StylePack[]) : v;
+  return Array.isArray(list) ? list : [];
+}
+
 async function readImportedPacks(): Promise<DomainPack[]> {
   const v = await kv.get<DomainPack[] | string>(ENGINE_PACKS_KEY).catch(() => null);
   const list = typeof v === "string" ? (JSON.parse(v) as DomainPack[]) : v;
@@ -55,8 +67,8 @@ async function readImportedPacks(): Promise<DomainPack[]> {
 
 /** Latih model dari paket bawaan + paket impor + contoh pengguna, simpan di KV, dan langsung pakai. */
 async function retrain(): Promise<SiteModel> {
-  const [imported, feedback] = await Promise.all([readImportedPacks(), readFeedback()]);
-  const model = trainModel(mergePacks(BUNDLED_PACKS, imported), feedback);
+  const [imported, feedback, styles] = await Promise.all([readImportedPacks(), readFeedback(), readImportedStyles()]);
+  const model = trainModel(mergePacks(BUNDLED_PACKS, imported), feedback, mergeStyles(BUNDLED_STYLES, styles));
   await kv.set(ENGINE_MODEL_KEY, JSON.stringify(model));
   resetModelCache();
   return model;
@@ -69,12 +81,22 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
   const stored = await kv.get<SiteModel>(ENGINE_MODEL_KEY).catch(() => null);
   const feedback = await readFeedback().catch(() => []);
   const imported = await readImportedPacks().catch(() => []);
+  const importedStyles = await readImportedStyles().catch(() => []);
   const importedIds = new Set(imported.map((p) => p.id));
   return ok({
     active: { source: stored ? "admin" : "bawaan", trainedAt: active.trainedAt, stats: active.stats },
     bundled: { trainedAt: bundledModel().trainedAt, stats: bundledModel().stats },
     feedbackCount: feedback.length,
     recent: feedback.slice(0, 20).map((f) => ({ prompt: f.prompt, kind: f.content.kind, brand: f.content.brand, at: f.at ?? null })),
+    styles: Object.values(active.styles ?? {}).map((x) => ({
+      id: x.id,
+      label: x.label,
+      desc: x.desc ?? "",
+      palettes: x.palettes.map((p) => [p.bg, p.fg, p.accent]),
+      keywords: x.keywords.slice(0, 6),
+      imported: importedStyles.some((y) => y.id === x.id),
+      chance: x.fit?.chance ?? 0,
+    })),
     imported: imported.map((p) => ({ id: p.id, kind: p.kind, label: p.label, prompts: p.prompts.length, items: p.items.length, replacesBundled: BUNDLED_IDS.has(p.id) })),
     domains: Object.values(active.packs).map((p) => ({
       id: p.id,
@@ -101,7 +123,7 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
 export const POST = withErrorHandling(async (req: NextRequest) => {
   const admin = adminFromReq(req);
   if (!admin) return fail("Tidak ditemukan.", 404, "not_found");
-  let body: { action?: unknown; text?: unknown; id?: unknown } | null = null;
+  let body: { action?: unknown; text?: unknown; id?: unknown; kind?: unknown } | null = null;
   try {
     body = await req.json();
   } catch {
@@ -115,13 +137,20 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
     const parsed = parseImport(text);
     const errors = [...parsed.errors];
 
+    const styleRules = { heroes: RULES.heroes, feats: RULES.feats, banned: RULES.banned };
+    const seenStyle = new Set<string>();
+    for (const st of parsed.styles) {
+      errors.push(...validateStyle(st, styleRules));
+      if (seenStyle.has(st.id)) errors.push(`Gaya "${st.id}" muncul dua kali di file ini.`);
+      seenStyle.add(st.id);
+    }
     const seen = new Set<string>();
     for (const p of parsed.packs) {
       errors.push(...validatePack(p, RULES));
       if (seen.has(p.id)) errors.push(`Paket "${p.id}" muncul dua kali di file ini.`);
       seen.add(p.id);
     }
-    if (!parsed.packs.length && !parsed.feedback.length && !errors.length) errors.push("Tidak ada paket atau contoh yang bisa diimpor.");
+    if (!parsed.packs.length && !parsed.styles.length && !parsed.feedback.length && !errors.length) errors.push("Tidak ada paket atau contoh yang bisa diimpor.");
     // Semua atau tidak sama sekali: file dengan kesalahan tidak diimpor sebagian, supaya mudah diperbaiki lalu diunggah ulang.
     if (errors.length) return ok({ imported: false, errors: errors.slice(0, 50), moreErrors: Math.max(0, errors.length - 50) });
 
@@ -144,7 +173,17 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
     if (size > ENGINE_PACKS_MAX_BYTES)
       return ok({ imported: false, errors: [`Total paket impor ${Math.round(size / 1000)} KB, melebihi ${ENGINE_PACKS_MAX_BYTES / 1000} KB. Pindahkan sebagian ke data/site-engine/packs/ di repo.`] });
 
+    const styleById = new Map((await readImportedStyles()).map((x) => [x.id, x]));
+    const stylesAdded: string[] = [];
+    const stylesUpdated: string[] = [];
+    for (const st of parsed.styles) {
+      (styleById.has(st.id) || BUNDLED_STYLE_IDS.has(st.id) ? stylesUpdated : stylesAdded).push(st.id);
+      styleById.set(st.id, st);
+    }
+    if (styleById.size > ENGINE_STYLES_MAX) return ok({ imported: false, errors: [`Maksimal ${ENGINE_STYLES_MAX} gaya impor.`] });
+
     if (parsed.packs.length) await kv.set(ENGINE_PACKS_KEY, JSON.stringify(next));
+    if (parsed.styles.length) await kv.set(ENGINE_STYLES_KEY, JSON.stringify([...styleById.values()]));
     if (parsed.feedback.length) {
       const rows = parsed.feedback.slice(0, ENGINE_FEEDBACK_MAX).map((f) => JSON.stringify(f));
       for (let i = 0; i < rows.length; i += 200) await kv.lpush(ENGINE_FEEDBACK_KEY, ...rows.slice(i, i + 200));
@@ -153,12 +192,23 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
     }
 
     const model = await retrain();
-    await audit(admin, "engine.import", `paket +${added.length} ~${updated.length}, contoh +${parsed.feedback.length}`);
-    return ok({ imported: true, added, updated, feedback: parsed.feedback.length, notes, trainedAt: model.trainedAt, stats: model.stats });
+    for (const st of parsed.styles) notes.push(`Gaya "${st.label}": ${st.palettes.length} palet, ${(st.elements.always ?? []).length + st.elements.pool.length} elemen, dipicu kata ${st.keywords.slice(0, 4).map((k) => `"${k}"`).join(", ")}.`);
+    await audit(admin, "engine.import", `paket +${added.length} ~${updated.length}, gaya +${stylesAdded.length} ~${stylesUpdated.length}, contoh +${parsed.feedback.length}`);
+    return ok({ imported: true, added, updated, stylesAdded, stylesUpdated, feedback: parsed.feedback.length, notes, trainedAt: model.trainedAt, stats: model.stats });
   }
 
   if (action === "removePack") {
     const id = typeof body?.id === "string" ? body.id : "";
+    if (body?.kind === "style") {
+      const cur = await readImportedStyles();
+      const rest = cur.filter((x) => x.id !== id);
+      if (rest.length === cur.length) return fail("Gaya impor tidak ditemukan.", 404, "not_found");
+      if (rest.length) await kv.set(ENGINE_STYLES_KEY, JSON.stringify(rest));
+      else await kv.del(ENGINE_STYLES_KEY);
+      const m2 = await retrain();
+      await audit(admin, "engine.removeStyle", id);
+      return ok({ removed: id, stats: m2.stats });
+    }
     const current = await readImportedPacks();
     const next = current.filter((p) => p.id !== id);
     if (next.length === current.length) return fail("Paket impor tidak ditemukan.", 404, "not_found");
@@ -171,7 +221,8 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
 
   if (action === "exportPacks") {
     const packs = await readImportedPacks();
-    return ok({ json: JSON.stringify(packs, null, 2) + "\n", count: packs.length });
+    const styles = await readImportedStyles();
+    return ok({ json: JSON.stringify([...packs, ...styles], null, 2) + "\n", count: packs.length + styles.length });
   }
 
   if (action === "train") {

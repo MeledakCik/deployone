@@ -12,11 +12,12 @@ interface EngineStatus {
   feedbackCount: number;
   recent: { prompt: string; kind: string; brand: string; at: number | null }[];
   imported: { id: string; kind: string; label: string; prompts: number; items: number; replacesBundled: boolean }[];
+  styles?: { id: string; label: string; desc: string; palettes: string[][]; keywords: string[]; imported: boolean; chance: number }[];
   domains: { id: string; kind: string; label: string; prompts: number; items: number; generic: boolean; imported: boolean }[];
 }
 
 type ImportResult =
-  | { imported: true; added: string[]; updated: string[]; feedback: number; notes: string[]; stats: { packs: number; prompts: number } }
+  | { imported: true; added: string[]; updated: string[]; stylesAdded?: string[]; stylesUpdated?: string[]; feedback: number; notes: string[]; stats: { packs: number; prompts: number } }
   | { imported: false; errors: string[]; moreErrors?: number };
 
 function download(name: string, text: string, type = "application/json") {
@@ -75,11 +76,11 @@ export function EngineTab({ toast }: { toast: (m: string) => void }) {
     }
   }
 
-  async function removePack(id: string) {
-    if (!window.confirm(`Hapus paket impor "${id}"? Mesin akan dilatih ulang tanpa paket ini.`)) return;
+  async function removePack(id: string, kind: "pack" | "style" = "pack") {
+    if (!window.confirm(`Hapus ${kind === "style" ? "gaya" : "paket"} impor "${id}"? Mesin akan dilatih ulang tanpanya.`)) return;
     setBusy(`rm:${id}`);
     try {
-      await adminFetch("/api/admin/engine", { method: "POST", body: { action: "removePack", id } });
+      await adminFetch("/api/admin/engine", { method: "POST", body: { action: "removePack", id, kind } });
       toast(`Paket "${id}" dihapus.`);
       await reload();
     } catch (e) {
@@ -234,6 +235,8 @@ export function EngineTab({ toast }: { toast: (m: string) => void }) {
               <p className="font-semibold">
                 Berhasil. {result.added.length > 0 && `${result.added.length} paket baru. `}
                 {result.updated.length > 0 && `${result.updated.length} paket diperbarui. `}
+                {!!result.stylesAdded?.length && `${result.stylesAdded.length} gaya visual baru. `}
+                {!!result.stylesUpdated?.length && `${result.stylesUpdated.length} gaya visual diperbarui. `}
                 {result.feedback > 0 && `${result.feedback} contoh ditambahkan. `}
                 Mesin sekarang mengenal {result.stats.packs} domain.
               </p>
@@ -248,6 +251,44 @@ export function EngineTab({ toast }: { toast: (m: string) => void }) {
           )}
         </div>
       </Card>
+
+      {!!data.styles?.length && (
+        <Card title="Gaya visual" action={<Badge tone="neutral">{data.styles.length}</Badge>}>
+          <ul className="divide-y divide-[var(--surface-line)]">
+            {data.styles.map((st) => (
+              <li key={st.id} className="flex items-center justify-between gap-3 px-6 py-3 text-[14px]">
+                <div className="min-w-0">
+                  <p className="flex flex-wrap items-center gap-2 font-medium">
+                    {st.label} {st.imported && <Badge tone="violet">impor</Badge>}
+                    <span className="inline-flex gap-1" aria-hidden>
+                      {st.palettes.slice(0, 6).map((p, i) => (
+                        <span key={i} className="inline-flex overflow-hidden rounded-[6px] ring-1 ring-[var(--surface-line)]">
+                          {p.map((c, j) => (
+                            <span key={j} className="h-4 w-3" style={{ background: c }} />
+                          ))}
+                        </span>
+                      ))}
+                    </span>
+                  </p>
+                  <p className="text-[13px] text-text-muted">
+                    <code>{st.id}</code> · dipicu: {st.keywords.map((k) => `“${k}”`).join(", ")}
+                    {st.chance > 0 && ` · otomatis ${Math.round(st.chance * 100)}% untuk usaha yang cocok`}
+                  </p>
+                </div>
+                {st.imported && (
+                  <Btn variant="danger" aria-label={`Hapus gaya ${st.label}`} busy={busy === `rm:${st.id}`} onClick={() => removePack(st.id, "style")}>
+                    <Trash2 size={13} />
+                  </Btn>
+                )}
+              </li>
+            ))}
+          </ul>
+          <p className="px-6 pb-5 text-[13px] text-text-muted">
+            Gaya dipakai bila deskripsi pengguna memuat kata pemicunya, atau secara acak untuk jenis usaha yang cocok. Pengguna tetap bisa melepasnya
+            lewat perintah “hapus gaya” atau memilih Template lain.
+          </p>
+        </Card>
+      )}
 
       {data.imported.length > 0 && (
         <Card

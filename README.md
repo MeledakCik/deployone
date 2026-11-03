@@ -230,6 +230,15 @@ yang berjalan di server Depup sendiri: tanpa token, tanpa kuota harian, dan kode
   - `id` yang sama dengan paket bawaan = menggantikan paket bawaan itu.
   - Paket impor disimpan di KV (`engine:site:packs`, maks. 60 paket / 400 KB). **Ekspor (.json)** lalu taruh di
     `data/site-engine/packs/` untuk menjadikannya bawaan permanen.
+- **Gaya visual (paket gaya)**: selain jenis usaha, mesin bisa dilatih gaya tampilan, mis. brutalism. Satu paket
+  gaya (`"type": "style"`, lihat `lib/site-look.ts`) berisi palet (`bg`, `fg`, `ink`, `accent`), karakter huruf
+  (`fonts` + `typeSets`: condensed/grotesk/mono/..., tebal, kapital, jarak huruf, skala), bentuk (`shape`: sudut,
+  tebal garis, bayangan, jarak antar kartu; `gap: 0` = kartu saling menempel), tata letak (`hero`: mis. `poster`,
+  `feat`: mis. `index`), elemen (`meta`, `bands`, `ticker`, `index`, `arrow`, `crosshair`, `barcode`, `sunburst`,
+  `asterisk`, `halftone`, `plus-grid`), teks pendek (`copy.meta`/`kicker`/`ticker`), kata pemicu (`keywords`), dan
+  kecocokan otomatis (`fit.domains`/`fit.kinds`/`fit.chance`). Impor lewat **Impor data latihan** seperti paket
+  domain, atau taruh di `data/site-engine/styles/` lalu `npm run engine:train`. Website yang memakai gaya menyimpan
+  `content.look`; pengguna melepasnya dengan "hapus gaya" atau memilih Template/warna sendiri.
 - **Melatih dari repo**
   1. Tambah atau ubah pengetahuan di `data/site-engine/packs/*.json` (satu paket = satu jenis usaha: contoh deskripsi,
      kata kunci, kalimat, produk, fitur, langkah, artikel).

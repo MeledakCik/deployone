@@ -13,13 +13,18 @@
  *  3. EDIT      (editSite): perintah bahasa Indonesia ("ganti nama jadi X", "tambah menu Es Teh 5rb", ...)
  *     diurai dengan aturan menjadi patch.
  *
- * File ini MANDIRI (tanpa import) supaya bisa dipakai di route Next.js, di skrip training Node, dan di tes.
+ *  4. GAYA      (paket gaya, lib/site-look.ts): bila deskripsi meminta gaya tertentu (kata kunci) atau domainnya
+ *     cocok (fit), website mendapat "look": palet, karakter huruf, bentuk, tata letak, elemen, dan label pendek.
+ *
+ * File ini MANDIRI (hanya import tipe) supaya bisa dipakai di route Next.js, di skrip training Node, dan di tes.
  * Keluaran generate/edit berupa objek mentah; pemanggil menormalisasinya dengan normalizeContent().
  */
 
 /* ======================================================================== */
 /*  Tipe                                                                     */
 /* ======================================================================== */
+
+import type { SiteLook, StylePack } from "../site-look.ts";
 
 export type Kind = "umkm" | "jasa" | "portofolio" | "event" | "profil" | "artikel";
 export const KINDS: Kind[] = ["umkm", "jasa", "portofolio", "event", "profil", "artikel"];
@@ -117,6 +122,8 @@ export interface SiteModel {
   /** kata (stem) → ikon Lucide. */
   iconLex: Record<string, string>;
   packs: Record<string, DomainPack>;
+  /** Paket gaya visual hasil latihan (mis. brutalism). Kosong/absen = website ikut Template. */
+  styles?: Record<string, StylePack>;
 }
 
 /* ======================================================================== */
@@ -270,7 +277,7 @@ function absorbFeedback(pack: DomainPack, c: Record<string, unknown>): void {
  * Contoh pengguna dimasukkan ke domain hasil klasifikasi model sementara (tanpa contoh), lalu:
  * deskripsinya menambah data klasifikasi, isinya memperkaya bank frasa domain itu.
  */
-export function trainModel(packsIn: DomainPack[], feedback: FeedbackExample[] = []): SiteModel {
+export function trainModel(packsIn: DomainPack[], feedback: FeedbackExample[] = [], stylesIn: StylePack[] = []): SiteModel {
   const packs: Record<string, DomainPack> = {};
   for (const p of packsIn) packs[p.id] = JSON.parse(JSON.stringify(p));
 
@@ -347,6 +354,74 @@ export function trainModel(packsIn: DomainPack[], feedback: FeedbackExample[] = 
     kinds: final.kinds,
     iconLex,
     packs,
+    styles: Object.fromEntries(stylesIn.map((st) => [st.id, JSON.parse(JSON.stringify(st)) as StylePack])),
+  };
+}
+
+/* ======================================================================== */
+/*  Gaya visual                                                              */
+/* ======================================================================== */
+
+/** Kata kunci gaya cocok bila muncul utuh di deskripsi ("brutal", "gaya poster"). */
+function styleHits(st: StylePack, text: string): number {
+  return st.keywords.filter((k) => {
+    const n = normText(k);
+    return n.length >= 3 && (` ${text} `.includes(` ${n} `) || (n.length >= 6 && text.includes(n)));
+  }).length;
+}
+
+/**
+ * Pilih paket gaya: (1) diminta eksplisit lewat kata kunci, (2) domain/jenis cocok dengan peluang fit.chance
+ * (acak deterministik per deskripsi + varian, terpisah dari acak isi supaya isi tidak ikut berubah), (3) tidak ada.
+ */
+export function pickStyle(model: SiteModel, prompt: string, pack: DomainPack, kind: Kind, variant: number): StylePack | null {
+  const styles = Object.values(model.styles ?? {});
+  if (!styles.length) return null;
+  const text = normText(prompt);
+  if (/\b(tanpa gaya|gaya biasa|gaya polos|jangan brutal)/.test(text)) return null;
+  let best: StylePack | null = null;
+  let bestHits = 0;
+  for (const st of styles) {
+    const h = styleHits(st, text);
+    if (h > bestHits) (best = st), (bestHits = h);
+  }
+  if (best) return best;
+  const r = rng(hash(text + "|gaya") + variant * 104729);
+  for (const st of styles) {
+    const fit = st.fit;
+    if (!fit) continue;
+    const ok = (fit.domains ?? []).includes(pack.id) || (fit.kinds ?? []).includes(kind);
+    if (ok && r() < (fit.chance ?? 0)) return st;
+  }
+  return null;
+}
+
+/** Turunkan look satu website dari paket gaya: satu palet, 2–4 elemen pilihan + elemen wajib, label meta terisi slot. */
+export function resolveLook(st: StylePack, slots: Record<string, string>, seed: number, variant: number): SiteLook {
+  const r = rng(seed + variant * 7919 + 17);
+  const pal = st.palettes[(seed + variant) % st.palettes.length];
+  const sets = [st.fonts, ...(st.typeSets ?? [])];
+  const fs = sets[(Math.floor(seed / 7) + variant) % sets.length];
+  const pool = shuffle(r, st.elements.pool ?? []);
+  const take = Math.min(pool.length, 2 + Math.floor(r() * 3));
+  const elements = [...new Set([...(st.elements.always ?? []), ...pool.slice(0, take)])] as SiteLook["elements"];
+  const f = (x: string) => fillSlots(x, slots);
+  const pick1 = (list: string[]) => (list.length ? f(list[Math.floor(r() * list.length)]) : "");
+  return {
+    style: st.id,
+    name: st.label,
+    bg: pal.bg,
+    fg: pal.fg,
+    ink: pal.ink ?? pal.fg,
+    accent: pal.accent,
+    accent2: pal.accent2 ?? pal.accent,
+    fonts: { title: fs.title, sub: fs.sub ?? fs.title, body: fs.body, label: fs.label },
+    shape: st.shape,
+    elements,
+    meta: shuffle(r, st.copy.meta).slice(0, 4).map(f).filter(Boolean),
+    kicker: pick1(st.copy.kicker),
+    ticker: pick1(st.copy.ticker),
+    num: slots.year ?? "",
   };
 }
 
@@ -551,6 +626,8 @@ export interface GenerateResult {
   domain: string;
   confidence: number;
   extracted: Extracted;
+  /** id paket gaya yang dipakai, atau null. */
+  style?: string | null;
 }
 
 const DEFAULT_ITEMS: Record<Kind, number> = { umkm: 6, jasa: 4, portofolio: 4, event: 4, profil: 3, artikel: 0 };
@@ -566,6 +643,8 @@ function fill(tpl: string, slots: Record<string, string>): string {
     .replace(/,\s*(?=[.]|$)/g, "")
     .trim();
 }
+
+const fillSlots = (tpl: string, slots: Record<string, string>): string => fill(tpl, slots);
 
 /** Ikon untuk nama produk: leksikon terlatih, lalu ikon paket. */
 function iconFor(model: SiteModel, text: string, fallback: string): string {
@@ -630,7 +709,7 @@ export function generateSite(model: SiteModel, prompt: string, opts: GenerateOpt
     (fallbacks.length ? fill(pick(r, fallbacks), { ...slotsBase, Product: shortSubject, product: shortSubject.toLowerCase(), brand: "" }) : "") ||
     shortSubject ||
     pack.label;
-  const slots = { ...slotsBase, brand };
+  const slots = { ...slotsBase, brand, year: String(new Date().getFullYear()) };
   const brandLow = brand.toLowerCase();
   // Pilih pola yang tidak mengulang nama: "Keripik Pisang buatan Keripik Pisang Lampung" dihindari.
   const F = (list: string[]) => {
@@ -742,7 +821,15 @@ export function generateSite(model: SiteModel, prompt: string, opts: GenerateOpt
     closingText: F(pack.closingText),
     hover: r() < 0.3 ? "tilt" : "lift",
   };
-  return { raw, domain: pack.id, confidence, extracted: ex };
+  // Gaya visual hasil latihan: menimpa tata letak hero/fitur dengan pilihan gaya dan menambahkan look.
+  const style = pickStyle(model, prompt, pack, kind, variant);
+  if (style) {
+    const seed = hash(brand);
+    raw.look = resolveLook(style, slots, seed, variant);
+    if (style.layouts.hero.length) raw.hero = style.layouts.hero[(seed + variant) % style.layouts.hero.length];
+    if (style.layouts.feat.length) raw.feat = style.layouts.feat[(seed + variant * 3) % style.layouts.feat.length];
+  }
+  return { raw, domain: pack.id, confidence, extracted: ex, style: style?.id ?? null };
 }
 
 /* ======================================================================== */
@@ -779,7 +866,7 @@ const FIELD_ALIASES: [RegExp, string][] = [
 ];
 
 const TEMPLATE_IDS = ["bersih", "gelap", "hangat", "tegas", "segar", "elegan", "pastel", "neon", "bakso", "kue", "barber", "tech", "majalah", "jurnal"];
-const HERO_IDS = ["center", "left", "split", "split-bold", "asymmetric", "editorial"];
+const HERO_IDS = ["center", "left", "split", "split-bold", "asymmetric", "editorial", "poster"];
 
 function sameName(a: unknown, b: string): boolean {
   return normText(String(a ?? "")) === normText(b);
@@ -818,11 +905,29 @@ export function editSite(model: SiteModel, current: Record<string, unknown>, ins
         continue;
       }
     }
+    // Gaya visual hasil latihan: "pakai gaya brutalism" / "hapus gaya"
+    if (/\b(gaya|style|tampilan)\b/.test(low)) {
+      if (/\b(hapus|lepas|tanpa|matikan|biasa)\b/.test(low) && c.look) {
+        delete c.look;
+        done.push("gaya visual dilepas (kembali ke template)");
+        continue;
+      }
+      const st = Object.values(model.styles ?? {}).find((x) => low.includes(x.id) || low.includes(x.label.toLowerCase()) || styleHits(x, normText(part)) > 0);
+      if (st) {
+        c.look = resolveLook(st, { brand: String(c.brand ?? ""), city: "", year: String(new Date().getFullYear()) }, hash(String(c.brand ?? "")), 0);
+        if (st.layouts.hero.length) c.hero = st.layouts.hero[0];
+        if (st.layouts.feat.length) c.feat = st.layouts.feat[0];
+        c.accent = "";
+        done.push(`gaya ${st.label}`);
+        continue;
+      }
+    }
     // Template / tampilan
     if (/\b(template|tema|gaya|tampilan)\b/.test(low)) {
       const t = TEMPLATE_IDS.find((id) => new RegExp(`\\b${id}\\b`).test(low));
       if (t) {
         c.template = t;
+        delete c.look;
         done.push(`template ${t}`);
         continue;
       }

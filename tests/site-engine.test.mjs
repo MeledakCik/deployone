@@ -174,3 +174,71 @@ test("impor: paket dengan id bawaan menggantikan bawaan, status umum tetap", () 
   assert.equal(g.label, "UMKM (versi admin)");
   assert.equal(g.generic, true);
 });
+
+/* ---------------- paket gaya visual (mis. brutalism) ---------------- */
+import { validateStyle, normalizeLook, isStylePack } from "../lib/site-look.ts";
+import { editSite as editSite2, pickStyle } from "../lib/site-engine/core.ts";
+
+const STYLE = JSON.parse(fs.readFileSync(new URL("./fixtures/style-brutalism.json", import.meta.url), "utf8"));
+const STYLE_RULES = { heroes: RULES.heroes, feats: RULES.feats, banned: RULES.banned };
+const styledModel = trainModel(BUNDLED, [], STYLE);
+
+test("gaya: file brutalism lolos validasi dan dikenali importer", () => {
+  for (const s of STYLE) assert.deepEqual(validateStyle(s, STYLE_RULES), []);
+  const r = parseImport(JSON.stringify(STYLE));
+  assert.equal(r.styles.length, 1);
+  assert.equal(r.packs.length, 0);
+  assert.ok(isStylePack(STYLE[0]));
+});
+
+test("gaya: kesalahan dijelaskan (warna, kontras, elemen, layout)", () => {
+  const bad = structuredClone(STYLE[0]);
+  bad.palettes[0].bg = "merah";
+  bad.palettes[1].fg = bad.palettes[1].bg;
+  bad.elements.pool.push("pelangi");
+  bad.layouts.hero = ["poster", "melayang"];
+  const e = validateStyle(bad, STYLE_RULES).join("\n");
+  assert.match(e, /"bg" harus warna hex/);
+  assert.match(e, /kontras teks/);
+  assert.match(e, /elemen tidak dikenal: pelangi/);
+  assert.match(e, /layouts.hero tidak dikenal: melayang/);
+});
+
+test("gaya: dipicu kata kunci, tidak salah picu, dan tidak dipaksakan ke usaha yang tidak cocok", () => {
+  const dom = (p) => styledModel.packs[classify(styledModel, p)[0].id];
+  const pick = (p, v = 0) => pickStyle(styledModel, p, dom(p), dom(p).kind, v)?.id ?? null;
+  assert.equal(pick("website brutalism untuk distro streetwear"), "brutalism");
+  assert.equal(pick("landing page ala poster hitam merah untuk studio desain"), "brutalism");
+  assert.equal(pick("jasa cetak poster dan banner"), null);
+  for (let v = 0; v < 6; v++) assert.equal(pick("warung bakso urat dan mie ayam", v), null);
+  assert.equal(pick("website brutalism tapi tanpa gaya"), null);
+});
+
+test("gaya: look lengkap, lolos normalisasi, dan layout ikut gaya", () => {
+  const seen = new Set();
+  for (let v = 0; v < 6; v++) {
+    const r = generateSite(styledModel, "website brutal distro Kalcer Supply di Bandung", { variant: v });
+    assert.equal(r.style, "brutalism");
+    const L = normalizeLook(r.raw.look);
+    assert.ok(L, "look valid");
+    assert.ok(["poster", "editorial"].includes(r.raw.hero));
+    assert.ok(["index", "bento"].includes(r.raw.feat));
+    for (const e of ["meta", "index", "arrow"]) assert.ok(L.elements.includes(e));
+    assert.ok(!/\{[a-z]+\}|undefined/i.test(JSON.stringify(L)));
+    seen.add(L.bg + L.accent + L.fonts.title.family);
+  }
+  assert.ok(seen.size >= 3, "buat ulang menghasilkan kombinasi palet/huruf berbeda");
+  assert.equal(generateSite(styledModel, "kedai kopi susu di Bandung", {}).raw.look, undefined);
+});
+
+test("gaya: perintah ubah bisa memakai, melepas, dan mengganti gaya lewat template", () => {
+  const base = generateSite(styledModel, "toko kue ulang tahun Manis Legit", {}).raw;
+  assert.equal(base.look, undefined);
+  const on = editSite2(styledModel, base, "pakai gaya brutalism");
+  assert.ok(on.raw?.look && on.raw.hero === "poster", on.note);
+  const off = editSite2(styledModel, on.raw, "hapus gaya");
+  assert.equal(off.raw?.look, undefined);
+  const tpl = editSite2(styledModel, on.raw, "pakai template elegan");
+  assert.equal(tpl.raw?.look, undefined);
+  assert.equal(tpl.raw?.template, "elegan");
+});

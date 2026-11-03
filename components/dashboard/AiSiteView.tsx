@@ -395,12 +395,14 @@ export function AiSiteView() {
     }),
     [fontsOpt],
   );
+  // Gaya hasil latihan (content.look) dipakai selama pengguna belum memilih Template/warna/gaya/latar sendiri.
+  const lookOn = !!content?.look && !template && !palette && !styleOpt && !bgOpt;
   const renderOpts = React.useMemo<RenderOpts>(
     () => ({
       hero: heroEff, feat: featEff, shop: shopOn, palette: palette ?? undefined,
-      style: styleOpt ?? undefined, decor: decorOpt ?? undefined, bg: bgOpt ?? undefined, fonts: fontsEff, images,
+      style: styleOpt ?? undefined, decor: decorOpt ?? undefined, bg: bgOpt ?? undefined, fonts: fontsEff, images, look: lookOn,
     }),
-    [heroEff, featEff, shopOn, palette, styleOpt, decorOpt, bgOpt, fontsEff, images],
+    [heroEff, featEff, shopOn, palette, styleOpt, decorOpt, bgOpt, fontsEff, images, lookOn],
   );
   const html = React.useMemo(
     () => renderSite(previewContent, tplId, accentEff, renderOpts),
@@ -758,6 +760,7 @@ export function AiSiteView() {
             style: (again ? null : styleOpt) ?? undefined,
             decor: (again ? null : decorOpt) ?? undefined,
             bg: (again ? null : bgOpt) ?? undefined,
+            look: again || !(template || palette || styleOpt || bgOpt),
             fonts: again
               ? undefined
               : {
@@ -1367,6 +1370,41 @@ export function AiSiteView() {
                   ? "AI menyarankan gaya yang serasi. Tata letak & huruf ikut gaya terpilih, bisa diubah di \u201cAtur manual\u201d."
                   : "Atur gaya, tata letak, warna, dan huruf satu per satu. Pratinjau di samping langsung berubah tiap pilihan diganti."}
               </p>
+
+              {content?.look && (
+                <div className={`flex flex-wrap items-center justify-between gap-2 rounded-[14px] bg-[var(--pill-bg)] px-3.5 py-2.5 leading-relaxed ${hintCls}`}>
+                  <span className="min-w-0">
+                    {lookOn ? (
+                      <>
+                        Memakai gaya <b className="font-semibold text-text">{content.look.name}</b> hasil latihan mesin. Memilih Template, warna, atau gaya lain akan
+                        menggantikannya.
+                      </>
+                    ) : (
+                      <>
+                        Gaya <b className="font-semibold text-text">{content.look.name}</b> sedang tidak dipakai karena kamu memilih tampilan sendiri.
+                      </>
+                    )}
+                  </span>
+                  {lookOn ? (
+                    <button type="button" onClick={() => setContent((c) => (c ? { ...c, look: undefined } : c))} className="text-[13px] text-text-muted underline max-md:min-h-[40px]">
+                      Lepas gaya
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTemplate(null);
+                        setPalette(null);
+                        setStyleOpt(null);
+                        setBgOpt(null);
+                      }}
+                      className="text-[13px] text-text-muted underline max-md:min-h-[40px]"
+                    >
+                      Pakai lagi
+                    </button>
+                  )}
+                </div>
+              )}
 
               {tampilanMode === "ai" && (
                 <div>

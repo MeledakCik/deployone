@@ -8,6 +8,7 @@
  *   data/site-engine/packs/*.json          paket domain (pengetahuan per jenis usaha)
  *   data/site-engine/feedback/*.jsonl      contoh dari pengguna: satu baris = {"prompt": "...", "content": {...}}
  *                                          (ekspor dari Panel Admin → Mesin AI, atau tulis sendiri)
+ *   data/site-engine/styles/*.json         paket gaya visual (opsional), mis. brutalism
  * Keluaran:
  *   lib/site-engine/model.json             model yang dibundel ke aplikasi
  *
@@ -19,6 +20,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { trainModel, classify } from "../lib/site-engine/core.ts";
 import { validatePack } from "../lib/site-engine/import.ts";
+import { validateStyle } from "../lib/site-look.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const packDir = path.join(root, "data/site-engine/packs");
@@ -29,6 +31,11 @@ const packs = fs
   .readdirSync(packDir)
   .filter((f) => f.endsWith(".json"))
   .flatMap((f) => JSON.parse(fs.readFileSync(path.join(packDir, f), "utf8")));
+
+const styleDir = path.join(root, "data/site-engine/styles");
+const styles = fs.existsSync(styleDir)
+  ? fs.readdirSync(styleDir).filter((f) => f.endsWith(".json")).flatMap((f) => [].concat(JSON.parse(fs.readFileSync(path.join(styleDir, f), "utf8"))))
+  : [];
 
 const feedback = fs.existsSync(fbDir)
   ? fs
@@ -65,13 +72,14 @@ for (const p of packs) {
   if (ids.has(p.id)) (console.error(`  x Paket "${p.id}": id ganda`), problems++);
   ids.add(p.id);
 }
+for (const st of styles) for (const e of validateStyle(st, { heroes: rules.heroes, feats: rules.feats, banned })) (console.error(`  x ${e}`), problems++);
 if (problems) {
   console.error(`\n${problems} masalah pada paket. Perbaiki dulu, lalu jalankan lagi.`);
   process.exit(1);
 }
 
 /* ---- training ---- */
-const model = trainModel(packs, feedback);
+const model = trainModel(packs, feedback, styles);
 fs.writeFileSync(out, JSON.stringify(model));
 
 /* ---- evaluasi leave-one-out (domain) ---- */
