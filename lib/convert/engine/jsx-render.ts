@@ -13,7 +13,6 @@
  */
 import { parse } from "@babel/parser";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
 type Node = any;
 
 export interface RenderModule {
@@ -77,7 +76,6 @@ class Scope {
     this.parent = parent;
   }
   get(name: string): unknown {
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
     let s: Scope | null = this;
     while (s) {
       if (s.vars.has(name)) return s.vars.get(name);
@@ -86,7 +84,6 @@ class Scope {
     return UNKNOWN;
   }
   has(name: string): boolean {
-    // eslint-disable-next-line @typescript-eslint/no-this-alias
     let s: Scope | null = this;
     while (s) {
       if (s.vars.has(name)) return true;
