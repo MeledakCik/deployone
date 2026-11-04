@@ -5,7 +5,7 @@ import {
   Sparkles, ExternalLink, Copy, Trash2, CircleAlert, Check, RefreshCw, Download, FileCode2,
   FileJson, Package, Monitor, Smartphone, Store, Pencil, ImagePlus, ImageIcon, X, Palette, Undo2, Redo2,
   Info, ChevronDown, Loader2, LayoutTemplate, PanelsTopLeft, Type, Shapes, Rows3, FileText, WandSparkles, Send,
-  Globe, Rocket, SlidersHorizontal, MousePointerClick, type LucideIcon,
+  Globe, Rocket, SlidersHorizontal, MousePointerClick, Brush, type LucideIcon,
 } from "lucide-react";
 import { PageHead, Btn, BtnLink, Loading } from "@/components/ui/primitives";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
@@ -62,7 +62,8 @@ import { pixelIcon } from "@/lib/lucide-pixel";
 import { Field, api, checkCls, chipCls, ChipLabel, subheadCls, swatchTileCls, ON_MIST, hintCls, isHex, labelCls, timeLeftLabel, ttlLabel, useReducedMotion } from "./ai-site/shared";
 import { PaletteEditor } from "./ai-site/PaletteEditor";
 import { PhotoPool } from "./ai-site/PhotoPool";
-import { TemplatePicker } from "./ai-site/TemplatePicker";
+import { PresetPicker } from "./ai-site/PresetPicker";
+import { matchPreset, type SitePreset } from "@/lib/ai-site-presets";
 import { StylePicker } from "./ai-site/StylePicker";
 import { FontRolePicker } from "./ai-site/FontRolePicker";
 import { CanvasFrame, type CanvasHandle, type CanvasMsg } from "./ai-site/CanvasFrame";
@@ -86,9 +87,10 @@ function editSuggestions(kind: SiteKind): string[] {
 }
 
 /** Panel editor ala Canva (rel kiri di layar lebar, bilah bawah + lembar di HP). */
-type PanelId = "desain" | "tata" | "warna" | "huruf" | "elemen" | "bagian" | "foto" | "isi" | "terbit";
+type PanelId = "template" | "desain" | "tata" | "warna" | "huruf" | "elemen" | "bagian" | "foto" | "isi" | "terbit";
 const PANELS: { id: Exclude<PanelId, "terbit">; label: string; icon: LucideIcon }[] = [
-  { id: "desain", label: "Desain", icon: LayoutTemplate },
+  { id: "template", label: "Template", icon: LayoutTemplate },
+  { id: "desain", label: "Desain", icon: Brush },
   { id: "tata", label: "Tata letak", icon: PanelsTopLeft },
   { id: "warna", label: "Warna", icon: Palette },
   { id: "huruf", label: "Huruf", icon: Type },
@@ -382,7 +384,7 @@ export function AiSiteView() {
   const [panel, setPanel] = React.useState<PanelId | null>(null);
   // Layar lebar: panel Desain langsung terbuka seperti Canva. HP: kanvas dulu, panel dibuka dari bilah bawah.
   React.useEffect(() => {
-    if (window.matchMedia("(min-width: 1024px)").matches) setPanel("desain");
+    if (window.matchMedia("(min-width: 1024px)").matches) setPanel("template");
     else setDevice("mobile");
   }, []);
   const [selSec, setSelSec] = React.useState<string | null>(null);
@@ -1202,6 +1204,27 @@ export function AiSiteView() {
     </div>
   );
 
+  const presetSel = matchPreset({ template, style: styleOpt, palette, bg: bgOpt, decor: decorOpt });
+  const aiPicked = !template && !styleOpt && !palette && !bgOpt && !decorOpt;
+  function applyPreset(p: SitePreset) {
+    change(() => {
+      setTemplate(p.template);
+      setStyleOpt(p.style ?? null);
+      setPalette([...p.palette]);
+      setBgOpt(p.bg ?? null);
+      setDecorOpt(p.decor ?? null);
+      setFontsOpt(EMPTY_FONTS);
+    });
+    say(`Template ${p.name} dipakai.`);
+  }
+  function resetToAi() {
+    setTemplate(null);
+    setStyleOpt(null);
+    setPalette(null);
+    setBgOpt(null);
+    setDecorOpt(null);
+  }
+
   /* ===== Layar mulai: belum ada website ===== */
   if (!content) {
     return (
@@ -1299,7 +1322,7 @@ export function AiSiteView() {
                   </Field>
                   <div>
                     <div className={`mb-2 ${labelCls}`}>Mulai dari Template (opsional)</div>
-                    <TemplatePicker value={tplId} suggestedId={null} preview={previewContent} palette={palette} onPick={setTemplate} />
+                    <PresetPicker preview={previewContent} selectedId={presetSel?.id ?? null} aiSelected={aiPicked} aiLabel="Mesin memilih sendiri" onPick={applyPreset} onAi={resetToAi} />
                   </div>
                   <label className="flex min-h-[44px] items-start gap-2.5 text-[14px]">
                     <input type="checkbox" checked={autoPublish && cfg.enabled} disabled={!cfg.enabled} onChange={(e) => setAutoPublish(e.target.checked)} className={checkCls} />
@@ -1359,6 +1382,19 @@ export function AiSiteView() {
   );
 
   const panelBody: Record<PanelId, React.ReactNode> = {
+    template: (
+      <div className="space-y-3">
+        <p className={`leading-relaxed ${hintCls}`}>Tiap template = warna + gaya desain + hiasan yang sudah serasi. Setelah memilih, semuanya tetap bisa diubah di Desain dan Warna.</p>
+        <PresetPicker
+          preview={previewContent}
+          selectedId={presetSel?.id ?? null}
+          aiSelected={aiPicked}
+          aiLabel={content.look && lookOn ? `Gaya ${content.look.name}` : `Template ${TEMPLATES.find((t) => t.id === content.template)?.name ?? ""}`}
+          onPick={applyPreset}
+          onAi={() => change(resetToAi)}
+        />
+      </div>
+    ),
     desain: (
       <div className="space-y-6">
         {lookBox}
@@ -1374,10 +1410,6 @@ export function AiSiteView() {
           <Btn className="mt-3 w-full" busy={busy === "ai"} disabled={busy !== null || !canGenerate} softDisabled onDisabledClick={explainGenerate} onClick={() => void requestGenerate(true)}>
             <RefreshCw size={13} /> Acak gaya lain
           </Btn>
-        </div>
-        <div>
-          {subhead("Template", resetLink(!!template, "Ikuti saran AI", () => setTemplate(null)))}
-          <TemplatePicker value={tplId} suggestedId={!template ? content.template : null} preview={previewContent} palette={palette} onPick={(v) => change(() => setTemplate(v))} />
         </div>
         <div>
           {subhead("Gaya desain", resetLink(!!styleOpt, "Ikuti Template", () => setStyleOpt(null)))}
@@ -1712,7 +1744,7 @@ export function AiSiteView() {
     <div className="flex min-h-[56px] items-center gap-2 border-b border-[var(--surface-line)] px-3 sm:px-4">
       <div className="min-w-0 flex-1">
         <p className="truncate text-[15px] font-semibold">{content.brand}</p>
-        <p className={`truncate ${hintCls} !text-[12px]`}>{kindName}{content.look && lookOn ? ` · ${content.look.name}` : ` · ${tpl.name}`}</p>
+        <p className={`truncate ${hintCls} !text-[12px]`}>{kindName} · {presetSel ? presetSel.name : content.look && lookOn ? content.look.name : tpl.name}</p>
       </div>
       <div className="flex items-center gap-1" role="group" aria-label="Riwayat">
         <button type="button" onClick={undo} disabled={!history.length || busy !== null} aria-label="Urungkan" title="Urungkan (Ctrl+Z)" className="grid h-10 w-10 place-items-center rounded-[12px] hover:bg-[var(--pill-bg)] disabled:opacity-35">

@@ -8,7 +8,7 @@ import { TEMPLATES, defaultPalette, renderSite, type RenderOpts, type SiteConten
 import { ScaledFrame } from "./ScaledFrame";
 
 /** Miniatur tampilan nyata. Iframe baru dibuat saat kartunya terlihat, tanpa skrip, tidak bisa difokus. */
-function TemplateThumb({ build, swatch, name }: { build: () => string; swatch: [string, string]; name: string }) {
+export function TemplateThumb({ build, swatch, name }: { build: () => string; swatch: [string, string]; name: string }) {
   const ref = React.useRef<HTMLDivElement>(null);
   const [seen, setSeen] = React.useState(false);
 
