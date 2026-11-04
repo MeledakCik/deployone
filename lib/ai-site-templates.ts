@@ -11,7 +11,7 @@
  */
 import { LUCIDE, isIconName } from "@/lib/lucide-icons";
 import { SHOP_RUNTIME_JS } from "@/lib/ai-site-runtime";
-import { contrast as lookContrast, normalizeLook, type LookFont, type LookFontFamily, type SiteLook } from "@/lib/site-look";
+import { contrast as lookContrast, normalizeLook, type LookElement, type LookFont, type LookFontFamily, type SiteLook } from "@/lib/site-look";
 import { ELEMENT_SLOTS, VIEWBOX, isIconStyle, resolveSvgColors, safeSvg, svgDataUri, templateIconStyle, treatIcon, type IconStyle, type SiteOrnament } from "@/lib/site-assets";
 import { pixelIcon } from "@/lib/lucide-pixel";
 
@@ -20,7 +20,7 @@ export type { SiteLook } from "@/lib/site-look";
 export type TemplateId = "bersih" | "gelap" | "hangat" | "tegas" | "segar" | "elegan" | "pastel" | "neon" | "bakso" | "kue" | "barber" | "tech" | "majalah" | "jurnal";
 export type SiteKind = "umkm" | "jasa" | "portofolio" | "event" | "profil" | "artikel";
 /** center/left/split = lawas; split-bold (60/40 + tumpukan kartu), asymmetric (1 kartu besar + 2 kecil), editorial (headline raksasa) = baru. */
-export type HeroLayout = "center" | "left" | "split" | "split-bold" | "asymmetric" | "editorial" | "poster" | "breaker" | "terminal" | "dashboard" | "label";
+export type HeroLayout = "center" | "left" | "split" | "split-bold" | "asymmetric" | "editorial" | "poster" | "breaker" | "terminal" | "dashboard" | "label" | "neo" | "collage";
 export type FeatLayout = "grid" | "bento" | "list" | "editorial" | "index";
 export type HoverEffect = "lift" | "tilt";
 
@@ -181,6 +181,8 @@ export const HERO_LAYOUTS: { id: HeroLayout; name: string }[] = [
   { id: "terminal", name: "Terminal" },
   { id: "dashboard", name: "Dasbor misi" },
   { id: "label", name: "Label pengiriman" },
+  { id: "neo", name: "Neo split" },
+  { id: "collage", name: "Kolase" },
 ];
 
 export const FEAT_LAYOUTS: { id: FeatLayout; name: string }[] = [
@@ -197,7 +199,7 @@ export function isTemplateId(v: unknown): v is TemplateId {
   return typeof v === "string" && TEMPLATES.some((t) => t.id === v);
 }
 export function isHeroLayout(v: unknown): v is HeroLayout {
-  return v === "center" || v === "left" || v === "split" || v === "split-bold" || v === "asymmetric" || v === "editorial" || v === "poster" || v === "breaker" || v === "terminal" || v === "dashboard" || v === "label";
+  return v === "center" || v === "left" || v === "split" || v === "split-bold" || v === "asymmetric" || v === "editorial" || v === "poster" || v === "breaker" || v === "terminal" || v === "dashboard" || v === "label" || v === "neo" || v === "collage";
 }
 export function isFeatLayout(v: unknown): v is FeatLayout {
   return v === "grid" || v === "bento" || v === "list" || v === "editorial" || v === "index";
@@ -917,9 +919,13 @@ const CONDENSED = `"Bebas Neue","Anton","Oswald","League Gothic",Impact,Haettens
 const GROTESK = `"Helvetica Neue","Neue Haas Grotesk Display Pro",Helvetica,Arial,"Inter",sans-serif`;
 /** Huruf lebar/extended ala streetwear futuristik. */
 const WIDE = `"Eurostile Extended","Microgramma D Extended","Michroma","Syncopate","Arial Black",sans-serif`;
-const LOOK_STACK: Record<LookFontFamily, string> = { condensed: CONDENSED, grotesk: GROTESK, sans: SANS, serif: SERIF, slab: SLAB, mono: MONO, display: DISPLAY, wide: WIDE };
+/** Huruf membulat ramah (SF Rounded di Apple, Nunito/Quicksand bila terpasang). */
+const ROUNDED = `ui-rounded,"SF Pro Rounded","Nunito","Quicksand","Varela Round","Arial Rounded MT Bold","Hiragino Maru Gothic ProN",system-ui,sans-serif`;
+/** Tulisan tangan / spidol untuk aksen kecil (stiker, catatan). */
+const HAND = `"Bradley Hand","Segoe Print","Chalkboard SE","Marker Felt","Comic Neue","Comic Sans MS",cursive`;
+const LOOK_STACK: Record<LookFontFamily, string> = { condensed: CONDENSED, grotesk: GROTESK, sans: SANS, serif: SERIF, slab: SLAB, mono: MONO, display: DISPLAY, wide: WIDE, rounded: ROUNDED, hand: HAND };
 /** Perkiraan lebar rata-rata huruf kapital (em) per keluarga, untuk menghitung ukuran judul raksasa supaya muat. */
-const LOOK_WIDTH: Record<LookFontFamily, number> = { condensed: 0.47, grotesk: 0.66, display: 0.76, sans: 0.64, serif: 0.62, slab: 0.68, mono: 0.62, wide: 0.92 };
+const LOOK_WIDTH: Record<LookFontFamily, number> = { condensed: 0.47, grotesk: 0.66, display: 0.76, sans: 0.64, serif: 0.62, slab: 0.68, mono: 0.62, wide: 0.92, rounded: 0.68, hand: 0.66 };
 
 /** Campur dua warna hex, k = porsi warna b (0..1). */
 function mixHex(a: string, b: string, k: number): string {
@@ -932,21 +938,23 @@ function mixHex(a: string, b: string, k: number): string {
 /** Terapkan gaya hasil latihan ke tema: warna, huruf, bentuk. Elemen & tata letak ditangani buildSite/lookCss. */
 function applyLook(t: Theme, L: SiteLook): Theme {
   const dark = relLum(L.bg) < 0.4;
+  // Neo: kartu sedikit lebih terang dari latar (kertas di atas meja); brutal: kartu = latar.
+  const card = L.base === "neo" ? mixHex(L.bg, "#ffffff", dark ? 0.07 : 0.62) : L.bg;
   let muted = mixHex(L.fg, L.bg, 0.28);
-  if (lookContrast(muted, L.bg) < 4.5) muted = L.fg;
+  if (lookContrast(muted, L.bg) < 4.5 || lookContrast(muted, card) < 4.5) muted = L.fg;
   const sh = L.shape;
   return {
     ...t,
     bg: L.bg,
     fg: L.fg,
     muted,
-    card: L.bg,
+    card,
     line: L.ink,
     navBg: rgb(L.bg),
     dark,
     radius: `${sh.radius}px`,
     pill: `${sh.radius}px`,
-    shadow: sh.shadow === "hard" ? `6px 6px 0 ${L.ink}` : sh.shadow === "soft" ? "0 14px 34px rgba(0,0,0,.14)" : "none",
+    shadow: sh.shadow === "hard" ? `${sh.offset ?? 6}px ${sh.offset ?? 6}px 0 ${L.ink}` : sh.shadow === "soft" ? "0 14px 34px rgba(0,0,0,.14)" : "none",
     display: LOOK_STACK[L.fonts.title.family],
     sub: LOOK_STACK[L.fonts.sub.family],
     body: LOOK_STACK[L.fonts.body.family],
@@ -1253,6 +1261,264 @@ ${gap0 ? `.lk-g0 .grid,.lk-g0 .items,.lk-g0 .bento,.lk-g0 .frows,.lk-g0 .posts{g
 .lk .steps li{padding:18px 20px 22px}`;
 }
 
+/* ------------------------------------------------------------------ */
+/* Neo brutalism: kartu membulat berbayang offset, banyak warna, stiker */
+/* ------------------------------------------------------------------ */
+
+/** Warna teks yang terbaca di atas warna isian: tinta gaya bila cukup kontras, selain itu hitam/putih. */
+function textOn(fill: string, ink: string): string {
+  return contrastRatio(fill, ink) >= 4.5 ? ink : onColor(fill);
+}
+
+/** Elemen yang butuh CSS hero neo (stiker, bentuk, bar pengumuman, ...) walau hero-nya bukan neo/kolase. */
+const NEO_HERO_ELS: ReadonlySet<string> = new Set(["stickers", "marker", "topbar", "checks", "shapes"]);
+/** Elemen neo yang bekerja lewat kelas body. */
+const NEO_BODY_CLS: [LookElement, string][] = [
+  ["tones", "lk-tone"],
+  ["tiles", "lk-tiles"],
+  ["tabs", "lk-tabs"],
+  ["paper", "lk-paper"],
+  ["dotgrid", "lk-dots"],
+  ["pillnav", "lk-pill"],
+  ["tilt", "lk-tilt"],
+];
+
+/**
+ * Lima warna isian bergantian (kartu warna-warni, petak ikon, tab, stiker, ornamen --s1..--s5).
+ * Urutan sumber: palet kustom pengguna (≥ 2 warna) > swatch gaya latihan > aksen & aksen kedua; sisanya dicampur.
+ */
+function siteSwatches(t: Theme, a: string, look: SiteLook | undefined, custom: string[]): string[] {
+  const out: string[] = [];
+  const add = (x?: string) => {
+    const v = x?.toLowerCase();
+    if (v && isHexColor(v) && !out.includes(v)) out.push(v);
+  };
+  if (custom.length >= 2) [...custom.slice(1), custom[0]].forEach(add);
+  else (look?.swatches ?? []).forEach(add);
+  add(a);
+  add(t.acc2);
+  const seeds = [...out];
+  for (let k = 0; out.length < 5 && k < 16; k++) {
+    const b = seeds[k % seeds.length];
+    add(k < seeds.length ? mixHex(b, "#ffffff", 0.55) : mixHex(b, t.dark ? "#ffffff" : "#000000", 0.18 + 0.1 * k));
+  }
+  while (out.length < 5) out.push(out[out.length % Math.max(1, seeds.length)] ?? a);
+  return out.slice(0, 5);
+}
+
+/** CSS dasar "neo" (menimpa dasar brutal): tombol timbul, kartu berbayang offset, blok ajakan berwarna, tag kapsul. */
+function neoCss(L: SiteLook): string {
+  const B = L.shape.border;
+  const R = L.shape.radius;
+  const P = L.shape.pill ?? R;
+  const O = L.shape.offset ?? 6;
+  const hard = L.shape.shadow === "hard";
+  const sh = (o: number) => (hard && o > 0 ? `${o}px ${o}px 0 var(--ink)` : L.shape.shadow === "soft" ? "0 12px 28px rgba(0,0,0,.12)" : "none");
+  const bo = Math.max(3, Math.round(O * 0.7));
+  const F = L.fonts;
+  const lbl = (size: string) => fontCss({ ...F.label, leading: 1.2 }, size);
+  const btnFont = `font:700 15px/1.2 ${LOOK_STACK[F.body.family === "hand" ? "sans" : F.body.family]};letter-spacing:0;text-transform:none`;
+  const tile = Math.min(R, 14);
+  return `
+.lk.lkn .nav{background:var(--bg);border-bottom:${B}px solid var(--ink)}
+.lk.lkn .brand i{border-radius:${tile}px;background:var(--a);color:var(--on);border:${B}px solid var(--ink);box-shadow:${sh(3)}}
+.lk.lkn .links{${lbl("12.5px")}}
+.lk.lkn .btn{border-radius:${P}px;border:${B}px solid var(--ink);background:var(--a);color:var(--on);${btnFont};padding:13px 20px;box-shadow:${sh(bo)};transition:transform .12s,box-shadow .12s,background .12s}
+.lk.lkn .btn:hover{opacity:1;transform:translate(-2px,-2px);box-shadow:${sh(bo + 2)};background:var(--a);color:var(--on);border-color:var(--ink)}
+.lk.lkn .btn:active{transform:translate(${bo}px,${bo}px);box-shadow:none}
+.lk.lkn .btn.ghost{background:var(--card);color:var(--fg)}
+.lk.lkn .btn.ghost:hover{background:var(--s2);color:var(--s2t)}
+.lk.lkn .btn.sm{padding:8px 13px;font-size:13px;box-shadow:${sh(2)}}
+.lk.lkn .nav .btn{padding:9px 16px;font-size:14px;box-shadow:${sh(3)}}
+@media(max-width:520px){.lk.lkn .nav .btn{padding:8px 12px;font-size:13px}}
+.lk.lkn .btn:not(.sm):not(.cartbtn):after{content:none}
+.lk.lkn .badge{border-radius:999px;border:${B}px solid var(--ink);background:var(--s2);color:var(--s2t);padding:7px 14px;box-shadow:${sh(2)};${lbl("12px")}}
+.lk.lkn h2{${fontCss(F.sub, `clamp(30px,4.6vw,${Math.round(60 * (F.title.scale ?? 1))}px)`)}}
+.lk.lkn .card{border:${B}px solid var(--ink);border-radius:${R}px;box-shadow:${sh(O)};background:var(--card);transition:transform .15s,box-shadow .15s}
+.lk.lkn .feat:hover,.lk.lkn .prod:hover,.lk.lkn .scard:hover,.lk.lkn .acard:hover,.lk.lkn .post:hover{transform:translate(-3px,-3px);box-shadow:${sh(O + 3)};border-color:var(--ink);background:var(--card);color:inherit}
+.lk.lkn .feat:hover p{color:var(--muted)}.lk.lkn .feat:hover .ico{background:var(--a);color:var(--on)}
+.lk.lkn .ico,.lk.lkn .pico,.lk.lkn .vrow i,.lk.lkn .ci i,.lk.lkn .acard i,.lk.lkn .tqh .ico{border-radius:${tile}px;background:var(--a);color:var(--on);border:${Math.max(1, B - 1)}px solid var(--ink)}
+.lk.lkn .bento .feat:first-child{background:var(--s1);color:var(--s1t)}.lk.lkn .bento .feat:first-child p{color:inherit;opacity:.88}
+.lk.lkn .bento .feat:first-child .ico{background:var(--card);color:var(--fg)}
+.lk.lkn .prod.large{background:var(--s1);color:var(--s1t)}.lk.lkn .prod.large .pico{background:var(--card);color:var(--fg)}
+.lk.lkn .ptag{border-radius:999px;border:1.5px solid var(--ink);background:var(--card);color:var(--fg);${lbl("11px")}}
+.lk.lkn .ptag.hot{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.lk.lkn .prod.large .ptag{background:var(--card);color:var(--fg);border-color:var(--ink)}.lk.lkn .prod.large .ptag.hot{background:var(--ink);color:var(--bg)}
+.lk.lkn .card .btn.sm{background:var(--card);color:var(--fg)}
+.lk.lkn .hero,.lk.lkn main>section{border-bottom:0}
+.lk.lkn .steps li{border:${B}px solid var(--ink);border-radius:${R}px;box-shadow:${sh(O)};padding:22px 22px 24px}
+.lk.lkn .steps b{color:var(--at)}
+.lk.lkn .tq{border:${B}px solid var(--ink);border-radius:${R}px;box-shadow:${sh(O)};background:var(--card);padding:clamp(22px,3vw,40px)}
+.lk.lkn .band{border-radius:${R}px;background:var(--a2);color:var(--a2t);border:${B}px solid var(--ink);box-shadow:${sh(O + 2)}}
+.lk.lkn .band h2{${fontCss(F.title, "clamp(30px,5vw,64px)")};color:inherit}
+.lk.lkn .band p{color:inherit;opacity:.9}
+.lk.lkn .band .btn{background:var(--a);color:var(--on);border-color:var(--ink)}
+.lk.lkn .band .btn.ghost{background:var(--card);color:var(--fg)}
+.lk.lkn .band .btn:hover{background:var(--a);color:var(--on);border-color:var(--ink)}
+.lk.lkn .search{border:${B}px solid var(--ink);border-radius:${P}px;background:var(--card);box-shadow:${sh(3)}}
+.lk.lkn .cat{border:1.5px solid var(--ink);border-radius:999px;background:var(--card);color:var(--fg)}.lk.lkn .cat.on{background:var(--ink);color:var(--bg)}
+.lk.lkn .tick{border-top:${B}px solid var(--ink);border-bottom:${B}px solid var(--ink);background:var(--ink);color:var(--bg)}
+.lk.lkn footer{border-top:${B}px solid var(--ink)}
+.lk.lkn .stats{border:${B}px solid var(--ink);border-radius:${R}px;overflow:hidden;box-shadow:${sh(O)};background:var(--card)}
+.lk.lkn .stat{border-color:var(--ink)}.lk.lkn .stat:first-child{background:var(--s1);color:var(--s1t)}.lk.lkn .stat:nth-child(2){background:var(--s2);color:var(--s2t)}.lk.lkn .stat:nth-child(3){background:var(--s3);color:var(--s3t)}
+.lk.lkn .ring{color:var(--fg)}`;
+}
+
+/** CSS elemen neo yang bisa dipakai gaya mana pun: kartu berwarna, petak ikon, tab map, kertas, kapsul menu, miring. */
+function neoElementsCss(L: SiteLook): string {
+  const B = L.shape.border;
+  const R = L.shape.radius;
+  const n = 5;
+  const cards = (sel: string) => [".grid>.card", ".bento>.card", ".items>.card", ".frows>.card", ".steps>li"].map((x) => `${sel} ${x}`);
+  const out: string[] = [];
+  const el = new Set(L.elements);
+  if (el.has("tones")) {
+    for (let i = 1; i <= n; i++) {
+      const sel = cards(".lk-tone").map((x) => `${x}:nth-child(${n}n+${i})`).join(",");
+      out.push(`${sel}{--card:var(--s${i});--fg:var(--s${i}t);--muted:var(--s${i}t);--at:var(--s${i}t);color:var(--s${i}t)}`);
+    }
+    out.push(`.lk-tone .card p,.lk-tone .card small{opacity:.9}.lk-tone .card .ico,.lk-tone .card .pico{background:var(--bg);color:var(--ink)}`);
+  }
+  if (el.has("tiles")) {
+    for (let i = 1; i <= n; i++) {
+      const sel = [".lk-tiles:not(.lk-tone) .grid>.card", ".lk-tiles:not(.lk-tone) .bento>.card", ".lk-tiles:not(.lk-tone) .items>.card", ".lk-tiles:not(.lk-tone) .frows>.card", ".lk-tiles .vrow", ".lk-tiles .ci"]
+        .map((x) => `${x}:nth-child(${n}n+${i}) :is(.ico,.pico,i)`)
+        .join(",");
+      out.push(`${sel}{background:var(--s${i});color:var(--s${i}t)}`);
+    }
+    out.push(`.lk-tiles .ico,.lk-tiles .pico{box-shadow:3px 3px 0 var(--ink)}`);
+  }
+  if (el.has("tabs")) {
+    const sel = [".lk-tabs .grid>.card", ".lk-tabs .bento>.card", ".lk-tabs .frows>.card"];
+    out.push(`${sel.join(",")}{position:relative;margin-top:18px}`);
+    out.push(
+      `${sel.map((x) => `${x}::after`).join(",")}{content:"";position:absolute;left:18px;bottom:calc(100% + ${B}px);width:min(44%,150px);height:16px;background:var(--tab,var(--s1));border:${B}px solid var(--ink);border-bottom:0;border-radius:${Math.min(R, 12)}px ${Math.min(R, 12)}px 0 0}`,
+    );
+    for (let i = 1; i <= n; i++) out.push(`${sel.map((x) => `${x}:nth-child(${n}n+${i})`).join(",")}{--tab:var(--s${(i % n) + 1})}`);
+  }
+  if (el.has("paper"))
+    out.push(`body.lk-paper{background-image:linear-gradient(var(--grid) 1px,transparent 1px),linear-gradient(90deg,var(--grid) 1px,transparent 1px);background-size:28px 28px;background-position:-1px -1px}`);
+  if (el.has("dotgrid")) out.push(`.lk-dots .hero{background-image:radial-gradient(var(--grid) 1.6px,transparent 1.8px);background-size:22px 22px}`);
+  if (el.has("pillnav"))
+    out.push(
+      `.lk-pill .links{border:${B}px solid var(--ink);border-radius:999px;padding:5px;gap:2px;background:var(--card);box-shadow:3px 3px 0 var(--ink)}.lk-pill .links a{padding:7px 14px;border-radius:999px;color:var(--fg)}.lk-pill .links a:hover{background:var(--s2);color:var(--s2t)}`,
+    );
+  if (el.has("tilt"))
+    out.push(
+      `.lk-tilt .grid>.card:nth-child(odd),.lk-tilt .steps>li:nth-child(odd){transform:rotate(-1.2deg)}.lk-tilt .grid>.card:nth-child(even),.lk-tilt .steps>li:nth-child(even){transform:rotate(1deg)}.lk-tilt .grid>.card:hover{transform:rotate(0) translate(-3px,-3px)}`,
+    );
+  return out.join("\n");
+}
+
+/** CSS hero "neo" (dua kolom + visual) dan "collage" (tengah + kartu miring), stiker, bentuk, bar pengumuman. */
+function neoHeroCss(t: Theme): string {
+  const lab = `font:700 12px/1.3 ${t.mono};text-transform:uppercase;letter-spacing:.05em`;
+  const shadow = "var(--off) var(--off) 0 var(--ink)";
+  return `.h-neo,.h-collage{padding:clamp(36px,6vw,84px) 0 clamp(44px,6vw,92px)}
+.nh{display:grid;grid-template-columns:1.08fr .92fr;gap:clamp(30px,4.6vw,70px);align-items:center;text-align:left}
+.nh-t{min-width:0}
+.hero .nh-h{font-size:clamp(40px,6.2vw,90px);line-height:1.04;margin:18px 0 18px;max-width:none}
+.hero.h-neo p.sub{margin:0 0 26px;max-width:46ch}
+.h-neo .row{justify-content:flex-start}
+.hlw{color:var(--hl);-webkit-text-fill-color:currentColor;font-style:normal}
+.mk{font-style:normal;background:var(--s2);color:var(--s2t);-webkit-text-fill-color:currentColor;padding:0 .14em;margin:0 -.04em;border-radius:.16em;-webkit-box-decoration-break:clone;box-decoration-break:clone}
+.nchk{list-style:none;display:flex;flex-wrap:wrap;gap:10px 22px;margin:24px 0 0;padding:0;${lab}}
+.nchk li{display:flex;align-items:center;gap:7px}.nchk svg{width:16px;height:16px;flex:none;color:var(--at)}
+.nh-v{position:relative;min-width:0}
+.nv-art,.nv-img{position:relative;aspect-ratio:7/6;border:var(--bw) solid var(--ink);border-radius:var(--r);background:var(--card);box-shadow:${shadow};overflow:hidden}
+.nv-art>svg{display:block;width:100%;height:100%}
+.nv-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.nv-lbl{position:absolute;margin:0;right:-8px;top:22px;display:flex;align-items:center;gap:12px;max-width:min(78%,300px);padding:12px 14px;background:var(--ink);color:var(--bg);${lab};font-size:12.5px;line-height:1.35;box-shadow:4px 4px 0 var(--s2)}
+.nv-lbl i{flex:none;display:grid;place-items:center;width:34px;height:34px;background:var(--s2);color:var(--s2t)}.nv-lbl i svg{width:18px;height:18px}
+.nst{position:absolute;z-index:3;pointer-events:none;line-height:0}
+.nst svg{display:block;width:100%;height:auto;overflow:visible}
+.nst-l{line-height:1;padding:8px 15px;border:var(--bw) solid var(--ink);border-radius:999px;background:var(--s3);color:var(--s3t);${lab};font-size:13px;transform:rotate(var(--rt,-6deg));box-shadow:3px 3px 0 var(--ink);white-space:nowrap}
+.nst-b{width:clamp(82px,9vw,116px)}
+.nst-b text{font-family:${t.display};font-weight:900;text-transform:uppercase}
+.nst-s{width:clamp(54px,6vw,78px)}
+.nst-k{width:clamp(30px,3.4vw,44px)}
+.nh-v .nst-b{left:-14px;top:-20px}.nh-v .nst-s{right:-12px;bottom:-18px}.nh-v .nst-l{left:7%;bottom:-16px}.nh-v .nst-k{right:24%;top:-18px}
+.nc{text-align:center;position:relative}
+.nc .badge{margin-left:auto;margin-right:auto}
+.hero .nc-h{font-size:clamp(40px,6.6vw,98px);line-height:1.04;margin:18px auto 18px;max-width:17ch}
+.hero.h-collage p.sub{margin:0 auto 26px;max-width:54ch}
+.h-collage .row{justify-content:center}
+.nc>.nst-l{position:relative;display:inline-block;margin:0 auto 14px}
+.nc .nchk{justify-content:center}
+.nc-row{position:relative;display:flex;justify-content:center;align-items:center;margin:clamp(40px,5.4vw,66px) auto 0;max-width:1000px}
+.ncc{position:relative;flex:0 1 232px;min-width:0;margin:0 -8px;padding:18px;border:var(--bw) solid var(--ink);border-radius:var(--r);background:var(--card);box-shadow:${shadow};transform:rotate(var(--rt,0deg));text-align:left;display:flex;flex-direction:column;gap:12px;min-height:178px}
+.ncc:nth-of-type(4n+1){background:var(--s1);color:var(--s1t)}.ncc:nth-of-type(4n+2){background:var(--s2);color:var(--s2t)}.ncc:nth-of-type(4n+3){background:var(--s3);color:var(--s3t)}.ncc:nth-of-type(4n+4){background:var(--s4);color:var(--s4t)}
+.ncc i{width:46px;height:46px;display:grid;place-items:center;border:var(--bw) solid var(--ink);border-radius:12px;background:var(--bg);color:var(--ink)}
+.ncc i svg{width:22px;height:22px}
+.ncc b{font:${t.subWeight ?? t.headWeight} 19px/1.15 ${t.sub ?? t.display};overflow-wrap:anywhere}
+.ncc em{margin-top:auto;font-style:normal;${lab};font-size:14px}
+.ncc small{margin-top:auto;font-size:13.5px;line-height:1.45;opacity:.92}
+.ncc-img{padding:0;overflow:hidden;flex-basis:270px;min-height:250px;z-index:1}.ncc-img img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.nsb{position:absolute;margin:0;z-index:4;left:6%;top:-26px;max-width:240px;padding:10px 14px;border:var(--bw) solid var(--ink);border-radius:14px;background:var(--card);color:var(--fg);${lab};font-size:12px;line-height:1.35;text-align:left;transform:rotate(-4deg);box-shadow:3px 3px 0 var(--ink)}
+.nsb:after{content:"";position:absolute;left:22px;bottom:-12px;width:18px;height:18px;background:var(--card);border-right:var(--bw) solid var(--ink);border-bottom:var(--bw) solid var(--ink);transform:rotate(45deg)}
+.nc-row .nst-s{right:3%;top:-30px}.nc-row .nst-k{left:-2%;bottom:-18px}.nc-row .nst-b{right:-10px;bottom:-26px}.nc-row .nst-l{left:38%;bottom:-20px}
+.nshp{position:absolute;inset:0;overflow:hidden;pointer-events:none;z-index:0}
+.nshp svg{position:absolute;height:auto}.nshp .sa{top:0;right:0;width:clamp(120px,15vw,210px)}.nshp .sb{bottom:0;left:0;width:clamp(80px,9vw,140px)}
+.ntop{background:var(--a);color:var(--on);border-bottom:var(--bw) solid var(--ink);${lab};font-size:12px}
+.ntop .wrap{display:flex;justify-content:space-between;gap:16px;padding-top:9px;padding-bottom:9px}
+.ntop span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;min-width:0}
+@media(max-width:620px){.ntop span+span{display:none}.ntop .wrap{justify-content:center}}
+.nstat{margin-top:clamp(36px,5vw,60px)}
+@media(max-width:900px){.nh{grid-template-columns:1fr}.nh-v{max-width:560px}.nv-lbl{right:-4px}}
+@media(max-width:700px){.nc-row{flex-wrap:wrap;gap:16px}.ncc{flex:1 1 calc(50% - 16px);margin:0;min-height:150px}.ncc-img{flex-basis:100%;min-height:220px}.nsb{top:-30px;left:4%}.nc-row .nst-b{right:-6px}.nshp .sa{width:96px;opacity:.75}.nshp .sb{display:none}}`;
+}
+
+/** Komposisi geometris hero neo (tanpa teks): tiga varian, warna dari --s1..--s4, garis tinta. */
+function neoArt(seed: number): string {
+  const v = seed % 3;
+  const st = 'stroke="var(--ink)" stroke-width="4" stroke-linejoin="round"';
+  const dots = (x0: number, y0: number, cols: number, rows: number) =>
+    Array.from({ length: cols * rows }, (_, i) => `<circle cx="${x0 + (i % cols) * 18}" cy="${y0 + Math.floor(i / cols) * 18}" r="3.6" fill="var(--ink)"/>`).join("");
+  const spark = (cx: number, cy: number, r: number, fill: string) =>
+    `<path d="M${cx} ${cy - r}C${cx + r * 0.16} ${cy - r * 0.16} ${cx + r * 0.16} ${cy - r * 0.16} ${cx + r} ${cy}C${cx + r * 0.16} ${cy + r * 0.16} ${cx + r * 0.16} ${cy + r * 0.16} ${cx} ${cy + r}C${cx - r * 0.16} ${cy + r * 0.16} ${cx - r * 0.16} ${cy + r * 0.16} ${cx - r} ${cy}C${cx - r * 0.16} ${cy - r * 0.16} ${cx - r * 0.16} ${cy - r * 0.16} ${cx} ${cy - r}Z" fill="${fill}" ${st}/>`;
+  let inner: string;
+  if (v === 0) {
+    inner = `<rect x="178" y="58" width="196" height="276" fill="var(--s2)" ${st}/><path d="M44 334V170a92 92 0 0 1 184 0v164Z" fill="var(--s1)" ${st}/><path d="M226 334V292h48v-46h48v-46h52v134Z" fill="var(--s3)" ${st}/>${dots(250, 92, 6, 4)}${spark(92, 74, 26, "var(--s4)")}`;
+  } else if (v === 1) {
+    inner = `<circle cx="156" cy="176" r="112" fill="var(--s1)" ${st}/><rect x="214" y="104" width="150" height="150" rx="10" transform="rotate(12 289 179)" fill="var(--s2)" ${st}/><path d="M64 334 168 196l104 138Z" fill="var(--s3)" ${st}/>${dots(292, 286, 5, 3)}${spark(356, 62, 28, "var(--s4)")}`;
+  } else {
+    inner = `<rect x="38" y="44" width="344" height="262" rx="20" fill="var(--card)" ${st}/><path d="M38 96H382" ${st}/><circle cx="70" cy="70" r="9" fill="var(--s1)" ${st}/><circle cx="98" cy="70" r="9" fill="var(--s2)" ${st}/><circle cx="126" cy="70" r="9" fill="var(--s3)" ${st}/><rect x="64" y="120" width="178" height="156" rx="12" fill="var(--s2)" ${st}/><circle cx="198" cy="160" r="16" fill="var(--s4)" ${st}/><path d="M64 262l52-66 38 44 26-28 62 62" fill="var(--s1)" ${st}/><rect x="262" y="120" width="96" height="44" rx="10" fill="var(--s1)" ${st}/><rect x="262" y="178" width="96" height="44" rx="10" fill="var(--s3)" ${st}/><rect x="262" y="236" width="62" height="40" rx="10" fill="var(--ink)" ${st}/><path d="M318 262l46 16-20 8 14 22-12 7-14-22-14 14Z" fill="var(--card)" ${st}/>`;
+  }
+  return `<svg viewBox="0 0 420 360" preserveAspectRatio="xMidYMid meet" aria-hidden="true" focusable="false">${inner}</svg>`;
+}
+
+/** Bentuk geometris rata (tanpa garis) di sudut hero: setengah lingkaran, cincin, bintang, bunga. */
+function neoShapes(seed: number): string {
+  const flip = seed % 2 === 1;
+  const a = `<svg class="sa" viewBox="0 0 220 220" aria-hidden="true" focusable="false"><path d="M220 0V150A150 150 0 0 1 70 0Z" fill="var(--s${flip ? 2 : 1})"/><circle cx="58" cy="168" r="30" fill="none" stroke="var(--s${flip ? 3 : 2})" stroke-width="15"/><path d="M162 168c3 13 8 18 21 21-13 3-18 8-21 21-3-13-8-18-21-21 13-3 18-8 21-21Z" fill="var(--s3)"/><circle cx="34" cy="58" r="10" fill="var(--s4)"/></svg>`;
+  const petals = Array.from({ length: 10 }, (_, i) => {
+    const ang = (i / 10) * Math.PI * 2;
+    return `<circle cx="${(70 + Math.cos(ang) * 30).toFixed(1)}" cy="${(150 + Math.sin(ang) * 30).toFixed(1)}" r="17" fill="var(--s4)"/>`;
+  }).join("");
+  const b = `<svg class="sb" viewBox="0 0 220 220" aria-hidden="true" focusable="false"><path d="M0 220V96A124 124 0 0 1 124 220Z" fill="var(--s${flip ? 1 : 3})" opacity=".9"/>${petals}<circle cx="70" cy="150" r="30" fill="var(--s4)"/><circle cx="170" cy="196" r="12" fill="var(--s2)"/></svg>`;
+  return `<div class="nshp" aria-hidden="true">${a}${b}</div>`;
+}
+
+/** Stiker ledakan bintang (16 sudut) dengan teks pendek (dan baris kecil opsional di atasnya). */
+function burstSticker(text: string, small = ""): string {
+  const pts = (cx: number, cy: number) =>
+    Array.from({ length: 32 }, (_, i) => {
+      const r = i % 2 ? 44 : 58;
+      const ang = (i / 32) * Math.PI * 2 - Math.PI / 2;
+      return `${(cx + Math.cos(ang) * r).toFixed(1)},${(cy + Math.sin(ang) * r).toFixed(1)}`;
+    }).join(" ");
+  const len = Math.max(3, Array.from(text).length);
+  const fs = Math.max(12, Math.min(26, Math.floor(150 / len)));
+  const y = small ? 61 + fs * 0.62 : 61 + fs * 0.36;
+  const top = small ? `<text x="61" y="${(y - fs * 0.98).toFixed(1)}" text-anchor="middle" font-size="12" letter-spacing="1" fill="var(--s3t)">${esc(small)}</text>` : "";
+  return `<span class="nst nst-b" aria-hidden="true"><svg viewBox="0 0 128 128"><polygon points="${pts(65, 65)}" fill="var(--ink)"/><polygon points="${pts(61, 61)}" fill="var(--s3)" stroke="var(--ink)" stroke-width="3" stroke-linejoin="round"/>${top}<text x="61" y="${y.toFixed(1)}" text-anchor="middle" font-size="${fs}" fill="var(--s3t)">${esc(text)}</text></svg></span>`;
+}
+
+/** Stiker wajah senyum. */
+const SMILEY_STICKER = `<span class="nst nst-s" aria-hidden="true"><svg viewBox="0 0 100 100"><circle cx="54" cy="54" r="43" fill="var(--ink)"/><circle cx="49" cy="49" r="43" fill="var(--s4)" stroke="var(--ink)" stroke-width="4"/><ellipse cx="35" cy="41" rx="5" ry="8" fill="var(--ink)"/><ellipse cx="63" cy="41" rx="5" ry="8" fill="var(--ink)"/><path d="M28 58c8 15 34 15 42 0" fill="none" stroke="var(--ink)" stroke-width="5" stroke-linecap="round"/></svg></span>`;
+/** Stiker kilau empat sudut. */
+const SPARK_STICKER = `<span class="nst nst-k" aria-hidden="true"><svg viewBox="0 0 100 100"><path d="M50 4C54 38 62 46 96 50 62 54 54 62 50 96 46 62 38 54 4 50 38 46 46 38 50 4Z" fill="var(--s2)" stroke="var(--ink)" stroke-width="5" stroke-linejoin="round"/></svg></span>`;
+
 export interface RenderOpts {
   hero?: HeroLayout;
   feat?: FeatLayout;
@@ -1314,8 +1580,12 @@ const RUNTIME_UI_ICONS = ["plus", "minus", "pencil", "trash-2", "x", "check", "d
 
 const fmtRp = (n: number): string => "Rp " + String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
 
-function buildCss(t: Theme, a: string, hero: HeroLayout, shop: boolean, hover: HoverEffect, extra: string[], article: boolean, look?: SiteLook, poster = false): string {
+function buildCss(t: Theme, a: string, hero: HeroLayout, shop: boolean, hover: HoverEffect, extra: string[], article: boolean, look?: SiteLook, poster = false, swatches: string[] = []): string {
   const A = rgb(a);
+  const ink = look?.ink ?? (t.brutal ? "#0a0a0a" : t.fg);
+  const sw = swatches.length ? swatches : siteSwatches(t, a, look, []);
+  const swVars = sw.map((x, i) => `--s${i + 1}:${x};--s${i + 1}t:${textOn(x, ink)}`).join(";");
+  const neoHero = hero === "neo" || hero === "collage" || !!look?.elements.some((e) => NEO_HERO_ELS.has(e));
   const aText = readable(a, t.dark, t.bg);
   const bd = t.brutal ? "3px solid #0a0a0a" : `${t.borderW ?? 1}px solid ${t.line}`;
   const grad = t.gradientHead
@@ -1326,7 +1596,7 @@ function buildCss(t: Theme, a: string, hero: HeroLayout, shop: boolean, hover: H
   // atau putih bila latar halaman kurang kontras di atas hitam.
   const bandInk = contrastRatio(t.bg, "#0a0a0a") >= 4.5 ? t.bg : "#ffffff";
 
-  return `:root{--bg:${t.bg};--fg:${t.fg};--muted:${t.muted};--card:${t.card};--line:${t.line};--a:${a};--at:${aText};--a-soft:rgba(${A},${t.dark ? ".16" : ".11"});--on:${onColor(a)};--r:${t.radius};--sh:${t.shadow};--pill:${t.pill};--a2:${t.acc2 ?? a};--ib:${t.ib ?? "var(--a-soft)"};--ink:${look?.ink ?? (t.brutal ? "#0a0a0a" : t.fg)};--hl:${look ? ([look.accent2, look.accent].find((x) => lookContrast(x, look.bg) >= 3) ?? look.fg) : a};--bw:${look ? look.shape.border : t.brutal ? 3 : Math.max(2, t.borderW ?? 1)}px}
+  return `:root{--bg:${t.bg};--fg:${t.fg};--muted:${t.muted};--card:${t.card};--line:${t.line};--a:${a};--at:${aText};--a-soft:rgba(${A},${t.dark ? ".16" : ".11"});--on:${onColor(a)};--r:${t.radius};--sh:${t.shadow};--pill:${t.pill};--a2:${t.acc2 ?? a};--ib:${t.ib ?? "var(--a-soft)"};--ink:${look?.ink ?? (t.brutal ? "#0a0a0a" : t.fg)};--hl:${look ? ([look.accent2, look.accent].find((x) => lookContrast(x, look.bg) >= 3) ?? look.fg) : a};--bw:${look ? look.shape.border : t.brutal ? 3 : Math.max(2, t.borderW ?? 1)}px;${swVars};--a2t:${textOn(t.acc2 ?? a, ink)};--off:${look?.shape.offset ?? 5}px;--grid:${mixHex(t.bg, ink, t.dark ? 0.2 : 0.1)}}
 *{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:96px}
 body{margin:0;background:var(--bg);color:var(--fg);font:${t.bodyWeight ?? 400} 16px/1.65 ${t.body};-webkit-font-smoothing:antialiased;overflow-x:hidden}
 .wrap{max-width:${t.maxWidth ?? 1120}px;margin:0 auto;padding:0 24px;position:relative}
@@ -1341,7 +1611,7 @@ svg{display:block;flex:none}
 .brand span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .brand i{display:grid;place-items:center;flex:none;width:34px;height:34px;border-radius:${t.brutal ? "4px" : "calc(var(--r) * .6)"};background:var(--a);color:var(--on);font:800 15px ${SANS};font-style:normal;${t.brutal ? "border:2px solid #0a0a0a;" : ""}}
 .links{display:flex;gap:24px;flex-wrap:nowrap;white-space:nowrap;min-width:0;font-size:14.5px;font-weight:500;color:var(--muted)}
-.links a{text-decoration:none;transition:color .2s}.links a:hover{color:var(--fg)}
+.links a{text-decoration:none;transition:color .2s;min-width:0;overflow:hidden;text-overflow:ellipsis}.links a:hover{color:var(--fg)}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;text-align:center;max-width:100%;background:var(--a);color:var(--on);padding:12px 22px;border-radius:var(--pill);font:600 15px ${SANS};text-decoration:none;border:${t.brutal ? "3px solid #0a0a0a" : "1px solid transparent"};box-shadow:${t.brutal ? "4px 4px 0 #0a0a0a" : "none"};transition:background .15s,border-color .15s,opacity .15s;cursor:pointer}
 .btn:hover{${t.brutal ? "transform:translate(-1px,-1px);box-shadow:5px 5px 0 #0a0a0a;" : "opacity:.9;"}}
 .btn:disabled{opacity:.45;cursor:not-allowed;transform:none;filter:none}
@@ -1486,6 +1756,9 @@ ${
 @media(max-width:620px){.bd-art{display:none}}
 ${poster ? posterCss(t) : ""}
 ${look ? lookCss(look) : ""}
+${look?.base === "neo" ? neoCss(look) : ""}
+${look ? neoElementsCss(look) : ""}
+${neoHero ? neoHeroCss(t) : ""}
 ${article ? articleCss(t, bd) : ""}
 ${shop ? shopCss(t, bd) : ""}
 
@@ -1759,6 +2032,7 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
   const bodyWeight = opts.fonts?.body?.weight ?? t.bodyWeight ?? 400;
   if (opts.fonts) t = { ...t, display: titleFamily, sub: subFamily, body: bodyFamily, headWeight: titleWeight, subWeight, bodyWeight };
   const extra = custom.slice(2);
+  const swatches = siteSwatches(t, a, look, custom);
   const cyc = custom.length >= 3 ? custom.slice(1) : [];
   const toneStyle = (i: number): string => {
     if (!cyc.length || t.brutal) return "";
@@ -1955,6 +2229,81 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
     return `<div class="pst">${meta}${giantHtml}${grid}</div>`;
   };
 
+  /* Neo brutalism: judul dengan kata disorot (stabilo / warna), daftar centang, visual berbingkai + stiker. */
+  const neoEls = look ? els : new Set<string>(["checks", "stickers"]);
+  const markedHeadline = (): string => {
+    const words = c.headline.split(/\s+/).filter(Boolean);
+    const order = [...words.keys()].sort((x, y) => Array.from(words[y]).length - Array.from(words[x]).length);
+    const hi = look ? (look.hl >= 0 ? order[look.hl % Math.min(3, words.length)] : -1) : order[0];
+    const cls = neoEls.has("marker") ? "mk" : "hlw";
+    return words
+      .map((w, i) => {
+        if (i !== hi) return esc(w);
+        const m = /^([^\p{L}\p{N}]*)(.*?)([^\p{L}\p{N}]*)$/u.exec(w);
+        return m && m[2] ? `${esc(m[1])}<span class="${cls}">${esc(m[2])}</span>${esc(m[3])}` : esc(w);
+      })
+      .join(" ");
+  };
+  /** Ukuran judul supaya kata terpanjang muat di kolom (colPx di desktop, ~320px di ponsel) dan judul panjang menyusut. */
+  const neoSize = (maxBase: number, colPx: number): string => {
+    const words = c.headline.split(/\s+/).filter(Boolean);
+    const longest = Math.max(4, ...words.map((w) => Array.from(w).length));
+    const wEm = LOOK_WIDTH[titleFam] * (t.upper ? 1 : 0.88);
+    const many = Math.min(1, Math.sqrt(4.5 / Math.max(4.5, words.length)));
+    // Maks. ±3,6 baris di kolom desktop untuk judul panjang.
+    const chars = Array.from(c.headline).length;
+    const max = Math.max(30, Math.round(Math.min(maxBase * (t.heroScale ?? 1) * many, colPx / (longest * wEm), (3.6 * colPx) / (chars * wEm))));
+    const min = Math.min(max, Math.max(24, Math.round(Math.min(40 * many, 318 / (longest * wEm)))));
+    return ` style="font-size:clamp(${min}px,${(max / 12.8).toFixed(2)}vw,${max}px)"`;
+  };
+  const checkSvg = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M4 12.5 9.5 18 20 6.5"/></svg>`;
+  const checksHtml = (): string => {
+    const xs = (c.features.length ? c.features.map((f) => f.title) : items.map((i) => i.name)).slice(0, 3).map((x) => clip(x, 26));
+    return neoEls.has("checks") && xs.length ? `<ul class="nchk">${xs.map((x) => `<li>${checkSvg}${esc(x)}</li>`).join("")}</ul>` : "";
+  };
+  /** Stiker: ledakan (harga mulai bila ada, selain itu teks stiker gaya), kapsul miring, wajah senyum, kilau. */
+  const stickerParts = (): { burst: string; pill: string; smile: string; spark: string } => {
+    if (!neoEls.has("stickers")) return { burst: "", pill: "", smile: "", spark: "" };
+    const st = look?.stickers ?? [];
+    const first = statList()[0];
+    const price = first && first.k === "Harga mulai" ? first.v : "";
+    const h = hash(c.brand);
+    return {
+      burst: price ? burstSticker(price, "mulai") : st[0] ? burstSticker(st[0]) : "",
+      pill: st[price ? 0 : 1] ? `<span class="nst nst-l" aria-hidden="true" style="--rt:${h % 2 ? -6 : 5}deg">${esc(st[price ? 0 : 1])}</span>` : "",
+      smile: h % 3 !== 2 ? SMILEY_STICKER : "",
+      spark: SPARK_STICKER,
+    };
+  };
+  const neoStats = (): string => (els.has("stats") ? `<div class="nstat">${statsHtml()}</div>` : "");
+
+  const neoHero = (): string => {
+    const oa = ornOf("art");
+    const visual = heroImg
+      ? `<div class="nv-img"><img src="${esc(heroImg)}" alt="${esc(c.brand)}"></div>`
+      : `<div class="nv-art" aria-hidden="true">${oa ? `<svg viewBox="${oa.vb}" focusable="false">${oa.svg}</svg>` : neoArt(hash(c.brand + c.headline))}</div>`;
+    const kick = look?.kicker || c.slogan || "";
+    const lbl = kick ? `<p class="nv-lbl"><i aria-hidden="true">${ico(c.brandIcon || "sparkles", 18)}</i><span>${esc(clip(kick, 48))}</span></p>` : "";
+    const sp = stickerParts();
+    return `<div class="nh"><div class="nh-t">${c.badge ? badgeHtml : ""}<h1 class="nh-h"${neoSize(84, 560)}>${markedHeadline()}</h1>${c.subheadline ? `<p class="sub">${esc(c.subheadline)}</p>` : ""}${ctaRow}${checksHtml()}</div><div class="nh-v">${visual}${lbl}${sp.burst}${sp.smile}${sp.pill}${sp.spark}</div></div>${neoStats()}`;
+  };
+
+  const collageHero = (): string => {
+    const rot = [-5, 3, -2, 4];
+    const cards = heroRows.slice(0, 3).map(
+      (r) =>
+        `<div class="ncc"><i aria-hidden="true">${ico(r.icon, 22)}</i><b>${esc(clip(r.title, 40))}</b>${r.tail ? `<em>${esc(r.tail)}</em>` : r.text ? `<small>${esc(clip(r.text, 56))}</small>` : ""}</div>`,
+    );
+    if (heroImg) cards.splice(Math.min(1, cards.length), 0, `<div class="ncc ncc-img"><img src="${esc(heroImg)}" alt="${esc(c.brand)}"></div>`);
+    const tilted = cards.map((x, i) => x.replace(/^<div class="ncc/, `<div style="--rt:${rot[i % rot.length]}deg" class="ncc`));
+    const kick = look?.kicker || c.slogan || "";
+    const sp = stickerParts();
+    const row = tilted.length
+      ? `<div class="nc-row">${kick ? `<p class="nsb" aria-hidden="true">${esc(clip(kick, 60))}</p>` : ""}${tilted.join("")}${sp.smile}${sp.spark}${sp.burst}${sp.pill}</div>`
+      : "";
+    return `<div class="nc">${tilted.length ? "" : sp.pill}${c.badge ? badgeHtml : ""}<h1 class="nc-h"${neoSize(92, 900)}>${markedHeadline()}</h1>${c.subheadline ? `<p class="sub">${esc(c.subheadline)}</p>` : ""}${ctaRow}${checksHtml()}${row}</div>${neoStats()}`;
+  };
+
   let heroInner = heroText + himg;
   if (heroL === "split") {
     heroInner = `<div class="hsplit"><div>${heroText}</div><div class="visual">${himg}${visualRows}</div></div>`;
@@ -1978,6 +2327,10 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
     heroInner = dashboardHero();
   } else if (heroL === "label") {
     heroInner = labelHero();
+  } else if (heroL === "neo") {
+    heroInner = neoHero();
+  } else if (heroL === "collage") {
+    heroInner = collageHero();
   } else if (heroL === "editorial") {
     heroInner = `<div class="hed"><div class="hed-top"><span class="slo">${esc(c.slogan || c.brand)}</span>${c.badge ? badgeHtml : ""}</div><h1>${esc(c.headline)}</h1><div class="hed-bot">${subHtml}${ctaRow}</div></div>${himg}`;
   }
@@ -1991,7 +2344,7 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
   const bignum = look && els.has("bignum") ? `<div class="wrap bignum" aria-hidden="true">${fitLine(year.slice(-3), "", false)}</div>` : "";
   const hazard = look && els.has("hazard") ? `<div class="hz" aria-hidden="true"></div>` : "";
   // Ornamen "divider": pita motif selebar layar di bawah hero (gambar latar berulang, warna sudah diselesaikan).
-  const pal = { fg: t.fg, bg: t.bg, a, a2: t.acc2 ?? a, ink: look?.ink ?? t.fg, on: onColor(a) };
+  const pal = { fg: t.fg, bg: t.bg, a, a2: t.acc2 ?? a, ink: look?.ink ?? t.fg, on: onColor(a), s1: swatches[0], s2: swatches[1], s3: swatches[2], s4: swatches[3], s5: swatches[4] };
   const od = ornOf("divider");
   const odVb = od ? od.vb.split(" ").map(Number) : [];
   const divider = od
@@ -1999,9 +2352,12 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
     : "";
   // Ornamen "corner": bentuk dekoratif di sudut hero (di belakang isi, terpotong rapi di tepi). Hanya tanpa gaya
   // visual, karena hero gaya (poster, terminal, ...) sudah padat elemen.
-  const oc = look ? undefined : ornOf("corner");
+  // Hero neo/kolase cukup lega, jadi ornamen sudut tetap boleh tampil di gaya latihan (kecuali sudah ada bentuk geometris).
+  const neoL = heroL === "neo" || heroL === "collage";
+  const oc = look && !(neoL && !els.has("shapes")) ? undefined : ornOf("corner");
+  const shapes = look && els.has("shapes") ? neoShapes(hash(c.brand)) : "";
   const corner = oc ? `<div class="orcw" aria-hidden="true"><div class="orc"><svg viewBox="${oc.vb}" focusable="false">${oc.svg}</svg></div></div>` : "";
-  const hero = `<div class="hero h-${heroL}"><div class="glow"></div>${ornamentMarkup(t.deco)}${corner}${bignum}<div class="wrap">${heroInner}</div></div>${hazard}${ticker}${divider}`;
+  const hero = `<div class="hero h-${heroL}"><div class="glow"></div>${ornamentMarkup(t.deco)}${shapes}${corner}${bignum}<div class="wrap">${heroInner}</div></div>${hazard}${ticker}${divider}`;
 
   /* ----- katalog / layanan ----- */
   const priceLabel = (i: SiteItem) => (i.price > 0 ? fmtRp(i.price) : "Tanya harga");
@@ -2101,7 +2457,7 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
 
   // Ornamen "pattern": motif tipis di latar blok ajakan, warnanya ikut warna teks blok.
   const op = ornOf("pattern");
-  const bandText = look ? look.bg : t.brutal ? (contrastRatio(t.bg, "#0a0a0a") >= 4.5 ? t.bg : "#ffffff") : onColor(a);
+  const bandText = look ? (look.base === "neo" ? textOn(t.acc2 ?? a, look.ink) : look.bg) : t.brutal ? (contrastRatio(t.bg, "#0a0a0a") >= 4.5 ? t.bg : "#ffffff") : onColor(a);
   const bandPattern = op
     ? ` style="background-image:url(&quot;${svgDataUri(op.vb, `<g opacity=".16">${resolveSvgColors(op.svg, { ...pal, fg: bandText, ink: bandText })}</g>`)}&quot;);background-size:${Math.round(Number(op.vb.split(" ")[2]) * 0.6)}px auto"`
     : "";
@@ -2137,11 +2493,11 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
     })}</script>`;
   }
 
-  const css = buildCss(t, a, heroL, shop, c.hover ?? "lift", extra, isArticle, look, ["poster", "breaker", "terminal", "dashboard", "label"].includes(heroL) || featL === "index" || !!ticker || !!hazard);
+  const css = buildCss(t, a, heroL, shop, c.hover ?? "lift", extra, isArticle, look, ["poster", "breaker", "terminal", "dashboard", "label"].includes(heroL) || featL === "index" || !!ticker || !!hazard || (neoL && els.has("stats")), swatches);
   const js = shop ? SHOP_RUNTIME_JS : "";
 
   const bodyCls = look
-    ? ` class="lk lk-${esc(look.style)}${heroL === "terminal" ? " lk-s1" : ""}${look.shape.gap === 0 ? " lk-g0" : ""}${look.elements.includes("index") ? " lk-idx" : ""}${look.elements.includes("blocks") ? " lk-blk" : ""}${look.elements.includes("numbers") ? " lk-num" : ""}"`
+    ? ` class="lk lk-${esc(look.style)}${heroL === "terminal" ? " lk-s1" : ""}${look.shape.gap === 0 ? " lk-g0" : ""}${look.elements.includes("index") ? " lk-idx" : ""}${look.elements.includes("blocks") ? " lk-blk" : ""}${look.elements.includes("numbers") ? " lk-num" : ""}${look.base === "neo" ? " lkn" : ""}${NEO_BODY_CLS.filter(([e]) => look.elements.includes(e)).map(([, k]) => ` ${k}`).join("")}"`
     : "";
   const head = `<meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -2149,7 +2505,11 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
 <meta name="description" content="${esc(c.subheadline || c.headline)}">
 <meta name="theme-color" content="${t.bg}">`;
 
-  const body = `<a class="skip" href="#main">Lewati ke konten</a>\n<header class="nav"><div class="wrap"><a class="brand" href="#"><i${logo ? ' class="logo"' : ""}>${brandMark}</i><span>${esc(c.brand)}</span></a><nav class="links" aria-label="Menu utama">${nav}</nav>${cartBtn}<a class="btn" href="${ctaHref}">${esc(c.ctaLabel)}</a></div></header>
+  const topbar =
+    look && els.has("topbar")
+      ? `<div class="ntop"><div class="wrap"><span>${esc(clip(look.ticker || look.kicker || c.slogan || c.brand, 70))}</span>${c.hours ? `<span>${esc(clip(c.hours, 40))}</span>` : c.address ? `<span>${esc(clip(c.address, 40))}</span>` : ""}</div></div>\n`
+      : "";
+  const body = `<a class="skip" href="#main">Lewati ke konten</a>\n${topbar}<header class="nav"><div class="wrap"><a class="brand" href="#"><i${logo ? ' class="logo"' : ""}>${brandMark}</i><span>${esc(c.brand)}</span></a><nav class="links" aria-label="Menu utama">${nav}</nav>${cartBtn}<a class="btn" href="${ctaHref}">${esc(c.ctaLabel)}</a></div></header>
 <main id="main" tabindex="-1">
 ${hero}
 ${sections.join("\n")}

@@ -1,0 +1,369 @@
+[
+ {
+  "type": "elements",
+  "id": "elemen-neo",
+  "label": "Elemen Neo Brutal",
+  "license": "Orisinal untuk Depup, bebas dipakai di website hasil Depup",
+  "families": {
+   "neo": {
+    "label": "Neo brutal",
+    "iconStyles": [
+     "tegas",
+     "bayangan",
+     "duotone"
+    ],
+    "keywords": [
+     "neo brutalism",
+     "neobrutalism",
+     "neubrutalism",
+     "neo brutal",
+     "gaya stiker",
+     "hiasan stiker",
+     "bayangan offset"
+    ],
+    "templates": [
+     "pastel",
+     "tegas"
+    ]
+   }
+  },
+  "elements": [
+   {
+    "id": "neo-art-tangga",
+    "label": "Busur & tangga",
+    "slot": "art",
+    "viewBox": "0 0 420 360",
+    "tags": [
+     "geometris",
+     "tangga",
+     "busur"
+    ],
+    "svg": "<rect x=\"0\" y=\"0\" width=\"420\" height=\"360\" fill=\"var(--s4)\"/><circle cx=\"96\" cy=\"86\" r=\"40\" fill=\"var(--s3)\" stroke=\"var(--ink)\" stroke-width=\"4\" stroke-linejoin=\"round\"/><path d=\"M40 360V214a96 96 0 0 1 192 0v146Z\" fill=\"var(--s1)\" stroke=\"var(--ink)\" stroke-width=\"4\" stroke-linejoin=\"round\"/><path d=\"M232 360V300h50v-52h50v-52h50v-52h42v216Z\" fill=\"var(--s2)\" stroke=\"var(--ink)\" stroke-width=\"4\" stroke-linejoin=\"round\"/><circle cx=\"268\" cy=\"44\" r=\"3.6\" fill=\"var(--ink)\"/><circle cx=\"286\" cy=\"44\" r=\"3.6\" fill=\"var(--ink)\"/><circle cx=\"304\" cy=\"44\" r=\"3.6\" fill=\"var(--ink)\"/><circle cx=\"322\" cy=\"44\" r=\"3.6\" fill=\"var(--ink)\"/><circle cx=\"340\" cy=\"44\" r=\"3.6\" fill=\"var(--ink)\"/><circle cx=\"358\" cy=\"44\" r=\"3.6\" fill=\"var(--ink)\"/><circle cx=\"268\" cy=\"62\" r=\"3.6\" fill=\"var(--ink)\"/><circle cx=\"286\" cy=\"62\" r=\"3.6\" fill=\"var(--ink)\"/><circle cx=\"304\" cy=\"62\" r=\"3.6\" fill=\"var(--ink)\"/><circle cx=\"322\" cy=\"62\" r=\"3.6\" fill=\"var(--ink)\"/><circle cx=\"340\" cy=\"62\" r=\"3.6\" fill=\"var(--ink)\"/><circle cx=\"358\" cy=\"62\" r=\"3.6\" fill=\"var(--ink)\"/><circle cx=\"268\" cy=\"80\" r=\"3.6\" fill=\"var(--ink)\"/><circle cx=\"286\" cy=\"80\" r=\"3.6\" fill=\"var(--ink)\"/><circle cx=\"304\" cy=\"80\" r=\"3.6\" fill=\"var(--ink)\"/><circle cx=\"322\" cy=\"80\" r=\"3.6\" fill=\"var(--ink)\"/><circle cx=\"340\" cy=\"80\" r=\"3.6\" fill=\"var(--ink)\"/><circle cx=\"358\" cy=\"80\" r=\"3.6\" fill=\"var(--ink)\"/><circle cx=\"268\" cy=\"98\" r=\"3.6\" fill=\"var(--ink)\"/><circle cx=\"286\" cy=\"98\" r=\"3.6\" fill=\"var(--ink)\"/><circle cx=\"304\" cy=\"98\" r=\"3.6\" fill=\"var(--ink)\"/><circle cx=\"322\" cy=\"98\" r=\"3.6\" fill=\"var(--ink)\"/><circle cx=\"340\" cy=\"98\" r=\"3.6\" fill=\"var(--ink)\"/><circle cx=\"358\" cy=\"98\" r=\"3.6\" fill=\"var(--ink)\"/><path d=\"M186 48C189.5 66.5 189.5 66.5 208 70C189.5 73.5 189.5 73.5 186 92C182.5 73.5 182.5 73.5 164 70C182.5 66.5 182.5 66.5 186 48Z\" fill=\"var(--bg)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/>",
+    "family": "neo",
+    "fit": {
+     "families": [
+      "neo-brutalism"
+     ],
+     "templates": [
+      "pastel",
+      "tegas"
+     ],
+     "chance": 0.7
+    }
+   },
+   {
+    "id": "neo-art-jendela",
+    "label": "Jendela aplikasi",
+    "slot": "art",
+    "viewBox": "0 0 420 360",
+    "tags": [
+     "aplikasi",
+     "ui",
+     "kursor"
+    ],
+    "svg": "<rect x=\"0\" y=\"0\" width=\"420\" height=\"360\" fill=\"var(--s2)\"/><rect x=\"44\" y=\"50\" width=\"340\" height=\"252\" rx=\"18\" fill=\"var(--ink)\"/><rect x=\"34\" y=\"40\" width=\"340\" height=\"252\" rx=\"18\" fill=\"var(--bg)\" stroke=\"var(--ink)\" stroke-width=\"4\" stroke-linejoin=\"round\"/><path d=\"M34 88H374\" stroke=\"var(--ink)\" stroke-width=\"4\" stroke-linejoin=\"round\"/><circle cx=\"64\" cy=\"64\" r=\"8\" fill=\"var(--s1)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/><circle cx=\"90\" cy=\"64\" r=\"8\" fill=\"var(--s3)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/><circle cx=\"116\" cy=\"64\" r=\"8\" fill=\"var(--s4)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/><rect x=\"58\" y=\"110\" width=\"176\" height=\"156\" rx=\"12\" fill=\"var(--s1)\" stroke=\"var(--ink)\" stroke-width=\"4\" stroke-linejoin=\"round\"/><circle cx=\"194\" cy=\"148\" r=\"16\" fill=\"var(--s4)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/><path d=\"M58 252l54-70 38 44 26-26 58 58v8H58Z\" fill=\"var(--s3)\" stroke=\"var(--ink)\" stroke-width=\"4\" stroke-linejoin=\"round\"/><rect x=\"254\" y=\"110\" width=\"98\" height=\"40\" rx=\"20\" fill=\"var(--s3)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/><rect x=\"254\" y=\"164\" width=\"98\" height=\"40\" rx=\"20\" fill=\"var(--s4)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/><rect x=\"254\" y=\"218\" width=\"64\" height=\"40\" rx=\"20\" fill=\"var(--ink)\"/><path d=\"M300 236l52 18-22 9 15 25-13 8-15-25-15 16Z\" fill=\"var(--bg)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/>",
+    "family": "neo",
+    "fit": {
+     "families": [
+      "neo-brutalism"
+     ],
+     "templates": [
+      "pastel",
+      "tegas"
+     ],
+     "chance": 0.7
+    }
+   },
+   {
+    "id": "neo-art-bunga",
+    "label": "Bunga geometris",
+    "slot": "art",
+    "viewBox": "0 0 420 360",
+    "tags": [
+     "bunga",
+     "ceria",
+     "bulat"
+    ],
+    "svg": "<rect x=\"0\" y=\"0\" width=\"420\" height=\"360\" fill=\"var(--s1)\"/><rect x=\"250\" y=\"190\" width=\"200\" height=\"200\" rx=\"100\" fill=\"var(--s2)\" stroke=\"var(--ink)\" stroke-width=\"4\" stroke-linejoin=\"round\"/><circle cx=\"240\" cy=\"168\" r=\"44\" fill=\"var(--s3)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/><circle cx=\"219.5\" cy=\"217.5\" r=\"44\" fill=\"var(--s3)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/><circle cx=\"170\" cy=\"238\" r=\"44\" fill=\"var(--s3)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/><circle cx=\"120.5\" cy=\"217.5\" r=\"44\" fill=\"var(--s3)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/><circle cx=\"100\" cy=\"168\" r=\"44\" fill=\"var(--s3)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/><circle cx=\"120.5\" cy=\"118.5\" r=\"44\" fill=\"var(--s3)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/><circle cx=\"170\" cy=\"98\" r=\"44\" fill=\"var(--s3)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/><circle cx=\"219.5\" cy=\"118.5\" r=\"44\" fill=\"var(--s3)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/><circle cx=\"170\" cy=\"168\" r=\"46\" fill=\"var(--s4)\" stroke=\"var(--ink)\" stroke-width=\"4\" stroke-linejoin=\"round\"/><circle cx=\"156\" cy=\"160\" r=\"5\" fill=\"var(--ink)\"/><circle cx=\"184\" cy=\"160\" r=\"5\" fill=\"var(--ink)\"/><path d=\"M152 180c10 10 26 10 36 0\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"4\" stroke-linecap=\"round\"/><path d=\"M352 40C356.8 65.2 356.8 65.2 382 70C356.8 74.8 356.8 74.8 352 100C347.2 74.8 347.2 74.8 322 70C347.2 65.2 347.2 65.2 352 40Z\" fill=\"var(--bg)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/><circle cx=\"40\" cy=\"300\" r=\"3.2\" fill=\"var(--ink)\"/><circle cx=\"56\" cy=\"300\" r=\"3.2\" fill=\"var(--ink)\"/><circle cx=\"72\" cy=\"300\" r=\"3.2\" fill=\"var(--ink)\"/><circle cx=\"88\" cy=\"300\" r=\"3.2\" fill=\"var(--ink)\"/><circle cx=\"40\" cy=\"316\" r=\"3.2\" fill=\"var(--ink)\"/><circle cx=\"56\" cy=\"316\" r=\"3.2\" fill=\"var(--ink)\"/><circle cx=\"72\" cy=\"316\" r=\"3.2\" fill=\"var(--ink)\"/><circle cx=\"88\" cy=\"316\" r=\"3.2\" fill=\"var(--ink)\"/><circle cx=\"40\" cy=\"332\" r=\"3.2\" fill=\"var(--ink)\"/><circle cx=\"56\" cy=\"332\" r=\"3.2\" fill=\"var(--ink)\"/><circle cx=\"72\" cy=\"332\" r=\"3.2\" fill=\"var(--ink)\"/><circle cx=\"88\" cy=\"332\" r=\"3.2\" fill=\"var(--ink)\"/>",
+    "family": "neo",
+    "fit": {
+     "families": [
+      "neo-brutalism"
+     ],
+     "templates": [
+      "pastel",
+      "tegas"
+     ],
+     "chance": 0.7
+    }
+   },
+   {
+    "id": "neo-art-tumpuk",
+    "label": "Kartu bertumpuk",
+    "slot": "art",
+    "viewBox": "0 0 420 360",
+    "tags": [
+     "kartu",
+     "tumpuk",
+     "profil"
+    ],
+    "svg": "<rect x=\"0\" y=\"0\" width=\"420\" height=\"360\" fill=\"var(--s3)\"/><g transform=\"rotate(-10 210 180)\"><rect x=\"96\" y=\"70\" width=\"230\" height=\"160\" rx=\"18\" fill=\"var(--ink)\"/><rect x=\"88\" y=\"62\" width=\"230\" height=\"160\" rx=\"18\" fill=\"var(--s1)\" stroke=\"var(--ink)\" stroke-width=\"4\" stroke-linejoin=\"round\"/></g><g transform=\"rotate(6 210 190)\"><rect x=\"104\" y=\"112\" width=\"230\" height=\"160\" rx=\"18\" fill=\"var(--ink)\"/><rect x=\"96\" y=\"104\" width=\"230\" height=\"160\" rx=\"18\" fill=\"var(--s2)\" stroke=\"var(--ink)\" stroke-width=\"4\" stroke-linejoin=\"round\"/></g><g transform=\"rotate(-2 210 200)\"><rect x=\"112\" y=\"150\" width=\"230\" height=\"160\" rx=\"18\" fill=\"var(--ink)\"/><rect x=\"104\" y=\"142\" width=\"230\" height=\"160\" rx=\"18\" fill=\"var(--bg)\" stroke=\"var(--ink)\" stroke-width=\"4\" stroke-linejoin=\"round\"/><circle cx=\"150\" cy=\"190\" r=\"22\" fill=\"var(--s4)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/><rect x=\"186\" y=\"176\" width=\"112\" height=\"12\" rx=\"6\" fill=\"var(--ink)\"/><rect x=\"186\" y=\"196\" width=\"76\" height=\"10\" rx=\"5\" fill=\"var(--ink)\" opacity=\".45\"/><rect x=\"128\" y=\"232\" width=\"190\" height=\"14\" rx=\"7\" fill=\"var(--s1)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/><rect x=\"128\" y=\"258\" width=\"130\" height=\"14\" rx=\"7\" fill=\"var(--s2)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/></g><circle cx=\"336\" cy=\"284\" r=\"30\" fill=\"var(--s4)\" stroke=\"var(--ink)\" stroke-width=\"4\" stroke-linejoin=\"round\"/><path d=\"M321 284l10 10 20-22\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M70 42C73.8 62.2 73.8 62.2 94 66C73.8 69.8 73.8 69.8 70 90C66.2 69.8 66.2 69.8 46 66C66.2 62.2 66.2 62.2 70 42Z\" fill=\"var(--bg)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/>",
+    "family": "neo",
+    "fit": {
+     "families": [
+      "neo-brutalism"
+     ],
+     "templates": [
+      "pastel",
+      "tegas"
+     ],
+     "chance": 0.7
+    }
+   },
+   {
+    "id": "neo-art-wajah",
+    "label": "Wajah & gelembung",
+    "slot": "art",
+    "viewBox": "0 0 420 360",
+    "tags": [
+     "senyum",
+     "komik",
+     "obrolan"
+    ],
+    "svg": "<rect x=\"0\" y=\"0\" width=\"420\" height=\"360\" fill=\"var(--s2)\"/><polygon points=\"176,64 200,90.7 233.3,77.1 243.3,111.6 279.2,113.7 273.3,149.1 304.7,166.6 284,196 304.7,225.4 273.3,242.9 279.2,278.3 243.3,280.4 233.3,314.9 200,301.3 176,328 152,301.3 118.7,314.9 108.7,280.4 72.8,278.3 78.7,242.9 47.3,225.4 68,196 47.3,166.6 78.7,149.1 72.8,113.7 108.7,111.6 118.7,77.1 152,90.7\" fill=\"var(--ink)\" transform=\"translate(8 8)\"/><polygon points=\"176,64 200,90.7 233.3,77.1 243.3,111.6 279.2,113.7 273.3,149.1 304.7,166.6 284,196 304.7,225.4 273.3,242.9 279.2,278.3 243.3,280.4 233.3,314.9 200,301.3 176,328 152,301.3 118.7,314.9 108.7,280.4 72.8,278.3 78.7,242.9 47.3,225.4 68,196 47.3,166.6 78.7,149.1 72.8,113.7 108.7,111.6 118.7,77.1 152,90.7\" fill=\"var(--s3)\" stroke=\"var(--ink)\" stroke-width=\"4\" stroke-linejoin=\"round\"/><ellipse cx=\"140\" cy=\"178\" rx=\"12\" ry=\"20\" fill=\"var(--ink)\"/><ellipse cx=\"212\" cy=\"178\" rx=\"12\" ry=\"20\" fill=\"var(--ink)\"/><path d=\"M122 222c26 36 82 36 108 0\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"9\" stroke-linecap=\"round\"/><path d=\"M262 44h124a18 18 0 0 1 18 18v58a18 18 0 0 1-18 18h-70l-30 26 6-26h-30a18 18 0 0 1-18-18V62a18 18 0 0 1 18-18Z\" fill=\"var(--bg)\" stroke=\"var(--ink)\" stroke-width=\"4\" stroke-linejoin=\"round\"/><circle cx=\"294\" cy=\"91\" r=\"9\" fill=\"var(--s1)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/><circle cx=\"324\" cy=\"91\" r=\"9\" fill=\"var(--s3)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/><circle cx=\"354\" cy=\"91\" r=\"9\" fill=\"var(--s4)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/><path d=\"M372 266C376.2 287.8 376.2 287.8 398 292C376.2 296.2 376.2 296.2 372 318C367.8 296.2 367.8 296.2 346 292C367.8 287.8 367.8 287.8 372 266Z\" fill=\"var(--s1)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/><path d=\"M52 42C54.6 55.4 54.6 55.4 68 58C54.6 60.6 54.6 60.6 52 74C49.4 60.6 49.4 60.6 36 58C49.4 55.4 49.4 55.4 52 42Z\" fill=\"var(--bg)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/>",
+    "family": "neo",
+    "fit": {
+     "families": [
+      "neo-brutalism"
+     ],
+     "templates": [
+      "pastel",
+      "tegas"
+     ],
+     "chance": 0.7
+    }
+   },
+   {
+    "id": "neo-lencana-ledakan",
+    "label": "Stiker ledakan",
+    "slot": "badge",
+    "viewBox": "0 0 100 100",
+    "tags": [
+     "stiker",
+     "ledakan"
+    ],
+    "svg": "<polygon points=\"53,7 61.8,20.2 76,13.2 77,29 92.8,30 85.8,44.2 99,53 85.8,61.8 92.8,76 77,77 76,92.8 61.8,85.8 53,99 44.2,85.8 30,92.8 29,77 13.2,76 20.2,61.8 7,53 20.2,44.2 13.2,30 29,29 30,13.2 44.2,20.2\" fill=\"var(--ink)\"/><polygon points=\"49,3 57.8,16.2 72,9.2 73,25 88.8,26 81.8,40.2 95,49 81.8,57.8 88.8,72 73,73 72,88.8 57.8,81.8 49,95 40.2,81.8 26,88.8 25,73 9.2,72 16.2,57.8 3,49 16.2,40.2 9.2,26 25,25 26,9.2 40.2,16.2\" fill=\"var(--s3)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/><path d=\"M36 62 62 36M42 35h21v21\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/>",
+    "family": "neo",
+    "fit": {
+     "families": [
+      "neo-brutalism"
+     ],
+     "templates": [
+      "pastel",
+      "tegas"
+     ],
+     "chance": 0.7
+    }
+   },
+   {
+    "id": "neo-lencana-senyum",
+    "label": "Stiker senyum",
+    "slot": "badge",
+    "viewBox": "0 0 100 100",
+    "tags": [
+     "stiker",
+     "senyum"
+    ],
+    "svg": "<circle cx=\"54\" cy=\"54\" r=\"42\" fill=\"var(--ink)\"/><circle cx=\"49\" cy=\"49\" r=\"42\" fill=\"var(--s4)\" stroke=\"var(--ink)\" stroke-width=\"4\" stroke-linejoin=\"round\"/><ellipse cx=\"35\" cy=\"41\" rx=\"5\" ry=\"8\" fill=\"var(--ink)\"/><ellipse cx=\"63\" cy=\"41\" rx=\"5\" ry=\"8\" fill=\"var(--ink)\"/><path d=\"M28 58c8 15 34 15 42 0\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"5\" stroke-linecap=\"round\"/>",
+    "family": "neo",
+    "fit": {
+     "families": [
+      "neo-brutalism"
+     ],
+     "templates": [
+      "pastel",
+      "tegas"
+     ],
+     "chance": 0.7
+    }
+   },
+   {
+    "id": "neo-lencana-hati",
+    "label": "Stiker hati",
+    "slot": "badge",
+    "viewBox": "0 0 100 100",
+    "tags": [
+     "stiker",
+     "hati",
+     "suka"
+    ],
+    "svg": "<rect x=\"16\" y=\"16\" width=\"72\" height=\"72\" rx=\"18\" fill=\"var(--ink)\" transform=\"rotate(8 52 52)\"/><rect x=\"12\" y=\"12\" width=\"72\" height=\"72\" rx=\"18\" fill=\"var(--s1)\" stroke=\"var(--ink)\" stroke-width=\"4\" stroke-linejoin=\"round\" transform=\"rotate(8 48 48)\"/><path d=\"M48 70C30 58 24 49 24 40c0-8 6-14 13-14 5 0 9 3 11 7 2-4 6-7 11-7 7 0 13 6 13 14 0 9-6 18-24 30Z\" fill=\"var(--s2)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/>",
+    "family": "neo",
+    "fit": {
+     "families": [
+      "neo-brutalism"
+     ],
+     "templates": [
+      "pastel",
+      "tegas"
+     ],
+     "chance": 0.7
+    }
+   },
+   {
+    "id": "neo-sudut-busur",
+    "label": "Sudut busur",
+    "slot": "corner",
+    "viewBox": "0 0 220 220",
+    "tags": [
+     "geometris",
+     "busur"
+    ],
+    "svg": "<path d=\"M220 0V150A150 150 0 0 1 70 0Z\" fill=\"var(--s1)\" stroke=\"var(--ink)\" stroke-width=\"4\" stroke-linejoin=\"round\"/><circle cx=\"58\" cy=\"166\" r=\"28\" fill=\"none\" stroke=\"var(--s2)\" stroke-width=\"14\"/><path d=\"M164 162C167.2 178.8 167.2 178.8 184 182C167.2 185.2 167.2 185.2 164 202C160.8 185.2 160.8 185.2 144 182C160.8 178.8 160.8 178.8 164 162Z\" fill=\"var(--s3)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/><circle cx=\"30\" cy=\"60\" r=\"9\" fill=\"var(--s4)\"/>",
+    "family": "neo",
+    "fit": {
+     "families": [
+      "neo-brutalism"
+     ],
+     "templates": [
+      "pastel",
+      "tegas"
+     ],
+     "chance": 0.6
+    }
+   },
+   {
+    "id": "neo-sudut-tangga",
+    "label": "Sudut tangga",
+    "slot": "corner",
+    "viewBox": "0 0 220 220",
+    "tags": [
+     "geometris",
+     "tangga",
+     "titik"
+    ],
+    "svg": "<path d=\"M220 0V176h-44v-44h-44V88H88V44H44V0Z\" fill=\"var(--s2)\" stroke=\"var(--ink)\" stroke-width=\"4\" stroke-linejoin=\"round\"/><circle cx=\"20\" cy=\"92\" r=\"3.4\" fill=\"var(--ink)\"/><circle cx=\"36\" cy=\"92\" r=\"3.4\" fill=\"var(--ink)\"/><circle cx=\"52\" cy=\"92\" r=\"3.4\" fill=\"var(--ink)\"/><circle cx=\"20\" cy=\"108\" r=\"3.4\" fill=\"var(--ink)\"/><circle cx=\"36\" cy=\"108\" r=\"3.4\" fill=\"var(--ink)\"/><circle cx=\"52\" cy=\"108\" r=\"3.4\" fill=\"var(--ink)\"/><circle cx=\"20\" cy=\"124\" r=\"3.4\" fill=\"var(--ink)\"/><circle cx=\"36\" cy=\"124\" r=\"3.4\" fill=\"var(--ink)\"/><circle cx=\"52\" cy=\"124\" r=\"3.4\" fill=\"var(--ink)\"/><circle cx=\"20\" cy=\"140\" r=\"3.4\" fill=\"var(--ink)\"/><circle cx=\"36\" cy=\"140\" r=\"3.4\" fill=\"var(--ink)\"/><circle cx=\"52\" cy=\"140\" r=\"3.4\" fill=\"var(--ink)\"/><circle cx=\"190\" cy=\"196\" r=\"12\" fill=\"var(--s3)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/>",
+    "family": "neo",
+    "fit": {
+     "families": [
+      "neo-brutalism"
+     ],
+     "templates": [
+      "pastel",
+      "tegas"
+     ],
+     "chance": 0.6
+    }
+   },
+   {
+    "id": "neo-pita-kotak",
+    "label": "Pita kotak warna",
+    "slot": "divider",
+    "viewBox": "0 0 192 24",
+    "tags": [
+     "kotak",
+     "warna"
+    ],
+    "svg": "<rect x=\"0\" y=\"0\" width=\"24\" height=\"24\" fill=\"var(--s1)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/><rect x=\"24\" y=\"0\" width=\"24\" height=\"24\" fill=\"var(--s2)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/><rect x=\"48\" y=\"0\" width=\"24\" height=\"24\" fill=\"var(--s3)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/><rect x=\"72\" y=\"0\" width=\"24\" height=\"24\" fill=\"var(--s4)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/><rect x=\"96\" y=\"0\" width=\"24\" height=\"24\" fill=\"var(--s1)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/><rect x=\"120\" y=\"0\" width=\"24\" height=\"24\" fill=\"var(--s2)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/><rect x=\"144\" y=\"0\" width=\"24\" height=\"24\" fill=\"var(--s3)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/><rect x=\"168\" y=\"0\" width=\"24\" height=\"24\" fill=\"var(--s4)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/>",
+    "family": "neo",
+    "fit": {
+     "families": [
+      "neo-brutalism"
+     ],
+     "templates": [
+      "pastel",
+      "tegas"
+     ],
+     "chance": 0.7
+    }
+   },
+   {
+    "id": "neo-pita-gelombang",
+    "label": "Pita gelombang tebal",
+    "slot": "divider",
+    "viewBox": "0 0 160 24",
+    "tags": [
+     "gelombang"
+    ],
+    "svg": "<path d=\"M-40 14C-30 4-10 4 0 14S30 24 40 14S70 4 80 14S110 24 120 14S150 4 160 14S190 24 200 14V30H-40Z\" fill=\"var(--s1)\" stroke=\"var(--ink)\" stroke-width=\"3\"/>",
+    "family": "neo",
+    "fit": {
+     "families": [
+      "neo-brutalism"
+     ],
+     "templates": [
+      "pastel",
+      "tegas"
+     ],
+     "chance": 0.7
+    }
+   },
+   {
+    "id": "neo-pita-kapsul",
+    "label": "Pita kapsul",
+    "slot": "divider",
+    "viewBox": "0 0 240 30",
+    "tags": [
+     "kapsul",
+     "warna"
+    ],
+    "svg": "<rect x=\"8\" y=\"5\" width=\"44\" height=\"20\" rx=\"10\" fill=\"var(--s1)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/><rect x=\"68\" y=\"5\" width=\"44\" height=\"20\" rx=\"10\" fill=\"var(--s2)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/><rect x=\"128\" y=\"5\" width=\"44\" height=\"20\" rx=\"10\" fill=\"var(--s3)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/><rect x=\"188\" y=\"5\" width=\"44\" height=\"20\" rx=\"10\" fill=\"var(--s4)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/>",
+    "family": "neo",
+    "fit": {
+     "families": [
+      "neo-brutalism"
+     ],
+     "templates": [
+      "pastel",
+      "tegas"
+     ],
+     "chance": 0.7
+    }
+   },
+   {
+    "id": "neo-pola-plus",
+    "label": "Pola plus",
+    "slot": "pattern",
+    "viewBox": "0 0 60 60",
+    "tags": [
+     "plus",
+     "pola"
+    ],
+    "svg": "<path d=\"M15 9v12M9 15h12M45 39v12M39 45h12\" stroke=\"var(--ink)\" stroke-width=\"3.5\" stroke-linecap=\"round\"/>",
+    "family": "neo",
+    "fit": {
+     "families": [
+      "neo-brutalism"
+     ],
+     "templates": [
+      "pastel",
+      "tegas"
+     ],
+     "chance": 0.45
+    }
+   },
+   {
+    "id": "neo-pola-bintik",
+    "label": "Pola bintik & cincin",
+    "slot": "pattern",
+    "viewBox": "0 0 64 64",
+    "tags": [
+     "bintik",
+     "cincin"
+    ],
+    "svg": "<circle cx=\"16\" cy=\"16\" r=\"4\" fill=\"var(--ink)\"/><circle cx=\"48\" cy=\"48\" r=\"7\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"3\"/>",
+    "family": "neo",
+    "fit": {
+     "families": [
+      "neo-brutalism"
+     ],
+     "templates": [
+      "pastel",
+      "tegas"
+     ],
+     "chance": 0.45
+    }
+   }
+  ]
+ }
+]

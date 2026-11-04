@@ -10,8 +10,8 @@
  * Murni (tanpa import), dipakai renderer, mesin, Panel Admin, dan skrip latih.
  */
 
-/** Keluarga huruf (font sistem; tanpa unduhan font dari luar). */
-export const LOOK_FONTS = ["condensed", "grotesk", "sans", "serif", "slab", "mono", "display", "wide"] as const;
+/** Keluarga huruf (font sistem; tanpa unduhan font dari luar). rounded = huruf membulat, hand = tulisan tangan. */
+export const LOOK_FONTS = ["condensed", "grotesk", "sans", "serif", "slab", "mono", "display", "wide", "rounded", "hand"] as const;
 export type LookFontFamily = (typeof LOOK_FONTS)[number];
 
 /**
@@ -35,18 +35,39 @@ export type LookFontFamily = (typeof LOOK_FONTS)[number];
  *  pixel      susunan kotak piksel (kubus data)
  *  ring       lencana teks melingkar yang berputar
  *  bignum     angka raksasa terpotong di tepi atas hero
- *  stats      kartu angka (jumlah produk, harga mulai, edisi)
+ *  stats      kartu angka (jumlah produk, harga mulai, edisi) di bawah hero neo/kolase; hero dasbor selalu punya
  *  blocks     bagian berselang dengan latar terbalik penuh
  *  numbers    nomor 01, 02 di setiap kartu produk/layanan
+ *  -- neo brutalism --
+ *  tones      kartu bergantian warna (swatch palet), teks otomatis terbaca
+ *  tiles      ikon di dalam petak warna bergaris tebal
+ *  tabs       tab map berwarna di atas kartu
+ *  stickers   stiker miring (label, ledakan bintang, wajah senyum) di bagian atas
+ *  marker     kata di judul diberi stabilo warna
+ *  paper      latar kertas bergaris kotak
+ *  dotgrid    titik-titik di latar bagian atas
+ *  pillnav    menu dalam kapsul bergaris
+ *  topbar     bar pengumuman tipis di atas menu
+ *  checks     daftar centang singkat di bawah tombol
+ *  shapes     bentuk geometris (setengah lingkaran, cincin, bintang) di sudut
+ *  tilt       kartu sedikit miring bergantian
  */
 export const LOOK_ELEMENTS = [
   "meta", "bands", "ticker", "index", "arrow", "crosshair", "barcode", "sunburst", "asterisk", "halftone", "plus-grid",
   "sparkle", "globe", "hazard", "brackets", "checker", "pixel", "ring", "bignum", "stats", "blocks", "numbers",
+  "tones", "tiles", "tabs", "stickers", "marker", "paper", "dotgrid", "pillnav", "topbar", "checks", "shapes", "tilt",
 ] as const;
 export type LookElement = (typeof LOOK_ELEMENTS)[number];
 
 export const LOOK_SHADOWS = ["none", "hard", "soft"] as const;
 export type LookShadow = (typeof LOOK_SHADOWS)[number];
+
+/**
+ * Dasar CSS gaya: "brutal" = garis lurus, blok terbalik, aturan selebar layar (brutalism);
+ * "neo" = kartu membulat berbayang offset, banyak warna, tombol timbul, stiker (neo brutalism).
+ */
+export const LOOK_BASES = ["brutal", "neo"] as const;
+export type LookBase = (typeof LOOK_BASES)[number];
 
 export interface LookFont {
   family: LookFontFamily;
@@ -69,6 +90,8 @@ export interface LookPalette {
   ink?: string;
   accent: string;
   accent2?: string;
+  /** Warna tambahan (2–6) untuk kartu, petak ikon, tab, dan stiker yang bergantian warna. */
+  swatches?: string[];
 }
 
 export interface LookShape {
@@ -87,6 +110,8 @@ export interface LookShape {
   section: number;
   /** radius tombol px; kosong = sama dengan radius. 999 = kapsul. */
   pill?: number;
+  /** jarak geser bayangan keras px (2–12); kosong = 6. */
+  offset?: number;
 }
 
 /** Format nomor bagian: (01) | /01 | #01 | [01] */
@@ -114,6 +139,11 @@ export interface StylePack {
   /** Kata yang memicu gaya ini bila muncul di deskripsi. */
   keywords: string[];
   /**
+   * Kata pembeda anggota keluarga (mis. "pastel", "kolase"): tidak memicu gaya sendirian, hanya menentukan anggota
+   * mana yang dipakai bila keluarganya sudah terpicu ("neo brutalism pastel" → anggota pastel).
+   */
+  traits?: string[];
+  /**
    * Kapan gaya dipakai walau pengguna tidak memintanya: domain/jenis usaha yang cocok dan peluangnya (0..1).
    * Pemilihan memakai acak deterministik per deskripsi + varian, jadi "Buat ulang" bisa berganti gaya.
    */
@@ -126,6 +156,8 @@ export interface StylePack {
   layouts: { hero: string[]; feat: string[] };
   /** Elemen yang selalu dipakai, dan elemen pilihan (diambil acak 2–4 per website). */
   elements: { always?: string[]; pool: string[] };
+  /** Dasar CSS: "brutal" (bawaan) atau "neo" (neo brutalism). */
+  base?: LookBase;
   /** Gaya ikon yang serasi (diundi, urutan pertama lebih sering), mis. ["tegas", "bayangan"]. Kosong = "tegas" untuk keluarga brutalism, selain itu "garis". */
   iconStyles?: string[];
   copy: {
@@ -135,6 +167,8 @@ export interface StylePack {
     kicker: string[];
     /** Teks pita berjalan. */
     ticker: string[];
+    /** Teks stiker pendek (maks. 14 huruf), mis. "Halo!", "Cobain!". Dipakai elemen stickers. */
+    stickers?: string[];
   };
 }
 
@@ -159,6 +193,12 @@ export interface SiteLook {
   labelFmt: LookLabelFmt;
   /** Kata yang disorot warna di judul (indeks kata, -1 = tidak ada). */
   hl: number;
+  /** Dasar CSS gaya. */
+  base: LookBase;
+  /** Warna tambahan untuk kartu/stiker bergantian (boleh kosong: renderer memakai aksen). */
+  swatches: string[];
+  /** Teks stiker pendek. */
+  stickers: string[];
 }
 
 /* ---------------- normalisasi (isi dari mesin/penyimpanan jangan dipercaya mentah) ---------------- */
@@ -205,6 +245,7 @@ export function normalizeShape(v: unknown): LookShape {
     width: Math.round(num(o.width, 880, 1440, 1200)),
     section: Math.round(num(o.section, 40, 180, 88)),
     ...(o.pill !== undefined ? { pill: Math.round(num(o.pill, 0, 999, 0)) } : {}),
+    ...(o.offset !== undefined ? { offset: Math.round(num(o.offset, 0, 12, 6)) } : {}),
   };
 }
 
@@ -239,6 +280,9 @@ export function normalizeLook(v: unknown): SiteLook | undefined {
     num: txt(o.num, 6),
     labelFmt: (LOOK_LABELS as readonly string[]).includes(o.labelFmt as string) ? (o.labelFmt as LookLabelFmt) : "paren",
     hl: Math.round(num(o.hl, -1, 12, -1)),
+    base: (LOOK_BASES as readonly string[]).includes(o.base as string) ? (o.base as LookBase) : "brutal",
+    swatches: (Array.isArray(o.swatches) ? o.swatches : []).filter(isHex).map((x) => (x as string).toLowerCase()).slice(0, 6),
+    stickers: (Array.isArray(o.stickers) ? o.stickers : []).map((x) => txt(x, 14)).filter(Boolean).slice(0, 3),
   };
 }
 
@@ -279,6 +323,8 @@ export function validateStyle(s: StylePack, rules: StyleRules): string[] {
   if (!txt(s.label, 40)) e.push(`${where}: "label" wajib diisi.`);
   if (!Array.isArray(s.keywords) || !s.keywords.length) e.push(`${where}: "keywords" wajib diisi (kata yang memicu gaya ini).`);
   if (!Array.isArray(s.prompts) || s.prompts.length < 3) e.push(`${where}: tulis minimal 3 contoh deskripsi di "prompts".`);
+  if (o.traits !== undefined && (!Array.isArray(o.traits) || o.traits.some((x) => typeof x !== "string" || !x.trim())))
+    e.push(`${where}: "traits" harus array teks (kata pembeda anggota keluarga).`);
 
   if (!Array.isArray(s.palettes) || !s.palettes.length) e.push(`${where}: "palettes" minimal satu palet.`);
   else
@@ -286,6 +332,8 @@ export function validateStyle(s: StylePack, rules: StyleRules): string[] {
       const n = `${where}: palet #${i + 1}${p?.name ? ` (${p.name})` : ""}`;
       for (const k of ["bg", "fg", "accent"] as const) if (!isHex(p?.[k])) e.push(`${n}: "${k}" harus warna hex #rrggbb.`);
       for (const k of ["ink", "accent2"] as const) if (p?.[k] !== undefined && !isHex(p[k])) e.push(`${n}: "${k}" harus warna hex #rrggbb.`);
+      if (p?.swatches !== undefined && (!Array.isArray(p.swatches) || p.swatches.length > 6 || p.swatches.some((x) => !isHex(x))))
+        e.push(`${n}: "swatches" harus array 1–6 warna hex #rrggbb.`);
       if (isHex(p?.bg) && isHex(p?.fg) && contrast(p.bg, p.fg) < 4.5) e.push(`${n}: kontras teks (fg) di atas latar (bg) ${contrast(p.bg, p.fg).toFixed(1)}:1, minimal 4,5:1.`);
       if (isHex(p?.bg) && isHex(p?.ink) && contrast(p.bg, p.ink) < 4.5) e.push(`${n}: kontras garis/blok (ink) dengan latar ${contrast(p.bg, p.ink).toFixed(1)}:1, minimal 4,5:1 (teks di blok ink memakai warna latar).`);
     });
@@ -307,6 +355,8 @@ export function validateStyle(s: StylePack, rules: StyleRules): string[] {
   const sh = rec(o.shape);
   for (const k of ["radius", "border", "gap", "pad", "width", "section"]) if (typeof sh[k] !== "number") e.push(`${where}: shape.${k} harus angka.`);
   if (sh.shadow !== undefined && !(LOOK_SHADOWS as readonly string[]).includes(sh.shadow as string)) e.push(`${where}: shape.shadow harus ${LOOK_SHADOWS.join(", ")}.`);
+  if (sh.offset !== undefined && (typeof sh.offset !== "number" || sh.offset < 0 || sh.offset > 12)) e.push(`${where}: shape.offset harus angka 0–12.`);
+  if (o.base !== undefined && !(LOOK_BASES as readonly string[]).includes(o.base as string)) e.push(`${where}: "base" harus ${LOOK_BASES.join(" atau ")}.`);
 
   const L = rec(o.layouts);
   const badList = (v: unknown, allowed: ReadonlySet<string>, k: string) => {
@@ -326,6 +376,10 @@ export function validateStyle(s: StylePack, rules: StyleRules): string[] {
   const c = rec(o.copy);
   for (const k of ["meta", "kicker", "ticker"]) if (!Array.isArray(c[k]) || !(c[k] as unknown[]).length) e.push(`${where}: copy.${k} minimal satu teks.`);
   for (const t of (Array.isArray(c.meta) ? c.meta : []) as string[]) if (typeof t === "string" && t.length > 28) e.push(`${where}: label meta "${t}" terlalu panjang (maks. 28 huruf).`);
+  if (c.stickers !== undefined) {
+    if (!Array.isArray(c.stickers) || c.stickers.some((x) => typeof x !== "string")) e.push(`${where}: copy.stickers harus array teks.`);
+    else for (const t of c.stickers as string[]) if (t.length > 14) e.push(`${where}: teks stiker "${t}" terlalu panjang (maks. 14 huruf).`);
+  }
 
   if (rules.banned?.length) {
     const text = JSON.stringify(c).toLowerCase();

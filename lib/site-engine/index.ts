@@ -16,7 +16,7 @@ export const ENGINE_PACKS_MAX = 60;
 export const ENGINE_PACKS_MAX_BYTES = 400_000;
 /** Paket gaya visual hasil impor (array StylePack, JSON). */
 export const ENGINE_STYLES_KEY = "engine:site:styles";
-export const ENGINE_STYLES_MAX = 20;
+export const ENGINE_STYLES_MAX = 40;
 /** Paket ikon & paket elemen hasil impor (array, JSON). */
 export const ENGINE_ICONS_KEY = "engine:site:icons";
 export const ENGINE_ELEMENTS_KEY = "engine:site:elements";

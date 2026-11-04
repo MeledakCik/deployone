@@ -501,7 +501,7 @@ export interface OrnamentContext {
  *     bobot keluarga = (rata-rata skor anggotanya)².
  * Lalu per slot diambil satu elemen keluarga itu yang cocok, masuk dengan peluang fit.chance (bawaan 0,5).
  * Tanpa gaya visual: maks. 4 (corner, divider, pattern, dan art ATAU badge karena keduanya di blok ajakan).
- * Dengan gaya visual: maks. 4 (art masuk hero; corner tidak dipakai karena hero gaya sudah padat).
+ * Dengan gaya visual: maks. 4 (art masuk hero; corner hanya untuk gaya dasar "neo", karena hero brutal sudah padat).
  * Acak terpisah supaya isi lain tidak berubah.
  */
 export function pickOrnaments(model: SiteModel, ctx: OrnamentContext): { family: string | null; ornaments: SiteOrnament[] } {
@@ -553,7 +553,8 @@ export function pickOrnaments(model: SiteModel, ctx: OrnamentContext): { family:
   }
   // Keluarga yang diminta: semua anggotanya boleh; selain itu hanya yang cocok dengan konteks.
   const pool = all.filter((el) => famOf(el) === family && (requested || score(el) > 0));
-  const slots: readonly string[] = ctx.style ? ["art", "badge", "divider", "pattern"] : ELEMENT_SLOTS;
+  // Gaya neo memakai hero yang lebih lega (neo/kolase), jadi ornamen sudut tetap boleh.
+  const slots: readonly string[] = ctx.style ? (ctx.style.base === "neo" ? ["art", "badge", "divider", "pattern", "corner"] : ["art", "badge", "divider", "pattern"]) : ELEMENT_SLOTS;
   const out: SiteOrnament[] = [];
   const used = new Set<string>();
   for (const el of shuffle(r, pool)) {
@@ -623,12 +624,62 @@ export function pickIconStyle(
 /*  Gaya visual                                                              */
 /* ======================================================================== */
 
-/** Kata kunci gaya cocok bila muncul utuh di deskripsi ("brutal", "gaya poster"). */
-function styleHits(st: StylePack, text: string): number {
-  return st.keywords.filter((k) => {
-    const n = normText(k);
-    return n.length >= 3 && (` ${text} `.includes(` ${n} `) || (n.length >= 6 && text.includes(n)));
-  }).length;
+/** Kata kunci gaya yang muncul di deskripsi ("brutal", "gaya poster"), sudah dinormalisasi. */
+function phraseHits(list: string[], text: string): string[] {
+  return list.map((k) => normText(k)).filter((n) => n.length >= 3 && (` ${text} `.includes(` ${n} `) || (n.length >= 6 && text.includes(n))));
+}
+function styleMatches(st: StylePack, text: string): string[] {
+  return phraseHits(st.keywords, text);
+}
+
+/** Di antara gaya yang sama-sama terpicu, pilih yang kata pembedanya (traits) paling banyak muncul; tanpa pembeda = semua. */
+function narrowByTraits<T extends StylePack>(list: T[], text: string): T[] {
+  const hits = new Map(list.map((x) => [x, phraseHits(x.traits ?? [], text).length] as const));
+  const best = Math.max(0, ...hits.values());
+  return best ? list.filter((x) => hits.get(x) === best) : list;
+}
+
+/**
+ * Gaya yang disebut di perintah ("pakai gaya neo pop"): kata kunci, id (tanda minus = spasi), dan label ikut dihitung,
+ * frasa terpanjang menang. Seri diundi dengan seed supaya anggota keluarga bergantian.
+ */
+function styleFromText(styles: StylePack[], text: string, seed: number): StylePack | null {
+  const withNames = styles.map((st) => ({ ...st, keywords: [...st.keywords, st.id, st.id.replace(/-/g, " "), st.label] }));
+  const scores = styleScores(withNames, text);
+  const best = Math.max(0, ...scores.values());
+  if (!best) return null;
+  const tied = narrowByTraits(
+    withNames.filter((x) => scores.get(x) === best),
+    text,
+  );
+  const pickId = tied[seed % tied.length].id;
+  return styles.find((x) => x.id === pickId) ?? null;
+}
+
+/**
+ * Skor kata kunci semua gaya, dengan aturan "frasa terpanjang menang": kata yang termuat di frasa lebih panjang yang
+ * juga cocok (milik gaya mana pun) tidak dihitung. "neo brutalism" jadi tidak ikut menghitung "brutalism" milik
+ * keluarga brutalism, sedangkan "brutalism" saja tetap memilih brutalism.
+ */
+function styleScores(styles: StylePack[], text: string): Map<StylePack, number> {
+  const matched = new Map(styles.map((st) => [st, styleMatches(st, text)] as const));
+  const all = [...new Set([...matched.values()].flat())];
+  const out = new Map<StylePack, number>();
+  for (const [st, list] of matched) {
+    const kept = list.filter((k) => !all.some((p) => p !== k && p.length > k.length && p.includes(k)));
+    // Nama gaya/keluarga yang disebut ("neo brutalism", "brutalism") jauh lebih kuat daripada kata sifat
+    // ("kontras tinggi"), supaya "neo brutalism kontras tinggi" tetap memilih keluarga neo.
+    out.set(st, kept.length + 10 * kept.filter((k) => namesStyle(st, k)).length);
+  }
+  return out;
+}
+
+const squash = (s: string): string => normText(s).replace(/[\s-]+/g, "");
+/** Kata kunci = nama keluarga/gaya itu sendiri (atau penggalan nama ≥ 5 huruf: "brutal" untuk "brutalism"). */
+function namesStyle(st: StylePack, k: string): boolean {
+  const kk = k.replace(/[\s-]+/g, "");
+  if (kk.length < 5) return false;
+  return [st.family ?? "", st.id].map(squash).some((n) => n.length >= 5 && (kk.includes(n) || n.includes(kk)));
 }
 
 /**
@@ -640,19 +691,16 @@ export function pickStyle(model: SiteModel, prompt: string, pack: DomainPack, ki
   if (!styles.length) return null;
   const text = normText(prompt);
   if (/\b(tanpa gaya|gaya biasa|gaya polos|jangan brutal)/.test(text)) return null;
-  let best: StylePack | null = null;
-  let bestHits = 0;
-  for (const st of styles) {
-    const h = styleHits(st, text);
-    if (h > bestHits) (best = st), (bestHits = h);
-  }
+  const scores = styleScores(styles, text);
+  const bestHits = Math.max(0, ...scores.values());
   const r = rng(hash(text + "|gaya") + variant * 104729);
   // Satu keluarga = satu undian: "brutalism" bisa keluar sebagai poster, acid, cyber, mission, label, street, ...
   const draw = (list: StylePack[]): StylePack => list[Math.floor(r() * list.length) % list.length];
-  if (best) {
+  if (bestHits > 0) {
     // Kata kunci khusus satu anggota (mis. "cyber") memberi skor lebih tinggi dan menang;
     // kata kunci keluarga (mis. "brutalism") dimiliki semua anggota → skor seri → diundi.
-    return draw(styles.filter((x) => styleHits(x, text) === bestHits));
+    // Kata pembeda (traits, mis. "pastel") lalu mempersempit undian ke anggota yang paling cocok.
+    return draw(narrowByTraits(styles.filter((x) => scores.get(x) === bestHits), text));
   }
   const fitting = styles.filter((st) => st.fit && ((st.fit.domains ?? []).includes(pack.id) || (st.fit.kinds ?? []).includes(kind)));
   if (!fitting.length) return null;
@@ -689,6 +737,9 @@ export function resolveLook(st: StylePack, slots: Record<string, string>, seed: 
     num: slots.year ?? "",
     labelFmt: (st.labels?.length ? st.labels[Math.floor(r() * st.labels.length)] : "paren") as SiteLook["labelFmt"],
     hl: Math.floor(r() * 4),
+    base: st.base === "neo" ? "neo" : "brutal",
+    swatches: [...(pal.swatches ?? [])],
+    stickers: shuffle(r, st.copy.stickers ?? []).slice(0, 3).map(f).filter(Boolean),
   };
 }
 
@@ -786,7 +837,9 @@ export function parseRupiah(t: string): number {
     const n = parseInt(m[1].replace(/[.,]/g, ""), 10);
     return n >= 500 ? n : 0; // angka kecil tanpa satuan biasanya bukan harga
   }
-  const n = parseFloat(m[1].replace(/\./g, "").replace(",", "."));
+  // "1,5jt" / "1.5jt" = desimal (1–2 angka di belakang pemisah); "1.500rb" = pemisah ribuan.
+  const raw = m[1];
+  const n = /^\d+[.,]\d{1,2}$/.test(raw) ? parseFloat(raw.replace(",", ".")) : parseFloat(raw.replace(/\./g, "").replace(",", "."));
   return Math.round(n * (unit === "jt" || unit === "juta" ? 1_000_000 : 1000));
 }
 
@@ -843,10 +896,11 @@ export function extract(prompt: string): Extracted {
 
   // Produk yang disebut: "menjual A, B, dan C" / "menu: A (15rb), B"
   const products: { name: string; price: number }[] = [];
-  const list = /(?:menjual|jual|jualan|menu(?:nya)?|produk(?:nya)?|layanan(?:nya)?|menyediakan|melayani|jasa|paket(?:nya)?|koleksi(?:nya)?)\s*:?\s+([^.!?\n]{3,240})/i.exec(p);
+  // Titik/koma di antara angka adalah bagian harga ("Rp15.000", "1,5jt"), bukan akhir kalimat/pemisah daftar.
+  const list = /(?:menjual|jual|jualan|menu(?:nya)?|produk(?:nya)?|layanan(?:nya)?|menyediakan|melayani|jasa|paket(?:nya)?|koleksi(?:nya)?)\s*:?\s+((?:[^.!?\n]|(?<=\d)\.(?=\d)){3,240})/i.exec(p);
   if (list) {
     const parts = list[1]
-      .split(/,|;|\s+dan\s+|\s+&\s+|\s+serta\s+|\/(?!\d)/i)
+      .split(/(?<!\d),|,(?!\d)|;|\s+dan\s+|\s+&\s+|\s+serta\s+|\/(?!\d)/i)
       .map((x) => x.trim())
       .filter(Boolean);
     for (const part of parts.slice(0, 12)) {
@@ -1159,7 +1213,7 @@ const FIELD_ALIASES: [RegExp, string][] = [
 ];
 
 const TEMPLATE_IDS = ["bersih", "gelap", "hangat", "tegas", "segar", "elegan", "pastel", "neon", "bakso", "kue", "barber", "tech", "majalah", "jurnal"];
-const HERO_IDS = ["center", "left", "split", "split-bold", "asymmetric", "editorial", "poster"];
+const HERO_IDS = ["split-bold", "asymmetric", "editorial", "poster", "breaker", "terminal", "dashboard", "label", "collage", "center", "left", "split", "neo"];
 
 function sameName(a: unknown, b: string): boolean {
   return normText(String(a ?? "")) === normText(b);
@@ -1243,7 +1297,7 @@ export function editSite(model: SiteModel, current: Record<string, unknown>, ins
         done.push("gaya visual dilepas (kembali ke template)");
         continue;
       }
-      const st = Object.values(model.styles ?? {}).find((x) => low.includes(x.id) || low.includes(x.label.toLowerCase()) || styleHits(x, normText(part)) > 0);
+      const st = styleFromText(Object.values(model.styles ?? {}), normText(part), hash(String(c.brand ?? "")));
       if (st) {
         c.look = resolveLook(st, { brand: String(c.brand ?? ""), city: "", year: String(new Date().getFullYear()) }, hash(String(c.brand ?? "")), 0);
         if (st.layouts.hero.length) c.hero = st.layouts.hero[0];
@@ -1266,7 +1320,7 @@ export function editSite(model: SiteModel, current: Record<string, unknown>, ins
       }
     }
     if (/\bhero\b/.test(low)) {
-      const h = HERO_IDS.find((id) => low.includes(id));
+      const h = /\bkolase\b/.test(low) ? "collage" : HERO_IDS.find((id) => new RegExp(`(^|[^a-z-])${id}(?![a-z-])`).test(low));
       if (h) {
         c.hero = h;
         done.push(`tata letak hero ${h}`);
@@ -1331,7 +1385,7 @@ export function editSite(model: SiteModel, current: Record<string, unknown>, ins
           items.push({ name: it.name, desc: it.desc.replace(/\{brand\}/g, String(c.brand ?? "")).replace(/\{\w+\}/g, ""), price: it.price ?? 0, category: it.category ?? "", icon: it.icon ?? "package" });
         }
       } else if (rest) {
-        for (const raw of rest.split(/,|\s+dan\s+|\s+&\s+/)) {
+        for (const raw of rest.split(/(?<!\d),|,(?!\d)|\s+dan\s+|\s+&\s+/)) {
           const price = parseRupiah(raw);
           const name = titleCase(cleanName(raw.replace(/\(?\s*(?:harga\s*|seharga\s*)?(?:rp\.?\s*)?\d+(?:[.,]\d+)*\s*(?:rb|ribu|k|jt|juta)?\s*\)?/gi, "")));
           if (name.length < 2 || items.length >= 12 || items.some((x) => sameName(x.name, name))) continue;

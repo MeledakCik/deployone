@@ -472,3 +472,131 @@ test("ornamen: tanpa paket elemen kosong, keluarga paksa & pengecualian dihormat
   const styled = pickOrnaments(assetModel, { ...ctx, style: STYLE[0], family: "grafis" });
   assert.ok(!styled.ornaments.some((o) => o.slot === "corner"), "hero gaya visual tidak diberi ornamen sudut");
 });
+
+/* ---------------- neo brutalism (gaya dasar "neo") ---------------- */
+const NEO = JSON.parse(fs.readFileSync(new URL("./fixtures/style-neo.json", import.meta.url), "utf8"));
+const NEO_EL = JSON.parse(fs.readFileSync(new URL("./fixtures/elements-neo.json", import.meta.url), "utf8"));
+const neoModel = trainModel(BUNDLED, [], [...STYLE, ...NEO], { elements: [...ELEMENTS, ...NEO_EL] });
+const neoIds = new Set(NEO.map((x) => x.id));
+const brutIds = new Set(STYLE.map((x) => x.id));
+const neoPick = (p, v = 0) => {
+  const d = neoModel.packs[classify(neoModel, p)[0].id];
+  return pickStyle(neoModel, p, d, d.kind, v)?.id ?? null;
+};
+
+test("neo: file gaya & elemen lolos validasi, semua anggota berdasar neo", () => {
+  for (const s of NEO) {
+    assert.deepEqual(validateStyle(s, STYLE_RULES), [], s.id);
+    assert.equal(s.base, "neo");
+    assert.equal(s.family, "neo-brutalism");
+    assert.ok(s.palettes.every((p) => p.swatches?.length >= 4), `${s.id}: tiap palet punya swatch`);
+  }
+  assert.deepEqual(NEO_EL.flatMap((p) => validateElementPack(p)), []);
+  const r = parseImport(JSON.stringify([...NEO, ...NEO_EL]));
+  assert.deepEqual(r.errors, []);
+  assert.equal(r.styles.length, NEO.length);
+  assert.equal(r.elementPacks.length, 1);
+});
+
+test("neo: validasi menolak swatch, offset, dasar, traits, dan stiker yang salah", () => {
+  const bad = structuredClone(NEO[0]);
+  bad.palettes[0].swatches = ["#fff", "ungu"];
+  bad.shape.offset = 30;
+  bad.base = "lembut";
+  bad.traits = "pastel";
+  bad.copy.stickers = ["Stiker yang terlalu panjang sekali"];
+  const e = validateStyle(bad, STYLE_RULES).join("\n");
+  assert.match(e, /swatches/);
+  assert.match(e, /shape\.offset/);
+  assert.match(e, /"base"/);
+  assert.match(e, /"traits"/);
+  assert.match(e, /terlalu panjang/);
+});
+
+test("neo: 'neo brutalism' memilih keluarga neo, 'brutalism' tetap brutalism, nama gaya mengalahkan kata sifat", () => {
+  for (let v = 0; v < 8; v++) {
+    assert.ok(neoIds.has(neoPick("website neo brutalism untuk toko sepatu", v)), `v${v}`);
+    assert.ok(neoIds.has(neoPick("landing page neubrutalism untuk aplikasi catatan", v)), `v${v}`);
+    assert.ok(neoIds.has(neoPick("web gaya neo-brutalism kontras tinggi tipografi besar", v)), `v${v}: kata sifat brutalism tidak menarik ke brutalism`);
+    assert.ok(brutIds.has(neoPick("website brutalism untuk distro", v)), `v${v}`);
+  }
+  const seen = new Set();
+  for (let v = 0; v < 48; v++) seen.add(neoPick("website neo brutalism untuk toko sepatu Langkah", v));
+  assert.equal(seen.size, NEO.length, "semua anggota keluarga muncul");
+});
+
+test("neo: kata pembeda (traits) memilih anggota, tapi tidak memicu gaya sendirian", () => {
+  const cases = [
+    ["website neo brutalism pastel untuk les anak", "neo-soft"],
+    ["toko baju neo brutalism kolase ala zine", "neo-zine"],
+    ["camilan pedas gaya neo brutalism penuh stiker", "neo-pop"],
+    ["portofolio neo brutalism kertas grid seperti buku catatan", "neo-grid"],
+    ["podcast neo brutalism bentuk geometris", "neo-play"],
+    ["website neo pop untuk minuman", "neo-pop"],
+  ];
+  for (const [p, want] of cases) for (let v = 0; v < 4; v++) assert.equal(neoPick(p, v), want, `${p} (v${v})`);
+  // Tanpa kata keluarga, kata pembeda tidak memicu apa pun (fit dimatikan supaya yang diuji hanya kata kunci).
+  const noFit = trainModel(BUNDLED, [], NEO.map((s) => ({ ...s, fit: undefined })));
+  for (const p of ["toko kue warna pastel", "jasa foto kolase kenangan", "jual stiker lucu", "seni geometris untuk anak"]) {
+    const d = noFit.packs[classify(noFit, p)[0].id];
+    assert.equal(pickStyle(noFit, p, d, d.kind, 0), null, p);
+  }
+});
+
+test("neo: look membawa dasar neo, swatch, stiker, layout neo, tanpa slot tersisa", () => {
+  const heroes = new Set();
+  for (let v = 0; v < 16; v++) {
+    const r = generateSite(neoModel, "website neo brutalism untuk toko sepatu Langkah Kecil di Bandung, sneakers 350rb", { variant: v });
+    const L = normalizeLook(r.raw.look);
+    assert.ok(L && neoIds.has(L.style), `v${v}`);
+    assert.equal(L.base, "neo");
+    assert.ok(L.swatches.length >= 4);
+    assert.ok(L.stickers.length <= 3 && L.stickers.every((s) => s.length <= 14));
+    const st = NEO.find((x) => x.id === L.style);
+    assert.ok(st.layouts.hero.includes(r.raw.hero), `${L.style}: hero ${r.raw.hero}`);
+    for (const e of st.elements.always ?? []) assert.ok(L.elements.includes(e), `${L.style}: ${e}`);
+    assert.ok(!/\{[a-z]+\}|undefined/i.test(JSON.stringify(L)));
+    for (const w of RULES.banned) assert.ok(!new RegExp(`(?<![\\p{L}])${w}(?![\\p{L}])`, "iu").test(JSON.stringify(L)), `${L.style}: ${w}`);
+    heroes.add(r.raw.hero);
+  }
+  assert.ok(heroes.has("neo") && heroes.has("collage"), [...heroes].join(","));
+});
+
+test("neo: perintah ubah memakai gaya neo, hero kolase/neo, dan kembali ke brutalism", () => {
+  const base = generateSite(neoModel, "jasa servis laptop dan hp Teknik Jaya di Medan", {}).raw;
+  const on = editSite(neoModel, base, "pakai gaya neo pop");
+  assert.equal(on.raw?.look?.style, "neo-pop", on.note);
+  assert.equal(on.raw.look.base, "neo");
+  const k = editSite(neoModel, on.raw, "ganti hero jadi kolase");
+  assert.equal(k.raw?.hero, "collage", k.note);
+  const n = editSite(neoModel, k.raw, "ganti hero jadi neo");
+  assert.equal(n.raw?.hero, "neo", n.note);
+  const sb = editSite(neoModel, k.raw, "hero split-bold");
+  assert.equal(sb.raw?.hero, "split-bold", sb.note);
+  const b = editSite(neoModel, on.raw, "pakai gaya brutalism");
+  assert.ok(brutIds.has(b.raw?.look?.style), b.note);
+});
+
+test("neo: ornamen keluarga neo dipakai gaya neo, sudut hanya untuk dasar neo", () => {
+  const ctx = { domain: "umkm-fashion", kind: "umkm", template: "tegas", seed: 11 };
+  const slots = new Set();
+  for (let v = 0; v < 24; v++) {
+    const r = pickOrnaments(neoModel, { ...ctx, variant: v, style: NEO[0], family: "neo" });
+    assert.equal(r.family, "neo");
+    r.ornaments.forEach((o) => slots.add(o.slot));
+    assert.ok(r.ornaments.length <= 4);
+  }
+  assert.ok(slots.has("corner") && slots.has("art"), [...slots].join(","));
+  for (let v = 0; v < 12; v++) assert.ok(!pickOrnaments(neoModel, { ...ctx, variant: v, style: STYLE[0] }).ornaments.some((o) => o.slot === "corner"));
+  assert.equal(familyFromText(neoModel, "website neo brutalism untuk kafe"), "neo");
+  assert.equal(familyFromText(neoModel, "website brutalism untuk kafe"), "grafis");
+});
+
+test("ekstraksi: harga dengan titik/koma (Rp15.000, 1,5jt, 1.5jt) tidak memotong daftar produk", () => {
+  const a = extract("Warung Bakso Pak Kumis. Menu: bakso Rp15.000, mie ayam Rp12.000, es teh 4rb");
+  assert.deepEqual(a.products.map((p) => [p.name, p.price]), [["Bakso", 15000], ["Mie Ayam", 12000], ["Es Teh", 4000]]);
+  const b = extract("Jasa website Kode Kilat, paket landing page 1,5jt, toko online 3jt, logo 750rb");
+  assert.deepEqual(b.products.slice(-3).map((p) => p.price), [1500000, 3000000, 750000]);
+  const c = extract("jual kopi 1.5jt dan teh 2,5 juta, gula 1.250rb");
+  assert.deepEqual(c.products.map((p) => p.price), [1500000, 2500000, 1250000]);
+});

@@ -13,7 +13,7 @@ interface EngineStatus {
   feedbackCount: number;
   recent: { prompt: string; kind: string; brand: string; at: number | null }[];
   imported: { id: string; kind: string; label: string; prompts: number; items: number; replacesBundled: boolean }[];
-  styles?: { id: string; label: string; desc: string; palettes: string[][]; keywords: string[]; imported: boolean; chance: number }[];
+  styles?: { id: string; label: string; desc: string; palettes: string[][]; keywords: string[]; traits?: string[]; imported: boolean; chance: number }[];
   iconPacks?: { id: string; label: string; license: string; variant?: string | null; count: number; sample: { name: string; svg: string }[] }[];
   elementPacks?: {
     id: string;
@@ -343,7 +343,7 @@ export function EngineTab({ toast }: { toast: (m: string) => void }) {
                       <ul className="grid grid-cols-[repeat(auto-fill,minmax(112px,1fr))] gap-2" aria-label={`Contoh elemen ${fam.label}`}>
                         {els.map((el) => (
                           <li key={el.id} className="flex flex-col gap-1.5 rounded-[12px] bg-[var(--chip-bg)] p-2" title={el.id}>
-                            <span className="grid h-16 place-items-center overflow-hidden text-text [--a:#7c5cff] [--a2:#c6f432] [--ink:currentColor] [--bg:var(--chip-bg)] [--fg:currentColor] [--on:#fff]">
+                            <span className="grid h-16 place-items-center overflow-hidden text-text [--a:#7c5cff] [--a2:#c6f432] [--ink:currentColor] [--bg:var(--chip-bg)] [--fg:currentColor] [--on:#fff] [--s1:#a78bfa] [--s2:#c6f432] [--s3:#ff8a3d] [--s4:#5ce1e6] [--s5:#ff6fb5]">
                               <svg viewBox={el.vb} className="max-h-16 w-full" aria-hidden dangerouslySetInnerHTML={{ __html: safeSvg(el.svg, 12000) }} />
                             </span>
                             <span className="truncate text-[11.5px] font-medium">{el.label}</span>
@@ -385,6 +385,7 @@ export function EngineTab({ toast }: { toast: (m: string) => void }) {
                   </p>
                   <p className="text-[13px] text-text-muted">
                     <code>{st.id}</code> · dipicu: {st.keywords.map((k) => `“${k}”`).join(", ")}
+                    {!!st.traits?.length && ` · pembeda: ${st.traits.map((k) => `“${k}”`).join(", ")}`}
                     {st.chance > 0 && ` · otomatis ${Math.round(st.chance * 100)}% untuk usaha yang cocok`}
                   </p>
                 </div>

@@ -1,0 +1,1623 @@
+[
+ {
+  "type": "style",
+  "id": "neo-brutal",
+  "family": "neo-brutalism",
+  "base": "neo",
+  "label": "Neo Brutal Klasik",
+  "desc": "Latar krem/putih, garis hitam 3px, sudut membulat, bayangan keras bergeser, tombol timbul, petak ikon berwarna, kata judul distabilo, daftar centang. Dari referensi landing NEO BRUTAL, design system, dan aplikasi penyimpan tautan.",
+  "prompts": [
+   "website neo brutalism untuk startup aplikasi",
+   "landing page gaya neo brutalis dengan tombol timbul",
+   "desain neubrutalism warna ungu dan hijau stabilo",
+   "web produk digital gaya neo brutal bayangan tebal",
+   "halaman jasa desain dengan garis hitam tebal dan bayangan offset",
+   "website kursus online gaya neo brutalism ceria"
+  ],
+  "keywords": [
+   "neo brutalism",
+   "neo brutalisme",
+   "neo brutalis",
+   "neobrutalism",
+   "neobrutalisme",
+   "neo-brutalism",
+   "neubrutalism",
+   "neubrutalisme",
+   "neu brutalism",
+   "neo brutal",
+   "neubrutal",
+   "brutalism modern",
+   "brutalisme modern",
+   "bayangan offset",
+   "bayangan keras",
+   "garis hitam tebal",
+   "tombol timbul",
+   "neo brutal klasik"
+  ],
+  "traits": [
+   "klasik",
+   "startup",
+   "aplikasi",
+   "saas",
+   "produk digital",
+   "stabilo",
+   "ungu lime"
+  ],
+  "fit": {
+   "domains": [
+    "jasa-digital",
+    "portofolio-developer",
+    "portofolio-desain",
+    "jasa-les",
+    "artikel-teknologi",
+    "event-seminar"
+   ],
+   "chance": 0.3
+  },
+  "labels": [
+   "paren",
+   "hash"
+  ],
+  "palettes": [
+   {
+    "name": "Ungu lime",
+    "bg": "#fdfbf6",
+    "fg": "#111111",
+    "ink": "#111111",
+    "accent": "#6439f2",
+    "accent2": "#d3eb06",
+    "swatches": [
+     "#d4f03c",
+     "#ff8f3f",
+     "#b8a4ff",
+     "#fff06a",
+     "#8fe3d5"
+    ]
+   },
+   {
+    "name": "Koral biru",
+    "bg": "#fff8ee",
+    "fg": "#141414",
+    "ink": "#141414",
+    "accent": "#3154d6",
+    "accent2": "#ff7b63",
+    "swatches": [
+     "#ff8f78",
+     "#f8eb47",
+     "#9aaaff",
+     "#7ee0c3",
+     "#ffffff"
+    ]
+   },
+   {
+    "name": "Kuning merah",
+    "bg": "#ffffff",
+    "fg": "#111111",
+    "ink": "#111111",
+    "accent": "#ff5632",
+    "accent2": "#ffda6f",
+    "swatches": [
+     "#ffda6f",
+     "#ff9a7a",
+     "#9ad7ff",
+     "#c1f07a",
+     "#f6c7ff"
+    ]
+   },
+   {
+    "name": "Teal magenta",
+    "bg": "#f6f4ee",
+    "fg": "#101010",
+    "ink": "#101010",
+    "accent": "#0f8a8f",
+    "accent2": "#fbd800",
+    "swatches": [
+     "#45d0d4",
+     "#f47de8",
+     "#fbd800",
+     "#b9f18c",
+     "#ffffff"
+    ]
+   }
+  ],
+  "fonts": {
+   "title": {
+    "family": "grotesk",
+    "weight": 900,
+    "tracking": -0.035,
+    "scale": 1,
+    "leading": 1.02
+   },
+   "sub": {
+    "family": "grotesk",
+    "weight": 800,
+    "tracking": -0.03,
+    "leading": 1.05
+   },
+   "body": {
+    "family": "sans",
+    "weight": 400
+   },
+   "label": {
+    "family": "mono",
+    "weight": 700,
+    "upper": true,
+    "tracking": 0.04
+   }
+  },
+  "typeSets": [
+   {
+    "title": {
+     "family": "display",
+     "weight": 900,
+     "upper": true,
+     "tracking": -0.02,
+     "scale": 0.92,
+     "leading": 1
+    },
+    "sub": {
+     "family": "display",
+     "weight": 900,
+     "tracking": -0.02,
+     "leading": 1.04
+    },
+    "body": {
+     "family": "sans",
+     "weight": 400
+    },
+    "label": {
+     "family": "grotesk",
+     "weight": 800,
+     "upper": true,
+     "tracking": 0.03
+    }
+   },
+   {
+    "title": {
+     "family": "sans",
+     "weight": 900,
+     "tracking": -0.04,
+     "scale": 1.05,
+     "leading": 1
+    },
+    "sub": {
+     "family": "sans",
+     "weight": 800,
+     "tracking": -0.03
+    },
+    "body": {
+     "family": "sans",
+     "weight": 400
+    },
+    "label": {
+     "family": "mono",
+     "weight": 600,
+     "upper": true,
+     "tracking": 0.05
+    }
+   }
+  ],
+  "shape": {
+   "radius": 14,
+   "border": 3,
+   "shadow": "hard",
+   "offset": 6,
+   "gap": 22,
+   "pad": 24,
+   "width": 1180,
+   "section": 92,
+   "pill": 12
+  },
+  "layouts": {
+   "hero": [
+    "neo",
+    "neo",
+    "collage",
+    "split-bold"
+   ],
+   "feat": [
+    "grid",
+    "bento",
+    "grid"
+   ]
+  },
+  "elements": {
+   "always": [
+    "tiles",
+    "marker",
+    "checks"
+   ],
+   "pool": [
+    "tones",
+    "stickers",
+    "pillnav",
+    "stats",
+    "ticker",
+    "topbar",
+    "dotgrid",
+    "tabs",
+    "sparkle"
+   ]
+  },
+  "iconStyles": [
+   "tegas",
+   "bayangan",
+   "garis"
+  ],
+  "copy": {
+   "meta": [
+    "{city}",
+    "Edisi {year}",
+    "Dibuat di {city}",
+    "Tanpa ribet",
+    "Langsung jalan",
+    "Cek detailnya"
+   ],
+   "kicker": [
+    "Pilih, chat, beres.",
+    "Semua yang kamu cari ada di sini.",
+    "Tanya dulu juga boleh.",
+    "Mulai dari yang paling dicari."
+   ],
+   "ticker": [
+    "{brand} · {city}",
+    "Tanpa ribet",
+    "Langsung chat",
+    "Edisi {year}"
+   ],
+   "stickers": [
+    "Cek!",
+    "Gas!",
+    "Oke!",
+    "Sip!",
+    "Top!"
+   ]
+  }
+ },
+ {
+  "type": "style",
+  "id": "neo-pop",
+  "family": "neo-brutalism",
+  "base": "neo",
+  "label": "Neo Pop Stiker",
+  "desc": "Warna penuh dan mencolok (mustard, pink, merah, biru), judul condensed kapital, stiker ledakan bintang dan wajah senyum, kartu warna-warni, pita berjalan. Dari referensi kemasan OATSIDE, OATFUEL, dan poster komik.",
+  "prompts": [
+   "website neo brutalism gaya stiker untuk brand snack",
+   "landing page neo brutal pop art warna mencolok",
+   "desain neubrutalism ala komik untuk minuman kekinian",
+   "web jualan camilan gaya neo brutalis penuh stiker",
+   "toko oat dan granola dengan gaya neo brutalism ceria"
+  ],
+  "keywords": [
+   "neo brutalism",
+   "neo brutalisme",
+   "neo brutalis",
+   "neobrutalism",
+   "neobrutalisme",
+   "neo-brutalism",
+   "neubrutalism",
+   "neubrutalisme",
+   "neu brutalism",
+   "neo brutal",
+   "neubrutal",
+   "brutalism modern",
+   "brutalisme modern",
+   "bayangan offset",
+   "bayangan keras",
+   "garis hitam tebal",
+   "tombol timbul",
+   "neo pop",
+   "neo brutalism pop",
+   "neo brutal pop"
+  ],
+  "traits": [
+   "stiker",
+   "sticker",
+   "pop art",
+   "komik",
+   "comic",
+   "warna mencolok",
+   "snack",
+   "camilan",
+   "kemasan",
+   "packaging",
+   "jajanan"
+  ],
+  "fit": {
+   "domains": [
+    "umkm-kopi",
+    "umkm-martabak",
+    "umkm-ayam-geprek",
+    "umkm-frozen-food",
+    "umkm-oleh-oleh",
+    "event-bazar",
+    "jasa-laundry"
+   ],
+   "chance": 0.3
+  },
+  "labels": [
+   "hash",
+   "paren"
+  ],
+  "palettes": [
+   {
+    "name": "Oat krem",
+    "bg": "#fff4e2",
+    "fg": "#1a1410",
+    "ink": "#1a1410",
+    "accent": "#c63c20",
+    "accent2": "#e9b745",
+    "swatches": [
+     "#e9b745",
+     "#f08bb0",
+     "#6fa8e0",
+     "#ff7a45",
+     "#bfe3a0"
+    ]
+   },
+   {
+    "name": "Kuning penuh",
+    "bg": "#ffcc00",
+    "fg": "#111111",
+    "ink": "#111111",
+    "accent": "#111111",
+    "accent2": "#ff6fa8",
+    "swatches": [
+     "#ffffff",
+     "#ff8fbd",
+     "#62c48f",
+     "#ff8a3d",
+     "#4cb6f2"
+    ]
+   },
+   {
+    "name": "Komik merah",
+    "bg": "#fffdf7",
+    "fg": "#111111",
+    "ink": "#111111",
+    "accent": "#d22a22",
+    "accent2": "#ffd60a",
+    "swatches": [
+     "#ffd60a",
+     "#ff7b70",
+     "#5ac8fa",
+     "#ffffff",
+     "#9be15d"
+    ]
+   },
+   {
+    "name": "Pink pop",
+    "bg": "#ffe3ee",
+    "fg": "#160f12",
+    "ink": "#160f12",
+    "accent": "#2b4cff",
+    "accent2": "#ffd23f",
+    "swatches": [
+     "#ffd23f",
+     "#ff6fa8",
+     "#8fd3ff",
+     "#b6f36b",
+     "#ffffff"
+    ]
+   }
+  ],
+  "fonts": {
+   "title": {
+    "family": "condensed",
+    "weight": 900,
+    "upper": true,
+    "tracking": 0,
+    "scale": 1.18,
+    "leading": 0.92
+   },
+   "sub": {
+    "family": "condensed",
+    "weight": 900,
+    "upper": true,
+    "tracking": 0.005,
+    "leading": 0.96
+   },
+   "body": {
+    "family": "grotesk",
+    "weight": 500
+   },
+   "label": {
+    "family": "rounded",
+    "weight": 800,
+    "upper": true,
+    "tracking": 0.04
+   }
+  },
+  "typeSets": [
+   {
+    "title": {
+     "family": "display",
+     "weight": 900,
+     "upper": true,
+     "tracking": -0.015,
+     "scale": 0.95,
+     "leading": 0.98
+    },
+    "sub": {
+     "family": "display",
+     "weight": 900,
+     "upper": true,
+     "tracking": -0.01
+    },
+    "body": {
+     "family": "sans",
+     "weight": 500
+    },
+    "label": {
+     "family": "mono",
+     "weight": 700,
+     "upper": true,
+     "tracking": 0.05
+    }
+   },
+   {
+    "title": {
+     "family": "rounded",
+     "weight": 900,
+     "tracking": -0.03,
+     "scale": 1.08,
+     "leading": 0.98
+    },
+    "sub": {
+     "family": "rounded",
+     "weight": 900,
+     "tracking": -0.02
+    },
+    "body": {
+     "family": "rounded",
+     "weight": 500
+    },
+    "label": {
+     "family": "rounded",
+     "weight": 800,
+     "upper": true,
+     "tracking": 0.05
+    }
+   }
+  ],
+  "shape": {
+   "radius": 18,
+   "border": 3,
+   "shadow": "hard",
+   "offset": 5,
+   "gap": 20,
+   "pad": 24,
+   "width": 1200,
+   "section": 96,
+   "pill": 999
+  },
+  "layouts": {
+   "hero": [
+    "collage",
+    "neo",
+    "collage"
+   ],
+   "feat": [
+    "bento",
+    "grid"
+   ]
+  },
+  "elements": {
+   "always": [
+    "stickers",
+    "tones",
+    "marker"
+   ],
+   "pool": [
+    "ticker",
+    "tilt",
+    "shapes",
+    "checks",
+    "tabs",
+    "dotgrid",
+    "topbar",
+    "sparkle",
+    "stats"
+   ]
+  },
+  "iconStyles": [
+   "bayangan",
+   "tegas",
+   "duotone"
+  ],
+  "copy": {
+   "meta": [
+    "{city}",
+    "Edisi {year}",
+    "Rasa favorit",
+    "Ambil yang kamu suka",
+    "Isi ulang tenaga",
+    "Bikin hari seru"
+   ],
+   "kicker": [
+    "Satu gigitan, langsung ketagihan.",
+    "Pilih rasa favoritmu.",
+    "Stok habis? Chat aja dulu.",
+    "Bikin harimu lebih seru."
+   ],
+   "ticker": [
+    "{brand}",
+    "Rasa favorit {city}",
+    "Pesan lewat chat",
+    "Edisi {year}"
+   ],
+   "stickers": [
+    "Wah!",
+    "Seru!",
+    "Mantap",
+    "Pop!",
+    "Hore!",
+    "Asyik"
+   ]
+  }
+ },
+ {
+  "type": "style",
+  "id": "neo-soft",
+  "family": "neo-brutalism",
+  "base": "neo",
+  "label": "Neo Pastel",
+  "desc": "Kartu pastel bergantian (lavender, lime lembut, pink, biru es), huruf membulat, garis 2px, bayangan pendek, sudut 22px, nav kapsul. Dari referensi dasbor Learnify, dasbor edukasi, aplikasi musik, dan Edtech.",
+  "prompts": [
+   "website neo brutalism pastel untuk kursus anak",
+   "landing page neubrutalism lembut warna pastel",
+   "desain neo brutal pastel untuk aplikasi belajar",
+   "web les privat gaya neo brutalism yang ramah",
+   "toko skincare dengan gaya neo brutalis pastel"
+  ],
+  "keywords": [
+   "neo brutalism",
+   "neo brutalisme",
+   "neo brutalis",
+   "neobrutalism",
+   "neobrutalisme",
+   "neo-brutalism",
+   "neubrutalism",
+   "neubrutalisme",
+   "neu brutalism",
+   "neo brutal",
+   "neubrutal",
+   "brutalism modern",
+   "brutalisme modern",
+   "bayangan offset",
+   "bayangan keras",
+   "garis hitam tebal",
+   "tombol timbul",
+   "neo pastel",
+   "neo soft",
+   "soft brutalism",
+   "neo brutalism pastel",
+   "neubrutalism pastel"
+  ],
+  "traits": [
+   "pastel",
+   "lembut",
+   "soft",
+   "kalem",
+   "anak",
+   "belajar",
+   "edukasi",
+   "kursus",
+   "sekolah"
+  ],
+  "fit": {
+   "domains": [
+    "jasa-les",
+    "profil-sekolah",
+    "umkm-skincare",
+    "umkm-kue-roti",
+    "artikel-gaya-hidup",
+    "umkm-petshop"
+   ],
+   "chance": 0.3
+  },
+  "labels": [
+   "paren"
+  ],
+  "palettes": [
+   {
+    "name": "Lavender lime",
+    "bg": "#fbf8ff",
+    "fg": "#1d1b26",
+    "ink": "#1d1b26",
+    "accent": "#5b3fd6",
+    "accent2": "#d2ee79",
+    "swatches": [
+     "#cbb5f5",
+     "#d2ee79",
+     "#ffc9d6",
+     "#b9e0e5",
+     "#ffe28a"
+    ]
+   },
+   {
+    "name": "Mint persik",
+    "bg": "#fdf8f3",
+    "fg": "#1f1a17",
+    "ink": "#1f1a17",
+    "accent": "#e2566c",
+    "accent2": "#9de9c7",
+    "swatches": [
+     "#9de9c7",
+     "#f5b6bd",
+     "#ffd59a",
+     "#c9c2ff",
+     "#fff3b0"
+    ]
+   },
+   {
+    "name": "Biru sage",
+    "bg": "#f4f7f6",
+    "fg": "#1b2124",
+    "ink": "#1b2124",
+    "accent": "#2f6fd6",
+    "accent2": "#f4acbf",
+    "swatches": [
+     "#b9e0e5",
+     "#f4acbf",
+     "#cff6a0",
+     "#ffe9a3",
+     "#d8c8ff"
+    ]
+   },
+   {
+    "name": "Krem kuning",
+    "bg": "#fffaf0",
+    "fg": "#221d16",
+    "ink": "#221d16",
+    "accent": "#6648e6",
+    "accent2": "#ffe96d",
+    "swatches": [
+     "#ffe96d",
+     "#a8e6df",
+     "#d4c4ff",
+     "#ffb8a8",
+     "#c8f0a8"
+    ]
+   }
+  ],
+  "fonts": {
+   "title": {
+    "family": "rounded",
+    "weight": 800,
+    "tracking": -0.025,
+    "scale": 1,
+    "leading": 1.04
+   },
+   "sub": {
+    "family": "rounded",
+    "weight": 800,
+    "tracking": -0.02,
+    "leading": 1.08
+   },
+   "body": {
+    "family": "sans",
+    "weight": 400
+   },
+   "label": {
+    "family": "rounded",
+    "weight": 700,
+    "upper": true,
+    "tracking": 0.05
+   }
+  },
+  "typeSets": [
+   {
+    "title": {
+     "family": "sans",
+     "weight": 800,
+     "tracking": -0.035,
+     "scale": 1,
+     "leading": 1.04
+    },
+    "sub": {
+     "family": "sans",
+     "weight": 700,
+     "tracking": -0.025
+    },
+    "body": {
+     "family": "sans",
+     "weight": 400
+    },
+    "label": {
+     "family": "mono",
+     "weight": 600,
+     "upper": true,
+     "tracking": 0.04
+    }
+   },
+   {
+    "title": {
+     "family": "serif",
+     "weight": 700,
+     "tracking": -0.02,
+     "scale": 1.05,
+     "leading": 1.06
+    },
+    "sub": {
+     "family": "rounded",
+     "weight": 800,
+     "tracking": -0.02
+    },
+    "body": {
+     "family": "sans",
+     "weight": 400
+    },
+    "label": {
+     "family": "rounded",
+     "weight": 700,
+     "upper": true,
+     "tracking": 0.05
+    }
+   }
+  ],
+  "shape": {
+   "radius": 22,
+   "border": 2,
+   "shadow": "hard",
+   "offset": 4,
+   "gap": 20,
+   "pad": 26,
+   "width": 1160,
+   "section": 92,
+   "pill": 999
+  },
+  "layouts": {
+   "hero": [
+    "neo",
+    "neo",
+    "split"
+   ],
+   "feat": [
+    "grid",
+    "bento",
+    "list"
+   ]
+  },
+  "elements": {
+   "always": [
+    "tones",
+    "tiles"
+   ],
+   "pool": [
+    "checks",
+    "stickers",
+    "pillnav",
+    "stats",
+    "marker",
+    "dotgrid",
+    "sparkle",
+    "tabs"
+   ]
+  },
+  "iconStyles": [
+   "duotone",
+   "garis",
+   "tipis"
+  ],
+  "copy": {
+   "meta": [
+    "{city}",
+    "Edisi {year}",
+    "Pelan-pelan saja",
+    "Tanya kapan pun",
+    "Mulai dari dasar",
+    "Belajar bareng"
+   ],
+   "kicker": [
+    "Pelan-pelan, tapi pasti.",
+    "Tanya kapan pun, kami jawab.",
+    "Mulai dari yang paling dasar.",
+    "Satu langkah kecil hari ini."
+   ],
+   "ticker": [
+    "{brand} · {city}",
+    "Mulai dari dasar",
+    "Tanya kapan pun",
+    "Edisi {year}"
+   ],
+   "stickers": [
+    "Hai!",
+    "Santai",
+    "Asyik",
+    "Yay!",
+    "Halo!"
+   ]
+  }
+ },
+ {
+  "type": "style",
+  "id": "neo-grid",
+  "family": "neo-brutalism",
+  "base": "neo",
+  "label": "Neo Kertas Grid",
+  "desc": "Latar kertas kotak-kotak, judul serif atau grotesk, kartu bertab map, label mono, nomor bagian, kata judul distabilo. Dari referensi editorial mijonju, daisy, dan plm.",
+  "prompts": [
+   "website neo brutalism kertas grid untuk studio desain",
+   "portofolio gaya neo brutal seperti buku catatan",
+   "landing page neubrutalism editorial dengan kertas kotak",
+   "blog gaya neo brutalism dengan tab map",
+   "web agensi kreatif neo brutalis ala notebook"
+  ],
+  "keywords": [
+   "neo brutalism",
+   "neo brutalisme",
+   "neo brutalis",
+   "neobrutalism",
+   "neobrutalisme",
+   "neo-brutalism",
+   "neubrutalism",
+   "neubrutalisme",
+   "neu brutalism",
+   "neo brutal",
+   "neubrutal",
+   "brutalism modern",
+   "brutalisme modern",
+   "bayangan offset",
+   "bayangan keras",
+   "garis hitam tebal",
+   "tombol timbul",
+   "neo grid",
+   "neo editorial",
+   "neo brutalism editorial"
+  ],
+  "traits": [
+   "grid",
+   "kertas",
+   "kertas grid",
+   "kertas kotak",
+   "kotak kotak",
+   "notebook",
+   "buku catatan",
+   "editorial",
+   "folder",
+   "tab map"
+  ],
+  "fit": {
+   "domains": [
+    "portofolio-desain",
+    "portofolio-penulis",
+    "artikel-gaya-hidup",
+    "artikel-teknologi",
+    "jasa-fotografi",
+    "profil-komunitas"
+   ],
+   "chance": 0.25
+  },
+  "labels": [
+   "slash",
+   "bracket"
+  ],
+  "palettes": [
+   {
+    "name": "Kertas biru",
+    "bg": "#fbfaf6",
+    "fg": "#121212",
+    "ink": "#121212",
+    "accent": "#2f5bea",
+    "accent2": "#ffd84d",
+    "swatches": [
+     "#ffd84d",
+     "#a7c7ff",
+     "#ffb4c6",
+     "#bff0a8",
+     "#ffffff"
+    ]
+   },
+   {
+    "name": "Kertas kuning",
+    "bg": "#fff8d6",
+    "fg": "#141414",
+    "ink": "#141414",
+    "accent": "#c43f17",
+    "accent2": "#141414",
+    "swatches": [
+     "#ffffff",
+     "#ffcc00",
+     "#e98fb4",
+     "#8fc7a2",
+     "#7cc4f2"
+    ]
+   },
+   {
+    "name": "Kertas hijau",
+    "bg": "#f3f6ee",
+    "fg": "#16201a",
+    "ink": "#16201a",
+    "accent": "#1f7a4d",
+    "accent2": "#f4c542",
+    "swatches": [
+     "#cfe9b8",
+     "#f4c542",
+     "#f6b3a8",
+     "#b7d3f2",
+     "#ffffff"
+    ]
+   }
+  ],
+  "fonts": {
+   "title": {
+    "family": "serif",
+    "weight": 700,
+    "tracking": -0.025,
+    "scale": 1.05,
+    "leading": 1.02
+   },
+   "sub": {
+    "family": "serif",
+    "weight": 700,
+    "tracking": -0.02,
+    "leading": 1.06
+   },
+   "body": {
+    "family": "grotesk",
+    "weight": 400
+   },
+   "label": {
+    "family": "mono",
+    "weight": 600,
+    "upper": true,
+    "tracking": 0.06
+   }
+  },
+  "typeSets": [
+   {
+    "title": {
+     "family": "grotesk",
+     "weight": 800,
+     "tracking": -0.04,
+     "scale": 1.02,
+     "leading": 1
+    },
+    "sub": {
+     "family": "grotesk",
+     "weight": 800,
+     "tracking": -0.03
+    },
+    "body": {
+     "family": "grotesk",
+     "weight": 400
+    },
+    "label": {
+     "family": "mono",
+     "weight": 600,
+     "upper": true,
+     "tracking": 0.06
+    }
+   },
+   {
+    "title": {
+     "family": "slab",
+     "weight": 800,
+     "tracking": -0.02,
+     "scale": 1,
+     "leading": 1.04
+    },
+    "sub": {
+     "family": "slab",
+     "weight": 700,
+     "tracking": -0.015
+    },
+    "body": {
+     "family": "sans",
+     "weight": 400
+    },
+    "label": {
+     "family": "mono",
+     "weight": 600,
+     "upper": true,
+     "tracking": 0.06
+    }
+   }
+  ],
+  "shape": {
+   "radius": 10,
+   "border": 2,
+   "shadow": "hard",
+   "offset": 4,
+   "gap": 18,
+   "pad": 24,
+   "width": 1200,
+   "section": 96,
+   "pill": 999
+  },
+  "layouts": {
+   "hero": [
+    "neo",
+    "collage",
+    "neo"
+   ],
+   "feat": [
+    "grid",
+    "grid",
+    "list",
+    "bento"
+   ]
+  },
+  "elements": {
+   "always": [
+    "paper",
+    "tabs"
+   ],
+   "pool": [
+    "marker",
+    "checks",
+    "stickers",
+    "pillnav",
+    "index",
+    "topbar",
+    "stats",
+    "tiles"
+   ]
+  },
+  "iconStyles": [
+   "garis",
+   "tipis",
+   "sketsa"
+  ],
+  "copy": {
+   "meta": [
+    "{city}",
+    "Catatan {year}",
+    "Arsip {year}",
+    "Halaman 01",
+    "Dari meja kerja",
+    "Lihat prosesnya"
+   ],
+   "kicker": [
+    "Catatan kecil dari meja kerja.",
+    "Lihat prosesnya, bukan cuma hasilnya.",
+    "Satu halaman, banyak cerita.",
+    "Disusun rapi, dibaca santai."
+   ],
+   "ticker": [
+    "{brand} · catatan {year}",
+    "Dari meja kerja",
+    "Lihat prosesnya",
+    "{city}"
+   ],
+   "stickers": [
+    "Catat!",
+    "Baca!",
+    "Cek!",
+    "Nah!"
+   ]
+  }
+ },
+ {
+  "type": "style",
+  "id": "neo-zine",
+  "family": "neo-brutalism",
+  "base": "neo",
+  "label": "Neo Zine Kolase",
+  "desc": "Kartu dan foto miring bertumpuk seperti kolase, judul condensed raksasa, stiker, gelembung percakapan, warna teal-magenta-kuning. Dari referensi zine golf le FLEUR.",
+  "prompts": [
+   "website neo brutalism kolase untuk brand fashion",
+   "landing page gaya zine neo brutal dengan foto miring",
+   "desain neubrutalism scrapbook untuk event komunitas",
+   "web toko pakaian gaya neo brutalis ala majalah indie",
+   "portofolio fotografer gaya kolase neo brutalism"
+  ],
+  "keywords": [
+   "neo brutalism",
+   "neo brutalisme",
+   "neo brutalis",
+   "neobrutalism",
+   "neobrutalisme",
+   "neo-brutalism",
+   "neubrutalism",
+   "neubrutalisme",
+   "neu brutalism",
+   "neo brutal",
+   "neubrutal",
+   "brutalism modern",
+   "brutalisme modern",
+   "bayangan offset",
+   "bayangan keras",
+   "garis hitam tebal",
+   "tombol timbul",
+   "neo zine",
+   "neo kolase",
+   "neo brutalism kolase"
+  ],
+  "traits": [
+   "kolase",
+   "collage",
+   "zine",
+   "scrapbook",
+   "tempel tempel",
+   "majalah indie",
+   "streetwear",
+   "foto miring"
+  ],
+  "fit": {
+   "domains": [
+    "umkm-fashion",
+    "jasa-fotografi",
+    "event-musik",
+    "event-bazar",
+    "profil-komunitas",
+    "jasa-konveksi"
+   ],
+   "chance": 0.3
+  },
+  "labels": [
+   "hash",
+   "slash"
+  ],
+  "palettes": [
+   {
+    "name": "Fleur",
+    "bg": "#f6f1e7",
+    "fg": "#121212",
+    "ink": "#121212",
+    "accent": "#b5089f",
+    "accent2": "#108287",
+    "swatches": [
+     "#fbd800",
+     "#3cc6c9",
+     "#f07de9",
+     "#ffffff",
+     "#ff9f5a"
+    ]
+   },
+   {
+    "name": "Zine oranye",
+    "bg": "#fff3e6",
+    "fg": "#1b1b1b",
+    "ink": "#1b1b1b",
+    "accent": "#c4531a",
+    "accent2": "#ed7f97",
+    "swatches": [
+     "#ed7f97",
+     "#dea434",
+     "#7fb8a4",
+     "#ffd7a8",
+     "#ffffff"
+    ]
+   },
+   {
+    "name": "Zine malam",
+    "bg": "#141414",
+    "fg": "#f6efe4",
+    "ink": "#f6efe4",
+    "accent": "#ff6fb5",
+    "accent2": "#ffd23f",
+    "swatches": [
+     "#ff6fb5",
+     "#ffd23f",
+     "#5ce1e6",
+     "#c6f432",
+     "#ff9a5c"
+    ]
+   }
+  ],
+  "fonts": {
+   "title": {
+    "family": "condensed",
+    "weight": 900,
+    "upper": true,
+    "tracking": 0,
+    "scale": 1.2,
+    "leading": 0.9
+   },
+   "sub": {
+    "family": "serif",
+    "weight": 800,
+    "tracking": -0.02,
+    "leading": 1.02
+   },
+   "body": {
+    "family": "sans",
+    "weight": 400
+   },
+   "label": {
+    "family": "mono",
+    "weight": 700,
+    "upper": true,
+    "tracking": 0.06
+   }
+  },
+  "typeSets": [
+   {
+    "title": {
+     "family": "serif",
+     "weight": 800,
+     "tracking": -0.035,
+     "scale": 1.12,
+     "leading": 0.98
+    },
+    "sub": {
+     "family": "condensed",
+     "weight": 900,
+     "upper": true,
+     "tracking": 0.01
+    },
+    "body": {
+     "family": "sans",
+     "weight": 400
+    },
+    "label": {
+     "family": "hand",
+     "weight": 700,
+     "tracking": 0
+    }
+   },
+   {
+    "title": {
+     "family": "condensed",
+     "weight": 900,
+     "upper": true,
+     "tracking": 0.01,
+     "scale": 1.22,
+     "leading": 0.9
+    },
+    "sub": {
+     "family": "condensed",
+     "weight": 900,
+     "upper": true
+    },
+    "body": {
+     "family": "grotesk",
+     "weight": 400
+    },
+    "label": {
+     "family": "grotesk",
+     "weight": 800,
+     "upper": true,
+     "tracking": 0.04
+    }
+   }
+  ],
+  "shape": {
+   "radius": 6,
+   "border": 3,
+   "shadow": "hard",
+   "offset": 7,
+   "gap": 24,
+   "pad": 22,
+   "width": 1200,
+   "section": 100,
+   "pill": 999
+  },
+  "layouts": {
+   "hero": [
+    "collage",
+    "collage",
+    "neo"
+   ],
+   "feat": [
+    "bento",
+    "grid"
+   ]
+  },
+  "elements": {
+   "always": [
+    "tilt",
+    "stickers"
+   ],
+   "pool": [
+    "tones",
+    "marker",
+    "ticker",
+    "shapes",
+    "dotgrid",
+    "checks",
+    "tabs",
+    "topbar"
+   ]
+  },
+  "iconStyles": [
+   "sketsa",
+   "tegas",
+   "bayangan"
+  ],
+  "copy": {
+   "meta": [
+    "{city}",
+    "Edisi {year}",
+    "Vol. 01",
+    "Arsip jalanan",
+    "Dari {city}",
+    "Tempel di dinding"
+   ],
+   "kicker": [
+    "Gunting, tempel, pakai.",
+    "Edisi kecil dari {city}.",
+    "Dibuat tangan, dipakai harian.",
+    "Lihat koleksinya satu per satu."
+   ],
+   "ticker": [
+    "{brand} · vol. 01",
+    "Edisi {year}",
+    "Dari {city}",
+    "Gunting, tempel, pakai"
+   ],
+   "stickers": [
+    "Wow",
+    "Psst!",
+    "Nah!",
+    "Keren",
+    "Ciamik"
+   ]
+  }
+ },
+ {
+  "type": "style",
+  "id": "neo-play",
+  "family": "neo-brutalism",
+  "base": "neo",
+  "label": "Neo Geometris",
+  "desc": "Komposisi bentuk geometris (setengah lingkaran, tangga, titik, bunga) di sudut hero, judul tebal tanpa kapital, sudut 24px, latar kuning penuh atau gelap, petak ikon warna-warni. Dari referensi InsightPod, Artistry, Blinke, dan Deep^style.",
+  "prompts": [
+   "website neo brutalism dengan bentuk geometris untuk podcast",
+   "landing page neubrutalism geometris warna kuning ungu",
+   "desain neo brutal ceria untuk studio seni anak",
+   "web komunitas kreatif gaya neo brutalis bentuk bulat dan kotak",
+   "portofolio ilustrator gaya neo brutalism geometris"
+  ],
+  "keywords": [
+   "neo brutalism",
+   "neo brutalisme",
+   "neo brutalis",
+   "neobrutalism",
+   "neobrutalisme",
+   "neo-brutalism",
+   "neubrutalism",
+   "neubrutalisme",
+   "neu brutalism",
+   "neo brutal",
+   "neubrutal",
+   "brutalism modern",
+   "brutalisme modern",
+   "bayangan offset",
+   "bayangan keras",
+   "garis hitam tebal",
+   "tombol timbul",
+   "neo geometris",
+   "neo play",
+   "neo brutalism geometris"
+  ],
+  "traits": [
+   "geometris",
+   "geometri",
+   "bentuk geometris",
+   "bulat",
+   "lingkaran",
+   "memphis",
+   "warna warni",
+   "podcast",
+   "ilustrator"
+  ],
+  "fit": {
+   "domains": [
+    "portofolio-desain",
+    "profil-komunitas",
+    "event-musik",
+    "jasa-digital",
+    "umkm-tanaman-hias",
+    "event-seminar"
+   ],
+   "chance": 0.3
+  },
+  "labels": [
+   "paren",
+   "bracket"
+  ],
+  "palettes": [
+   {
+    "name": "Kuning ungu",
+    "bg": "#fccf19",
+    "fg": "#121212",
+    "ink": "#121212",
+    "accent": "#5b3df0",
+    "accent2": "#fb4e82",
+    "swatches": [
+     "#a693ff",
+     "#fb4e82",
+     "#ffffff",
+     "#5ad1a8",
+     "#ff8a3d"
+    ]
+   },
+   {
+    "name": "Biru koral",
+    "bg": "#f3f6ff",
+    "fg": "#10131c",
+    "ink": "#10131c",
+    "accent": "#2563eb",
+    "accent2": "#ff7a59",
+    "swatches": [
+     "#7fb0ff",
+     "#ff7a59",
+     "#ffd23f",
+     "#a5e3c8",
+     "#f3b4ff"
+    ]
+   },
+   {
+    "name": "Hitam pop",
+    "bg": "#121212",
+    "fg": "#f7efe6",
+    "ink": "#f7efe6",
+    "accent": "#ed7f97",
+    "accent2": "#e8742f",
+    "swatches": [
+     "#ed7f97",
+     "#e8742f",
+     "#dea434",
+     "#6fb59c",
+     "#b9a6ff"
+    ]
+   },
+   {
+    "name": "Krem teal",
+    "bg": "#fdf3ea",
+    "fg": "#1a1a1a",
+    "ink": "#1a1a1a",
+    "accent": "#21786f",
+    "accent2": "#ffe96d",
+    "swatches": [
+     "#ffe96d",
+     "#4ccbc1",
+     "#a995e6",
+     "#f08a88",
+     "#ffffff"
+    ]
+   }
+  ],
+  "fonts": {
+   "title": {
+    "family": "display",
+    "weight": 900,
+    "tracking": -0.035,
+    "scale": 1,
+    "leading": 1
+   },
+   "sub": {
+    "family": "display",
+    "weight": 900,
+    "tracking": -0.025,
+    "leading": 1.04
+   },
+   "body": {
+    "family": "sans",
+    "weight": 400
+   },
+   "label": {
+    "family": "grotesk",
+    "weight": 800,
+    "upper": true,
+    "tracking": 0.04
+   }
+  },
+  "typeSets": [
+   {
+    "title": {
+     "family": "rounded",
+     "weight": 900,
+     "tracking": -0.03,
+     "scale": 1.05,
+     "leading": 1
+    },
+    "sub": {
+     "family": "rounded",
+     "weight": 800,
+     "tracking": -0.02
+    },
+    "body": {
+     "family": "sans",
+     "weight": 400
+    },
+    "label": {
+     "family": "rounded",
+     "weight": 800,
+     "upper": true,
+     "tracking": 0.05
+    }
+   },
+   {
+    "title": {
+     "family": "wide",
+     "weight": 800,
+     "upper": true,
+     "tracking": -0.01,
+     "scale": 0.82,
+     "leading": 1.02
+    },
+    "sub": {
+     "family": "grotesk",
+     "weight": 900,
+     "tracking": -0.03
+    },
+    "body": {
+     "family": "sans",
+     "weight": 400
+    },
+    "label": {
+     "family": "mono",
+     "weight": 700,
+     "upper": true,
+     "tracking": 0.05
+    }
+   }
+  ],
+  "shape": {
+   "radius": 24,
+   "border": 3,
+   "shadow": "hard",
+   "offset": 6,
+   "gap": 22,
+   "pad": 26,
+   "width": 1200,
+   "section": 96,
+   "pill": 999
+  },
+  "layouts": {
+   "hero": [
+    "neo",
+    "collage",
+    "neo"
+   ],
+   "feat": [
+    "bento",
+    "grid"
+   ]
+  },
+  "elements": {
+   "always": [
+    "shapes",
+    "tiles"
+   ],
+   "pool": [
+    "tones",
+    "stickers",
+    "marker",
+    "checks",
+    "stats",
+    "pillnav",
+    "dotgrid",
+    "tabs"
+   ]
+  },
+  "iconStyles": [
+   "duotone",
+   "bayangan",
+   "tegas"
+  ],
+  "copy": {
+   "meta": [
+    "{city}",
+    "Edisi {year}",
+    "Episode baru",
+    "Studio {city}",
+    "Main warna",
+    "Coba bentuk baru"
+   ],
+   "kicker": [
+    "Main bentuk, main warna.",
+    "Ide kecil, dibuat serius.",
+    "Coba sesuatu yang baru.",
+    "Dari studio kecil di {city}."
+   ],
+   "ticker": [
+    "{brand} · {city}",
+    "Main warna",
+    "Edisi {year}",
+    "Coba bentuk baru"
+   ],
+   "stickers": [
+    "Halo!",
+    "Wah!",
+    "Keren",
+    "Jos!",
+    "Sip!"
+   ]
+  }
+ }
+]

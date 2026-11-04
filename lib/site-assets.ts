@@ -167,7 +167,7 @@ export interface SiteOrnament {
 const SHAPES = new Set(["path", "circle", "rect", "ellipse", "line", "polyline", "polygon", "g"]);
 const NUM = /^-?(\d+\.?\d*|\.\d+)(e-?\d+)?(px|%)?$/i;
 const NUM_ATTRS = new Set(["cx", "cy", "r", "rx", "ry", "x", "y", "width", "height", "x1", "y1", "x2", "y2", "stroke-width", "opacity", "fill-opacity", "stroke-opacity", "stroke-miterlimit"]);
-const PAINT = /^(none|currentColor|#[0-9a-fA-F]{3}|#[0-9a-fA-F]{6}|var\(--(a|a2|ink|bg|fg|on)\))$/;
+const PAINT = /^(none|currentColor|#[0-9a-fA-F]{3}|#[0-9a-fA-F]{6}|var\(--(a|a2|ink|bg|fg|on|s[1-5])\))$/;
 const ENUMS: Record<string, RegExp> = {
   "stroke-linecap": /^(butt|round|square)$/,
   "stroke-linejoin": /^(miter|round|bevel)$/,
@@ -186,7 +186,7 @@ export interface SanitizeResult {
 
 /**
  * Bersihkan isi SVG. Hanya: path, circle, rect, ellipse, line, polyline, polygon, g; atribut geometri, warna
- * (none, currentColor, hex, var(--a|a2|ink|bg|fg|on)), dan transform sederhana. Yang lain = error (bukan dibuang
+ * (none, currentColor, hex, var(--a|a2|ink|bg|fg|on|s1..s5)), dan transform sederhana. Yang lain = error (bukan dibuang
  * diam-diam), supaya admin tahu file mana yang perlu diperbaiki.
  */
 export function sanitizeSvg(input: string, opts: { maxLen?: number; maxNodes?: number } = {}): SanitizeResult {
@@ -393,10 +393,15 @@ export function validateElementPack(p: ElementPack): string[] {
 }
 
 /** Ganti var(--x) dengan warna nyata (untuk SVG yang dipakai sebagai gambar latar data-URI, yang tidak bisa membaca variabel CSS). */
-export function resolveSvgColors(svg: string, colors: { fg: string; bg: string; a: string; a2: string; ink: string; on: string }): string {
+export function resolveSvgColors(
+  svg: string,
+  colors: { fg: string; bg: string; a: string; a2: string; ink: string; on: string; s1?: string; s2?: string; s3?: string; s4?: string; s5?: string },
+): string {
+  // Warna swatch (--s1..--s5) yang tidak diberikan jatuh ke aksen / aksen kedua.
+  const sw = (k: string): string => (colors as Record<string, string | undefined>)[k] ?? (k === "s1" || k === "s3" || k === "s5" ? colors.a : colors.a2);
   return svg
     .replace(/currentColor/g, colors.fg)
-    .replace(/var\(--(a2|a|ink|bg|fg|on)\)/g, (_m, k: keyof typeof colors) => colors[k]);
+    .replace(/var\(--(a2|a|ink|bg|fg|on|s[1-5])\)/g, (_m, k: string) => (k[0] === "s" && k.length === 2 ? sw(k) : colors[k as "a" | "a2" | "ink" | "bg" | "fg" | "on"]));
 }
 
 /** SVG → data URI aman untuk CSS url("..."). */

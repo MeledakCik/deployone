@@ -100,6 +100,14 @@ async function retrain(): Promise<SiteModel> {
 }
 
 /** GET /api/admin/engine → status mesin, paket impor, dan contoh pengguna terbaru. */
+/** Kata pemicu untuk daftar admin: kata khas gaya ini dulu, lalu kata keluarga (yang dimiliki semua anggota). */
+function styleKeywordsForList(x: StylePack, all: StylePack[]): string[] {
+  const fam = x.family ? all.filter((y) => y.family === x.family) : [x];
+  const shared = new Set(fam.length > 1 ? x.keywords.filter((k) => fam.every((y) => y.keywords.includes(k))) : []);
+  const own = x.keywords.filter((k) => !shared.has(k));
+  return [...own.slice(0, 4), ...[...shared].slice(0, own.length ? 2 : 6)];
+}
+
 export const GET = withErrorHandling(async (req: NextRequest) => {
   if (!adminFromReq(req)) return fail("Tidak ditemukan.", 404, "not_found");
   const active = await loadModel();
@@ -115,12 +123,13 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
     bundled: { trainedAt: bundledModel().trainedAt, stats: bundledModel().stats },
     feedbackCount: feedback.length,
     recent: feedback.slice(0, 20).map((f) => ({ prompt: f.prompt, kind: f.content.kind, brand: f.content.brand, at: f.at ?? null })),
-    styles: Object.values(active.styles ?? {}).map((x) => ({
+    styles: Object.values(active.styles ?? {}).map((x, _i, all) => ({
       id: x.id,
       label: x.label,
       desc: x.desc ?? "",
-      palettes: x.palettes.map((p) => [p.bg, p.fg, p.accent]),
-      keywords: x.keywords.slice(0, 6),
+      palettes: x.palettes.map((p) => [p.bg, p.fg, p.accent, ...(p.swatches ?? []).slice(0, 3)]),
+      keywords: styleKeywordsForList(x, all),
+      traits: (x.traits ?? []).slice(0, 5),
       imported: importedStyles.some((y) => y.id === x.id),
       chance: x.fit?.chance ?? 0,
     })),
