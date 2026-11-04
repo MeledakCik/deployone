@@ -2,24 +2,263 @@
  {
   "type": "elements",
   "id": "elemen-dekor",
-  "label": "Elemen Dekor Nusantara & Grafis",
+  "label": "Elemen Dekor (11 keluarga)",
   "license": "Orisinal untuk Depup, bebas dipakai di website hasil Depup",
+  "families": {
+   "nusantara": {
+    "label": "Nusantara",
+    "iconStyles": [
+     "duotone",
+     "tipis",
+     "garis"
+    ],
+    "keywords": [
+     "batik",
+     "nusantara",
+     "tradisional",
+     "etnik",
+     "budaya",
+     "adat",
+     "jawa",
+     "songket",
+     "tenun"
+    ],
+    "templates": [
+     "hangat",
+     "bakso",
+     "elegan"
+    ]
+   },
+   "grafis": {
+    "label": "Grafis tegas",
+    "iconStyles": [
+     "tegas",
+     "bayangan"
+    ],
+    "keywords": [
+     "brutal",
+     "brutalis",
+     "brutalism",
+     "gaya poster",
+     "grafis",
+     "streetwear",
+     "industrial"
+    ],
+    "templates": [
+     "tegas",
+     "barber"
+    ]
+   },
+   "memphis": {
+    "label": "Memphis",
+    "iconStyles": [
+     "bayangan",
+     "duotone",
+     "tegas"
+    ],
+    "keywords": [
+     "memphis",
+     "80an",
+     "tahun 80",
+     "playful",
+     "funky",
+     "ceria",
+     "warna warni"
+    ],
+    "templates": [
+     "pastel",
+     "tegas"
+    ]
+   },
+   "organik": {
+    "label": "Organik",
+    "iconStyles": [
+     "duotone",
+     "tipis",
+     "garis"
+    ],
+    "keywords": [
+     "alami",
+     "organik",
+     "natural",
+     "botani",
+     "botanical",
+     "daun",
+     "herbal",
+     "ramah lingkungan"
+    ],
+    "templates": [
+     "segar",
+     "hangat"
+    ]
+   },
+   "retro": {
+    "label": "Retro 70-an",
+    "iconStyles": [
+     "bayangan",
+     "duotone",
+     "sketsa"
+    ],
+    "keywords": [
+     "retro",
+     "jadul",
+     "70an",
+     "tahun 70",
+     "vintage",
+     "groovy",
+     "klasik"
+    ],
+    "templates": [
+     "hangat",
+     "bakso",
+     "barber"
+    ]
+   },
+   "y2k": {
+    "label": "Y2K",
+    "iconStyles": [
+     "neon",
+     "duotone",
+     "garis"
+    ],
+    "keywords": [
+     "y2k",
+     "2000an",
+     "tahun 2000",
+     "kilau",
+     "glitter",
+     "futuristik"
+    ],
+    "templates": [
+     "pastel",
+     "gelap",
+     "neon"
+    ]
+   },
+   "minimal": {
+    "label": "Minimal",
+    "iconStyles": [
+     "tipis",
+     "garis"
+    ],
+    "keywords": [
+     "minimalis",
+     "minimal",
+     "simpel",
+     "clean",
+     "bersih dan rapi",
+     "elegan sederhana"
+    ],
+    "templates": [
+     "bersih",
+     "tech",
+     "elegan"
+    ]
+   },
+   "piksel": {
+    "label": "Piksel 8-bit",
+    "iconStyles": [
+     "piksel",
+     "tegas"
+    ],
+    "keywords": [
+     "8 bit",
+     "8-bit",
+     "8bit",
+     "pixel",
+     "piksel",
+     "pixel art",
+     "game retro",
+     "arcade"
+    ],
+    "templates": [
+     "neon",
+     "gelap"
+    ]
+   },
+   "doodle": {
+    "label": "Doodle",
+    "iconStyles": [
+     "sketsa",
+     "duotone"
+    ],
+    "keywords": [
+     "doodle",
+     "coretan",
+     "gambar tangan",
+     "hand drawn",
+     "lucu",
+     "anak anak",
+     "anak-anak"
+    ],
+    "templates": [
+     "pastel",
+     "kue",
+     "bakso"
+    ]
+   },
+   "kertas": {
+    "label": "Kertas & kriya",
+    "iconStyles": [
+     "sketsa",
+     "tipis"
+    ],
+    "keywords": [
+     "scrapbook",
+     "kertas",
+     "craft",
+     "kriya",
+     "kolase",
+     "handmade",
+     "prakarya",
+     "jurnal"
+    ],
+    "templates": [
+     "kue",
+     "majalah",
+     "hangat"
+    ]
+   },
+   "pantai": {
+    "label": "Pantai",
+    "iconStyles": [
+     "duotone",
+     "garis"
+    ],
+    "keywords": [
+     "pantai",
+     "laut",
+     "bahari",
+     "tropis",
+     "pulau",
+     "ombak",
+     "liburan"
+    ],
+    "templates": [
+     "segar",
+     "bersih"
+    ]
+   }
+  },
   "elements": [
    {
     "id": "pita-gelombang",
     "label": "Gelombang",
     "slot": "divider",
     "viewBox": "0 0 80 24",
-    "svg": "<path d=\"M0 12C10 2 30 2 40 12S70 22 80 12\" fill=\"none\" stroke=\"var(--a)\" stroke-width=\"3\" stroke-linecap=\"round\"/>",
+    "svg": "<path d=\"M-40 12C-30 22-10 22 0 12C10 2 30 2 40 12S70 22 80 12S110 2 120 12\" fill=\"none\" stroke=\"var(--a)\" stroke-width=\"3\" stroke-linecap=\"round\"/>",
     "tags": [
      "ombak",
      "lembut"
     ],
+    "family": "pantai",
     "fit": {
-     "kinds": [
-      "umkm",
-      "jasa",
-      "event"
+     "domains": [
+      "jasa-kos-penginapan",
+      "event-lari",
+      "jasa-rental-kendaraan",
+      "umkm-frozen-food",
+      "artikel-gaya-hidup"
      ],
      "chance": 0.2
     }
@@ -29,14 +268,28 @@
     "label": "Zigzag",
     "slot": "divider",
     "viewBox": "0 0 40 24",
-    "svg": "<polyline points=\"0,19 10,5 20,19 30,5 40,19\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" stroke-linejoin=\"miter\"/>",
+    "svg": "<polyline points=\"-10,5 0,19 10,5 20,19 30,5 40,19 50,5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" stroke-linejoin=\"miter\"/>",
     "tags": [
      "tegas",
      "grafis"
     ],
+    "family": "grafis",
     "fit": {
      "families": [
       "brutalism"
+     ],
+     "templates": [
+      "tegas",
+      "barber"
+     ],
+     "domains": [
+      "event-musik",
+      "jasa-digital",
+      "portofolio-desain",
+      "jasa-bengkel",
+      "jasa-gym-fitness",
+      "umkm-fashion",
+      "jasa-barbershop"
      ],
      "chance": 0.5
     }
@@ -52,23 +305,27 @@
      "nusantara",
      "segitiga"
     ],
+    "family": "nusantara",
     "fit": {
      "domains": [
-      "umkm-fashion",
       "umkm-oleh-oleh",
+      "umkm-fashion",
+      "jasa-konveksi",
       "umkm-kue-roti",
       "umkm-katering",
-      "umkm-bakso-mie",
-      "umkm-kopi",
+      "jasa-wedding-organizer",
       "profil-komunitas",
       "profil-sekolah",
       "event-bazar",
-      "umkm-umum",
-      "jasa-wedding-organizer",
-      "artikel-resep",
       "umkm-sembako",
-      "jasa-konveksi",
-      "jasa-kos-penginapan"
+      "jasa-kos-penginapan",
+      "artikel-resep",
+      "umkm-bakso-mie",
+      "umkm-martabak"
+     ],
+     "templates": [
+      "hangat",
+      "bakso"
      ],
      "kinds": [
       "profil"
@@ -88,23 +345,27 @@
      "awan",
      "nusantara"
     ],
+    "family": "nusantara",
     "fit": {
      "domains": [
-      "umkm-fashion",
       "umkm-oleh-oleh",
+      "umkm-fashion",
+      "jasa-konveksi",
       "umkm-kue-roti",
       "umkm-katering",
-      "umkm-bakso-mie",
-      "umkm-kopi",
+      "jasa-wedding-organizer",
       "profil-komunitas",
       "profil-sekolah",
       "event-bazar",
-      "umkm-umum",
-      "jasa-wedding-organizer",
-      "artikel-resep",
       "umkm-sembako",
-      "jasa-konveksi",
-      "jasa-kos-penginapan"
+      "jasa-kos-penginapan",
+      "artikel-resep",
+      "umkm-bakso-mie",
+      "umkm-martabak"
+     ],
+     "templates": [
+      "hangat",
+      "bakso"
      ],
      "kinds": [
       "profil"
@@ -123,23 +384,27 @@
      "diagonal",
      "nusantara"
     ],
+    "family": "nusantara",
     "fit": {
      "domains": [
-      "umkm-fashion",
       "umkm-oleh-oleh",
+      "umkm-fashion",
+      "jasa-konveksi",
       "umkm-kue-roti",
       "umkm-katering",
-      "umkm-bakso-mie",
-      "umkm-kopi",
+      "jasa-wedding-organizer",
       "profil-komunitas",
       "profil-sekolah",
       "event-bazar",
-      "umkm-umum",
-      "jasa-wedding-organizer",
-      "artikel-resep",
       "umkm-sembako",
-      "jasa-konveksi",
-      "jasa-kos-penginapan"
+      "jasa-kos-penginapan",
+      "artikel-resep",
+      "umkm-bakso-mie",
+      "umkm-martabak"
+     ],
+     "templates": [
+      "hangat",
+      "bakso"
      ],
      "kinds": [
       "profil"
@@ -151,17 +416,37 @@
     "id": "pita-titik",
     "label": "Titik berjajar",
     "slot": "divider",
-    "viewBox": "0 0 24 16",
-    "svg": "<circle cx=\"6\" cy=\"8\" r=\"3\" fill=\"var(--a)\"/><circle cx=\"18\" cy=\"8\" r=\"1.6\" fill=\"currentColor\"/>",
+    "viewBox": "0 0 120 8",
+    "svg": "<circle cx=\"30\" cy=\"4\" r=\"1.7\" fill=\"var(--a)\"/><circle cx=\"90\" cy=\"4\" r=\"1\" fill=\"currentColor\"/>",
     "tags": [
      "titik",
      "ringan"
     ],
+    "family": "minimal",
     "fit": {
+     "templates": [
+      "bersih",
+      "tech",
+      "elegan",
+      "majalah",
+      "jurnal"
+     ],
      "kinds": [
-      "umkm",
       "jasa",
-      "event"
+      "portofolio",
+      "artikel",
+      "profil"
+     ],
+     "domains": [
+      "jasa-digital",
+      "portofolio-developer",
+      "event-seminar",
+      "artikel-teknologi",
+      "artikel-keuangan",
+      "jasa-umum",
+      "profil-umum",
+      "jasa-servis-elektronik",
+      "jasa-renovasi"
      ],
      "chance": 0.2
     }
@@ -176,9 +461,23 @@
      "streetwear",
      "balap"
     ],
+    "family": "grafis",
     "fit": {
      "families": [
       "brutalism"
+     ],
+     "templates": [
+      "tegas",
+      "barber"
+     ],
+     "domains": [
+      "event-musik",
+      "jasa-digital",
+      "portofolio-desain",
+      "jasa-bengkel",
+      "jasa-gym-fitness",
+      "umkm-fashion",
+      "jasa-barbershop"
      ],
      "chance": 0.5
     }
@@ -193,15 +492,27 @@
      "kerajinan",
      "tenun"
     ],
+    "family": "kertas",
     "fit": {
-     "kinds": [
-      "umkm",
-      "profil"
+     "templates": [
+      "kue",
+      "majalah",
+      "jurnal",
+      "hangat",
+      "elegan"
      ],
      "domains": [
-      "umkm-fashion",
-      "jasa-konveksi",
-      "umkm-oleh-oleh"
+      "umkm-oleh-oleh",
+      "jasa-wedding-organizer",
+      "portofolio-penulis",
+      "artikel-gaya-hidup",
+      "artikel-umum",
+      "umkm-kue-roti",
+      "jasa-fotografi",
+      "jasa-konveksi"
+     ],
+     "kinds": [
+      "artikel"
      ],
      "chance": 0.3
     }
@@ -217,23 +528,27 @@
      "jawa",
      "nusantara"
     ],
+    "family": "nusantara",
     "fit": {
      "domains": [
-      "umkm-fashion",
       "umkm-oleh-oleh",
+      "umkm-fashion",
+      "jasa-konveksi",
       "umkm-kue-roti",
       "umkm-katering",
-      "umkm-bakso-mie",
-      "umkm-kopi",
+      "jasa-wedding-organizer",
       "profil-komunitas",
       "profil-sekolah",
       "event-bazar",
-      "umkm-umum",
-      "jasa-wedding-organizer",
-      "artikel-resep",
       "umkm-sembako",
-      "jasa-konveksi",
-      "jasa-kos-penginapan"
+      "jasa-kos-penginapan",
+      "artikel-resep",
+      "umkm-bakso-mie",
+      "umkm-martabak"
+     ],
+     "templates": [
+      "hangat",
+      "bakso"
      ],
      "kinds": [
       "profil"
@@ -253,23 +568,27 @@
      "nusantara",
      "pernikahan"
     ],
+    "family": "nusantara",
     "fit": {
      "domains": [
-      "umkm-fashion",
       "umkm-oleh-oleh",
+      "umkm-fashion",
+      "jasa-konveksi",
       "umkm-kue-roti",
       "umkm-katering",
-      "umkm-bakso-mie",
-      "umkm-kopi",
+      "jasa-wedding-organizer",
       "profil-komunitas",
       "profil-sekolah",
       "event-bazar",
-      "umkm-umum",
-      "jasa-wedding-organizer",
-      "artikel-resep",
       "umkm-sembako",
-      "jasa-konveksi",
-      "jasa-kos-penginapan"
+      "jasa-kos-penginapan",
+      "artikel-resep",
+      "umkm-bakso-mie",
+      "umkm-martabak"
+     ],
+     "templates": [
+      "hangat",
+      "bakso"
      ],
      "kinds": [
       "profil"
@@ -287,12 +606,31 @@
      "minimal",
      "rapi"
     ],
+    "family": "minimal",
     "fit": {
+     "templates": [
+      "bersih",
+      "tech",
+      "elegan",
+      "majalah",
+      "jurnal"
+     ],
      "kinds": [
       "jasa",
-      "profil",
       "portofolio",
-      "artikel"
+      "artikel",
+      "profil"
+     ],
+     "domains": [
+      "jasa-digital",
+      "portofolio-developer",
+      "event-seminar",
+      "artikel-teknologi",
+      "artikel-keuangan",
+      "jasa-umum",
+      "profil-umum",
+      "jasa-servis-elektronik",
+      "jasa-renovasi"
      ],
      "chance": 0.3
     }
@@ -307,9 +645,23 @@
      "hazard",
      "tegas"
     ],
+    "family": "grafis",
     "fit": {
      "families": [
       "brutalism"
+     ],
+     "templates": [
+      "tegas",
+      "barber"
+     ],
+     "domains": [
+      "event-musik",
+      "jasa-digital",
+      "portofolio-desain",
+      "jasa-bengkel",
+      "jasa-gym-fitness",
+      "umkm-fashion",
+      "jasa-barbershop"
      ],
      "chance": 0.5
     }
@@ -324,13 +676,23 @@
      "blueprint",
      "teknis"
     ],
+    "family": "grafis",
     "fit": {
      "families": [
       "brutalism"
      ],
-     "kinds": [
-      "jasa",
-      "portofolio"
+     "templates": [
+      "tegas",
+      "barber"
+     ],
+     "domains": [
+      "event-musik",
+      "jasa-digital",
+      "portofolio-desain",
+      "jasa-bengkel",
+      "jasa-gym-fitness",
+      "umkm-fashion",
+      "jasa-barbershop"
      ],
      "chance": 0.35
     }
@@ -345,14 +707,14 @@
      "laut",
      "pantai"
     ],
+    "family": "pantai",
     "fit": {
      "domains": [
       "jasa-kos-penginapan",
-      "umkm-oleh-oleh",
-      "event-lari"
-     ],
-     "kinds": [
-      "umkm"
+      "event-lari",
+      "jasa-rental-kendaraan",
+      "umkm-frozen-food",
+      "artikel-gaya-hidup"
      ],
      "chance": 0.25
     }
@@ -367,13 +729,23 @@
      "promo",
      "sticker"
     ],
+    "family": "grafis",
     "fit": {
      "families": [
       "brutalism"
      ],
-     "kinds": [
-      "event",
-      "umkm"
+     "templates": [
+      "tegas",
+      "barber"
+     ],
+     "domains": [
+      "event-musik",
+      "jasa-digital",
+      "portofolio-desain",
+      "jasa-bengkel",
+      "jasa-gym-fitness",
+      "umkm-fashion",
+      "jasa-barbershop"
      ],
      "chance": 0.4
     }
@@ -389,10 +761,27 @@
      "asli",
      "terverifikasi"
     ],
+    "family": "kertas",
     "fit": {
+     "templates": [
+      "kue",
+      "majalah",
+      "jurnal",
+      "hangat",
+      "elegan"
+     ],
+     "domains": [
+      "umkm-oleh-oleh",
+      "jasa-wedding-organizer",
+      "portofolio-penulis",
+      "artikel-gaya-hidup",
+      "artikel-umum",
+      "umkm-kue-roti",
+      "jasa-fotografi",
+      "jasa-konveksi"
+     ],
      "kinds": [
-      "umkm",
-      "jasa"
+      "artikel"
      ],
      "chance": 0.3
     }
@@ -408,18 +797,19 @@
      "y2k",
      "kilau"
     ],
+    "family": "y2k",
     "fit": {
-     "families": [
-      "brutalism"
-     ],
-     "kinds": [
-      "portofolio",
-      "event",
-      "umkm"
+     "templates": [
+      "pastel",
+      "gelap",
+      "neon"
      ],
      "domains": [
       "umkm-skincare",
-      "umkm-fashion"
+      "umkm-fashion",
+      "event-musik",
+      "portofolio-desain",
+      "jasa-fotografi"
      ],
      "chance": 0.4
     }
@@ -434,13 +824,23 @@
      "arah",
      "cta"
     ],
+    "family": "grafis",
     "fit": {
      "families": [
       "brutalism"
      ],
-     "kinds": [
-      "jasa",
-      "portofolio"
+     "templates": [
+      "tegas",
+      "barber"
+     ],
+     "domains": [
+      "event-musik",
+      "jasa-digital",
+      "portofolio-desain",
+      "jasa-bengkel",
+      "jasa-gym-fitness",
+      "umkm-fashion",
+      "jasa-barbershop"
      ],
      "chance": 0.4
     }
@@ -455,12 +855,24 @@
      "cinta",
      "manis"
     ],
+    "family": "memphis",
     "fit": {
+     "templates": [
+      "pastel",
+      "tegas"
+     ],
      "domains": [
-      "jasa-wedding-organizer",
+      "event-bazar",
       "umkm-kue-roti",
-      "umkm-petshop",
-      "umkm-skincare"
+      "jasa-les",
+      "profil-sekolah",
+      "portofolio-desain",
+      "event-umum",
+      "umkm-skincare",
+      "umkm-martabak"
+     ],
+     "kinds": [
+      "event"
      ],
      "chance": 0.4
     }
@@ -476,23 +888,14 @@
      "budaya",
      "nusantara"
     ],
+    "family": "nusantara",
     "fit": {
      "domains": [
-      "umkm-fashion",
-      "umkm-oleh-oleh",
-      "umkm-kue-roti",
-      "umkm-katering",
-      "umkm-bakso-mie",
-      "umkm-kopi",
       "profil-komunitas",
       "profil-sekolah",
+      "umkm-oleh-oleh",
       "event-bazar",
-      "umkm-umum",
-      "jasa-wedding-organizer",
-      "artikel-resep",
-      "umkm-sembako",
-      "jasa-konveksi",
-      "jasa-kos-penginapan"
+      "jasa-wedding-organizer"
      ],
      "kinds": [
       "profil"
@@ -510,13 +913,18 @@
      "cerah",
      "pagi"
     ],
+    "family": "retro",
     "fit": {
      "domains": [
       "umkm-oleh-oleh",
       "event-lari",
       "jasa-kos-penginapan",
       "umkm-tanaman-hias",
-      "event-bazar"
+      "event-bazar",
+      "umkm-kopi"
+     ],
+     "templates": [
+      "hangat"
      ],
      "chance": 0.35
     }
@@ -532,18 +940,23 @@
      "teknis",
      "3d"
     ],
+    "family": "grafis",
     "fit": {
      "families": [
       "brutalism"
      ],
-     "kinds": [
-      "jasa",
-      "portofolio",
-      "artikel"
+     "templates": [
+      "tegas",
+      "barber"
      ],
      "domains": [
+      "event-musik",
       "jasa-digital",
-      "portofolio-developer"
+      "portofolio-desain",
+      "jasa-bengkel",
+      "jasa-gym-fitness",
+      "umkm-fashion",
+      "jasa-barbershop"
      ],
      "chance": 0.45
     }
@@ -558,17 +971,23 @@
      "geometris",
      "modern"
     ],
+    "family": "grafis",
     "fit": {
      "families": [
       "brutalism"
      ],
-     "kinds": [
-      "portofolio",
-      "event"
+     "templates": [
+      "tegas",
+      "barber"
      ],
      "domains": [
+      "event-musik",
+      "jasa-digital",
       "portofolio-desain",
-      "jasa-digital"
+      "jasa-bengkel",
+      "jasa-gym-fitness",
+      "umkm-fashion",
+      "jasa-barbershop"
      ],
      "chance": 0.45
     }
@@ -584,16 +1003,19 @@
      "synthwave",
      "y2k"
     ],
+    "family": "y2k",
     "fit": {
-     "families": [
-      "brutalism"
-     ],
-     "kinds": [
-      "event"
+     "templates": [
+      "pastel",
+      "gelap",
+      "neon"
      ],
      "domains": [
+      "umkm-skincare",
+      "umkm-fashion",
       "event-musik",
-      "jasa-digital"
+      "portofolio-desain",
+      "jasa-fotografi"
      ],
      "chance": 0.45
     }
@@ -608,14 +1030,22 @@
      "tangan",
      "santai"
     ],
+    "family": "doodle",
     "fit": {
-     "kinds": [
-      "artikel"
+     "templates": [
+      "pastel",
+      "kue",
+      "bakso"
      ],
      "domains": [
       "jasa-les",
-      "portofolio-penulis",
-      "jasa-digital"
+      "profil-sekolah",
+      "umkm-kue-roti",
+      "umkm-petshop",
+      "artikel-resep",
+      "artikel-gaya-hidup",
+      "profil-komunitas",
+      "umkm-martabak"
      ],
      "chance": 0.3
     }
@@ -630,23 +1060,27 @@
      "batik",
      "nusantara"
     ],
+    "family": "nusantara",
     "fit": {
      "domains": [
-      "umkm-fashion",
       "umkm-oleh-oleh",
+      "umkm-fashion",
+      "jasa-konveksi",
       "umkm-kue-roti",
       "umkm-katering",
-      "umkm-bakso-mie",
-      "umkm-kopi",
+      "jasa-wedding-organizer",
       "profil-komunitas",
       "profil-sekolah",
       "event-bazar",
-      "umkm-umum",
-      "jasa-wedding-organizer",
-      "artikel-resep",
       "umkm-sembako",
-      "jasa-konveksi",
-      "jasa-kos-penginapan"
+      "jasa-kos-penginapan",
+      "artikel-resep",
+      "umkm-bakso-mie",
+      "umkm-martabak"
+     ],
+     "templates": [
+      "hangat",
+      "bakso"
      ],
      "kinds": [
       "profil"
@@ -665,26 +1099,2116 @@
      "cirebon",
      "awan"
     ],
+    "family": "nusantara",
     "fit": {
      "domains": [
-      "umkm-fashion",
       "umkm-oleh-oleh",
+      "umkm-fashion",
+      "jasa-konveksi",
       "umkm-kue-roti",
       "umkm-katering",
-      "umkm-bakso-mie",
-      "umkm-kopi",
+      "jasa-wedding-organizer",
       "profil-komunitas",
       "profil-sekolah",
       "event-bazar",
-      "umkm-umum",
-      "jasa-wedding-organizer",
-      "artikel-resep",
       "umkm-sembako",
-      "jasa-konveksi",
-      "jasa-kos-penginapan"
+      "jasa-kos-penginapan",
+      "artikel-resep",
+      "umkm-bakso-mie",
+      "umkm-martabak"
+     ],
+     "templates": [
+      "hangat",
+      "bakso"
      ],
      "kinds": [
       "profil"
+     ],
+     "chance": 0.45
+    }
+   },
+   {
+    "id": "nus-sudut-sulur",
+    "label": "Sulur",
+    "slot": "corner",
+    "family": "nusantara",
+    "viewBox": "0 0 200 200",
+    "svg": "<path d=\"M200 18C150 18 118 40 112 78C106 116 132 140 158 128C178 118 172 92 152 94\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linecap=\"round\"/><path d=\"M200 70C176 74 168 96 182 108\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linecap=\"round\"/><path d=\"M112 78C88 70 70 78 62 96C56 110 66 122 78 116C88 111 84 98 74 101\" fill=\"none\" stroke=\"var(--a2)\" stroke-width=\"3\" stroke-linecap=\"round\"/><path transform=\"translate(150 20) rotate(200) scale(1.1)\" d=\"M0 0C6-8 18-8 26 0C18 8 6 8 0 0Z\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"1.6\"/><path transform=\"translate(124 46) rotate(230) scale(1)\" d=\"M0 0C6-8 18-8 26 0C18 8 6 8 0 0Z\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"1.6\"/><path transform=\"translate(116 120) rotate(120) scale(0.9)\" d=\"M0 0C6-8 18-8 26 0C18 8 6 8 0 0Z\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"1.6\"/><path transform=\"translate(186 110) rotate(70) scale(0.8)\" d=\"M0 0C6-8 18-8 26 0C18 8 6 8 0 0Z\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"1.6\"/><path transform=\"translate(62 96) rotate(260) scale(0.8)\" d=\"M0 0C6-8 18-8 26 0C18 8 6 8 0 0Z\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"1.6\"/><circle cx=\"152\" cy=\"94\" r=\"4\" fill=\"var(--a)\"/><circle cx=\"74\" cy=\"101\" r=\"3.5\" fill=\"var(--a2)\"/>",
+    "tags": [
+     "sulur",
+     "batik",
+     "lengkung"
+    ],
+    "fit": {
+     "domains": [
+      "umkm-oleh-oleh",
+      "umkm-fashion",
+      "jasa-konveksi",
+      "umkm-kue-roti",
+      "umkm-katering",
+      "jasa-wedding-organizer",
+      "profil-komunitas",
+      "profil-sekolah",
+      "event-bazar",
+      "umkm-sembako",
+      "jasa-kos-penginapan",
+      "artikel-resep",
+      "umkm-bakso-mie",
+      "umkm-martabak"
+     ],
+     "templates": [
+      "hangat",
+      "bakso"
+     ],
+     "kinds": [
+      "profil"
+     ],
+     "chance": 0.6
+    }
+   },
+   {
+    "id": "nus-sudut-rebung",
+    "label": "Pucuk rebung",
+    "slot": "corner",
+    "family": "nusantara",
+    "viewBox": "0 0 200 200",
+    "svg": "<path d=\"M200 0L173.3 86L146.7 0\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"2.5\" stroke-linejoin=\"round\"/><path d=\"M173.3 60.2V15.5M163.7 36.1H182.9\" stroke=\"var(--ink)\" stroke-width=\"1.6\"/><path d=\"M146.7 0L125 70L103.3 0\" fill=\"var(--bg)\" stroke=\"var(--ink)\" stroke-width=\"2.5\" stroke-linejoin=\"round\"/><path d=\"M125 49V12.6M117.2 29.4H132.8\" stroke=\"var(--ink)\" stroke-width=\"1.6\"/><path d=\"M103.3 0L85.9 56L68.6 0\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"2.5\" stroke-linejoin=\"round\"/><path d=\"M85.9 39.2V10.1M79.7 23.5H92.2\" stroke=\"var(--ink)\" stroke-width=\"1.6\"/><path d=\"M68.6 0L54.9 44L41.3 0\" fill=\"var(--bg)\" stroke=\"var(--ink)\" stroke-width=\"2.5\" stroke-linejoin=\"round\"/><path d=\"M54.9 30.8V7.9M50 18.5H59.8\" stroke=\"var(--ink)\" stroke-width=\"1.6\"/><path d=\"M41.3 0L30.7 34L20.2 0\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"2.5\" stroke-linejoin=\"round\"/><path d=\"M30.7 23.8V6.1M26.9 14.3H34.5\" stroke=\"var(--ink)\" stroke-width=\"1.6\"/><path d=\"M20.2 3H200\" stroke=\"var(--ink)\" stroke-width=\"3\"/><circle cx=\"190\" cy=\"104\" r=\"5\" fill=\"var(--a2)\"/><circle cx=\"174\" cy=\"118\" r=\"3\" fill=\"var(--ink)\"/>",
+    "tags": [
+     "tumpal",
+     "segitiga",
+     "batik"
+    ],
+    "fit": {
+     "domains": [
+      "umkm-oleh-oleh",
+      "umkm-fashion",
+      "jasa-konveksi",
+      "umkm-kue-roti",
+      "umkm-katering",
+      "jasa-wedding-organizer",
+      "profil-komunitas",
+      "profil-sekolah",
+      "event-bazar",
+      "umkm-sembako",
+      "jasa-kos-penginapan",
+      "artikel-resep",
+      "umkm-bakso-mie",
+      "umkm-martabak"
+     ],
+     "templates": [
+      "hangat",
+      "bakso"
+     ],
+     "kinds": [
+      "profil"
+     ],
+     "chance": 0.6
+    }
+   },
+   {
+    "id": "nus-pita-songket",
+    "label": "Songket",
+    "slot": "divider",
+    "family": "nusantara",
+    "viewBox": "0 0 40 28",
+    "svg": "<path d=\"M0 14 10 3l10 11-10 11zM20 14 30 3l10 11-10 11z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"/><path d=\"M10 9l5 5-5 5-5-5z\" fill=\"var(--a)\"/><path d=\"M30 9l5 5-5 5-5-5z\" fill=\"var(--a2)\"/><path d=\"M0 1.5h40M0 26.5h40\" stroke=\"var(--a)\" stroke-width=\"2\"/>",
+    "tags": [
+     "songket",
+     "tenun",
+     "emas"
+    ],
+    "fit": {
+     "domains": [
+      "umkm-oleh-oleh",
+      "umkm-fashion",
+      "jasa-konveksi",
+      "umkm-kue-roti",
+      "umkm-katering",
+      "jasa-wedding-organizer",
+      "profil-komunitas",
+      "profil-sekolah",
+      "event-bazar",
+      "umkm-sembako",
+      "jasa-kos-penginapan",
+      "artikel-resep",
+      "umkm-bakso-mie",
+      "umkm-martabak"
+     ],
+     "templates": [
+      "hangat",
+      "bakso"
+     ],
+     "kinds": [
+      "profil"
+     ],
+     "chance": 0.5
+    }
+   },
+   {
+    "id": "nus-pita-rebung",
+    "label": "Rebung",
+    "slot": "divider",
+    "family": "nusantara",
+    "viewBox": "0 0 24 30",
+    "svg": "<path d=\"M0 28 12 3l12 25\" fill=\"var(--a)\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linejoin=\"round\"/><path d=\"M12 24V10M8 18h8\" stroke=\"currentColor\" stroke-width=\"1.6\"/><path d=\"M0 28.5h24\" stroke=\"currentColor\" stroke-width=\"2\"/>",
+    "tags": [
+     "tumpal",
+     "rebung"
+    ],
+    "fit": {
+     "domains": [
+      "umkm-oleh-oleh",
+      "umkm-fashion",
+      "jasa-konveksi",
+      "umkm-kue-roti",
+      "umkm-katering",
+      "jasa-wedding-organizer",
+      "profil-komunitas",
+      "profil-sekolah",
+      "event-bazar",
+      "umkm-sembako",
+      "jasa-kos-penginapan",
+      "artikel-resep",
+      "umkm-bakso-mie",
+      "umkm-martabak"
+     ],
+     "templates": [
+      "hangat",
+      "bakso"
+     ],
+     "kinds": [
+      "profil"
+     ],
+     "chance": 0.5
+    }
+   },
+   {
+    "id": "nus-motif-ceplok",
+    "label": "Ceplok",
+    "slot": "pattern",
+    "family": "nusantara",
+    "viewBox": "0 0 40 40",
+    "svg": "<ellipse transform=\"translate(20 20) rotate(0)\" cx=\"0\" cy=\"-8\" rx=\"3\" ry=\"6.5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"/><ellipse transform=\"translate(20 20) rotate(45)\" cx=\"0\" cy=\"-8\" rx=\"3\" ry=\"6.5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"/><ellipse transform=\"translate(20 20) rotate(90)\" cx=\"0\" cy=\"-8\" rx=\"3\" ry=\"6.5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"/><ellipse transform=\"translate(20 20) rotate(135)\" cx=\"0\" cy=\"-8\" rx=\"3\" ry=\"6.5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"/><ellipse transform=\"translate(20 20) rotate(180)\" cx=\"0\" cy=\"-8\" rx=\"3\" ry=\"6.5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"/><ellipse transform=\"translate(20 20) rotate(225)\" cx=\"0\" cy=\"-8\" rx=\"3\" ry=\"6.5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"/><ellipse transform=\"translate(20 20) rotate(270)\" cx=\"0\" cy=\"-8\" rx=\"3\" ry=\"6.5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"/><ellipse transform=\"translate(20 20) rotate(315)\" cx=\"0\" cy=\"-8\" rx=\"3\" ry=\"6.5\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"/><circle cx=\"20\" cy=\"20\" r=\"2.4\" fill=\"currentColor\"/><path d=\"M0 0h4M0 0v4M40 0h-4M40 0v4M0 40h4M0 40v-4M40 40h-4M40 40v-4\" stroke=\"currentColor\" stroke-width=\"2\"/>",
+    "tags": [
+     "ceplok",
+     "batik",
+     "bunga"
+    ],
+    "fit": {
+     "domains": [
+      "umkm-oleh-oleh",
+      "umkm-fashion",
+      "jasa-konveksi",
+      "umkm-kue-roti",
+      "umkm-katering",
+      "jasa-wedding-organizer",
+      "profil-komunitas",
+      "profil-sekolah",
+      "event-bazar",
+      "umkm-sembako",
+      "jasa-kos-penginapan",
+      "artikel-resep",
+      "umkm-bakso-mie",
+      "umkm-martabak"
+     ],
+     "templates": [
+      "hangat",
+      "bakso"
+     ],
+     "kinds": [
+      "profil"
+     ],
+     "chance": 0.45
+    }
+   },
+   {
+    "id": "nus-motif-wajik",
+    "label": "Wajik songket",
+    "slot": "pattern",
+    "family": "nusantara",
+    "viewBox": "0 0 32 32",
+    "svg": "<path d=\"M16 2 30 16 16 30 2 16z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"/><path d=\"M16 9l7 7-7 7-7-7z\" fill=\"currentColor\" fill-opacity=\".55\"/><circle cx=\"0\" cy=\"0\" r=\"2\" fill=\"currentColor\"/><circle cx=\"32\" cy=\"0\" r=\"2\" fill=\"currentColor\"/><circle cx=\"0\" cy=\"32\" r=\"2\" fill=\"currentColor\"/><circle cx=\"32\" cy=\"32\" r=\"2\" fill=\"currentColor\"/>",
+    "tags": [
+     "songket",
+     "wajik"
+    ],
+    "fit": {
+     "domains": [
+      "umkm-oleh-oleh",
+      "umkm-fashion",
+      "jasa-konveksi",
+      "umkm-kue-roti",
+      "umkm-katering",
+      "jasa-wedding-organizer",
+      "profil-komunitas",
+      "profil-sekolah",
+      "event-bazar",
+      "umkm-sembako",
+      "jasa-kos-penginapan",
+      "artikel-resep",
+      "umkm-bakso-mie",
+      "umkm-martabak"
+     ],
+     "templates": [
+      "hangat",
+      "bakso"
+     ],
+     "kinds": [
+      "profil"
+     ],
+     "chance": 0.45
+    }
+   },
+   {
+    "id": "nus-stiker-ceplok",
+    "label": "Lencana ceplok",
+    "slot": "badge",
+    "family": "nusantara",
+    "viewBox": "0 0 120 120",
+    "svg": "<circle cx=\"110\" cy=\"60\" r=\"9\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"2.5\"/><circle cx=\"107.6\" cy=\"75.5\" r=\"9\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"2.5\"/><circle cx=\"100.5\" cy=\"89.4\" r=\"9\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"2.5\"/><circle cx=\"89.4\" cy=\"100.5\" r=\"9\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"2.5\"/><circle cx=\"75.5\" cy=\"107.6\" r=\"9\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"2.5\"/><circle cx=\"60\" cy=\"110\" r=\"9\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"2.5\"/><circle cx=\"44.5\" cy=\"107.6\" r=\"9\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"2.5\"/><circle cx=\"30.6\" cy=\"100.5\" r=\"9\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"2.5\"/><circle cx=\"19.5\" cy=\"89.4\" r=\"9\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"2.5\"/><circle cx=\"12.4\" cy=\"75.5\" r=\"9\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"2.5\"/><circle cx=\"10\" cy=\"60\" r=\"9\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"2.5\"/><circle cx=\"12.4\" cy=\"44.5\" r=\"9\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"2.5\"/><circle cx=\"19.5\" cy=\"30.6\" r=\"9\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"2.5\"/><circle cx=\"30.6\" cy=\"19.5\" r=\"9\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"2.5\"/><circle cx=\"44.5\" cy=\"12.4\" r=\"9\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"2.5\"/><circle cx=\"60\" cy=\"10\" r=\"9\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"2.5\"/><circle cx=\"75.5\" cy=\"12.4\" r=\"9\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"2.5\"/><circle cx=\"89.4\" cy=\"19.5\" r=\"9\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"2.5\"/><circle cx=\"100.5\" cy=\"30.6\" r=\"9\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"2.5\"/><circle cx=\"107.6\" cy=\"44.5\" r=\"9\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"2.5\"/><circle cx=\"60\" cy=\"60\" r=\"50\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"2.5\"/><ellipse transform=\"translate(60 60) rotate(0)\" cx=\"0\" cy=\"-20\" rx=\"7\" ry=\"15\" fill=\"var(--bg)\" stroke=\"var(--ink)\" stroke-width=\"2.5\"/><ellipse transform=\"translate(60 60) rotate(45)\" cx=\"0\" cy=\"-20\" rx=\"7\" ry=\"15\" fill=\"var(--bg)\" stroke=\"var(--ink)\" stroke-width=\"2.5\"/><ellipse transform=\"translate(60 60) rotate(90)\" cx=\"0\" cy=\"-20\" rx=\"7\" ry=\"15\" fill=\"var(--bg)\" stroke=\"var(--ink)\" stroke-width=\"2.5\"/><ellipse transform=\"translate(60 60) rotate(135)\" cx=\"0\" cy=\"-20\" rx=\"7\" ry=\"15\" fill=\"var(--bg)\" stroke=\"var(--ink)\" stroke-width=\"2.5\"/><ellipse transform=\"translate(60 60) rotate(180)\" cx=\"0\" cy=\"-20\" rx=\"7\" ry=\"15\" fill=\"var(--bg)\" stroke=\"var(--ink)\" stroke-width=\"2.5\"/><ellipse transform=\"translate(60 60) rotate(225)\" cx=\"0\" cy=\"-20\" rx=\"7\" ry=\"15\" fill=\"var(--bg)\" stroke=\"var(--ink)\" stroke-width=\"2.5\"/><ellipse transform=\"translate(60 60) rotate(270)\" cx=\"0\" cy=\"-20\" rx=\"7\" ry=\"15\" fill=\"var(--bg)\" stroke=\"var(--ink)\" stroke-width=\"2.5\"/><ellipse transform=\"translate(60 60) rotate(315)\" cx=\"0\" cy=\"-20\" rx=\"7\" ry=\"15\" fill=\"var(--bg)\" stroke=\"var(--ink)\" stroke-width=\"2.5\"/><circle cx=\"60\" cy=\"60\" r=\"8\" fill=\"var(--a2)\" stroke=\"var(--ink)\" stroke-width=\"2.5\"/>",
+    "tags": [
+     "ceplok",
+     "lencana"
+    ],
+    "fit": {
+     "domains": [
+      "umkm-oleh-oleh",
+      "umkm-fashion",
+      "jasa-konveksi",
+      "umkm-kue-roti",
+      "umkm-katering",
+      "jasa-wedding-organizer",
+      "profil-komunitas",
+      "profil-sekolah",
+      "event-bazar",
+      "umkm-sembako",
+      "jasa-kos-penginapan",
+      "artikel-resep",
+      "umkm-bakso-mie",
+      "umkm-martabak"
+     ],
+     "templates": [
+      "hangat",
+      "bakso"
+     ],
+     "kinds": [
+      "profil"
+     ],
+     "chance": 0.5
+    }
+   },
+   {
+    "id": "nus-seni-rumah-gadang",
+    "label": "Rumah gadang",
+    "slot": "art",
+    "family": "nusantara",
+    "viewBox": "0 0 220 200",
+    "svg": "<path d=\"M10 40C40 70 60 86 110 86S180 70 210 40C196 82 184 96 170 106H50C36 96 24 82 10 40Z\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"4\" stroke-linejoin=\"round\"/><path d=\"M60 60C76 74 90 78 110 78S144 74 160 60\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"3\"/><path d=\"M110 22C102 40 102 56 110 78C118 56 118 40 110 22Z\" fill=\"var(--a2)\" stroke=\"var(--ink)\" stroke-width=\"3\"/><rect x=\"44\" y=\"106\" width=\"132\" height=\"58\" fill=\"var(--bg)\" stroke=\"var(--ink)\" stroke-width=\"4\"/><path d=\"M44 124H176M66 106V164M88 106V164M132 106V164M154 106V164\" stroke=\"var(--ink)\" stroke-width=\"2.5\"/><path d=\"M100 164V134H120V164\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"3\"/><path d=\"M50 164V186M80 164V186M140 164V186M170 164V186M30 190H190\" stroke=\"var(--ink)\" stroke-width=\"4\" stroke-linecap=\"round\"/>",
+    "tags": [
+     "minang",
+     "rumah adat",
+     "gonjong"
+    ],
+    "fit": {
+     "domains": [
+      "umkm-katering",
+      "jasa-kos-penginapan",
+      "profil-komunitas",
+      "jasa-wedding-organizer",
+      "event-bazar",
+      "artikel-resep"
+     ],
+     "templates": [],
+     "kinds": [
+      "profil"
+     ],
+     "chance": 0.5
+    }
+   },
+   {
+    "id": "nus-seni-pinisi",
+    "label": "Pinisi",
+    "slot": "art",
+    "family": "nusantara",
+    "viewBox": "0 0 220 200",
+    "svg": "<path d=\"M20 132H200L180 164H44Z\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"4\" stroke-linejoin=\"round\"/><path d=\"M30 132L14 118M200 132l12-20\" stroke=\"var(--ink)\" stroke-width=\"4\" stroke-linecap=\"round\"/><path d=\"M84 20V132M138 32V132\" stroke=\"var(--ink)\" stroke-width=\"4\"/><path d=\"M84 28 40 118H84ZM138 40 102 118H138Z\" fill=\"var(--bg)\" stroke=\"var(--ink)\" stroke-width=\"3.5\" stroke-linejoin=\"round\"/><path d=\"M84 34 124 112H84ZM138 46 176 112H138Z\" fill=\"var(--a2)\" stroke=\"var(--ink)\" stroke-width=\"3.5\" stroke-linejoin=\"round\"/><path d=\"M0 182c18-10 36-10 55 0s37 10 55 0 37-10 55 0 37 10 55 0\" fill=\"none\" stroke=\"var(--a)\" stroke-width=\"5\" stroke-linecap=\"round\"/>",
+    "tags": [
+     "perahu",
+     "bahari",
+     "bugis"
+    ],
+    "fit": {
+     "domains": [
+      "umkm-oleh-oleh",
+      "jasa-kos-penginapan",
+      "umkm-frozen-food",
+      "jasa-rental-kendaraan",
+      "profil-komunitas",
+      "event-bazar",
+      "artikel-gaya-hidup"
+     ],
+     "templates": [
+      "hangat",
+      "bakso"
+     ],
+     "kinds": [
+      "profil"
+     ],
+     "chance": 0.5
+    }
+   },
+   {
+    "id": "graf-sudut-target",
+    "label": "Target",
+    "slot": "corner",
+    "family": "grafis",
+    "viewBox": "0 0 200 200",
+    "svg": "<circle cx=\"150\" cy=\"56\" r=\"44\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"3\"/><circle cx=\"150\" cy=\"56\" r=\"26\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"3\"/><circle cx=\"150\" cy=\"56\" r=\"8\" fill=\"var(--ink)\"/><path d=\"M150 0V112M94 56H206\" stroke=\"var(--ink)\" stroke-width=\"2\"/><path d=\"M64 24v16M56 32h16M90 128v16M82 136h16M182 150v16M174 158h16\" stroke=\"var(--ink)\" stroke-width=\"3\"/>",
+    "tags": [
+     "target",
+     "teknis"
+    ],
+    "fit": {
+     "families": [
+      "brutalism"
+     ],
+     "templates": [
+      "tegas",
+      "barber"
+     ],
+     "domains": [
+      "event-musik",
+      "jasa-digital",
+      "portofolio-desain",
+      "jasa-bengkel",
+      "jasa-gym-fitness",
+      "umkm-fashion",
+      "jasa-barbershop"
+     ],
+     "chance": 0.6
+    }
+   },
+   {
+    "id": "graf-sudut-hazard",
+    "label": "Garis hazard",
+    "slot": "corner",
+    "family": "grafis",
+    "viewBox": "0 0 200 200",
+    "svg": "<path d=\"M200 0V190L10 0Z\" fill=\"var(--a)\"/><path d=\"M174 0L200 26L200 39L161 0Z\" fill=\"var(--ink)\"/><path d=\"M148 0L200 52L200 65L135 0Z\" fill=\"var(--ink)\"/><path d=\"M122 0L200 78L200 91L109 0Z\" fill=\"var(--ink)\"/><path d=\"M96 0L200 104L200 117L83 0Z\" fill=\"var(--ink)\"/><path d=\"M70 0L200 130L200 143L57 0Z\" fill=\"var(--ink)\"/><path d=\"M44 0L200 156L200 169L31 0Z\" fill=\"var(--ink)\"/><path d=\"M18 0L200 182L200 195L5 0Z\" fill=\"var(--ink)\"/><path d=\"M200 190 10 0\" stroke=\"var(--ink)\" stroke-width=\"4\"/>",
+    "tags": [
+     "hazard",
+     "peringatan"
+    ],
+    "fit": {
+     "families": [
+      "brutalism"
+     ],
+     "templates": [
+      "tegas",
+      "barber"
+     ],
+     "domains": [
+      "event-musik",
+      "jasa-digital",
+      "portofolio-desain",
+      "jasa-bengkel",
+      "jasa-gym-fitness",
+      "umkm-fashion",
+      "jasa-barbershop"
+     ],
+     "chance": 0.6
+    }
+   },
+   {
+    "id": "graf-pita-hazard",
+    "label": "Pita hazard",
+    "slot": "divider",
+    "family": "grafis",
+    "viewBox": "0 0 32 20",
+    "svg": "<rect width=\"32\" height=\"20\" fill=\"var(--a)\"/><path d=\"M-20 20 -4 0h8L-12 20zM-4 20 12 0h8L4 20zM12 20 28 0h8L20 20zM28 20 44 0h8L36 20z\" fill=\"var(--ink)\"/><path d=\"M0 1h32M0 19h32\" stroke=\"var(--ink)\" stroke-width=\"2\"/>",
+    "tags": [
+     "hazard"
+    ],
+    "fit": {
+     "families": [
+      "brutalism"
+     ],
+     "templates": [
+      "tegas",
+      "barber"
+     ],
+     "domains": [
+      "event-musik",
+      "jasa-digital",
+      "portofolio-desain",
+      "jasa-bengkel",
+      "jasa-gym-fitness",
+      "umkm-fashion",
+      "jasa-barbershop"
+     ],
+     "chance": 0.5
+    }
+   },
+   {
+    "id": "graf-pita-panah",
+    "label": "Panah berderet",
+    "slot": "divider",
+    "family": "grafis",
+    "viewBox": "0 0 36 24",
+    "svg": "<path d=\"M6 4l10 8-10 8M18 4l10 8-10 8\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3.5\" stroke-linecap=\"square\" stroke-linejoin=\"miter\"/>",
+    "tags": [
+     "arah",
+     "panah"
+    ],
+    "fit": {
+     "families": [
+      "brutalism"
+     ],
+     "templates": [
+      "tegas",
+      "barber"
+     ],
+     "domains": [
+      "event-musik",
+      "jasa-digital",
+      "portofolio-desain",
+      "jasa-bengkel",
+      "jasa-gym-fitness",
+      "umkm-fashion",
+      "jasa-barbershop"
+     ],
+     "chance": 0.5
+    }
+   },
+   {
+    "id": "graf-motif-silang",
+    "label": "Tanda silang",
+    "slot": "pattern",
+    "family": "grafis",
+    "viewBox": "0 0 28 28",
+    "svg": "<path d=\"M9 9l10 10M19 9 9 19\" stroke=\"currentColor\" stroke-width=\"2.5\"/>",
+    "tags": [
+     "silang",
+     "teknis"
+    ],
+    "fit": {
+     "families": [
+      "brutalism"
+     ],
+     "templates": [
+      "tegas",
+      "barber"
+     ],
+     "domains": [
+      "event-musik",
+      "jasa-digital",
+      "portofolio-desain",
+      "jasa-bengkel",
+      "jasa-gym-fitness",
+      "umkm-fashion",
+      "jasa-barbershop"
+     ],
+     "chance": 0.45
+    }
+   },
+   {
+    "id": "mem-sudut",
+    "label": "Gugus Memphis",
+    "slot": "corner",
+    "family": "memphis",
+    "viewBox": "0 0 200 200",
+    "svg": "<path d=\"M200 0V112A80 80 0 0 1 120 32V0Z\" fill=\"var(--a)\"/><path d=\"M84 18 116 74H52Z\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"4\" stroke-linejoin=\"round\"/><path d=\"M30 112q11.2 -14 22.5 0q11.2 14 22.5 0q11.2 -14 22.5 0q11.2 14 22.5 0\" fill=\"none\" stroke=\"var(--a2)\" stroke-width=\"5\" stroke-linecap=\"round\"/><circle cx=\"168\" cy=\"152\" r=\"16\" fill=\"var(--a2)\" stroke=\"var(--ink)\" stroke-width=\"3.5\"/><circle cx=\"96\" cy=\"140\" r=\"2.6\" fill=\"var(--ink)\"/><circle cx=\"96\" cy=\"152\" r=\"2.6\" fill=\"var(--ink)\"/><circle cx=\"96\" cy=\"164\" r=\"2.6\" fill=\"var(--ink)\"/><circle cx=\"108\" cy=\"140\" r=\"2.6\" fill=\"var(--ink)\"/><circle cx=\"108\" cy=\"152\" r=\"2.6\" fill=\"var(--ink)\"/><circle cx=\"108\" cy=\"164\" r=\"2.6\" fill=\"var(--ink)\"/><circle cx=\"120\" cy=\"140\" r=\"2.6\" fill=\"var(--ink)\"/><circle cx=\"120\" cy=\"152\" r=\"2.6\" fill=\"var(--ink)\"/><circle cx=\"120\" cy=\"164\" r=\"2.6\" fill=\"var(--ink)\"/><circle cx=\"132\" cy=\"140\" r=\"2.6\" fill=\"var(--ink)\"/><circle cx=\"132\" cy=\"152\" r=\"2.6\" fill=\"var(--ink)\"/><circle cx=\"132\" cy=\"164\" r=\"2.6\" fill=\"var(--ink)\"/><path d=\"M150 104l14 14M164 104l-14 14\" stroke=\"var(--ink)\" stroke-width=\"3.5\" stroke-linecap=\"round\"/>",
+    "tags": [
+     "memphis",
+     "geometris",
+     "ceria"
+    ],
+    "fit": {
+     "templates": [
+      "pastel",
+      "tegas"
+     ],
+     "domains": [
+      "event-bazar",
+      "umkm-kue-roti",
+      "jasa-les",
+      "profil-sekolah",
+      "portofolio-desain",
+      "event-umum",
+      "umkm-skincare",
+      "umkm-martabak"
+     ],
+     "kinds": [
+      "event"
+     ],
+     "chance": 0.6
+    }
+   },
+   {
+    "id": "mem-pita-squiggle",
+    "label": "Squiggle",
+    "slot": "divider",
+    "family": "memphis",
+    "viewBox": "0 0 60 28",
+    "svg": "<path d=\"M-15 14q7.5 10 15 0q7.5-10 15 0q7.5 10 15 0q7.5-10 15 0q7.5 10 15 0q7.5-10 15 0\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3.2\"/><path d=\"M27 3l5 8h-10z\" fill=\"var(--a)\"/><circle cx=\"58\" cy=\"24\" r=\"2.4\" fill=\"var(--a2)\"/><circle cx=\"12\" cy=\"24\" r=\"2.4\" fill=\"var(--a)\"/>",
+    "tags": [
+     "squiggle",
+     "ombak"
+    ],
+    "fit": {
+     "templates": [
+      "pastel",
+      "tegas"
+     ],
+     "domains": [
+      "event-bazar",
+      "umkm-kue-roti",
+      "jasa-les",
+      "profil-sekolah",
+      "portofolio-desain",
+      "event-umum",
+      "umkm-skincare",
+      "umkm-martabak"
+     ],
+     "kinds": [
+      "event"
+     ],
+     "chance": 0.5
+    }
+   },
+   {
+    "id": "mem-motif-konfeti",
+    "label": "Konfeti",
+    "slot": "pattern",
+    "family": "memphis",
+    "viewBox": "0 0 64 64",
+    "svg": "<path d=\"M6 8l7 3-6 5z\" fill=\"currentColor\"/><circle cx=\"30\" cy=\"10\" r=\"3.2\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"/><path d=\"M44 30q4-6 8 0t8 0\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"/><path d=\"M12 40v8M8 44h8\" stroke=\"currentColor\" stroke-width=\"2\"/><rect x=\"30\" y=\"44\" width=\"6\" height=\"6\" transform=\"rotate(20 33 47)\" fill=\"currentColor\"/><circle cx=\"56\" cy=\"54\" r=\"2\" fill=\"currentColor\"/>",
+    "tags": [
+     "konfeti",
+     "pesta"
+    ],
+    "fit": {
+     "templates": [
+      "pastel",
+      "tegas"
+     ],
+     "domains": [
+      "event-bazar",
+      "umkm-kue-roti",
+      "jasa-les",
+      "profil-sekolah",
+      "portofolio-desain",
+      "event-umum",
+      "umkm-skincare",
+      "umkm-martabak"
+     ],
+     "kinds": [
+      "event"
+     ],
+     "chance": 0.45
+    }
+   },
+   {
+    "id": "mem-stiker-garis",
+    "label": "Lingkaran bergaris",
+    "slot": "badge",
+    "family": "memphis",
+    "viewBox": "0 0 120 120",
+    "svg": "<circle cx=\"66\" cy=\"66\" r=\"46\" fill=\"var(--ink)\"/><circle cx=\"56\" cy=\"56\" r=\"46\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"3.5\"/><path d=\"M30 40l52 52M22 56l38 38M38 26l56 56M56 20l38 38\" stroke=\"var(--ink)\" stroke-width=\"3.5\" stroke-linecap=\"round\" opacity=\".9\"/><circle cx=\"56\" cy=\"56\" r=\"14\" fill=\"var(--a2)\" stroke=\"var(--ink)\" stroke-width=\"3.5\"/>",
+    "tags": [
+     "memphis",
+     "stiker"
+    ],
+    "fit": {
+     "templates": [
+      "pastel",
+      "tegas"
+     ],
+     "domains": [
+      "event-bazar",
+      "umkm-kue-roti",
+      "jasa-les",
+      "profil-sekolah",
+      "portofolio-desain",
+      "event-umum",
+      "umkm-skincare",
+      "umkm-martabak"
+     ],
+     "kinds": [
+      "event"
+     ],
+     "chance": 0.5
+    }
+   },
+   {
+    "id": "mem-seni-komposisi",
+    "label": "Komposisi Memphis",
+    "slot": "art",
+    "family": "memphis",
+    "viewBox": "0 0 200 200",
+    "svg": "<path d=\"M20 180V100A80 80 0 0 1 180 100V180Z\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"4\"/><rect x=\"96\" y=\"34\" width=\"70\" height=\"70\" fill=\"var(--a2)\" stroke=\"var(--ink)\" stroke-width=\"4\" transform=\"rotate(12 131 69)\"/><path d=\"M30 28 70 92H-10Z\" transform=\"translate(20 0)\" fill=\"var(--bg)\" stroke=\"var(--ink)\" stroke-width=\"4\" stroke-linejoin=\"round\"/><path d=\"M40 140q10 -16 20 0q10 16 20 0q10 -16 20 0q10 16 20 0q10 -16 20 0q10 16 20 0\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"6\" stroke-linecap=\"round\"/><circle cx=\"150\" cy=\"150\" r=\"2.6\" fill=\"var(--ink)\"/><circle cx=\"150\" cy=\"160\" r=\"2.6\" fill=\"var(--ink)\"/><circle cx=\"150\" cy=\"170\" r=\"2.6\" fill=\"var(--ink)\"/><circle cx=\"160\" cy=\"150\" r=\"2.6\" fill=\"var(--ink)\"/><circle cx=\"160\" cy=\"160\" r=\"2.6\" fill=\"var(--ink)\"/><circle cx=\"160\" cy=\"170\" r=\"2.6\" fill=\"var(--ink)\"/><circle cx=\"170\" cy=\"150\" r=\"2.6\" fill=\"var(--ink)\"/><circle cx=\"170\" cy=\"160\" r=\"2.6\" fill=\"var(--ink)\"/><circle cx=\"170\" cy=\"170\" r=\"2.6\" fill=\"var(--ink)\"/><path d=\"M150 18v18M141 27h18\" stroke=\"var(--ink)\" stroke-width=\"4\" stroke-linecap=\"round\"/>",
+    "tags": [
+     "memphis",
+     "geometris"
+    ],
+    "fit": {
+     "templates": [
+      "pastel",
+      "tegas"
+     ],
+     "domains": [
+      "event-bazar",
+      "umkm-kue-roti",
+      "jasa-les",
+      "profil-sekolah",
+      "portofolio-desain",
+      "event-umum",
+      "umkm-skincare",
+      "umkm-martabak"
+     ],
+     "kinds": [
+      "event"
+     ],
+     "chance": 0.5
+    }
+   },
+   {
+    "id": "mem-sudut-zigzag",
+    "label": "Zigzag & lingkaran",
+    "slot": "corner",
+    "family": "memphis",
+    "viewBox": "0 0 200 200",
+    "svg": "<circle cx=\"160\" cy=\"40\" r=\"56\" fill=\"var(--a2)\"/><circle cx=\"160\" cy=\"40\" r=\"56\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"3.5\" stroke-dasharray=\"2 9\" stroke-linecap=\"round\"/><polyline points=\"70,20 86,40 102,20 118,40 134,20 150,40\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"5\" stroke-linejoin=\"miter\" stroke-linecap=\"square\"/><path d=\"M120 100h52v52h-52z\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"3.5\" transform=\"rotate(-14 146 126)\"/><circle cx=\"92\" cy=\"96\" r=\"7\" fill=\"var(--ink)\"/>",
+    "tags": [
+     "memphis",
+     "zigzag"
+    ],
+    "fit": {
+     "templates": [
+      "pastel",
+      "tegas"
+     ],
+     "domains": [
+      "event-bazar",
+      "umkm-kue-roti",
+      "jasa-les",
+      "profil-sekolah",
+      "portofolio-desain",
+      "event-umum",
+      "umkm-skincare",
+      "umkm-martabak"
+     ],
+     "kinds": [
+      "event"
+     ],
+     "chance": 0.6
+    }
+   },
+   {
+    "id": "org-sudut-ranting",
+    "label": "Ranting daun",
+    "slot": "corner",
+    "family": "organik",
+    "viewBox": "0 0 200 200",
+    "svg": "<path d=\"M200 6C168 30 140 44 98 52M150 36C150 64 160 86 182 104M118 48C100 66 92 86 96 112\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linecap=\"round\"/><path d=\"M170 140c-24-4-38 10-30 30 8 18 40 22 54 4 10-14-4-32-24-34z\" fill=\"var(--a2)\" opacity=\".55\"/><g transform=\"translate(98 52) rotate(196) scale(1.6)\"><path d=\"M0 0C6-9 18-10 28 0C18 10 6 9 0 0Z\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"2.2\"/><path d=\"M3 0Q14 1 24 0\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"1.5\"/></g><g transform=\"translate(124 44) rotate(150) scale(1.2)\"><path d=\"M0 0C6-9 18-10 28 0C18 10 6 9 0 0Z\" fill=\"var(--a2)\" stroke=\"var(--ink)\" stroke-width=\"2.2\"/><path d=\"M3 0Q14 1 24 0\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"1.5\"/></g><g transform=\"translate(150 36) rotate(250) scale(1.1)\"><path d=\"M0 0C6-9 18-10 28 0C18 10 6 9 0 0Z\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"2.2\"/><path d=\"M3 0Q14 1 24 0\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"1.5\"/></g><g transform=\"translate(182 104) rotate(60) scale(1.2)\"><path d=\"M0 0C6-9 18-10 28 0C18 10 6 9 0 0Z\" fill=\"var(--a2)\" stroke=\"var(--ink)\" stroke-width=\"2.2\"/><path d=\"M3 0Q14 1 24 0\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"1.5\"/></g><g transform=\"translate(160 70) rotate(10) scale(1)\"><path d=\"M0 0C6-9 18-10 28 0C18 10 6 9 0 0Z\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"2.2\"/><path d=\"M3 0Q14 1 24 0\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"1.5\"/></g><g transform=\"translate(96 112) rotate(100) scale(1.2)\"><path d=\"M0 0C6-9 18-10 28 0C18 10 6 9 0 0Z\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"2.2\"/><path d=\"M3 0Q14 1 24 0\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"1.5\"/></g><g transform=\"translate(102 80) rotate(200) scale(1)\"><path d=\"M0 0C6-9 18-10 28 0C18 10 6 9 0 0Z\" fill=\"var(--a2)\" stroke=\"var(--ink)\" stroke-width=\"2.2\"/><path d=\"M3 0Q14 1 24 0\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"1.5\"/></g>",
+    "tags": [
+     "daun",
+     "ranting",
+     "alami"
+    ],
+    "fit": {
+     "templates": [
+      "segar"
+     ],
+     "domains": [
+      "umkm-tanaman-hias",
+      "umkm-katering",
+      "umkm-kopi",
+      "umkm-skincare",
+      "umkm-sembako",
+      "event-lari",
+      "jasa-laundry",
+      "profil-komunitas",
+      "artikel-resep",
+      "artikel-gaya-hidup"
+     ],
+     "chance": 0.6
+    }
+   },
+   {
+    "id": "org-pita-sulur",
+    "label": "Sulur daun",
+    "slot": "divider",
+    "family": "organik",
+    "viewBox": "0 0 64 28",
+    "svg": "<path d=\"M-32 14C-24 24-8 24 0 14C8 4 24 4 32 14S56 24 64 14S88 4 96 14\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.2\"/><g transform=\"translate(16 7) rotate(160) scale(0.5)\"><path d=\"M0 0C6-9 18-10 28 0C18 10 6 9 0 0Z\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"1.6\"/></g><g transform=\"translate(48 21) rotate(-20) scale(0.5)\"><path d=\"M0 0C6-9 18-10 28 0C18 10 6 9 0 0Z\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"1.6\"/></g><circle cx=\"32\" cy=\"14\" r=\"2.4\" fill=\"var(--a2)\"/>",
+    "tags": [
+     "sulur",
+     "daun"
+    ],
+    "fit": {
+     "templates": [
+      "segar"
+     ],
+     "domains": [
+      "umkm-tanaman-hias",
+      "umkm-katering",
+      "umkm-kopi",
+      "umkm-skincare",
+      "umkm-sembako",
+      "event-lari",
+      "jasa-laundry",
+      "profil-komunitas",
+      "artikel-resep",
+      "artikel-gaya-hidup"
+     ],
+     "chance": 0.5
+    }
+   },
+   {
+    "id": "org-motif-daun",
+    "label": "Daun tersebar",
+    "slot": "pattern",
+    "family": "organik",
+    "viewBox": "0 0 48 48",
+    "svg": "<g transform=\"translate(6 14) rotate(-30)\"><path d=\"M0 0C4-6 12-7 18 0C12 7 4 6 0 0Z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\"/><path d=\"M2 0H16\" stroke=\"currentColor\" stroke-width=\"1.2\"/></g><g transform=\"translate(26 38) rotate(25)\"><path d=\"M0 0C4-6 12-7 18 0C12 7 4 6 0 0Z\" fill=\"currentColor\" fill-opacity=\".5\" stroke=\"currentColor\" stroke-width=\"1.8\"/></g><circle cx=\"38\" cy=\"12\" r=\"2.2\" fill=\"currentColor\"/>",
+    "tags": [
+     "daun",
+     "alami"
+    ],
+    "fit": {
+     "templates": [
+      "segar"
+     ],
+     "domains": [
+      "umkm-tanaman-hias",
+      "umkm-katering",
+      "umkm-kopi",
+      "umkm-skincare",
+      "umkm-sembako",
+      "event-lari",
+      "jasa-laundry",
+      "profil-komunitas",
+      "artikel-resep",
+      "artikel-gaya-hidup"
+     ],
+     "chance": 0.45
+    }
+   },
+   {
+    "id": "org-stiker-daun",
+    "label": "Lencana daun",
+    "slot": "badge",
+    "family": "organik",
+    "viewBox": "0 0 120 120",
+    "svg": "<circle cx=\"60\" cy=\"60\" r=\"54\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"3\"/><circle cx=\"60\" cy=\"60\" r=\"44\" fill=\"none\" stroke=\"var(--on)\" stroke-width=\"2.5\" stroke-dasharray=\"3 6\" stroke-linecap=\"round\"/><path d=\"M38 82C38 54 58 36 86 34C86 62 68 82 38 82Z\" fill=\"var(--a2)\" stroke=\"var(--ink)\" stroke-width=\"3\"/><path d=\"M38 82C52 66 64 56 78 46\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linecap=\"round\"/>",
+    "tags": [
+     "alami",
+     "organik",
+     "lencana"
+    ],
+    "fit": {
+     "templates": [
+      "segar"
+     ],
+     "domains": [
+      "umkm-tanaman-hias",
+      "umkm-katering",
+      "umkm-kopi",
+      "umkm-skincare",
+      "umkm-sembako",
+      "event-lari",
+      "jasa-laundry",
+      "profil-komunitas",
+      "artikel-resep",
+      "artikel-gaya-hidup"
+     ],
+     "chance": 0.5
+    }
+   },
+   {
+    "id": "org-seni-monstera",
+    "label": "Daun monstera",
+    "slot": "art",
+    "family": "organik",
+    "viewBox": "0 0 200 200",
+    "svg": "<path d=\"M40 150c-30-30-20-90 30-110 46-18 100 6 112 52 12 44-20 84-66 84-30 0-56-6-76-26z\" fill=\"var(--a2)\" opacity=\".45\"/><path d=\"M100 186V120\" stroke=\"var(--ink)\" stroke-width=\"5\" stroke-linecap=\"round\"/><path d=\"M100 122C54 122 30 92 36 58 42 28 74 14 100 22 126 14 158 28 164 58 170 92 146 122 100 122Z\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"4\"/><path d=\"M100 26V120M100 50 62 40M100 74 50 70M100 98 62 106M100 50l38-10M100 74l50-4M100 98l38 8\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linecap=\"round\"/><ellipse cx=\"72\" cy=\"56\" rx=\"6\" ry=\"4\" fill=\"var(--bg)\" transform=\"rotate(20 72 56)\"/><ellipse cx=\"128\" cy=\"86\" rx=\"6\" ry=\"4\" fill=\"var(--bg)\" transform=\"rotate(-20 128 86)\"/>",
+    "tags": [
+     "daun",
+     "tanaman"
+    ],
+    "fit": {
+     "templates": [
+      "segar"
+     ],
+     "domains": [
+      "umkm-tanaman-hias",
+      "umkm-katering",
+      "umkm-kopi",
+      "umkm-skincare",
+      "umkm-sembako",
+      "event-lari",
+      "jasa-laundry",
+      "profil-komunitas",
+      "artikel-resep",
+      "artikel-gaya-hidup"
+     ],
+     "chance": 0.5
+    }
+   },
+   {
+    "id": "org-sudut-gumpal",
+    "label": "Gumpal & tunas",
+    "slot": "corner",
+    "family": "organik",
+    "viewBox": "0 0 200 200",
+    "svg": "<path d=\"M200 0V118C176 132 146 126 132 104 118 82 92 84 78 62 64 40 76 14 98 0Z\" fill=\"var(--a)\" opacity=\".9\"/><path d=\"M150 150V104\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linecap=\"round\"/><g transform=\"translate(150 120) rotate(200) scale(1.1)\"><path d=\"M0 0C6-9 18-10 28 0C18 10 6 9 0 0Z\" fill=\"var(--a2)\" stroke=\"var(--ink)\" stroke-width=\"2.2\"/><path d=\"M3 0Q14 1 24 0\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"1.5\"/></g><g transform=\"translate(150 110) rotate(-20) scale(1)\"><path d=\"M0 0C6-9 18-10 28 0C18 10 6 9 0 0Z\" fill=\"var(--a2)\" stroke=\"var(--ink)\" stroke-width=\"2.2\"/><path d=\"M3 0Q14 1 24 0\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"1.5\"/></g><circle cx=\"64\" cy=\"112\" r=\"6\" fill=\"var(--a2)\"/><circle cx=\"84\" cy=\"134\" r=\"3.5\" fill=\"var(--ink)\"/>",
+    "tags": [
+     "gumpal",
+     "tunas"
+    ],
+    "fit": {
+     "templates": [
+      "segar"
+     ],
+     "domains": [
+      "umkm-tanaman-hias",
+      "umkm-katering",
+      "umkm-kopi",
+      "umkm-skincare",
+      "umkm-sembako",
+      "event-lari",
+      "jasa-laundry",
+      "profil-komunitas",
+      "artikel-resep",
+      "artikel-gaya-hidup"
+     ],
+     "chance": 0.6
+    }
+   },
+   {
+    "id": "ret-sudut-pelangi",
+    "label": "Pelangi retro",
+    "slot": "corner",
+    "family": "retro",
+    "viewBox": "0 0 200 200",
+    "svg": "<path d=\"M50 0A150 150 0 0 0 200 150\" fill=\"none\" stroke=\"var(--a)\" stroke-width=\"16\"/><path d=\"M74 0A126 126 0 0 0 200 126\" fill=\"none\" stroke=\"var(--a2)\" stroke-width=\"16\"/><path d=\"M98 0A102 102 0 0 0 200 102\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"16\"/><path d=\"M122 0A78 78 0 0 0 200 78\" fill=\"none\" stroke=\"var(--a)\" stroke-width=\"16\"/><circle cx=\"200\" cy=\"0\" r=\"44\" fill=\"var(--a2)\"/>",
+    "tags": [
+     "pelangi",
+     "70an"
+    ],
+    "fit": {
+     "templates": [
+      "hangat",
+      "bakso",
+      "barber"
+     ],
+     "domains": [
+      "umkm-kopi",
+      "umkm-bakso-mie",
+      "umkm-martabak",
+      "umkm-ayam-geprek",
+      "jasa-barbershop",
+      "event-musik",
+      "umkm-frozen-food",
+      "jasa-rental-kendaraan"
+     ],
+     "chance": 0.6
+    }
+   },
+   {
+    "id": "ret-pita-gelombang",
+    "label": "Gelombang tiga warna",
+    "slot": "divider",
+    "family": "retro",
+    "viewBox": "0 0 72 36",
+    "svg": "<path d=\"M-36 9C-24 15 -12 15 0 9C12 3 24 3 36 9S60 15 72 9S96 3 108 9\" fill=\"none\" stroke=\"var(--a)\" stroke-width=\"5\"/><path d=\"M-36 18C-24 24 -12 24 0 18C12 12 24 12 36 18S60 24 72 18S96 12 108 18\" fill=\"none\" stroke=\"var(--a2)\" stroke-width=\"5\"/><path d=\"M-36 27C-24 33 -12 33 0 27C12 21 24 21 36 27S60 33 72 27S96 21 108 27\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"5\"/>",
+    "tags": [
+     "gelombang",
+     "groovy"
+    ],
+    "fit": {
+     "templates": [
+      "hangat",
+      "bakso",
+      "barber"
+     ],
+     "domains": [
+      "umkm-kopi",
+      "umkm-bakso-mie",
+      "umkm-martabak",
+      "umkm-ayam-geprek",
+      "jasa-barbershop",
+      "event-musik",
+      "umkm-frozen-food",
+      "jasa-rental-kendaraan"
+     ],
+     "chance": 0.5
+    }
+   },
+   {
+    "id": "ret-motif-bunga",
+    "label": "Bunga daisy",
+    "slot": "pattern",
+    "family": "retro",
+    "viewBox": "0 0 48 48",
+    "svg": "<ellipse transform=\"translate(14 14) rotate(0)\" cx=\"0\" cy=\"-7\" rx=\"2.9\" ry=\"4.3\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"/><ellipse transform=\"translate(14 14) rotate(45)\" cx=\"0\" cy=\"-7\" rx=\"2.9\" ry=\"4.3\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"/><ellipse transform=\"translate(14 14) rotate(90)\" cx=\"0\" cy=\"-7\" rx=\"2.9\" ry=\"4.3\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"/><ellipse transform=\"translate(14 14) rotate(135)\" cx=\"0\" cy=\"-7\" rx=\"2.9\" ry=\"4.3\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"/><ellipse transform=\"translate(14 14) rotate(180)\" cx=\"0\" cy=\"-7\" rx=\"2.9\" ry=\"4.3\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"/><ellipse transform=\"translate(14 14) rotate(225)\" cx=\"0\" cy=\"-7\" rx=\"2.9\" ry=\"4.3\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"/><ellipse transform=\"translate(14 14) rotate(270)\" cx=\"0\" cy=\"-7\" rx=\"2.9\" ry=\"4.3\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"/><ellipse transform=\"translate(14 14) rotate(315)\" cx=\"0\" cy=\"-7\" rx=\"2.9\" ry=\"4.3\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"/><circle cx=\"14\" cy=\"14\" r=\"3.1\" fill=\"currentColor\"/><ellipse transform=\"translate(36 36) rotate(0)\" cx=\"0\" cy=\"-5\" rx=\"2.1\" ry=\"3.1\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"/><ellipse transform=\"translate(36 36) rotate(45)\" cx=\"0\" cy=\"-5\" rx=\"2.1\" ry=\"3.1\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"/><ellipse transform=\"translate(36 36) rotate(90)\" cx=\"0\" cy=\"-5\" rx=\"2.1\" ry=\"3.1\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"/><ellipse transform=\"translate(36 36) rotate(135)\" cx=\"0\" cy=\"-5\" rx=\"2.1\" ry=\"3.1\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"/><ellipse transform=\"translate(36 36) rotate(180)\" cx=\"0\" cy=\"-5\" rx=\"2.1\" ry=\"3.1\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"/><ellipse transform=\"translate(36 36) rotate(225)\" cx=\"0\" cy=\"-5\" rx=\"2.1\" ry=\"3.1\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"/><ellipse transform=\"translate(36 36) rotate(270)\" cx=\"0\" cy=\"-5\" rx=\"2.1\" ry=\"3.1\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"/><ellipse transform=\"translate(36 36) rotate(315)\" cx=\"0\" cy=\"-5\" rx=\"2.1\" ry=\"3.1\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"/><circle cx=\"36\" cy=\"36\" r=\"2.2\" fill=\"currentColor\"/>",
+    "tags": [
+     "bunga",
+     "daisy"
+    ],
+    "fit": {
+     "templates": [
+      "hangat",
+      "bakso",
+      "barber"
+     ],
+     "domains": [
+      "umkm-kopi",
+      "umkm-bakso-mie",
+      "umkm-martabak",
+      "umkm-ayam-geprek",
+      "jasa-barbershop",
+      "event-musik",
+      "umkm-frozen-food",
+      "jasa-rental-kendaraan"
+     ],
+     "chance": 0.45
+    }
+   },
+   {
+    "id": "ret-stiker-matahari",
+    "label": "Matahari bergerigi",
+    "slot": "badge",
+    "family": "retro",
+    "viewBox": "0 0 120 120",
+    "svg": "<circle cx=\"108\" cy=\"60\" r=\"11\" fill=\"var(--a)\"/><circle cx=\"105.1\" cy=\"76.4\" r=\"11\" fill=\"var(--a)\"/><circle cx=\"96.8\" cy=\"90.9\" r=\"11\" fill=\"var(--a)\"/><circle cx=\"84\" cy=\"101.6\" r=\"11\" fill=\"var(--a)\"/><circle cx=\"68.3\" cy=\"107.3\" r=\"11\" fill=\"var(--a)\"/><circle cx=\"51.7\" cy=\"107.3\" r=\"11\" fill=\"var(--a)\"/><circle cx=\"36\" cy=\"101.6\" r=\"11\" fill=\"var(--a)\"/><circle cx=\"23.2\" cy=\"90.9\" r=\"11\" fill=\"var(--a)\"/><circle cx=\"14.9\" cy=\"76.4\" r=\"11\" fill=\"var(--a)\"/><circle cx=\"12\" cy=\"60\" r=\"11\" fill=\"var(--a)\"/><circle cx=\"14.9\" cy=\"43.6\" r=\"11\" fill=\"var(--a)\"/><circle cx=\"23.2\" cy=\"29.1\" r=\"11\" fill=\"var(--a)\"/><circle cx=\"36\" cy=\"18.4\" r=\"11\" fill=\"var(--a)\"/><circle cx=\"51.7\" cy=\"12.7\" r=\"11\" fill=\"var(--a)\"/><circle cx=\"68.3\" cy=\"12.7\" r=\"11\" fill=\"var(--a)\"/><circle cx=\"84\" cy=\"18.4\" r=\"11\" fill=\"var(--a)\"/><circle cx=\"96.8\" cy=\"29.1\" r=\"11\" fill=\"var(--a)\"/><circle cx=\"105.1\" cy=\"43.6\" r=\"11\" fill=\"var(--a)\"/><circle cx=\"60\" cy=\"60\" r=\"48\" fill=\"var(--a)\"/><path d=\"M60 60L100 60\" stroke=\"var(--a2)\" stroke-width=\"8\"/><path d=\"M60 60L94.6 80\" stroke=\"var(--a2)\" stroke-width=\"8\"/><path d=\"M60 60L80 94.6\" stroke=\"var(--a2)\" stroke-width=\"8\"/><path d=\"M60 60L60 100\" stroke=\"var(--a2)\" stroke-width=\"8\"/><path d=\"M60 60L40 94.6\" stroke=\"var(--a2)\" stroke-width=\"8\"/><path d=\"M60 60L25.4 80\" stroke=\"var(--a2)\" stroke-width=\"8\"/><path d=\"M60 60L20 60\" stroke=\"var(--a2)\" stroke-width=\"8\"/><path d=\"M60 60L25.4 40\" stroke=\"var(--a2)\" stroke-width=\"8\"/><path d=\"M60 60L40 25.4\" stroke=\"var(--a2)\" stroke-width=\"8\"/><path d=\"M60 60L60 20\" stroke=\"var(--a2)\" stroke-width=\"8\"/><path d=\"M60 60L80 25.4\" stroke=\"var(--a2)\" stroke-width=\"8\"/><path d=\"M60 60L94.6 40\" stroke=\"var(--a2)\" stroke-width=\"8\"/><circle cx=\"60\" cy=\"60\" r=\"22\" fill=\"var(--ink)\"/><circle cx=\"60\" cy=\"60\" r=\"14\" fill=\"var(--a2)\"/>",
+    "tags": [
+     "matahari",
+     "70an"
+    ],
+    "fit": {
+     "templates": [
+      "hangat",
+      "bakso",
+      "barber"
+     ],
+     "domains": [
+      "umkm-kopi",
+      "umkm-bakso-mie",
+      "umkm-martabak",
+      "umkm-ayam-geprek",
+      "jasa-barbershop",
+      "event-musik",
+      "umkm-frozen-food",
+      "jasa-rental-kendaraan"
+     ],
+     "chance": 0.5
+    }
+   },
+   {
+    "id": "ret-seni-senja",
+    "label": "Senja bergaris",
+    "slot": "art",
+    "family": "retro",
+    "viewBox": "0 0 200 200",
+    "svg": "<circle cx=\"100\" cy=\"104\" r=\"76\" fill=\"var(--a)\"/><rect x=\"0\" y=\"78\" width=\"200\" height=\"4\" fill=\"var(--bg)\"/><rect x=\"0\" y=\"92\" width=\"200\" height=\"6\" fill=\"var(--bg)\"/><rect x=\"0\" y=\"108\" width=\"200\" height=\"8\" fill=\"var(--bg)\"/><rect x=\"0\" y=\"128\" width=\"200\" height=\"72\" fill=\"var(--bg)\"/><path transform=\"scale(2.78 1)\" d=\"M0 140C12 133 24 133 36 140S60 147 72 140\" fill=\"none\" stroke=\"var(--a2)\" stroke-width=\"7\"/><path transform=\"scale(2.78 1)\" d=\"M0 160C12 153 24 153 36 160S60 167 72 160\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"7\"/><path d=\"M24 186H176\" stroke=\"var(--a)\" stroke-width=\"7\" stroke-linecap=\"round\"/>",
+    "tags": [
+     "senja",
+     "matahari",
+     "70an"
+    ],
+    "fit": {
+     "templates": [
+      "hangat",
+      "bakso",
+      "barber"
+     ],
+     "domains": [
+      "umkm-kopi",
+      "umkm-bakso-mie",
+      "umkm-martabak",
+      "umkm-ayam-geprek",
+      "jasa-barbershop",
+      "event-musik",
+      "umkm-frozen-food",
+      "jasa-rental-kendaraan"
+     ],
+     "chance": 0.5
+    }
+   },
+   {
+    "id": "ret-sudut-garis",
+    "label": "Pita menekuk",
+    "slot": "corner",
+    "family": "retro",
+    "viewBox": "0 0 200 200",
+    "svg": "<path d=\"M88 0V60A72 72 0 0 0 160 132H200\" fill=\"none\" stroke=\"var(--a)\" stroke-width=\"15\"/><path d=\"M112 0V60A48 48 0 0 0 160 108H200\" fill=\"none\" stroke=\"var(--a2)\" stroke-width=\"15\"/><path d=\"M136 0V60A24 24 0 0 0 160 84H200\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"15\"/><circle cx=\"60\" cy=\"150\" r=\"12\" fill=\"var(--a)\"/><circle cx=\"92\" cy=\"176\" r=\"6\" fill=\"var(--ink)\"/>",
+    "tags": [
+     "groovy",
+     "70an",
+     "pita"
+    ],
+    "fit": {
+     "templates": [
+      "hangat",
+      "bakso",
+      "barber"
+     ],
+     "domains": [
+      "umkm-kopi",
+      "umkm-bakso-mie",
+      "umkm-martabak",
+      "umkm-ayam-geprek",
+      "jasa-barbershop",
+      "event-musik",
+      "umkm-frozen-food",
+      "jasa-rental-kendaraan"
+     ],
+     "chance": 0.6
+    }
+   },
+   {
+    "id": "y2k-sudut-kilau",
+    "label": "Kilau bertebaran",
+    "slot": "corner",
+    "family": "y2k",
+    "viewBox": "0 0 200 200",
+    "svg": "<ellipse cx=\"150\" cy=\"58\" rx=\"64\" ry=\"22\" transform=\"rotate(-24 150 58)\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"2.5\"/><path d=\"M150 18C157.2 50.8 157.2 50.8 190 58C157.2 65.2 157.2 65.2 150 98C142.8 65.2 142.8 65.2 110 58C142.8 50.8 142.8 50.8 150 18Z\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"2.5\" stroke-linejoin=\"round\"/><path d=\"M84 16C87.2 30.8 87.2 30.8 102 34C87.2 37.2 87.2 37.2 84 52C80.8 37.2 80.8 37.2 66 34C80.8 30.8 80.8 30.8 84 16Z\" fill=\"var(--a2)\" stroke=\"var(--ink)\" stroke-width=\"2\" stroke-linejoin=\"round\"/><path d=\"M176 118C180 136 180 136 198 140C180 144 180 144 176 162C172 144 172 144 154 140C172 136 172 136 176 118Z\" fill=\"var(--a2)\" stroke=\"var(--ink)\" stroke-width=\"2\" stroke-linejoin=\"round\"/><path d=\"M110 100C111.8 108.2 111.8 108.2 120 110C111.8 111.8 111.8 111.8 110 120C108.2 111.8 108.2 111.8 100 110C108.2 108.2 108.2 108.2 110 100Z\" fill=\"var(--ink)\"/><circle cx=\"60\" cy=\"88\" r=\"4\" fill=\"var(--a)\"/><circle cx=\"196\" cy=\"98\" r=\"3\" fill=\"var(--ink)\"/>",
+    "tags": [
+     "kilau",
+     "sparkle",
+     "y2k"
+    ],
+    "fit": {
+     "templates": [
+      "pastel",
+      "gelap",
+      "neon"
+     ],
+     "domains": [
+      "umkm-skincare",
+      "umkm-fashion",
+      "event-musik",
+      "portofolio-desain",
+      "jasa-fotografi"
+     ],
+     "chance": 0.6
+    }
+   },
+   {
+    "id": "y2k-pita-bintang",
+    "label": "Kilau berderet",
+    "slot": "divider",
+    "family": "y2k",
+    "viewBox": "0 0 48 24",
+    "svg": "<path d=\"M12 3C13.6 10.4 13.6 10.4 21 12C13.6 13.6 13.6 13.6 12 21C10.4 13.6 10.4 13.6 3 12C10.4 10.4 10.4 10.4 12 3Z\" fill=\"var(--a)\"/><circle cx=\"30\" cy=\"12\" r=\"2.4\" fill=\"currentColor\"/><path d=\"M42 7C42.9 11.1 42.9 11.1 47 12C42.9 12.9 42.9 12.9 42 17C41.1 12.9 41.1 12.9 37 12C41.1 11.1 41.1 11.1 42 7Z\" fill=\"var(--a2)\"/>",
+    "tags": [
+     "kilau",
+     "bintang"
+    ],
+    "fit": {
+     "templates": [
+      "pastel",
+      "gelap",
+      "neon"
+     ],
+     "domains": [
+      "umkm-skincare",
+      "umkm-fashion",
+      "event-musik",
+      "portofolio-desain",
+      "jasa-fotografi"
+     ],
+     "chance": 0.5
+    }
+   },
+   {
+    "id": "y2k-motif-kilau",
+    "label": "Kilau kecil",
+    "slot": "pattern",
+    "family": "y2k",
+    "viewBox": "0 0 40 40",
+    "svg": "<path d=\"M12 5C13.3 10.7 13.3 10.7 19 12C13.3 13.3 13.3 13.3 12 19C10.7 13.3 10.7 13.3 5 12C10.7 10.7 10.7 10.7 12 5Z\" fill=\"currentColor\"/><path d=\"M30 26C30.7 29.3 30.7 29.3 34 30C30.7 30.7 30.7 30.7 30 34C29.3 30.7 29.3 30.7 26 30C29.3 29.3 29.3 29.3 30 26Z\" fill=\"currentColor\"/><circle cx=\"32\" cy=\"10\" r=\"1.6\" fill=\"currentColor\"/>",
+    "tags": [
+     "kilau"
+    ],
+    "fit": {
+     "templates": [
+      "pastel",
+      "gelap",
+      "neon"
+     ],
+     "domains": [
+      "umkm-skincare",
+      "umkm-fashion",
+      "event-musik",
+      "portofolio-desain",
+      "jasa-fotografi"
+     ],
+     "chance": 0.45
+    }
+   },
+   {
+    "id": "y2k-stiker-orbit",
+    "label": "Bintang orbit",
+    "slot": "badge",
+    "family": "y2k",
+    "viewBox": "0 0 120 120",
+    "svg": "<ellipse cx=\"60\" cy=\"60\" rx=\"56\" ry=\"20\" transform=\"rotate(-20 60 60)\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"3\"/><path d=\"M60 16C67.9 52.1 67.9 52.1 104 60C67.9 67.9 67.9 67.9 60 104C52.1 67.9 52.1 67.9 16 60C52.1 52.1 52.1 52.1 60 16Z\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/><path d=\"M60 44C62.9 57.1 62.9 57.1 76 60C62.9 62.9 62.9 62.9 60 76C57.1 62.9 57.1 62.9 44 60C57.1 57.1 57.1 57.1 60 44Z\" fill=\"var(--a2)\"/><circle cx=\"108\" cy=\"42\" r=\"6\" fill=\"var(--a2)\" stroke=\"var(--ink)\" stroke-width=\"2.5\"/>",
+    "tags": [
+     "orbit",
+     "bintang"
+    ],
+    "fit": {
+     "templates": [
+      "pastel",
+      "gelap",
+      "neon"
+     ],
+     "domains": [
+      "umkm-skincare",
+      "umkm-fashion",
+      "event-musik",
+      "portofolio-desain",
+      "jasa-fotografi"
+     ],
+     "chance": 0.5
+    }
+   },
+   {
+    "id": "y2k-seni-planet",
+    "label": "Planet bercincin",
+    "slot": "art",
+    "family": "y2k",
+    "viewBox": "0 0 200 200",
+    "svg": "<path d=\"M30 128C10 150 40 160 100 140S196 92 172 74\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"5\" stroke-linecap=\"round\"/><circle cx=\"100\" cy=\"104\" r=\"54\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"4\"/><path d=\"M58 84C80 70 120 68 146 82M52 110c30-10 70-12 100 0\" fill=\"none\" stroke=\"var(--a2)\" stroke-width=\"6\" stroke-linecap=\"round\"/><path d=\"M172 74C190 60 160 54 118 66S28 102 30 128\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"5\" stroke-linecap=\"round\"/><path d=\"M36 22C39.2 36.8 39.2 36.8 54 40C39.2 43.2 39.2 43.2 36 58C32.8 43.2 32.8 43.2 18 40C32.8 36.8 32.8 36.8 36 22Z\" fill=\"var(--a2)\" stroke=\"var(--ink)\" stroke-width=\"2.5\" stroke-linejoin=\"round\"/><path d=\"M168 152C170.5 163.5 170.5 163.5 182 166C170.5 168.5 170.5 168.5 168 180C165.5 168.5 165.5 168.5 154 166C165.5 163.5 165.5 163.5 168 152Z\" fill=\"var(--a2)\" stroke=\"var(--ink)\" stroke-width=\"2.5\" stroke-linejoin=\"round\"/><path d=\"M160 18C161.4 24.6 161.4 24.6 168 26C161.4 27.4 161.4 27.4 160 34C158.6 27.4 158.6 27.4 152 26C158.6 24.6 158.6 24.6 160 18Z\" fill=\"var(--ink)\"/>",
+    "tags": [
+     "planet",
+     "y2k",
+     "luar angkasa"
+    ],
+    "fit": {
+     "templates": [
+      "pastel",
+      "gelap",
+      "neon"
+     ],
+     "domains": [
+      "umkm-skincare",
+      "umkm-fashion",
+      "event-musik",
+      "portofolio-desain",
+      "jasa-fotografi"
+     ],
+     "chance": 0.5
+    }
+   },
+   {
+    "id": "y2k-sudut-gelembung",
+    "label": "Gelembung kilap",
+    "slot": "corner",
+    "family": "y2k",
+    "viewBox": "0 0 200 200",
+    "svg": "<circle cx=\"158\" cy=\"46\" r=\"48\" fill=\"var(--a)\" opacity=\".85\"/><circle cx=\"96\" cy=\"26\" r=\"20\" fill=\"var(--a2)\" opacity=\".9\"/><circle cx=\"176\" cy=\"124\" r=\"22\" fill=\"var(--a2)\" opacity=\".85\"/><path d=\"M132 22a30 30 0 0 1 22-8M84 18a10 10 0 0 1 8-4M164 112a12 12 0 0 1 9-5\" fill=\"none\" stroke=\"var(--bg)\" stroke-width=\"5\" stroke-linecap=\"round\"/><path d=\"M118 80C120.2 89.8 120.2 89.8 130 92C120.2 94.2 120.2 94.2 118 104C115.8 94.2 115.8 94.2 106 92C115.8 89.8 115.8 89.8 118 80Z\" fill=\"var(--ink)\"/>",
+    "tags": [
+     "gelembung",
+     "y2k"
+    ],
+    "fit": {
+     "templates": [
+      "pastel",
+      "gelap",
+      "neon"
+     ],
+     "domains": [
+      "umkm-skincare",
+      "umkm-fashion",
+      "event-musik",
+      "portofolio-desain",
+      "jasa-fotografi"
+     ],
+     "chance": 0.6
+    }
+   },
+   {
+    "id": "min-sudut-busur",
+    "label": "Busur tipis",
+    "slot": "corner",
+    "family": "minimal",
+    "viewBox": "0 0 200 200",
+    "svg": "<path d=\"M160 0A40 40 0 0 0 200 40\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"1.5\" opacity=\"1\"/><path d=\"M130 0A70 70 0 0 0 200 70\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"1.5\" opacity=\"0.8\"/><path d=\"M100 0A100 100 0 0 0 200 100\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"1.5\" opacity=\"0.6\"/><path d=\"M70 0A130 130 0 0 0 200 130\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"1.5\" opacity=\"0.45\"/><path d=\"M40 0A160 160 0 0 0 200 160\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"1.5\" opacity=\"0.3\"/><circle cx=\"152\" cy=\"62\" r=\"7\" fill=\"var(--a)\"/><path d=\"M88 22h12M94 16v12\" stroke=\"var(--ink)\" stroke-width=\"1.5\"/>",
+    "tags": [
+     "garis",
+     "tipis"
+    ],
+    "fit": {
+     "templates": [
+      "bersih",
+      "tech",
+      "elegan",
+      "majalah",
+      "jurnal"
+     ],
+     "kinds": [
+      "jasa",
+      "portofolio",
+      "artikel",
+      "profil"
+     ],
+     "domains": [
+      "jasa-digital",
+      "portofolio-developer",
+      "event-seminar",
+      "artikel-teknologi",
+      "artikel-keuangan",
+      "jasa-umum",
+      "profil-umum",
+      "jasa-servis-elektronik",
+      "jasa-renovasi"
+     ],
+     "chance": 0.6
+    }
+   },
+   {
+    "id": "min-pita-garis",
+    "label": "Garis bertitik",
+    "slot": "divider",
+    "family": "minimal",
+    "viewBox": "0 0 120 12",
+    "svg": "<path d=\"M0 6H53M67 6H120\" stroke=\"currentColor\" stroke-width=\"1\" opacity=\".5\"/><path d=\"M60 2.5l3.5 3.5-3.5 3.5-3.5-3.5z\" fill=\"var(--a)\"/>",
+    "tags": [
+     "garis",
+     "rapi"
+    ],
+    "fit": {
+     "templates": [
+      "bersih",
+      "tech",
+      "elegan",
+      "majalah",
+      "jurnal"
+     ],
+     "kinds": [
+      "jasa",
+      "portofolio",
+      "artikel",
+      "profil"
+     ],
+     "domains": [
+      "jasa-digital",
+      "portofolio-developer",
+      "event-seminar",
+      "artikel-teknologi",
+      "artikel-keuangan",
+      "jasa-umum",
+      "profil-umum",
+      "jasa-servis-elektronik",
+      "jasa-renovasi"
+     ],
+     "chance": 0.5
+    }
+   },
+   {
+    "id": "min-motif-grid",
+    "label": "Grid halus",
+    "slot": "pattern",
+    "family": "minimal",
+    "viewBox": "0 0 24 24",
+    "svg": "<path d=\"M0 .5H24M.5 0V24\" stroke=\"currentColor\" stroke-width=\"1\"/>",
+    "tags": [
+     "grid",
+     "blueprint"
+    ],
+    "fit": {
+     "templates": [
+      "bersih",
+      "tech",
+      "elegan",
+      "majalah",
+      "jurnal"
+     ],
+     "kinds": [
+      "jasa",
+      "portofolio",
+      "artikel",
+      "profil"
+     ],
+     "domains": [
+      "jasa-digital",
+      "portofolio-developer",
+      "event-seminar",
+      "artikel-teknologi",
+      "artikel-keuangan",
+      "jasa-umum",
+      "profil-umum",
+      "jasa-servis-elektronik",
+      "jasa-renovasi"
+     ],
+     "chance": 0.45
+    }
+   },
+   {
+    "id": "min-stiker-cincin",
+    "label": "Cincin ganda",
+    "slot": "badge",
+    "family": "minimal",
+    "viewBox": "0 0 120 120",
+    "svg": "<circle cx=\"60\" cy=\"60\" r=\"54\" fill=\"var(--bg)\" stroke=\"var(--ink)\" stroke-width=\"2\"/><circle cx=\"60\" cy=\"60\" r=\"44\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"1.2\"/><path d=\"M42 61l12 12 25-27\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><circle cx=\"60\" cy=\"6\" r=\"5\" fill=\"var(--a)\"/>",
+    "tags": [
+     "cek",
+     "terjamin"
+    ],
+    "fit": {
+     "templates": [
+      "bersih",
+      "tech",
+      "elegan",
+      "majalah",
+      "jurnal"
+     ],
+     "kinds": [
+      "jasa",
+      "portofolio",
+      "artikel",
+      "profil"
+     ],
+     "domains": [
+      "jasa-digital",
+      "portofolio-developer",
+      "event-seminar",
+      "artikel-teknologi",
+      "artikel-keuangan",
+      "jasa-umum",
+      "profil-umum",
+      "jasa-servis-elektronik",
+      "jasa-renovasi"
+     ],
+     "chance": 0.5
+    }
+   },
+   {
+    "id": "min-seni-geometri",
+    "label": "Geometri tipis",
+    "slot": "art",
+    "family": "minimal",
+    "viewBox": "0 0 200 200",
+    "svg": "<circle cx=\"84\" cy=\"96\" r=\"58\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"2\"/><circle cx=\"124\" cy=\"96\" r=\"58\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"2\"/><path d=\"M104 52a58 58 0 0 1 0 88a58 58 0 0 1 0-88z\" fill=\"var(--a)\"/><path d=\"M20 176H180\" stroke=\"var(--ink)\" stroke-width=\"2\"/><circle cx=\"180\" cy=\"176\" r=\"5\" fill=\"var(--a)\"/>",
+    "tags": [
+     "geometri",
+     "lingkaran"
+    ],
+    "fit": {
+     "templates": [
+      "bersih",
+      "tech",
+      "elegan",
+      "majalah",
+      "jurnal"
+     ],
+     "kinds": [
+      "jasa",
+      "portofolio",
+      "artikel",
+      "profil"
+     ],
+     "domains": [
+      "jasa-digital",
+      "portofolio-developer",
+      "event-seminar",
+      "artikel-teknologi",
+      "artikel-keuangan",
+      "jasa-umum",
+      "profil-umum",
+      "jasa-servis-elektronik",
+      "jasa-renovasi"
+     ],
+     "chance": 0.5
+    }
+   },
+   {
+    "id": "min-sudut-titik",
+    "label": "Grid titik sudut",
+    "slot": "corner",
+    "family": "minimal",
+    "viewBox": "0 0 200 200",
+    "svg": "<circle cx=\"188\" cy=\"12\" r=\"2.6\" fill=\"var(--ink)\"/><circle cx=\"188\" cy=\"32\" r=\"2.4\" fill=\"var(--ink)\"/><circle cx=\"188\" cy=\"52\" r=\"2.2\" fill=\"var(--ink)\"/><circle cx=\"188\" cy=\"72\" r=\"2\" fill=\"var(--ink)\"/><circle cx=\"188\" cy=\"92\" r=\"1.7\" fill=\"var(--ink)\"/><circle cx=\"188\" cy=\"112\" r=\"1.5\" fill=\"var(--ink)\"/><circle cx=\"188\" cy=\"132\" r=\"1.3\" fill=\"var(--ink)\"/><circle cx=\"188\" cy=\"152\" r=\"1.1\" fill=\"var(--ink)\"/><circle cx=\"168\" cy=\"12\" r=\"2.4\" fill=\"var(--ink)\"/><circle cx=\"168\" cy=\"32\" r=\"2.2\" fill=\"var(--ink)\"/><circle cx=\"168\" cy=\"52\" r=\"2\" fill=\"var(--ink)\"/><circle cx=\"168\" cy=\"72\" r=\"1.7\" fill=\"var(--ink)\"/><circle cx=\"168\" cy=\"92\" r=\"1.5\" fill=\"var(--ink)\"/><circle cx=\"168\" cy=\"112\" r=\"1.3\" fill=\"var(--ink)\"/><circle cx=\"168\" cy=\"132\" r=\"1.1\" fill=\"var(--ink)\"/><circle cx=\"168\" cy=\"152\" r=\"0.9\" fill=\"var(--ink)\"/><circle cx=\"148\" cy=\"12\" r=\"2.2\" fill=\"var(--ink)\"/><circle cx=\"148\" cy=\"32\" r=\"2\" fill=\"var(--ink)\"/><circle cx=\"148\" cy=\"52\" r=\"1.7\" fill=\"var(--ink)\"/><circle cx=\"148\" cy=\"72\" r=\"1.5\" fill=\"var(--ink)\"/><circle cx=\"148\" cy=\"92\" r=\"1.3\" fill=\"var(--ink)\"/><circle cx=\"148\" cy=\"112\" r=\"1.1\" fill=\"var(--ink)\"/><circle cx=\"148\" cy=\"132\" r=\"0.9\" fill=\"var(--ink)\"/><circle cx=\"128\" cy=\"12\" r=\"2\" fill=\"var(--ink)\"/><circle cx=\"128\" cy=\"32\" r=\"1.7\" fill=\"var(--ink)\"/><circle cx=\"128\" cy=\"52\" r=\"1.5\" fill=\"var(--ink)\"/><circle cx=\"128\" cy=\"72\" r=\"1.3\" fill=\"var(--ink)\"/><circle cx=\"128\" cy=\"92\" r=\"1.1\" fill=\"var(--ink)\"/><circle cx=\"128\" cy=\"112\" r=\"0.9\" fill=\"var(--ink)\"/><circle cx=\"108\" cy=\"12\" r=\"1.7\" fill=\"var(--ink)\"/><circle cx=\"108\" cy=\"32\" r=\"1.5\" fill=\"var(--ink)\"/><circle cx=\"108\" cy=\"52\" r=\"1.3\" fill=\"var(--ink)\"/><circle cx=\"108\" cy=\"72\" r=\"1.1\" fill=\"var(--ink)\"/><circle cx=\"108\" cy=\"92\" r=\"0.9\" fill=\"var(--ink)\"/><circle cx=\"88\" cy=\"12\" r=\"1.5\" fill=\"var(--ink)\"/><circle cx=\"88\" cy=\"32\" r=\"1.3\" fill=\"var(--ink)\"/><circle cx=\"88\" cy=\"52\" r=\"1.1\" fill=\"var(--ink)\"/><circle cx=\"88\" cy=\"72\" r=\"0.9\" fill=\"var(--ink)\"/><circle cx=\"68\" cy=\"12\" r=\"1.3\" fill=\"var(--ink)\"/><circle cx=\"68\" cy=\"32\" r=\"1.1\" fill=\"var(--ink)\"/><circle cx=\"68\" cy=\"52\" r=\"0.9\" fill=\"var(--ink)\"/><circle cx=\"48\" cy=\"12\" r=\"1.1\" fill=\"var(--ink)\"/><circle cx=\"48\" cy=\"32\" r=\"0.9\" fill=\"var(--ink)\"/><circle cx=\"188\" cy=\"12\" r=\"6\" fill=\"var(--a)\"/>",
+    "tags": [
+     "titik",
+     "grid"
+    ],
+    "fit": {
+     "templates": [
+      "bersih",
+      "tech",
+      "elegan",
+      "majalah",
+      "jurnal"
+     ],
+     "kinds": [
+      "jasa",
+      "portofolio",
+      "artikel",
+      "profil"
+     ],
+     "domains": [
+      "jasa-digital",
+      "portofolio-developer",
+      "event-seminar",
+      "artikel-teknologi",
+      "artikel-keuangan",
+      "jasa-umum",
+      "profil-umum",
+      "jasa-servis-elektronik",
+      "jasa-renovasi"
+     ],
+     "chance": 0.6
+    }
+   },
+   {
+    "id": "pix-sudut-awan",
+    "label": "Awan & bintang piksel",
+    "slot": "corner",
+    "family": "piksel",
+    "viewBox": "0 0 200 200",
+    "svg": "<path d=\"M140 26h27v9h-27zM131 35h9v9h-9zM167 35h9v9h-9zM185 35h18v9h-18zM113 44h18v9h-18zM176 44h9v9h-9zM203 44h9v9h-9zM104 53h9v9h-9zM203 53h9v9h-9zM104 62h9v9h-9zM203 62h9v9h-9zM113 71h90v9h-90z\" fill=\"var(--ink)\"/><path d=\"M140 35h27v9h-27zM131 44h45v9h-45zM185 44h18v9h-18zM113 53h90v9h-90zM113 62h90v9h-90z\" fill=\"var(--a)\"/><path d=\"M66 28h7v7h-7zM66 35h7v7h-7zM52 42h14v7h-14zM73 42h14v7h-14zM66 49h7v7h-7zM66 56h7v7h-7z\" fill=\"var(--a2)\"/><path d=\"M66 42h7v7h-7z\" fill=\"var(--ink)\"/><path d=\"M170 112h5v5h-5zM170 117h5v5h-5zM160 122h10v5h-10zM175 122h10v5h-10zM170 127h5v5h-5zM170 132h5v5h-5z\" fill=\"var(--ink)\"/><path d=\"M170 122h5v5h-5z\" fill=\"var(--a)\"/><path d=\"M92 104h12v6h-12zM92 110h12v6h-12z\" fill=\"var(--a2)\"/>",
+    "tags": [
+     "piksel",
+     "awan",
+     "8-bit"
+    ],
+    "fit": {
+     "styles": [
+      "brutal-cyber"
+     ],
+     "domains": [
+      "portofolio-developer",
+      "jasa-digital",
+      "artikel-teknologi"
+     ],
+     "chance": 0.6
+    }
+   },
+   {
+    "id": "pix-pita-tangga",
+    "label": "Tangga piksel",
+    "slot": "divider",
+    "family": "piksel",
+    "viewBox": "0 0 32 16",
+    "svg": "<path d=\"M12 0h4v2h-4zM8 2h4v2h-4zM16 2h4v2h-4zM4 4h4v2h-4zM20 4h4v2h-4zM0 6h4v2h-4zM24 6h4v2h-4zM28 8h4v2h-4z\" fill=\"currentColor\"/>",
+    "tags": [
+     "piksel",
+     "zigzag"
+    ],
+    "fit": {
+     "styles": [
+      "brutal-cyber"
+     ],
+     "domains": [
+      "portofolio-developer",
+      "jasa-digital",
+      "artikel-teknologi"
+     ],
+     "chance": 0.5
+    }
+   },
+   {
+    "id": "pix-pita-hati",
+    "label": "Hati piksel",
+    "slot": "divider",
+    "family": "piksel",
+    "viewBox": "0 0 36 20",
+    "svg": "<path d=\"M6.5 2h5v2.5h-5zM14 2h5v2.5h-5zM4 4.5h17.5v2.5h-17.5zM4 7h17.5v2.5h-17.5zM6.5 9.5h12.5v2.5h-12.5zM9 12h7.5v2.5h-7.5zM11.5 14.5h2.5v2.5h-2.5z\" fill=\"var(--a)\"/><path d=\"M28 8.5h3v3h-3z\" fill=\"currentColor\"/>",
+    "tags": [
+     "piksel",
+     "hati"
+    ],
+    "fit": {
+     "styles": [
+      "brutal-cyber"
+     ],
+     "domains": [
+      "portofolio-developer",
+      "jasa-digital",
+      "artikel-teknologi"
+     ],
+     "chance": 0.5
+    }
+   },
+   {
+    "id": "pix-motif-plus",
+    "label": "Plus piksel",
+    "slot": "pattern",
+    "family": "piksel",
+    "viewBox": "0 0 24 24",
+    "svg": "<path d=\"M6 3h3v3h-3zM3 6h9v3h-9zM6 9h3v3h-3z\" fill=\"currentColor\"/><path d=\"M16 16h3v3h-3z\" fill=\"currentColor\"/>",
+    "tags": [
+     "piksel",
+     "plus"
+    ],
+    "fit": {
+     "styles": [
+      "brutal-cyber"
+     ],
+     "domains": [
+      "portofolio-developer",
+      "jasa-digital",
+      "artikel-teknologi"
+     ],
+     "chance": 0.45
+    }
+   },
+   {
+    "id": "pix-stiker-koin",
+    "label": "Koin piksel",
+    "slot": "badge",
+    "family": "piksel",
+    "viewBox": "0 0 120 120",
+    "svg": "<path d=\"M33 6h54v9h-54zM24 15h9v9h-9zM87 15h9v9h-9zM15 24h9v9h-9zM42 24h36v9h-36zM96 24h9v9h-9zM6 33h9v9h-9zM33 33h9v9h-9zM78 33h9v9h-9zM105 33h9v9h-9zM6 42h9v9h-9zM33 42h9v9h-9zM78 42h9v9h-9zM105 42h9v9h-9zM6 51h9v9h-9zM24 51h9v9h-9zM87 51h9v9h-9zM105 51h9v9h-9zM6 60h9v9h-9zM24 60h9v9h-9zM87 60h9v9h-9zM105 60h9v9h-9zM6 69h9v9h-9zM33 69h9v9h-9zM78 69h9v9h-9zM105 69h9v9h-9zM6 78h9v9h-9zM33 78h9v9h-9zM78 78h9v9h-9zM105 78h9v9h-9zM15 87h9v9h-9zM42 87h36v9h-36zM96 87h9v9h-9zM24 96h9v9h-9zM87 96h9v9h-9zM33 105h54v9h-54z\" fill=\"var(--ink)\"/><path d=\"M33 15h54v9h-54zM24 24h18v9h-18zM78 24h18v9h-18zM15 33h9v9h-9zM42 33h36v9h-36zM87 33h18v9h-18zM15 42h9v9h-9zM42 42h36v9h-36zM87 42h18v9h-18zM15 51h9v9h-9zM33 51h54v9h-54zM96 51h9v9h-9zM15 60h9v9h-9zM33 60h54v9h-54zM96 60h9v9h-9zM15 69h18v9h-18zM42 69h36v9h-36zM87 69h18v9h-18zM15 78h18v9h-18zM42 78h36v9h-36zM87 78h18v9h-18zM24 87h18v9h-18zM78 87h18v9h-18zM33 96h54v9h-54z\" fill=\"var(--a)\"/><path d=\"M24 33h9v9h-9zM24 42h9v9h-9z\" fill=\"var(--bg)\"/><path d=\"M102 4h5v5h-5zM102 9h5v5h-5zM92 14h10v5h-10zM107 14h10v5h-10zM102 19h5v5h-5zM102 24h5v5h-5z\" fill=\"var(--a2)\"/><path d=\"M102 14h5v5h-5z\" fill=\"var(--ink)\"/>",
+    "tags": [
+     "koin",
+     "game"
+    ],
+    "fit": {
+     "styles": [
+      "brutal-cyber"
+     ],
+     "domains": [
+      "portofolio-developer",
+      "jasa-digital",
+      "artikel-teknologi"
+     ],
+     "chance": 0.5
+    }
+   },
+   {
+    "id": "pix-seni-pemandangan",
+    "label": "Pemandangan piksel",
+    "slot": "art",
+    "family": "piksel",
+    "viewBox": "0 0 200 200",
+    "svg": "<path d=\"M60 90h10v10h-10zM50 100h10v10h-10zM70 100h10v10h-10zM40 110h10v10h-10zM80 110h10v10h-10zM150 110h10v10h-10zM30 120h10v10h-10zM90 120h10v10h-10zM140 120h10v10h-10zM160 120h10v10h-10zM20 130h10v10h-10zM100 130h10v10h-10zM130 130h10v10h-10zM170 130h10v10h-10zM10 140h10v10h-10zM110 140h20v10h-20zM180 140h10v10h-10zM0 150h10v10h-10zM190 150h10v10h-10z\" fill=\"var(--ink)\"/><path d=\"M140 50h20v10h-20zM130 60h40v10h-40zM130 70h40v10h-40zM140 80h20v10h-20z\" fill=\"var(--a)\"/><path d=\"M60 100h10v10h-10zM50 110h30v10h-30zM40 120h50v10h-50zM150 120h10v10h-10zM30 130h70v10h-70zM140 130h30v10h-30zM20 140h90v10h-90zM130 140h50v10h-50zM10 150h180v10h-180z\" fill=\"var(--a2)\"/><path d=\"M0 160h200v10h-200zM0 170h10v10h-10zM20 170h10v10h-10zM40 170h10v10h-10zM60 170h10v10h-10zM80 170h10v10h-10zM100 170h10v10h-10zM120 170h10v10h-10zM140 170h10v10h-10zM160 170h10v10h-10zM180 170h10v10h-10zM0 180h200v10h-200z\" fill=\"var(--ink)\"/><path d=\"M36 14h18v6h-18zM30 20h6v6h-6zM54 20h6v6h-6zM66 20h12v6h-12zM18 26h12v6h-12zM60 26h6v6h-6zM78 26h6v6h-6zM12 32h6v6h-6zM78 32h6v6h-6zM12 38h6v6h-6zM78 38h6v6h-6zM18 44h60v6h-60z\" fill=\"var(--ink)\"/><path d=\"M36 20h18v6h-18zM30 26h30v6h-30zM66 26h12v6h-12zM18 32h60v6h-60zM18 38h60v6h-60z\" fill=\"var(--bg)\"/>",
+    "tags": [
+     "piksel",
+     "gunung",
+     "game"
+    ],
+    "fit": {
+     "styles": [
+      "brutal-cyber"
+     ],
+     "domains": [
+      "portofolio-developer",
+      "jasa-digital",
+      "artikel-teknologi"
+     ],
+     "chance": 0.5
+    }
+   },
+   {
+    "id": "pix-sudut-hati",
+    "label": "Hati & kilau piksel",
+    "slot": "corner",
+    "family": "piksel",
+    "viewBox": "0 0 200 200",
+    "svg": "<path d=\"M120 18h24v12h-24zM156 18h24v12h-24zM108 30h12v12h-12zM144 30h12v12h-12zM180 30h12v12h-12zM108 42h12v12h-12zM180 42h12v12h-12zM120 54h12v12h-12zM168 54h12v12h-12zM132 66h12v12h-12zM156 66h12v12h-12zM144 78h12v12h-12z\" fill=\"var(--ink)\"/><path d=\"M120 30h24v12h-24zM156 30h24v12h-24zM120 42h60v12h-60zM132 54h36v12h-36zM144 66h12v12h-12z\" fill=\"var(--a)\"/><path d=\"M78 40h6v6h-6zM78 46h6v6h-6zM66 52h12v6h-12zM84 52h12v6h-12zM78 58h6v6h-6zM78 64h6v6h-6z\" fill=\"var(--a2)\"/><path d=\"M78 52h6v6h-6z\" fill=\"var(--ink)\"/><path d=\"M178 118h5v5h-5zM178 123h5v5h-5zM168 128h10v5h-10zM183 128h10v5h-10zM178 133h5v5h-5zM178 138h5v5h-5z\" fill=\"var(--ink)\"/><path d=\"M178 128h5v5h-5z\" fill=\"var(--a2)\"/><path d=\"M96 120h8v8h-8z\" fill=\"var(--a)\"/>",
+    "tags": [
+     "piksel",
+     "hati"
+    ],
+    "fit": {
+     "styles": [
+      "brutal-cyber"
+     ],
+     "domains": [
+      "portofolio-developer",
+      "jasa-digital",
+      "artikel-teknologi"
+     ],
+     "chance": 0.6
+    }
+   },
+   {
+    "id": "dood-sudut-matahari",
+    "label": "Matahari coretan",
+    "slot": "corner",
+    "family": "doodle",
+    "viewBox": "0 0 200 200",
+    "svg": "<path d=\"M191 65.5L207.4 74.2\" stroke=\"var(--ink)\" stroke-width=\"3.5\" stroke-linecap=\"round\"/><path d=\"M176.5 91.4L184.6 108\" stroke=\"var(--ink)\" stroke-width=\"3.5\" stroke-linecap=\"round\"/><path d=\"M149.5 103.7L146.3 122\" stroke=\"var(--ink)\" stroke-width=\"3.5\" stroke-linecap=\"round\"/><path d=\"M120.4 97.8L107.1 110.7\" stroke=\"var(--ink)\" stroke-width=\"3.5\" stroke-linecap=\"round\"/><path d=\"M100.3 75.9L82 78.5\" stroke=\"var(--ink)\" stroke-width=\"3.5\" stroke-linecap=\"round\"/><path d=\"M97 46.5L80.6 37.8\" stroke=\"var(--ink)\" stroke-width=\"3.5\" stroke-linecap=\"round\"/><path d=\"M111.5 20.6L103.4 4\" stroke=\"var(--ink)\" stroke-width=\"3.5\" stroke-linecap=\"round\"/><path d=\"M138.5 8.3L141.7 -10\" stroke=\"var(--ink)\" stroke-width=\"3.5\" stroke-linecap=\"round\"/><path d=\"M167.6 14.2L180.9 1.3\" stroke=\"var(--ink)\" stroke-width=\"3.5\" stroke-linecap=\"round\"/><path d=\"M187.7 36.1L206 33.5\" stroke=\"var(--ink)\" stroke-width=\"3.5\" stroke-linecap=\"round\"/><path d=\"M181.2 56.8Q181.2 56.8 180.1 63Q179 69.2 173.7 76.4Q168.3 83.7 162.4 86.3Q156.4 88.9 150.3 89.2Q144.2 89.5 136.5 89.6Q128.8 89.7 121.9 84.8Q115 80 112.1 73.9Q109.3 67.9 109.5 61.3Q109.6 54.7 111 46.8Q112.4 39 116.3 34.3Q120.3 29.6 127.3 25.4Q134.3 21.3 141.5 19.4Q148.7 17.5 154.5 21.6Q160.2 25.7 165.6 30Q170.9 34.3 175 40.2Q179.2 46.1 179.7 54.3Q180.3 62.5 177.5 68.4Q174.7 74.2 170.2 79.9L165.7 85.5\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"3.5\" stroke-linecap=\"round\"/><path d=\"M62 30c8-6 18 2 12 10-6 8-18 0-10-8 6-6 18-4 22 4\" fill=\"none\" stroke=\"var(--a2)\" stroke-width=\"3\" stroke-linecap=\"round\"/><path transform=\"translate(104 124) scale(1.5)\" d=\"M0 4C-4-2-12 0-10 6-8 11 0 15 0 15S8 11 10 6C12 0 4-2 0 4Z\" fill=\"var(--a2)\" stroke=\"var(--ink)\" stroke-width=\"1.6\" stroke-linejoin=\"round\"/><path d=\"M168 134l4 10 10 2-8 6 2 10-8-6-8 6 2-10-8-6 10-2z\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"2.5\" stroke-linejoin=\"round\"/>",
+    "tags": [
+     "matahari",
+     "coretan",
+     "lucu"
+    ],
+    "fit": {
+     "templates": [
+      "pastel",
+      "kue",
+      "bakso"
+     ],
+     "domains": [
+      "jasa-les",
+      "profil-sekolah",
+      "umkm-kue-roti",
+      "umkm-petshop",
+      "artikel-resep",
+      "artikel-gaya-hidup",
+      "profil-komunitas",
+      "umkm-martabak"
+     ],
+     "chance": 0.6
+    }
+   },
+   {
+    "id": "dood-pita-lingkar",
+    "label": "Garis berputar",
+    "slot": "divider",
+    "family": "doodle",
+    "viewBox": "0 0 44 24",
+    "svg": "<path d=\"M0 18C8 18 10 6 18 6S24 18 18 18 14 6 26 6 36 18 44 18\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.4\" stroke-linecap=\"round\"/>",
+    "tags": [
+     "coretan",
+     "lingkar"
+    ],
+    "fit": {
+     "templates": [
+      "pastel",
+      "kue",
+      "bakso"
+     ],
+     "domains": [
+      "jasa-les",
+      "profil-sekolah",
+      "umkm-kue-roti",
+      "umkm-petshop",
+      "artikel-resep",
+      "artikel-gaya-hidup",
+      "profil-komunitas",
+      "umkm-martabak"
+     ],
+     "chance": 0.5
+    }
+   },
+   {
+    "id": "dood-motif-coretan",
+    "label": "Coretan kecil",
+    "slot": "pattern",
+    "family": "doodle",
+    "viewBox": "0 0 64 64",
+    "svg": "<path d=\"M8 14c3-4 8-1 6 3-2 4-8 2-6-3 2-4 9-4 11 1\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\"/><path d=\"M44 10l2 5 5 1-4 3 1 5-4-3-4 3 1-5-4-3 5-1z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linejoin=\"round\"/><path transform=\"translate(22 40) scale(.9)\" d=\"M0 4C-4-2-12 0-10 6-8 11 0 15 0 15S8 11 10 6C12 0 4-2 0 4Z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\"/><path d=\"M46 46q4-4 8 0t8 0\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\"/>",
+    "tags": [
+     "coretan",
+     "lucu"
+    ],
+    "fit": {
+     "templates": [
+      "pastel",
+      "kue",
+      "bakso"
+     ],
+     "domains": [
+      "jasa-les",
+      "profil-sekolah",
+      "umkm-kue-roti",
+      "umkm-petshop",
+      "artikel-resep",
+      "artikel-gaya-hidup",
+      "profil-komunitas",
+      "umkm-martabak"
+     ],
+     "chance": 0.45
+    }
+   },
+   {
+    "id": "dood-stiker-bintang",
+    "label": "Bintang coretan",
+    "slot": "badge",
+    "family": "doodle",
+    "viewBox": "0 0 120 120",
+    "svg": "<path d=\"M110.2 58.4Q110.2 58.4 108.9 67.5Q107.6 76.6 105.1 83.5Q102.5 90.4 97.3 94.8Q92.1 99.1 83.8 103.4Q75.6 107.7 67.8 107.5Q60 107.4 53.7 106.7Q47.5 106 40.3 104.7Q33.2 103.5 25.7 97.2Q18.3 91 14.5 84.9Q10.8 78.7 11 71.3Q11.2 63.9 12.3 55.1Q13.4 46.3 15.5 41Q17.7 35.6 23 29.2Q28.3 22.8 35.2 17.3Q42.1 11.9 48.6 10.8Q55.2 9.8 62.5 9.4Q69.9 8.9 78 12.7Q86.1 16.4 91.7 22.8Q97.3 29.2 100 34Q102.8 38.8 105.4 46.8Q108 54.9 109.7 62.8Q111.5 70.7 108.9 77.1L106.2 83.5\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linecap=\"round\"/><path d=\"M60 26l9 20 22 3-16 15 4 22-19-11-19 11 4-22-16-15 22-3z\" fill=\"var(--a2)\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linejoin=\"round\"/><path d=\"M30 34c-6 6-8 14-6 22\" fill=\"none\" stroke=\"var(--on)\" stroke-width=\"3\" stroke-linecap=\"round\"/>",
+    "tags": [
+     "bintang",
+     "coretan"
+    ],
+    "fit": {
+     "templates": [
+      "pastel",
+      "kue",
+      "bakso"
+     ],
+     "domains": [
+      "jasa-les",
+      "profil-sekolah",
+      "umkm-kue-roti",
+      "umkm-petshop",
+      "artikel-resep",
+      "artikel-gaya-hidup",
+      "profil-komunitas",
+      "umkm-martabak"
+     ],
+     "chance": 0.5
+    }
+   },
+   {
+    "id": "dood-seni-panah",
+    "label": "Panah coretan",
+    "slot": "art",
+    "family": "doodle",
+    "viewBox": "0 0 200 200",
+    "svg": "<path d=\"M30 150C40 90 90 60 150 56\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"5\" stroke-linecap=\"round\"/><path d=\"M128 36l24 20-22 22\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"5\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/><path d=\"M91.4 149.4Q91.4 149.4 89.4 155.9Q87.5 162.4 83.1 168.6Q78.7 174.7 73.9 175.8Q69 176.8 62.7 177.8Q56.4 178.9 49.1 177.5Q41.9 176 37.4 170.4Q32.9 164.8 32.1 159.7Q31.3 154.7 31.9 147.9Q32.6 141.1 34.9 135.1Q37.2 129.1 42.9 126.2Q48.6 123.3 55.6 120.7Q62.7 118 67.9 120.4Q73.1 122.7 77.3 128.1Q81.4 133.4 85.4 137.6Q89.3 141.8 90.2 149.2Q91.1 156.5 87.6 162.8L84 169\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"4\"/><path transform=\"translate(150 120) scale(2.4)\" d=\"M0 4C-4-2-12 0-10 6-8 11 0 15 0 15S8 11 10 6C12 0 4-2 0 4Z\" fill=\"var(--a2)\" stroke=\"var(--ink)\" stroke-width=\"1\" stroke-linejoin=\"round\"/><path d=\"M40 186c30-6 80-6 130 0\" fill=\"none\" stroke=\"var(--a)\" stroke-width=\"5\" stroke-linecap=\"round\"/>",
+    "tags": [
+     "panah",
+     "coretan"
+    ],
+    "fit": {
+     "templates": [
+      "pastel",
+      "kue",
+      "bakso"
+     ],
+     "domains": [
+      "jasa-les",
+      "profil-sekolah",
+      "umkm-kue-roti",
+      "umkm-petshop",
+      "artikel-resep",
+      "artikel-gaya-hidup",
+      "profil-komunitas",
+      "umkm-martabak"
+     ],
+     "chance": 0.5
+    }
+   },
+   {
+    "id": "ker-sudut-selotip",
+    "label": "Selotip washi",
+    "slot": "corner",
+    "family": "kertas",
+    "viewBox": "0 0 200 200",
+    "svg": "<path d=\"M120 20h70v86h-70z\" fill=\"var(--bg)\" stroke=\"var(--ink)\" stroke-width=\"2.5\" transform=\"rotate(8 155 63)\"/><path d=\"M132 36h44M132 50h44M132 64h30\" stroke=\"var(--ink)\" stroke-width=\"2\" transform=\"rotate(8 155 63)\" opacity=\".7\"/><g transform=\"translate(96 4) rotate(32)\"><path d=\"M0 0h110l-3 6 3 6-3 6 3 6H0l3-6-3-6 3-6z\" fill=\"var(--a)\" opacity=\".9\"/><path d=\"M8 2v20\" stroke=\"var(--bg)\" stroke-width=\"3\" opacity=\".5\"/><path d=\"M20 2v20\" stroke=\"var(--bg)\" stroke-width=\"3\" opacity=\".5\"/><path d=\"M32 2v20\" stroke=\"var(--bg)\" stroke-width=\"3\" opacity=\".5\"/><path d=\"M44 2v20\" stroke=\"var(--bg)\" stroke-width=\"3\" opacity=\".5\"/><path d=\"M56 2v20\" stroke=\"var(--bg)\" stroke-width=\"3\" opacity=\".5\"/><path d=\"M68 2v20\" stroke=\"var(--bg)\" stroke-width=\"3\" opacity=\".5\"/><path d=\"M80 2v20\" stroke=\"var(--bg)\" stroke-width=\"3\" opacity=\".5\"/><path d=\"M92 2v20\" stroke=\"var(--bg)\" stroke-width=\"3\" opacity=\".5\"/></g><g transform=\"translate(150 110) rotate(-24)\"><path d=\"M0 0h80l-3 5.5 3 5.5-3 5.5 3 5.5H0l3-5.5-3-5.5 3-5.5z\" fill=\"var(--a2)\" opacity=\".9\"/><path d=\"M8 2v18\" stroke=\"var(--bg)\" stroke-width=\"3\" opacity=\".5\"/><path d=\"M20 2v18\" stroke=\"var(--bg)\" stroke-width=\"3\" opacity=\".5\"/><path d=\"M32 2v18\" stroke=\"var(--bg)\" stroke-width=\"3\" opacity=\".5\"/><path d=\"M44 2v18\" stroke=\"var(--bg)\" stroke-width=\"3\" opacity=\".5\"/><path d=\"M56 2v18\" stroke=\"var(--bg)\" stroke-width=\"3\" opacity=\".5\"/><path d=\"M68 2v18\" stroke=\"var(--bg)\" stroke-width=\"3\" opacity=\".5\"/></g>",
+    "tags": [
+     "selotip",
+     "scrapbook"
+    ],
+    "fit": {
+     "templates": [
+      "kue",
+      "majalah",
+      "jurnal",
+      "hangat",
+      "elegan"
+     ],
+     "domains": [
+      "umkm-oleh-oleh",
+      "jasa-wedding-organizer",
+      "portofolio-penulis",
+      "artikel-gaya-hidup",
+      "artikel-umum",
+      "umkm-kue-roti",
+      "jasa-fotografi",
+      "jasa-konveksi"
+     ],
+     "kinds": [
+      "artikel"
+     ],
+     "chance": 0.6
+    }
+   },
+   {
+    "id": "ker-pita-jahitan",
+    "label": "Jahitan",
+    "slot": "divider",
+    "family": "kertas",
+    "viewBox": "0 0 32 20",
+    "svg": "<path d=\"M2 10h10M18 10h10\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\"/><path d=\"M13 6l4 8M17 6l-4 8\" stroke=\"var(--a)\" stroke-width=\"2\" stroke-linecap=\"round\"/>",
+    "tags": [
+     "jahit",
+     "kriya"
+    ],
+    "fit": {
+     "templates": [
+      "kue",
+      "majalah",
+      "jurnal",
+      "hangat",
+      "elegan"
+     ],
+     "domains": [
+      "umkm-oleh-oleh",
+      "jasa-wedding-organizer",
+      "portofolio-penulis",
+      "artikel-gaya-hidup",
+      "artikel-umum",
+      "umkm-kue-roti",
+      "jasa-fotografi",
+      "jasa-konveksi"
+     ],
+     "kinds": [
+      "artikel"
+     ],
+     "chance": 0.5
+    }
+   },
+   {
+    "id": "ker-pita-renda",
+    "label": "Renda",
+    "slot": "divider",
+    "family": "kertas",
+    "viewBox": "0 0 32 20",
+    "svg": "<path d=\"M0 0a8 8 0 0 0 16 0\" fill=\"var(--a)\"/><path d=\"M16 0a8 8 0 0 0 16 0\" fill=\"var(--a)\"/><circle cx=\"8\" cy=\"3\" r=\"2\" fill=\"var(--bg)\"/><circle cx=\"24\" cy=\"3\" r=\"2\" fill=\"var(--bg)\"/><path d=\"M0 14h32\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-dasharray=\"3 3\"/>",
+    "tags": [
+     "renda",
+     "manis"
+    ],
+    "fit": {
+     "templates": [
+      "kue",
+      "majalah",
+      "jurnal",
+      "hangat",
+      "elegan"
+     ],
+     "domains": [
+      "umkm-oleh-oleh",
+      "jasa-wedding-organizer",
+      "portofolio-penulis",
+      "artikel-gaya-hidup",
+      "artikel-umum",
+      "umkm-kue-roti",
+      "jasa-fotografi",
+      "jasa-konveksi"
+     ],
+     "kinds": [
+      "artikel"
+     ],
+     "chance": 0.5
+    }
+   },
+   {
+    "id": "ker-motif-linen",
+    "label": "Tekstur linen",
+    "slot": "pattern",
+    "family": "kertas",
+    "viewBox": "0 0 16 16",
+    "svg": "<path d=\"M0 4h16M0 12h16\" stroke=\"currentColor\" stroke-width=\"1\" opacity=\".7\"/><path d=\"M4 0v16M12 0v16\" stroke=\"currentColor\" stroke-width=\"1\" opacity=\".45\"/>",
+    "tags": [
+     "linen",
+     "kain"
+    ],
+    "fit": {
+     "templates": [
+      "kue",
+      "majalah",
+      "jurnal",
+      "hangat",
+      "elegan"
+     ],
+     "domains": [
+      "umkm-oleh-oleh",
+      "jasa-wedding-organizer",
+      "portofolio-penulis",
+      "artikel-gaya-hidup",
+      "artikel-umum",
+      "umkm-kue-roti",
+      "jasa-fotografi",
+      "jasa-konveksi"
+     ],
+     "kinds": [
+      "artikel"
+     ],
+     "chance": 0.45
+    }
+   },
+   {
+    "id": "ker-stiker-perangko",
+    "label": "Perangko",
+    "slot": "badge",
+    "family": "kertas",
+    "viewBox": "0 0 120 120",
+    "svg": "<rect x=\"10\" y=\"10\" width=\"100\" height=\"100\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"2\"/><circle cx=\"10\" cy=\"10\" r=\"4.5\" fill=\"var(--bg)\"/><circle cx=\"10\" cy=\"110\" r=\"4.5\" fill=\"var(--bg)\"/><circle cx=\"22.5\" cy=\"10\" r=\"4.5\" fill=\"var(--bg)\"/><circle cx=\"22.5\" cy=\"110\" r=\"4.5\" fill=\"var(--bg)\"/><circle cx=\"35\" cy=\"10\" r=\"4.5\" fill=\"var(--bg)\"/><circle cx=\"35\" cy=\"110\" r=\"4.5\" fill=\"var(--bg)\"/><circle cx=\"47.5\" cy=\"10\" r=\"4.5\" fill=\"var(--bg)\"/><circle cx=\"47.5\" cy=\"110\" r=\"4.5\" fill=\"var(--bg)\"/><circle cx=\"60\" cy=\"10\" r=\"4.5\" fill=\"var(--bg)\"/><circle cx=\"60\" cy=\"110\" r=\"4.5\" fill=\"var(--bg)\"/><circle cx=\"72.5\" cy=\"10\" r=\"4.5\" fill=\"var(--bg)\"/><circle cx=\"72.5\" cy=\"110\" r=\"4.5\" fill=\"var(--bg)\"/><circle cx=\"85\" cy=\"10\" r=\"4.5\" fill=\"var(--bg)\"/><circle cx=\"85\" cy=\"110\" r=\"4.5\" fill=\"var(--bg)\"/><circle cx=\"97.5\" cy=\"10\" r=\"4.5\" fill=\"var(--bg)\"/><circle cx=\"97.5\" cy=\"110\" r=\"4.5\" fill=\"var(--bg)\"/><circle cx=\"110\" cy=\"10\" r=\"4.5\" fill=\"var(--bg)\"/><circle cx=\"110\" cy=\"110\" r=\"4.5\" fill=\"var(--bg)\"/><circle cx=\"10\" cy=\"22.5\" r=\"4.5\" fill=\"var(--bg)\"/><circle cx=\"110\" cy=\"22.5\" r=\"4.5\" fill=\"var(--bg)\"/><circle cx=\"10\" cy=\"35\" r=\"4.5\" fill=\"var(--bg)\"/><circle cx=\"110\" cy=\"35\" r=\"4.5\" fill=\"var(--bg)\"/><circle cx=\"10\" cy=\"47.5\" r=\"4.5\" fill=\"var(--bg)\"/><circle cx=\"110\" cy=\"47.5\" r=\"4.5\" fill=\"var(--bg)\"/><circle cx=\"10\" cy=\"60\" r=\"4.5\" fill=\"var(--bg)\"/><circle cx=\"110\" cy=\"60\" r=\"4.5\" fill=\"var(--bg)\"/><circle cx=\"10\" cy=\"72.5\" r=\"4.5\" fill=\"var(--bg)\"/><circle cx=\"110\" cy=\"72.5\" r=\"4.5\" fill=\"var(--bg)\"/><circle cx=\"10\" cy=\"85\" r=\"4.5\" fill=\"var(--bg)\"/><circle cx=\"110\" cy=\"85\" r=\"4.5\" fill=\"var(--bg)\"/><circle cx=\"10\" cy=\"97.5\" r=\"4.5\" fill=\"var(--bg)\"/><circle cx=\"110\" cy=\"97.5\" r=\"4.5\" fill=\"var(--bg)\"/><rect x=\"22\" y=\"22\" width=\"76\" height=\"76\" fill=\"var(--bg)\" stroke=\"var(--ink)\" stroke-width=\"2\"/><circle cx=\"76\" cy=\"44\" r=\"10\" fill=\"var(--a2)\"/><path d=\"M22 92l24-30 16 18 12-12 24 24z\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"2\" stroke-linejoin=\"round\"/>",
+    "tags": [
+     "perangko",
+     "kartu pos"
+    ],
+    "fit": {
+     "templates": [
+      "kue",
+      "majalah",
+      "jurnal",
+      "hangat",
+      "elegan"
+     ],
+     "domains": [
+      "umkm-oleh-oleh",
+      "jasa-wedding-organizer",
+      "portofolio-penulis",
+      "artikel-gaya-hidup",
+      "artikel-umum",
+      "umkm-kue-roti",
+      "jasa-fotografi",
+      "jasa-konveksi"
+     ],
+     "kinds": [
+      "artikel"
+     ],
+     "chance": 0.5
+    }
+   },
+   {
+    "id": "ker-seni-amplop",
+    "label": "Amplop & surat",
+    "slot": "art",
+    "family": "kertas",
+    "viewBox": "0 0 200 200",
+    "svg": "<rect x=\"44\" y=\"26\" width=\"112\" height=\"120\" fill=\"var(--bg)\" stroke=\"var(--ink)\" stroke-width=\"3\" transform=\"rotate(-6 100 86)\"/><path d=\"M62 52h70M62 68h70M62 84h50\" stroke=\"var(--ink)\" stroke-width=\"3\" stroke-linecap=\"round\" transform=\"rotate(-6 100 86)\" opacity=\".7\"/><path d=\"M20 96h160v90H20z\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"4\" stroke-linejoin=\"round\"/><path d=\"M20 96l80 56 80-56\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"4\" stroke-linejoin=\"round\"/><circle cx=\"100\" cy=\"150\" r=\"16\" fill=\"var(--a2)\" stroke=\"var(--ink)\" stroke-width=\"3\"/><path transform=\"translate(100 144) scale(0.9)\" d=\"M0 4C-4-2-12 0-10 6-8 11 0 15 0 15S8 11 10 6C12 0 4-2 0 4Z\" fill=\"var(--bg)\" stroke=\"var(--ink)\" stroke-width=\"2.7\" stroke-linejoin=\"round\"/>",
+    "tags": [
+     "surat",
+     "undangan"
+    ],
+    "fit": {
+     "templates": [
+      "kue",
+      "majalah",
+      "jurnal",
+      "hangat",
+      "elegan"
+     ],
+     "domains": [
+      "umkm-oleh-oleh",
+      "jasa-wedding-organizer",
+      "portofolio-penulis",
+      "artikel-gaya-hidup",
+      "artikel-umum",
+      "umkm-kue-roti",
+      "jasa-fotografi",
+      "jasa-konveksi"
+     ],
+     "kinds": [
+      "artikel"
+     ],
+     "chance": 0.5
+    }
+   },
+   {
+    "id": "ker-sudut-sobekan",
+    "label": "Kertas sobek",
+    "slot": "corner",
+    "family": "kertas",
+    "viewBox": "0 0 200 200",
+    "svg": "<path d=\"M64 0L70 12 62 22 74 34 66 46 80 56 74 70 90 76 88 92 104 94 108 110 124 106 132 122 146 114 158 128 170 116 186 126 200 116V0Z\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"2.5\" stroke-linejoin=\"round\"/><path d=\"M110 0 114 10 108 20 118 28 114 40 126 46 124 58 138 60 140 74 154 70 160 82 172 76 182 86 200 78V0Z\" fill=\"var(--a2)\" stroke=\"var(--ink)\" stroke-width=\"2\" stroke-linejoin=\"round\" opacity=\".95\"/>",
+    "tags": [
+     "sobek",
+     "kolase"
+    ],
+    "fit": {
+     "templates": [
+      "kue",
+      "majalah",
+      "jurnal",
+      "hangat",
+      "elegan"
+     ],
+     "domains": [
+      "umkm-oleh-oleh",
+      "jasa-wedding-organizer",
+      "portofolio-penulis",
+      "artikel-gaya-hidup",
+      "artikel-umum",
+      "umkm-kue-roti",
+      "jasa-fotografi",
+      "jasa-konveksi"
+     ],
+     "kinds": [
+      "artikel"
+     ],
+     "chance": 0.6
+    }
+   },
+   {
+    "id": "pan-sudut-matahari",
+    "label": "Matahari & ombak",
+    "slot": "corner",
+    "family": "pantai",
+    "viewBox": "0 0 200 200",
+    "svg": "<circle cx=\"150\" cy=\"54\" r=\"34\" fill=\"var(--a2)\"/><path d=\"M194 54L208 54\" stroke=\"var(--a2)\" stroke-width=\"5\" stroke-linecap=\"round\"/><path d=\"M188.1 76L200.2 83\" stroke=\"var(--a2)\" stroke-width=\"5\" stroke-linecap=\"round\"/><path d=\"M172 92.1L179 104.2\" stroke=\"var(--a2)\" stroke-width=\"5\" stroke-linecap=\"round\"/><path d=\"M150 98L150 112\" stroke=\"var(--a2)\" stroke-width=\"5\" stroke-linecap=\"round\"/><path d=\"M128 92.1L121 104.2\" stroke=\"var(--a2)\" stroke-width=\"5\" stroke-linecap=\"round\"/><path d=\"M111.9 76L99.8 83\" stroke=\"var(--a2)\" stroke-width=\"5\" stroke-linecap=\"round\"/><path d=\"M106 54L92 54\" stroke=\"var(--a2)\" stroke-width=\"5\" stroke-linecap=\"round\"/><path d=\"M111.9 32L99.8 25\" stroke=\"var(--a2)\" stroke-width=\"5\" stroke-linecap=\"round\"/><path d=\"M128 15.9L121 3.8\" stroke=\"var(--a2)\" stroke-width=\"5\" stroke-linecap=\"round\"/><path d=\"M150 10L150 -4\" stroke=\"var(--a2)\" stroke-width=\"5\" stroke-linecap=\"round\"/><path d=\"M172 15.9L179 3.8\" stroke=\"var(--a2)\" stroke-width=\"5\" stroke-linecap=\"round\"/><path d=\"M188.1 32L200.2 25\" stroke=\"var(--a2)\" stroke-width=\"5\" stroke-linecap=\"round\"/><path d=\"M80 140c15-12 30-12 45 0s30 12 45 0 30-12 45 0\" fill=\"none\" stroke=\"var(--a)\" stroke-width=\"6\" stroke-linecap=\"round\"/><path d=\"M100 164c15-12 30-12 45 0s30 12 45 0\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"4\" stroke-linecap=\"round\"/>",
+    "tags": [
+     "pantai",
+     "matahari"
+    ],
+    "fit": {
+     "domains": [
+      "jasa-kos-penginapan",
+      "event-lari",
+      "jasa-rental-kendaraan",
+      "umkm-frozen-food",
+      "artikel-gaya-hidup"
+     ],
+     "chance": 0.6
+    }
+   },
+   {
+    "id": "pan-stiker-pelampung",
+    "label": "Pelampung",
+    "slot": "badge",
+    "family": "pantai",
+    "viewBox": "0 0 120 120",
+    "svg": "<circle cx=\"60\" cy=\"60\" r=\"52\" fill=\"var(--bg)\" stroke=\"var(--ink)\" stroke-width=\"3\"/><circle cx=\"60\" cy=\"60\" r=\"24\" fill=\"var(--bg)\" stroke=\"var(--ink)\" stroke-width=\"3\"/><path d=\"M83.9 52.6L108.7 44.9A51 51 0 0 1 108.7 75.1L83.9 67.4A25 25 0 0 0 83.9 52.6Z\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"2.5\"/><path d=\"M67.4 83.9L75.1 108.7A51 51 0 0 1 44.9 108.7L52.6 83.9A25 25 0 0 0 67.4 83.9Z\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"2.5\"/><path d=\"M36.1 67.4L11.3 75.1A51 51 0 0 1 11.3 44.9L36.1 52.6A25 25 0 0 0 36.1 67.4Z\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"2.5\"/><path d=\"M52.6 36.1L44.9 11.3A51 51 0 0 1 75.1 11.3L67.4 36.1A25 25 0 0 0 52.6 36.1Z\" fill=\"var(--a)\" stroke=\"var(--ink)\" stroke-width=\"2.5\"/>",
+    "tags": [
+     "pelampung",
+     "laut"
+    ],
+    "fit": {
+     "domains": [
+      "jasa-kos-penginapan",
+      "event-lari",
+      "jasa-rental-kendaraan",
+      "umkm-frozen-food",
+      "artikel-gaya-hidup"
+     ],
+     "chance": 0.5
+    }
+   },
+   {
+    "id": "pan-seni-nyiur",
+    "label": "Nyiur melambai",
+    "slot": "art",
+    "family": "pantai",
+    "viewBox": "0 0 200 200",
+    "svg": "<path d=\"M0 170c25-14 50-14 75 0s50 14 75 0 37-14 50-7V200H0Z\" fill=\"var(--a)\"/><path d=\"M110 172C112 130 104 92 86 62\" fill=\"none\" stroke=\"var(--ink)\" stroke-width=\"7\" stroke-linecap=\"round\"/><path d=\"M86 62C63.6 64 41.2 68 30 72\" fill=\"none\" stroke=\"var(--a2)\" stroke-width=\"9\" stroke-linecap=\"round\"/><path d=\"M86 62C70 56 54 44 46 32\" fill=\"none\" stroke=\"var(--a2)\" stroke-width=\"9\" stroke-linecap=\"round\"/><path d=\"M86 62C90 52.4 94 33.2 96 14\" fill=\"none\" stroke=\"var(--a2)\" stroke-width=\"9\" stroke-linecap=\"round\"/><path d=\"M86 62C107.6 58 129.2 50 140 42\" fill=\"none\" stroke=\"var(--a2)\" stroke-width=\"9\" stroke-linecap=\"round\"/><path d=\"M86 62C109.2 66.4 132.4 75.2 144 84\" fill=\"none\" stroke=\"var(--a2)\" stroke-width=\"9\" stroke-linecap=\"round\"/><circle cx=\"92\" cy=\"72\" r=\"7\" fill=\"var(--ink)\"/><circle cx=\"80\" cy=\"74\" r=\"6\" fill=\"var(--ink)\"/><circle cx=\"160\" cy=\"36\" r=\"16\" fill=\"var(--a)\"/>",
+    "tags": [
+     "kelapa",
+     "pantai",
+     "tropis"
+    ],
+    "fit": {
+     "domains": [
+      "jasa-kos-penginapan",
+      "event-lari",
+      "jasa-rental-kendaraan",
+      "umkm-frozen-food",
+      "artikel-gaya-hidup"
+     ],
+     "chance": 0.5
+    }
+   },
+   {
+    "id": "pan-motif-kerang",
+    "label": "Kerang",
+    "slot": "pattern",
+    "family": "pantai",
+    "viewBox": "0 0 40 40",
+    "svg": "<path d=\"M8 22a10 10 0 0 1 20 0z\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\"/><path d=\"M18 22l-6-9M18 22V11M18 22l6-9\" stroke=\"currentColor\" stroke-width=\"1.2\"/><circle cx=\"32\" cy=\"34\" r=\"1.8\" fill=\"currentColor\"/>",
+    "tags": [
+     "kerang",
+     "pantai"
+    ],
+    "fit": {
+     "domains": [
+      "jasa-kos-penginapan",
+      "event-lari",
+      "jasa-rental-kendaraan",
+      "umkm-frozen-food",
+      "artikel-gaya-hidup"
      ],
      "chance": 0.45
     }

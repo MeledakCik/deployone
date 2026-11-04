@@ -55,6 +55,9 @@ import {
 } from "@/lib/ai-site-images";
 import { assignPhotos, type PhotoDraft } from "@/lib/ai-site-photos";
 import { remapImages } from "@/lib/ai-site-edit";
+import { ICON_STYLES, isIconStyle, templateIconStyle, treatIcon, type IconStyle } from "@/lib/site-assets";
+import { LUCIDE } from "@/lib/lucide-icons";
+import { pixelIcon } from "@/lib/lucide-pixel";
 import { Field, api, checkCls, chipCls, ChipLabel, subheadCls, swatchTileCls, ON_MIST, hintCls, isHex, labelCls, timeLeftLabel, ttlLabel, useReducedMotion } from "./ai-site/shared";
 import { PreviewFrame } from "./ai-site/ScaledFrame";
 import { PaletteEditor } from "./ai-site/PaletteEditor";
@@ -119,6 +122,9 @@ interface Draft {
   shopOn: boolean;
   variant: number;
   hadImages: boolean;
+  /** Ditambahkan belakangan: draf lama tidak punya (tetap v: 1). */
+  iconOpt?: unknown;
+  ornOff?: unknown;
 }
 
 function readDraft(): Draft | null {
@@ -179,6 +185,8 @@ interface Snapshot {
   decorOpt: DecorId | null;
   bgOpt: string | null;
   fontsOpt: FontRoles;
+  iconOpt: IconStyle | null;
+  ornOff: boolean;
   variant: number;
   shopOn: boolean;
 }
@@ -264,6 +272,10 @@ export function AiSiteView() {
   const [decorOpt, setDecorOpt] = React.useState<DecorId | null>(null);
   // null = ikut warna latar bawaan Template; nilai terisi = latar kustom (mode "Atur manual")
   const [bgOpt, setBgOpt] = React.useState<string | null>(null);
+  // null = ikut gaya ikon pilihan mesin / ciri khas Template; nilai terisi = gaya ikon pilihan pengguna
+  const [iconOpt, setIconOpt] = React.useState<IconStyle | null>(null);
+  // true = sembunyikan ornamen dari paket elemen (content.ornaments)
+  const [ornOff, setOrnOff] = React.useState(false);
   // null per peran = ikut Gaya desain/Template (Sub-judul: ikut Judul lebih dulu, lihat lib/ai-site-templates.ts)
   const [fontsOpt, setFontsOpt] = React.useState<FontRoles>(EMPTY_FONTS);
   // Cara menampilkan kartu "2. Tampilan": "ai" = ringkas (Template + Warna, tata letak disembunyikan),
@@ -347,6 +359,8 @@ export function AiSiteView() {
             if (validDecor(d.decorOpt)) setDecorOpt(d.decorOpt);
             if (validBg(d.bgOpt)) setBgOpt(d.bgOpt);
             if (validFonts(d.fontsOpt)) setFontsOpt(d.fontsOpt);
+            if (isIconStyle(d.iconOpt)) setIconOpt(d.iconOpt);
+            if (d.ornOff === true) setOrnOff(true);
             if (d.tampilanMode === "ai" || d.tampilanMode === "manual") setTampilanMode(d.tampilanMode);
             if (typeof d.shopOn === "boolean") setShopOn(d.shopOn);
             if (typeof d.variant === "number") setVariant(d.variant);
@@ -397,12 +411,26 @@ export function AiSiteView() {
   );
   // Gaya hasil latihan (content.look) dipakai selama pengguna belum memilih Template/warna/gaya/latar sendiri.
   const lookOn = !!content?.look && !template && !palette && !styleOpt && !bgOpt;
+  // Gaya ikon yang sedang tampil (sama dengan aturan di buildSite): manual > pilihan mesin > ciri khas Template.
+  const iconEff: IconStyle =
+    iconOpt ?? (content?.iconStyle ? (lookOn || tplId === content.template ? content.iconStyle : templateIconStyle(tplId)) : "garis");
+  // Contoh ikon di pilihan "Gaya ikon": ikon usaha ini sendiri (bawaan atau impor), selain itu ikon toko.
+  const iconGlyph = React.useCallback(
+    (style: IconStyle): string => {
+      const own = content?.brandIcon && (LUCIDE[content.brandIcon] || content.icons?.[content.brandIcon]) ? content.brandIcon : "store";
+      const inner = LUCIDE[own] ?? content?.icons?.[own] ?? LUCIDE.store;
+      const alt = style === "garis" ? undefined : (content?.iconAlt?.[style]?.[own] ?? (style === "piksel" ? pixelIcon(own) : undefined));
+      return treatIcon(inner, style, alt);
+    },
+    [content],
+  );
   const renderOpts = React.useMemo<RenderOpts>(
     () => ({
       hero: heroEff, feat: featEff, shop: shopOn, palette: palette ?? undefined,
       style: styleOpt ?? undefined, decor: decorOpt ?? undefined, bg: bgOpt ?? undefined, fonts: fontsEff, images, look: lookOn,
+      iconStyle: iconOpt ?? undefined, ornaments: !ornOff,
     }),
-    [heroEff, featEff, shopOn, palette, styleOpt, decorOpt, bgOpt, fontsEff, images, lookOn],
+    [heroEff, featEff, shopOn, palette, styleOpt, decorOpt, bgOpt, fontsEff, images, lookOn, iconOpt, ornOff],
   );
   const html = React.useMemo(
     () => renderSite(previewContent, tplId, accentEff, renderOpts),
@@ -426,6 +454,8 @@ export function AiSiteView() {
       styleOpt !== null ||
       decorOpt !== null ||
       bgOpt !== null ||
+      iconOpt !== null ||
+      ornOff ||
       fontsOpt.title.family !== null ||
       fontsOpt.title.weight !== null ||
       fontsOpt.sub.family !== null ||
@@ -464,7 +494,7 @@ export function AiSiteView() {
         }
         const d: Draft = {
           v: 1, prompt, kindPick, content, template, palette, heroOpt, featOpt, styleOpt, decorOpt, bgOpt, fontsOpt, tampilanMode, shopOn, variant,
-          hadImages: Object.keys(images).length > 0,
+          hadImages: Object.keys(images).length > 0, iconOpt, ornOff,
         };
         localStorage.setItem(DRAFT_KEY, JSON.stringify(d));
       } catch {
@@ -472,7 +502,7 @@ export function AiSiteView() {
       }
     }, 600);
     return () => window.clearTimeout(t);
-  }, [hydrated, prompt, kindPick, content, template, palette, heroOpt, featOpt, styleOpt, decorOpt, bgOpt, fontsOpt, tampilanMode, shopOn, variant, images]);
+  }, [hydrated, prompt, kindPick, content, template, palette, heroOpt, featOpt, styleOpt, decorOpt, bgOpt, fontsOpt, tampilanMode, shopOn, variant, images, iconOpt, ornOff]);
 
   // Peringatkan sebelum menutup halaman bila ada gambar/foto yang belum disimpan (tidak ikut draf).
   React.useEffect(() => {
@@ -522,7 +552,7 @@ export function AiSiteView() {
   /* ---------- riwayat / urungkan ---------- */
 
   function snapshot(): Snapshot | null {
-    return content ? { content, images, template, palette, heroOpt, featOpt, styleOpt, decorOpt, bgOpt, fontsOpt, variant, shopOn } : null;
+    return content ? { content, images, template, palette, heroOpt, featOpt, styleOpt, decorOpt, bgOpt, fontsOpt, iconOpt, ornOff, variant, shopOn } : null;
   }
 
   function pushHistory() {
@@ -544,6 +574,8 @@ export function AiSiteView() {
     setDecorOpt(last.decorOpt);
     setBgOpt(last.bgOpt);
     setFontsOpt(last.fontsOpt);
+    setIconOpt(last.iconOpt);
+    setOrnOff(last.ornOff);
     setVariant(last.variant);
     setShopOn(last.shopOn);
     setPublished(null);
@@ -735,7 +767,7 @@ export function AiSiteView() {
       // Gaya visual dari mesin (mis. brutalism) mengatur warna, huruf, garis, dan tata letak seluruh halaman.
       // Pilihan tampilan manual yang tersisa dari sebelumnya (Template, warna, gaya, latar, huruf) akan mematikannya,
       // jadi dilepas supaya gaya baru benar-benar terlihat di semua bagian.
-      const hadManual = !!(template || palette || styleOpt || bgOpt || decorOpt || heroOpt || fontsOpt.title.family || fontsOpt.sub.family || fontsOpt.body.family);
+      const hadManual = !!(template || palette || styleOpt || bgOpt || decorOpt || heroOpt || iconOpt || fontsOpt.title.family || fontsOpt.sub.family || fontsOpt.body.family);
       if (again || r.content.look) {
         setTemplate(null);
         setPalette(null);
@@ -745,7 +777,10 @@ export function AiSiteView() {
         setDecorOpt(null);
         setBgOpt(null);
         setFontsOpt(EMPTY_FONTS);
+        setIconOpt(null);
       }
+      // Hasil baru membawa ornamen baru: tampilkan lagi.
+      setOrnOff(false);
       if (r.content.look && hadManual && !again) showToast(`Gaya ${r.content.look.name} dipakai. Pilihan tampilan manual sebelumnya dilepas.`);
       pendingFocusRef.current = true;
       say("Website selesai dibuat. Pratinjau sudah diperbarui.");
@@ -765,6 +800,7 @@ export function AiSiteView() {
             decor: (again ? null : decorOpt) ?? undefined,
             bg: (again ? null : bgOpt) ?? undefined,
             look: again || !(template || palette || styleOpt || bgOpt),
+            iconStyle: (again ? null : iconOpt) ?? undefined,
             fonts: again
               ? undefined
               : {
@@ -847,6 +883,9 @@ export function AiSiteView() {
       }
       if (r.changed.includes("hero")) setHeroOpt(null);
       if (r.changed.includes("feat")) setFeatOpt(null);
+      // Gaya ikon / ornamen dari perintah: lepas pilihan manual yang menutupinya.
+      if (r.changed.includes("iconStyle")) setIconOpt(null);
+      if (r.changed.includes("ornaments")) setOrnOff(false);
       setPublished(null);
       setEditText("");
       showToast(r.note || "Perubahan diterapkan.");
@@ -879,6 +918,8 @@ export function AiSiteView() {
     setDecorOpt(null);
     setBgOpt(null);
     setFontsOpt(EMPTY_FONTS);
+    setIconOpt(null);
+    setOrnOff(false);
     setTampilanMode("ai");
     setShopOn(true);
     setVariant(0);
@@ -1594,6 +1635,71 @@ export function AiSiteView() {
                   </div>
                   <p className={`mt-2.5 leading-relaxed ${hintCls}`}>
                     Hiasan murni di belakang judul, tidak membungkus teks/gambar — aman dipadukan dengan Gaya desain mana pun.
+                  </p>
+                </div>
+              )}
+
+              {tampilanMode === "manual" && content && (
+                <div>
+                  <div className="mb-2 flex items-center justify-between gap-2">
+                    <span className={subheadCls}>Gaya ikon</span>
+                    {iconOpt && (
+                      <button type="button" onClick={() => setIconOpt(null)} className="text-[13px] text-text-muted underline max-md:min-h-[40px]">
+                        Ikuti saran AI
+                      </button>
+                    )}
+                  </div>
+                  <div role="radiogroup" aria-label="Pilih gaya ikon" className="flex flex-wrap gap-1.5">
+                    {ICON_STYLES.map((st) => (
+                      <button
+                        key={st.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={iconEff === st.id}
+                        onClick={() => setIconOpt(st.id)}
+                        title={st.desc}
+                        className={cn(chipCls(iconEff === st.id, true), "inline-flex items-center gap-1.5")}
+                      >
+                        <svg
+                          viewBox="0 0 24 24"
+                          width="16"
+                          height="16"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          aria-hidden
+                          className="shrink-0"
+                          dangerouslySetInnerHTML={{ __html: iconGlyph(st.id) }}
+                        />
+                        <ChipLabel selected={iconEff === st.id}>{st.name}</ChipLabel>
+                      </button>
+                    ))}
+                  </div>
+                  <p className={`mt-2.5 leading-relaxed ${hintCls}`}>
+                    {iconOpt ? "Pilihanmu" : content.iconStyle ? "Saran AI" : "Bawaan"}: <b className="font-semibold text-text">{ICON_STYLES.find((x) => x.id === iconEff)?.name}</b> ·{" "}
+                    {ICON_STYLES.find((x) => x.id === iconEff)?.desc} Berlaku untuk semua ikon, termasuk katalog produk.
+                  </p>
+                </div>
+              )}
+
+              {tampilanMode === "manual" && !!content?.ornaments?.length && (
+                <div>
+                  <div className={`mb-2 ${subheadCls}`}>Ornamen</div>
+                  <div role="radiogroup" aria-label="Tampilkan ornamen" className="flex flex-wrap gap-1.5">
+                    {[
+                      { on: true, label: "Tampilkan" },
+                      { on: false, label: "Sembunyikan" },
+                    ].map((o) => (
+                      <button key={o.label} type="button" role="radio" aria-checked={!ornOff === o.on} onClick={() => setOrnOff(!o.on)} className={chipCls(!ornOff === o.on, true)}>
+                        <ChipLabel selected={!ornOff === o.on}>{o.label}</ChipLabel>
+                      </button>
+                    ))}
+                  </div>
+                  <p className={`mt-2.5 leading-relaxed ${hintCls}`}>
+                    {content.ornaments.length} ornamen dari paket elemen{content.ornFamily ? ` keluarga ${content.ornFamily}` : ""}. Untuk keluarga lain, ketik di kotak ubah:
+                    &ldquo;hiasan lain&rdquo; atau &ldquo;hiasan batik&rdquo;.
                   </p>
                 </div>
               )}

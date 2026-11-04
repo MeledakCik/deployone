@@ -14,8 +14,15 @@ interface EngineStatus {
   recent: { prompt: string; kind: string; brand: string; at: number | null }[];
   imported: { id: string; kind: string; label: string; prompts: number; items: number; replacesBundled: boolean }[];
   styles?: { id: string; label: string; desc: string; palettes: string[][]; keywords: string[]; imported: boolean; chance: number }[];
-  iconPacks?: { id: string; label: string; license: string; count: number; sample: { name: string; svg: string }[] }[];
-  elementPacks?: { id: string; label: string; license: string; count: number; sample: { id: string; label: string; slot: string; vb: string; svg: string }[] }[];
+  iconPacks?: { id: string; label: string; license: string; variant?: string | null; count: number; sample: { name: string; svg: string }[] }[];
+  elementPacks?: {
+    id: string;
+    label: string;
+    license: string;
+    count: number;
+    families?: { id: string; label: string; iconStyles: string[]; count: number }[];
+    sample: { id: string; label: string; slot: string; family?: string; vb: string; svg: string }[];
+  }[];
   domains: { id: string; kind: string; label: string; prompts: number; items: number; generic: boolean; imported: boolean }[];
 }
 
@@ -259,15 +266,31 @@ export function EngineTab({ toast }: { toast: (m: string) => void }) {
       </Card>
 
       {!!data.iconPacks?.length && (
-        <Card title="Paket ikon" action={<Badge tone="neutral">{data.iconPacks.reduce((n, p) => n + p.count, 0)} ikon</Badge>}>
+        <Card
+          title="Paket ikon"
+          action={
+            <Badge tone="neutral">
+              {data.iconPacks.filter((p) => !p.variant).reduce((n, p) => n + p.count, 0)} ikon
+              {data.iconPacks.some((p) => p.variant) ? ` · ${data.iconPacks.filter((p) => p.variant).reduce((n, p) => n + p.count, 0)} varian` : ""}
+            </Badge>
+          }
+        >
           <ul className="divide-y divide-[var(--surface-line)]">
             {data.iconPacks.map((p) => (
               <li key={p.id} className="space-y-3 px-6 py-4 text-[14px]">
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
-                    <p className="font-medium">{p.label}</p>
+                    <p className="font-medium">
+                      {p.label}
+                      {p.variant ? (
+                        <span className="ml-2 align-middle">
+                          <Badge tone="neutral">varian {p.variant}</Badge>
+                        </span>
+                      ) : null}
+                    </p>
                     <p className="text-[13px] text-text-muted">
-                      <code>{p.id}</code> · {p.count} ikon{p.license ? ` · ${p.license}` : ""}
+                      <code>{p.id}</code> · {p.count} {p.variant ? "gambar" : "ikon"}
+                      {p.license ? ` · ${p.license}` : ""}
                     </p>
                   </div>
                   <Btn variant="danger" aria-label={`Hapus paket ikon ${p.label}`} busy={busy === `rm:${p.id}`} onClick={() => removePack(p.id, "icons")}>
@@ -277,7 +300,7 @@ export function EngineTab({ toast }: { toast: (m: string) => void }) {
                 <ul className="grid grid-cols-[repeat(auto-fill,minmax(64px,1fr))] gap-2" aria-label={`Contoh ikon ${p.label}`}>
                   {p.sample.map((ic) => (
                     <li key={ic.name} className="flex flex-col items-center gap-1 rounded-[12px] bg-[var(--chip-bg)] px-1 py-2 text-center" title={ic.name}>
-                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden dangerouslySetInnerHTML={{ __html: safeSvg(ic.svg, 3000) }} />
+                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden dangerouslySetInnerHTML={{ __html: safeSvg(ic.svg, 4000) }} />
                       <span className="w-full truncate text-[10.5px] text-text-muted">{ic.name}</span>
                     </li>
                   ))}
@@ -286,7 +309,8 @@ export function EngineTab({ toast }: { toast: (m: string) => void }) {
             ))}
           </ul>
           <p className="px-6 pb-5 text-[13px] text-text-muted">
-            Mesin mempelajari kata kunci tiap ikon. Produk, layanan, atau usaha yang namanya memuat kata itu otomatis memakai ikon tersebut.
+            Mesin mempelajari kata kunci tiap ikon. Produk, layanan, atau usaha yang namanya memuat kata itu otomatis memakai ikon tersebut. Paket varian berisi gambar
+            pengganti untuk satu gaya ikon (mis. piksel); website bergaya itu memakainya bila ada.
           </p>
         </Card>
       )}
@@ -307,23 +331,36 @@ export function EngineTab({ toast }: { toast: (m: string) => void }) {
                     <Trash2 size={13} />
                   </Btn>
                 </div>
-                <ul className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-2" aria-label={`Contoh elemen ${p.label}`}>
-                  {p.sample.map((el) => (
-                    <li key={el.id} className="flex flex-col gap-1.5 rounded-[12px] bg-[var(--chip-bg)] p-2" title={el.id}>
-                      <span className="grid h-16 place-items-center overflow-hidden text-text [--a:#7c5cff] [--a2:#c6f432] [--ink:currentColor] [--bg:var(--surface)] [--fg:currentColor] [--on:#fff]">
-                        <svg viewBox={el.vb} className="max-h-16 w-full" aria-hidden dangerouslySetInnerHTML={{ __html: safeSvg(el.svg, 12000) }} />
-                      </span>
-                      <span className="truncate text-[11.5px] font-medium">{el.label}</span>
-                      <span className="text-[10.5px] text-text-muted">{el.slot}</span>
-                    </li>
-                  ))}
-                </ul>
+                {(p.families?.length ? p.families : [{ id: p.id, label: p.label, iconStyles: [], count: p.count }]).map((fam) => {
+                  const els = p.sample.filter((el) => (el.family ?? p.id) === fam.id);
+                  if (!els.length) return null;
+                  return (
+                    <div key={fam.id} className="space-y-2">
+                      <p className="text-[13px] text-text-muted">
+                        <b className="font-semibold text-text">{fam.label}</b> · {fam.count} elemen
+                        {fam.iconStyles.length ? ` · ikon serasi: ${fam.iconStyles.join(", ")}` : ""}
+                      </p>
+                      <ul className="grid grid-cols-[repeat(auto-fill,minmax(112px,1fr))] gap-2" aria-label={`Contoh elemen ${fam.label}`}>
+                        {els.map((el) => (
+                          <li key={el.id} className="flex flex-col gap-1.5 rounded-[12px] bg-[var(--chip-bg)] p-2" title={el.id}>
+                            <span className="grid h-16 place-items-center overflow-hidden text-text [--a:#7c5cff] [--a2:#c6f432] [--ink:currentColor] [--bg:var(--chip-bg)] [--fg:currentColor] [--on:#fff]">
+                              <svg viewBox={el.vb} className="max-h-16 w-full" aria-hidden dangerouslySetInnerHTML={{ __html: safeSvg(el.svg, 12000) }} />
+                            </span>
+                            <span className="truncate text-[11.5px] font-medium">{el.label}</span>
+                            <span className="text-[10.5px] text-text-muted">{el.slot}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  );
+                })}
               </li>
             ))}
           </ul>
           <p className="px-6 pb-5 text-[13px] text-text-muted">
-            Slot: <b>art</b> = gambar utama, <b>badge</b> = stiker kecil, <b>divider</b> = pita pembatas di bawah bagian atas, <b>pattern</b> = motif latar blok ajakan.
-            Elemen dipakai otomatis bila cocok dengan gaya, jenis usaha, atau domain websitenya.
+            Slot: <b>corner</b> = hiasan sudut bagian atas, <b>art</b> = gambar utama, <b>badge</b> = stiker kecil, <b>divider</b> = pita pembatas di bawah bagian atas,{" "}
+            <b>pattern</b> = motif latar blok ajakan. Satu website memakai satu keluarga elemen saja, dipilih dari gaya, template, jenis usaha, domain, atau kata di
+            deskripsi (mis. &ldquo;batik&rdquo;, &ldquo;memphis&rdquo;, &ldquo;8-bit&rdquo;).
           </p>
         </Card>
       )}

@@ -124,13 +124,26 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
       imported: importedStyles.some((y) => y.id === x.id),
       chance: x.fit?.chance ?? 0,
     })),
-    iconPacks: iconPacks.map((p) => ({ id: p.id, label: p.label, license: p.license ?? "", count: p.icons.length, sample: p.icons.slice(0, 36).map((i) => ({ name: i.name, svg: i.svg })) })),
+    iconPacks: iconPacks.map((p) => ({
+      id: p.id,
+      label: p.label,
+      license: p.license ?? "",
+      variant: p.variant ?? null,
+      count: p.icons.length,
+      sample: p.icons.slice(0, 48).map((i) => ({ name: i.name, svg: i.svg })),
+    })),
     elementPacks: elementPacks.map((p) => ({
       id: p.id,
       label: p.label,
       license: p.license ?? "",
       count: p.elements.length,
-      sample: p.elements.slice(0, 24).map((e) => ({ id: e.id, label: e.label, slot: e.slot, vb: e.viewBox, svg: e.svg })),
+      families: [...new Set(p.elements.map((e) => e.family || p.id))].map((f) => ({
+        id: f,
+        label: p.families?.[f]?.label ?? (f === p.id ? p.label : f),
+        iconStyles: p.families?.[f]?.iconStyles ?? [],
+        count: p.elements.filter((e) => (e.family || p.id) === f).length,
+      })),
+      sample: p.elements.slice(0, 120).map((e) => ({ id: e.id, label: e.label, slot: e.slot, family: e.family || p.id, vb: e.viewBox, svg: e.svg })),
     })),
     imported: imported.map((p) => ({ id: p.id, kind: p.kind, label: p.label, prompts: p.prompts.length, items: p.items.length, replacesBundled: BUNDLED_IDS.has(p.id) })),
     domains: Object.values(active.packs).map((p) => ({
@@ -174,14 +187,23 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
 
     // Ikon impor (yang sudah tersimpan + yang ada di file ini) boleh dipakai paket domain di file yang sama.
     const storedIcons = await readIconPacks();
-    const knownIcons = new Set([...RULES.icons, ...mergeById(storedIcons, parsed.iconPacks).flatMap((p) => (Array.isArray(p.icons) ? p.icons.map((i) => i?.name) : []))]);
+    // Paket varian (mis. piksel) hanya berisi gambar alternatif, bukan ikon baru.
+    const knownIcons = new Set([
+      ...RULES.icons,
+      ...mergeById(storedIcons, parsed.iconPacks)
+        .filter((p) => !p.variant)
+        .flatMap((p) => (Array.isArray(p.icons) ? p.icons.map((i) => i?.name) : [])),
+    ]);
     for (const ip of parsed.iconPacks) errors.push(...validateIconPack(ip, RULES.icons));
     for (const ep of parsed.elementPacks) errors.push(...validateElementPack(ep));
+    // Nama ikon unik per ruang nama: ikon biasa, atau per gaya varian.
     const allIconNames = new Map<string, string>();
     for (const ip of mergeById(storedIcons, parsed.iconPacks))
       for (const ic of Array.isArray(ip.icons) ? ip.icons : []) {
-        if (allIconNames.has(ic?.name) && allIconNames.get(ic.name) !== ip.id) errors.push(`Ikon "${ic.name}" sudah ada di paket "${allIconNames.get(ic.name)}".`);
-        allIconNames.set(ic?.name, ip.id);
+        const key = `${ip.variant ?? ""}:${ic?.name}`;
+        if (allIconNames.has(key) && allIconNames.get(key) !== ip.id)
+          errors.push(ip.variant ? `Gambar ${ip.variant} untuk ikon "${ic.name}" sudah ada di paket "${allIconNames.get(key)}".` : `Ikon "${ic.name}" sudah ada di paket "${allIconNames.get(key)}".`);
+        allIconNames.set(key, ip.id);
       }
     const allElIds = new Map<string, string>();
     for (const ep of mergeById(await readElementPacks(), parsed.elementPacks))
@@ -253,8 +275,18 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
     }
 
     const model = await retrain();
-    for (const ip of parsed.iconPacks) notes.push(`Paket ikon "${ip.label}": ${ip.icons.length} ikon, ${ip.icons.reduce((n, i) => n + i.keywords.length, 0)} kata kunci dipelajari.`);
-    for (const ep of parsed.elementPacks) notes.push(`Paket elemen "${ep.label}": ${ep.elements.length} elemen (${["art", "badge", "divider", "pattern"].map((sl) => `${ep.elements.filter((e) => e.slot === sl).length} ${sl}`).join(", ")}).`);
+    for (const ip of parsed.iconPacks) {
+      if (ip.variant) {
+        const orphan = ip.icons.filter((i) => !knownIcons.has(i.name)).map((i) => i.name);
+        notes.push(`Paket varian ${ip.variant} "${ip.label}": ${ip.icons.length} gambar.${orphan.length ? ` ${orphan.length} untuk ikon yang belum ada (${orphan.slice(0, 5).join(", ")}${orphan.length > 5 ? ", …" : ""}), dipakai setelah ikonnya diimpor.` : ""}`);
+      } else notes.push(`Paket ikon "${ip.label}": ${ip.icons.length} ikon, ${ip.icons.reduce((n, i) => n + (i.keywords?.length ?? 0), 0)} kata kunci dipelajari.`);
+    }
+    for (const ep of parsed.elementPacks) {
+      const fams = [...new Set(ep.elements.map((e) => e.family || ep.id))];
+      notes.push(
+        `Paket elemen "${ep.label}": ${ep.elements.length} elemen dalam ${fams.length} keluarga (${["corner", "art", "badge", "divider", "pattern"].map((sl) => `${ep.elements.filter((e) => e.slot === sl).length} ${sl}`).join(", ")}).`,
+      );
+    }
     for (const st of parsed.styles) notes.push(`Gaya "${st.label}": ${st.palettes.length} palet, ${(st.elements.always ?? []).length + st.elements.pool.length} elemen, dipicu kata ${st.keywords.slice(0, 4).map((k) => `"${k}"`).join(", ")}.`);
     await audit(admin, "engine.import", `paket +${added.length} ~${updated.length}, gaya +${stylesAdded.length} ~${stylesUpdated.length}, contoh +${parsed.feedback.length}`);
     return ok({ imported: true, added, updated, stylesAdded, stylesUpdated, iconPacks: parsed.iconPacks.length, elementPacks: parsed.elementPacks.length, feedback: parsed.feedback.length, notes, trainedAt: model.trainedAt, stats: model.stats });

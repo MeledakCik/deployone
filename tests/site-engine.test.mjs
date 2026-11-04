@@ -327,16 +327,148 @@ test("ikon: mesin belajar frasa → ikon dan menyertakan SVG-nya di isi website"
   assert.deepEqual(Object.keys(raw.icons), ["galon"]);
 });
 
-test("elemen: ornamen dipilih sesuai aturan, maks. satu per slot, tidak berlebihan", () => {
+test("elemen: satu keluarga per website, maks. satu per slot, tidak berlebihan", () => {
   const m = trainModel(BUNDLED, [], [], { icons: ICONS, elements: ELEMENTS });
   let seen = 0;
   for (let v = 0; v < 20; v++) {
     const r = generateSite(m, "toko batik tulis di Solo namanya Batik Sekar", { variant: v });
     const o = r.raw.ornaments ?? [];
     seen += o.length;
-    assert.ok(o.length <= 2, "tanpa gaya maks. 2");
+    assert.ok(o.length <= 4, "tanpa gaya maks. 4");
     assert.equal(new Set(o.map((x) => x.slot)).size, o.length);
-    assert.ok(!(o.some((x) => x.slot === "art") && o.some((x) => x.slot === "badge")));
+    assert.ok(!(o.some((x) => x.slot === "art") && o.some((x) => x.slot === "badge")), "art & badge sama-sama di blok ajakan");
+    const fams = new Set(o.map((x) => m.elements[x.id].family));
+    assert.ok(fams.size <= 1, `satu keluarga, dapat ${[...fams]}`);
+    if (o.length) assert.equal(r.raw.ornFamily, [...fams][0]);
   }
-  assert.ok(seen > 0, "batik mendapat ornamen nusantara");
+  assert.ok(seen > 0, "batik mendapat ornamen");
+});
+
+/* ---------------- gaya ikon, paket varian, keluarga elemen ---------------- */
+import { ICON_STYLES, ICON_STYLE_IDS, TEMPLATE_ICON_STYLES, treatIcon, isIconStyle } from "../lib/site-assets.ts";
+import { LOOK_ICON_STYLES } from "../lib/site-look.ts";
+import { pickOrnaments, pickIconStyle, familyFromText, iconStyleFromText } from "../lib/site-engine/core.ts";
+
+const PIKSEL = JSON.parse(fs.readFileSync(new URL("./fixtures/icons-piksel.json", import.meta.url), "utf8"));
+const lucideInner = (n) => JSON.parse(`"${new RegExp(`^ "${n}": "(.*)",?$`, "m").exec(iconsSrc)[1]}"`);
+const assetModel = trainModel(BUNDLED, [], STYLE, { icons: [...ICONS, ...PIKSEL], elements: ELEMENTS });
+
+test("gaya ikon: daftar sama di site-assets & site-look, tiap Template punya gaya yang valid", () => {
+  assert.deepEqual([...LOOK_ICON_STYLES], [...ICON_STYLE_IDS]);
+  assert.equal(ICON_STYLES.length, 8);
+  for (const t of RULES.templates) {
+    const list = TEMPLATE_ICON_STYLES[t];
+    assert.ok(list?.length, `template ${t} punya gaya ikon`);
+    for (const x of list) assert.ok(isIconStyle(x));
+  }
+});
+
+test("gaya ikon: semua perlakuan menghasilkan SVG yang lolos sanitasi", () => {
+  for (const n of ["store", "heart", "message-circle", "shopping-cart", "map-pin"]) {
+    const inner = lucideInner(n);
+    for (const st of ICON_STYLE_IDS) {
+      const out = treatIcon(inner, st);
+      assert.deepEqual(sanitizeSvg(out, { maxLen: 20000 }).errors, [], `${n}/${st}`);
+    }
+    assert.equal(treatIcon(inner, "garis"), inner, "garis tidak mengubah apa pun");
+    assert.equal(treatIcon(inner, undefined), inner);
+  }
+  const alt = '<path fill="currentColor" stroke="none" d="M0 0h2v2H0z"/>';
+  assert.equal(treatIcon(lucideInner("store"), "piksel", alt), alt, "gambar alternatif dipakai apa adanya");
+  assert.match(treatIcon(lucideInner("store"), "piksel"), /stroke-linecap="square"/, "piksel tanpa gambar → tegas");
+  assert.equal(treatIcon(lucideInner("store"), "garis", alt), lucideInner("store"), "garis mengabaikan gambar alternatif");
+});
+
+test("paket varian: nama bawaan boleh, kata kunci opsional, gaya varian divalidasi", () => {
+  for (const p of PIKSEL) assert.deepEqual(validateIconPack(p, RULES.icons), []);
+  const ok = { type: "icons", id: "piksel-toko", label: "x", variant: "piksel", icons: [{ name: "store", svg: '<path fill="currentColor" d="M2 2h4v4H2z"/>' }] };
+  assert.deepEqual(validateIconPack(ok, RULES.icons), []);
+  assert.match(validateIconPack({ ...ok, variant: "garis" }, RULES.icons).join(), /variant/);
+  assert.match(validateIconPack({ ...ok, variant: "emas" }, RULES.icons).join(), /variant/);
+  const evil = { ...ok, icons: [{ name: "store", svg: '<script>alert(1)</script>' }] };
+  assert.ok(validateIconPack(evil, RULES.icons).length > 0);
+  // ikon biasa tetap wajib kata kunci
+  assert.match(validateIconPack({ type: "icons", id: "a-b", label: "x", icons: [{ name: "abc", svg: '<path d="M1 1h2"/>' }] }, RULES.icons).join(), /keywords/);
+});
+
+test("paket varian: disimpan sebagai gambar alternatif, tidak menambah kata kunci, ikut ke isi website", () => {
+  const plain = trainModel(BUNDLED, [], [], { icons: ICONS, elements: ELEMENTS });
+  assert.equal(assetModel.iconPhrases.length, plain.iconPhrases.length, "varian tidak menambah frasa");
+  assert.ok(assetModel.iconAlts.piksel.gerobak, "gambar piksel tersimpan");
+  const r = generateSite(assetModel, "Warung bakso Pak Kumis. Menu: bakso urat 18rb, mie ayam 15rb", {});
+  assert.ok(r.raw.iconAlt?.piksel?.["bakso-mangkuk"], "gambar piksel ikon yang dipakai ikut");
+  assert.ok(!r.raw.iconAlt.piksel.gerobak, "yang tidak dipakai tidak ikut");
+});
+
+test("keluarga: kata kunci memilih keluarga, Template, dan gaya ikon yang serasi", () => {
+  assert.equal(familyFromText(assetModel, "rental ps 8-bit"), "piksel");
+  assert.equal(familyFromText(assetModel, "kedai kopi jadul"), "retro");
+  assert.equal(familyFromText(assetModel, "toko kue biasa"), null);
+  for (let v = 0; v < 4; v++) {
+    const r = generateSite(assetModel, "Rental PS dan game center 8-bit di Depok", { variant: v });
+    assert.equal(r.raw.iconStyle, "piksel");
+    assert.ok(["neon", "gelap"].includes(r.raw.template), `template ${r.raw.template}`);
+    if (r.raw.ornaments) assert.equal(r.raw.ornFamily, "piksel");
+  }
+  const kopi = generateSite(assetModel, "Kedai kopi jadul Kopi Tubruk Mbah di Jogja", {});
+  assert.equal(kopi.raw.ornFamily, "retro");
+});
+
+test("keluarga: domain yang cocok paling sering menang, tapi tetap bervariasi", () => {
+  const count = {};
+  for (let v = 0; v < 30; v++) {
+    const f = generateSite(assetModel, "Laundry kiloan dan cuci sepatu di Depok, antar jemput", { variant: v }).raw.ornFamily ?? "-";
+    count[f] = (count[f] ?? 0) + 1;
+  }
+  const top = Object.entries(count).sort((a, b) => b[1] - a[1])[0][0];
+  assert.equal(top, "organik", JSON.stringify(count));
+  assert.ok(Object.keys(count).length >= 2, `tetap bervariasi: ${JSON.stringify(count)}`);
+});
+
+test("gaya ikon: dari Template, dari gaya visual, dan dari kata 'ikon …' di deskripsi", () => {
+  assert.equal(iconStyleFromText("pakai ikon tipis ya"), "tipis");
+  assert.equal(iconStyleFromText("ganti ikonnya jadi pixel"), "piksel");
+  assert.equal(iconStyleFromText("ikon gambar tangan"), "sketsa");
+  assert.equal(iconStyleFromText("template neon"), null, "tanpa kata ikon bukan perintah gaya ikon");
+  const st = (t) => pickIconStyle(assetModel, { template: t, seed: 1, variant: 0 });
+  assert.equal(st("elegan"), "tipis");
+  for (const t of RULES.templates) assert.ok(TEMPLATE_ICON_STYLES[t].includes(st(t)));
+  const cyber = STYLE.find((x) => x.id === "brutal-cyber");
+  for (let v = 0; v < 6; v++) assert.ok(cyber.iconStyles.includes(pickIconStyle(assetModel, { template: "bersih", style: cyber, family: "nusantara", seed: 3, variant: v })));
+  const r = generateSite(assetModel, "Toko kue rumahan di Bandung dengan ikon sketsa", {});
+  assert.equal(r.raw.iconStyle, "sketsa");
+});
+
+test("edit: gaya ikon, ornamen, dan Template mengatur gaya ikon", () => {
+  const base = generateSite(assetModel, "Warung bakso Pak Kumis di Malang", {}).raw;
+  let r = editSite(assetModel, base, "ikon tipis");
+  assert.equal(r.raw.iconStyle, "tipis");
+  r = editSite(assetModel, base, "ganti template jadi elegan");
+  assert.equal(r.raw.template, "elegan");
+  assert.equal(r.raw.iconStyle, "tipis", "Template baru membawa gaya ikon ciri khasnya");
+  r = editSite(assetModel, base, "hiasan memphis");
+  assert.equal(r.raw.ornFamily, "memphis");
+  for (const o of r.raw.ornaments) assert.equal(assetModel.elements[o.id].family, "memphis");
+  const lain = editSite(assetModel, r.raw, "ganti hiasan lain");
+  assert.ok(lain.raw, lain.note);
+  assert.notEqual(lain.raw.ornFamily, "memphis");
+  r = editSite(assetModel, r.raw, "hapus ornamen");
+  assert.equal(r.raw.ornaments, undefined);
+  assert.equal(r.raw.ornFamily, undefined);
+  // "gaya ikon neon" bukan template neon
+  r = editSite(assetModel, base, "ganti gaya ikon jadi neon");
+  assert.equal(r.raw.iconStyle, "neon");
+  assert.equal(r.raw.template, base.template);
+});
+
+test("ornamen: tanpa paket elemen kosong, keluarga paksa & pengecualian dihormati", () => {
+  const plain = trainModel(BUNDLED, [], []);
+  assert.deepEqual(pickOrnaments(plain, { domain: "umkm-kopi", kind: "umkm", template: "hangat", seed: 1, variant: 0 }), { family: null, ornaments: [] });
+  const ctx = { domain: "umkm-kopi", kind: "umkm", template: "hangat", seed: 7, variant: 0 };
+  const forced = pickOrnaments(assetModel, { ...ctx, family: "kertas" });
+  assert.equal(forced.family, "kertas");
+  assert.ok(forced.ornaments.length > 0);
+  for (let v = 0; v < 10; v++) assert.notEqual(pickOrnaments(assetModel, { ...ctx, variant: v, exclude: "retro" }).family, "retro");
+  const styled = pickOrnaments(assetModel, { ...ctx, style: STYLE[0], family: "grafis" });
+  assert.ok(!styled.ornaments.some((o) => o.slot === "corner"), "hero gaya visual tidak diberi ornamen sudut");
 });

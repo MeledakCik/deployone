@@ -93,6 +93,9 @@ export interface LookShape {
 export const LOOK_LABELS = ["paren", "slash", "hash", "bracket"] as const;
 export type LookLabelFmt = (typeof LOOK_LABELS)[number];
 
+/** Gaya ikon yang boleh disebut paket gaya (sama dengan ICON_STYLES di site-assets.ts; dicek tes). */
+export const LOOK_ICON_STYLES = ["garis", "tipis", "tegas", "duotone", "bayangan", "sketsa", "neon", "piksel"] as const;
+
 /** Data latihan: satu gerakan visual. Semua teks boleh memakai slot {brand} {city} {year} {product}. */
 export interface StylePack {
   type: "style";
@@ -123,6 +126,8 @@ export interface StylePack {
   layouts: { hero: string[]; feat: string[] };
   /** Elemen yang selalu dipakai, dan elemen pilihan (diambil acak 2–4 per website). */
   elements: { always?: string[]; pool: string[] };
+  /** Gaya ikon yang serasi (diundi, urutan pertama lebih sering), mis. ["tegas", "bayangan"]. Kosong = "tegas" untuk keluarga brutalism, selain itu "garis". */
+  iconStyles?: string[];
   copy: {
     /** Label kecil di baris meta (3–4 dipakai), mis. "{city} / {year}". */
     meta: string[];
@@ -330,6 +335,8 @@ export function validateStyle(s: StylePack, rules: StyleRules): string[] {
   if (o.labels !== undefined && (!Array.isArray(o.labels) || o.labels.some((x) => !(LOOK_LABELS as readonly string[]).includes(x as string))))
     e.push(`${where}: "labels" harus berisi ${LOOK_LABELS.join(", ")}.`);
   if (o.family !== undefined && (typeof o.family !== "string" || !/^[a-z0-9-]{2,40}$/.test(o.family))) e.push(`${where}: "family" hanya huruf kecil, angka, dan tanda minus.`);
+  if (o.iconStyles !== undefined && (!Array.isArray(o.iconStyles) || o.iconStyles.some((x) => !(LOOK_ICON_STYLES as readonly string[]).includes(x as string))))
+    e.push(`${where}: "iconStyles" hanya boleh berisi ${LOOK_ICON_STYLES.join(", ")}.`);
   if (o.fit !== undefined) {
     const fit = rec(o.fit);
     if (fit.chance !== undefined && (typeof fit.chance !== "number" || fit.chance < 0 || fit.chance > 1)) e.push(`${where}: fit.chance harus angka 0–1.`);

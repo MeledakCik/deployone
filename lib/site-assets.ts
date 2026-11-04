@@ -3,8 +3,12 @@
  *
  *  - IconPack    : ikon SVG gaya Lucide (kanvas 24×24, garis) + kata kunci bahasa Indonesia. Mesin mempelajari
  *                  kata → ikon, jadi produk/fitur seperti "gerobak" atau "galon" otomatis mendapat ikon yang pas.
- *  - ElementPack : elemen dekoratif SVG dengan slot pemakaian (art, badge, divider, pattern) dan aturan kapan
- *                  dipakai (gaya visual, keluarga gaya, jenis usaha, domain, peluang).
+ *  - IconPack + variant: gambar alternatif satu gaya ikon (mis. "piksel") untuk ikon bawaan/impor.
+ *  - ElementPack : elemen dekoratif SVG dengan slot pemakaian (art, badge, divider, pattern, corner), keluarga
+ *                  visual (satu website = satu keluarga), dan aturan kapan dipakai (gaya, template, jenis usaha,
+ *                  domain, peluang).
+ *  - Gaya ikon   : perlakuan seragam untuk semua ikon satu website (garis, tipis, tegas, duotone, bayangan,
+ *                  sketsa, neon, piksel).
  *
  * SVG dari luar akan tampil di website publik, jadi SELALU lewat sanitizeSvg(): hanya bentuk dasar dan atribut
  * yang aman. Tidak ada script, link, gambar luar, teks, style, atau event handler. Keluaran dibangun ulang dari
@@ -13,16 +17,88 @@
  * Murni (tanpa import), dipakai renderer, mesin, Panel Admin, dan skrip latih.
  */
 
-export const ELEMENT_SLOTS = ["art", "badge", "divider", "pattern"] as const;
+export const ELEMENT_SLOTS = ["art", "badge", "divider", "pattern", "corner"] as const;
 export type ElementSlot = (typeof ELEMENT_SLOTS)[number];
+
+/* ======================================================================== */
+/*  Gaya ikon                                                                */
+/* ======================================================================== */
+
+/**
+ * Gaya ikon satu website. Semua ikon (fitur, produk, kontak, tombol) memakai perlakuan yang sama supaya serasi.
+ * Perlakuan diterapkan pada ISI svg (bukan pembungkusnya), jadi katalog toko yang digambar ulang oleh skrip di
+ * browser pengunjung ikut konsisten.
+ */
+export const ICON_STYLES = [
+  { id: "garis", name: "Garis", desc: "Garis 2px membulat. Netral, cocok untuk semua." },
+  { id: "tipis", name: "Tipis", desc: "Garis halus, kesan lapang dan elegan." },
+  { id: "tegas", name: "Tegas", desc: "Garis tebal bersudut kotak, kesan industrial." },
+  { id: "duotone", name: "Duotone", desc: "Garis dengan isian warna lembut, kesan ramah." },
+  { id: "bayangan", name: "Bayangan", desc: "Garis berbayang geser, kesan cetak retro." },
+  { id: "sketsa", name: "Sketsa", desc: "Garis ganda sedikit miring, seperti digambar tangan." },
+  { id: "neon", name: "Neon", desc: "Garis berpendar, paling hidup di latar gelap." },
+  { id: "piksel", name: "Piksel", desc: "Ikon 8-bit kotak-kotak, kesan game retro." },
+] as const;
+export type IconStyle = (typeof ICON_STYLES)[number]["id"];
+export const ICON_STYLE_IDS: readonly IconStyle[] = ICON_STYLES.map((x) => x.id);
+export const isIconStyle = (v: unknown): v is IconStyle => typeof v === "string" && (ICON_STYLE_IDS as readonly string[]).includes(v);
+
+/** Gaya ikon yang serasi per Template. Urutan pertama = ciri khas Template (dipakai bila Template diganti). */
+export const TEMPLATE_ICON_STYLES: Record<string, IconStyle[]> = {
+  bersih: ["garis", "duotone", "tipis"],
+  gelap: ["garis", "neon", "duotone"],
+  hangat: ["duotone", "sketsa", "garis"],
+  tegas: ["tegas", "bayangan"],
+  segar: ["duotone", "garis", "sketsa"],
+  elegan: ["tipis"],
+  pastel: ["duotone", "sketsa", "bayangan"],
+  neon: ["neon", "piksel", "tegas"],
+  bakso: ["duotone", "garis", "sketsa"],
+  kue: ["sketsa", "tipis", "duotone"],
+  barber: ["tegas", "garis", "bayangan"],
+  tech: ["garis", "duotone", "tipis"],
+  majalah: ["tipis", "garis"],
+  jurnal: ["tipis", "garis"],
+};
+
+/** Gaya ikon ciri khas satu Template (bawaan "garis"). */
+export const templateIconStyle = (template: string): IconStyle => TEMPLATE_ICON_STYLES[template]?.[0] ?? "garis";
+
+/**
+ * Terapkan gaya ikon pada isi SVG ikon 24×24 (pembungkus tetap: fill none, stroke currentColor, lebar 2, ujung
+ * membulat). alt = gambar alternatif khusus gaya ini (mis. versi piksel) bila ada; dipakai apa adanya.
+ * Piksel tanpa gambar alternatif jatuh ke perlakuan "tegas" supaya tetap bersudut.
+ */
+export function treatIcon(inner: string, style: IconStyle | undefined, alt?: string): string {
+  if (!inner) return inner;
+  if (alt && style && style !== "garis") return alt;
+  switch (style) {
+    case "tipis":
+      return `<g stroke-width="1.25">${inner}</g>`;
+    case "tegas":
+    case "piksel":
+      return `<g stroke-width="2.5" stroke-linecap="square" stroke-linejoin="miter">${inner}</g>`;
+    case "duotone":
+      // Salinan ikon diisi tipis di bawah garisnya: bidang (tertutup maupun terbuka) mendapat warna kedua.
+      return `<g fill="currentColor" fill-opacity=".2" stroke="none">${inner}</g>${inner}`;
+    case "bayangan":
+      return `<g transform="translate(-.6 -.6)"><g transform="translate(1.7 1.7)" opacity=".3">${inner}</g>${inner}</g>`;
+    case "sketsa":
+      return `<g transform="translate(1.3 .9) rotate(-6 12 12)" stroke-width="1.1" opacity=".55">${inner}</g><g stroke-width="1.5">${inner}</g>`;
+    case "neon":
+      return `<g transform="translate(1.2 1.2) scale(.9)"><g stroke-width="5.5" opacity=".14">${inner}</g><g stroke-width="3" opacity=".26">${inner}</g><g stroke-width="1.6">${inner}</g></g>`;
+    default:
+      return inner;
+  }
+}
 
 export interface IconDef {
   /** nama kebab-case, mis. "gerobak" */
   name: string;
   /** isi SVG (tanpa tag <svg>) di kanvas 24×24. Kosongkan untuk ikon bawaan (hanya menambah kata kunci). */
   svg?: string;
-  /** kata/frasa yang memicu ikon ini, mis. ["gerobak", "kaki lima"] */
-  keywords: string[];
+  /** kata/frasa yang memicu ikon ini, mis. ["gerobak", "kaki lima"]. Wajib, kecuali di paket varian. */
+  keywords?: string[];
 }
 
 export interface IconPack {
@@ -30,6 +106,11 @@ export interface IconPack {
   id: string;
   label: string;
   license?: string;
+  /**
+   * Paket varian: isinya gambar alternatif untuk satu gaya ikon (mis. "piksel"), bukan ikon baru. Nama boleh
+   * sama dengan ikon bawaan/impor; "keywords" tidak wajib. Website bergaya itu memakai gambar ini bila ada.
+   */
+  variant?: IconStyle;
   icons: IconDef[];
 }
 
@@ -41,8 +122,24 @@ export interface ElementDef {
   viewBox: string;
   svg: string;
   tags?: string[];
-  /** Kapan dipakai: gaya (id) / keluarga gaya / domain / jenis usaha, dan peluangnya (0..1). */
-  fit?: { styles?: string[]; families?: string[]; domains?: string[]; kinds?: string[]; chance?: number };
+  /**
+   * Keluarga visual (mis. "memphis", "nusantara"). Satu website hanya memakai elemen dari SATU keluarga supaya
+   * serasi. Kosong = id paket.
+   */
+  family?: string;
+  /** Kapan dipakai: gaya (id) / keluarga gaya / template / domain / jenis usaha, dan peluangnya (0..1). */
+  fit?: { styles?: string[]; families?: string[]; templates?: string[]; domains?: string[]; kinds?: string[]; chance?: number };
+}
+
+/** Keterangan satu keluarga elemen. */
+export interface ElementFamily {
+  label?: string;
+  /** Gaya ikon yang serasi (urutan = prioritas), mis. ["piksel", "tegas"] untuk keluarga piksel. */
+  iconStyles?: IconStyle[];
+  /** Kata di deskripsi yang meminta keluarga ini, mis. ["batik", "nusantara"]. */
+  keywords?: string[];
+  /** Template yang serasi, dipakai bila keluarga ini diminta lewat kata kunci, mis. ["neon", "gelap"] untuk piksel. */
+  templates?: string[];
 }
 
 export interface ElementPack {
@@ -50,6 +147,8 @@ export interface ElementPack {
   id: string;
   label: string;
   license?: string;
+  /** Keterangan keluarga yang dipakai elemen paket ini (opsional). */
+  families?: Record<string, ElementFamily>;
   elements: ElementDef[];
 }
 
@@ -207,9 +306,24 @@ export function validateIconPack(p: IconPack, builtin: ReadonlySet<string>): str
   const e: string[] = [];
   if (typeof p.id !== "string" || !ID.test(p.id)) e.push(`${where}: "id" hanya huruf kecil, angka, dan tanda minus.`);
   if (typeof p.label !== "string" || !p.label.trim()) e.push(`${where}: "label" wajib diisi.`);
+  if (p.variant !== undefined && (!isIconStyle(p.variant) || p.variant === "garis"))
+    e.push(`${where}: "variant" harus salah satu gaya ikon: ${ICON_STYLE_IDS.filter((x) => x !== "garis").join(", ")}.`);
   if (!Array.isArray(p.icons) || !p.icons.length) return [...e, `${where}: "icons" minimal satu ikon.`];
   if (p.icons.length > 400) e.push(`${where}: maksimal 400 ikon per paket.`);
   const seen = new Set<string>();
+  if (p.variant !== undefined) {
+    // Paket varian: gambar alternatif untuk nama yang sudah ada (bawaan atau impor); kata kunci tidak wajib.
+    p.icons.forEach((ic, i) => {
+      const n = `${where}: ikon #${i + 1}${ic?.name ? ` "${ic.name}"` : ""}`;
+      if (typeof ic?.name !== "string" || !NAME.test(ic.name) || ic.name.length > 40) e.push(`${n}: "name" harus kebab-case (mis. "gerobak-sate").`);
+      else if (seen.has(ic.name)) e.push(`${n}: nama ganda di paket ini.`);
+      seen.add(ic?.name);
+      const r = sanitizeSvg(ic?.svg ?? "", { maxLen: 4000, maxNodes: 60 });
+      r.errors.slice(0, 2).forEach((x) => e.push(`${n}: ${x}`));
+      if (ic?.keywords !== undefined && (!Array.isArray(ic.keywords) || ic.keywords.some((k) => typeof k !== "string"))) e.push(`${n}: "keywords" harus array teks.`);
+    });
+    return e;
+  }
   p.icons.forEach((ic, i) => {
     const n = `${where}: ikon #${i + 1}${ic?.name ? ` "${ic.name}"` : ""}`;
     if (typeof ic?.name !== "string" || !NAME.test(ic.name) || ic.name.length > 40) e.push(`${n}: "name" harus kebab-case (mis. "gerobak-sate").`);
@@ -236,6 +350,24 @@ export function validateElementPack(p: ElementPack): string[] {
   if (typeof p.label !== "string" || !p.label.trim()) e.push(`${where}: "label" wajib diisi.`);
   if (!Array.isArray(p.elements) || !p.elements.length) return [...e, `${where}: "elements" minimal satu elemen.`];
   if (p.elements.length > 200) e.push(`${where}: maksimal 200 elemen per paket.`);
+  const strList = (v: unknown) => Array.isArray(v) && v.every((x) => typeof x === "string");
+  if (p.families !== undefined) {
+    if (!p.families || typeof p.families !== "object" || Array.isArray(p.families)) e.push(`${where}: "families" harus objek { id: { label, iconStyles, keywords } }.`);
+    else
+      for (const [fid, fam] of Object.entries(p.families)) {
+        const n = `${where}: keluarga "${fid}"`;
+        if (!ID.test(fid)) e.push(`${n}: id hanya huruf kecil, angka, dan tanda minus.`);
+        if (!fam || typeof fam !== "object" || Array.isArray(fam)) {
+          e.push(`${n}: harus objek.`);
+          continue;
+        }
+        if (fam.label !== undefined && typeof fam.label !== "string") e.push(`${n}: "label" harus teks.`);
+        if (fam.iconStyles !== undefined && (!Array.isArray(fam.iconStyles) || fam.iconStyles.some((x) => !isIconStyle(x))))
+          e.push(`${n}: "iconStyles" hanya boleh berisi ${ICON_STYLE_IDS.join(", ")}.`);
+        if (fam.keywords !== undefined && !strList(fam.keywords)) e.push(`${n}: "keywords" harus array teks.`);
+        if (fam.templates !== undefined && !strList(fam.templates)) e.push(`${n}: "templates" harus array teks (id template).`);
+      }
+  }
   const seen = new Set<string>();
   p.elements.forEach((el, i) => {
     const n = `${where}: elemen #${i + 1}${el?.id ? ` "${el.id}"` : ""}`;
@@ -246,10 +378,15 @@ export function validateElementPack(p: ElementPack): string[] {
     if (typeof el?.viewBox !== "string" || !VIEWBOX.test(el.viewBox)) e.push(`${n}: "viewBox" harus "0 0 lebar tinggi", mis. "0 0 200 40".`);
     const r = sanitizeSvg(el?.svg ?? "", { maxLen: 12000, maxNodes: 400 });
     r.errors.slice(0, 2).forEach((x) => e.push(`${n}: ${x}`));
+    if (el?.family !== undefined && (typeof el.family !== "string" || !ID.test(el.family))) e.push(`${n}: "family" hanya huruf kecil, angka, dan tanda minus.`);
     const f = el?.fit;
     if (f !== undefined) {
       if (typeof f !== "object" || Array.isArray(f)) e.push(`${n}: "fit" harus objek.`);
-      else if (f.chance !== undefined && (typeof f.chance !== "number" || f.chance < 0 || f.chance > 1)) e.push(`${n}: fit.chance harus angka 0–1.`);
+      else {
+        if (f.chance !== undefined && (typeof f.chance !== "number" || f.chance < 0 || f.chance > 1)) e.push(`${n}: fit.chance harus angka 0–1.`);
+        for (const k of ["styles", "families", "templates", "domains", "kinds"] as const)
+          if (f[k] !== undefined && !strList(f[k])) e.push(`${n}: fit.${k} harus array teks.`);
+      }
     }
   });
   return e;

@@ -25,7 +25,8 @@
 /* ======================================================================== */
 
 import type { SiteLook, StylePack } from "../site-look.ts";
-import type { ElementDef, ElementPack, IconPack, SiteOrnament } from "../site-assets.ts";
+import { ELEMENT_SLOTS, TEMPLATE_ICON_STYLES, isIconStyle, templateIconStyle } from "../site-assets.ts";
+import type { ElementDef, ElementFamily, ElementPack, IconPack, IconStyle, SiteOrnament } from "../site-assets.ts";
 
 export type Kind = "umkm" | "jasa" | "portofolio" | "event" | "profil" | "artikel";
 export const KINDS: Kind[] = ["umkm", "jasa", "portofolio", "event", "profil", "artikel"];
@@ -129,8 +130,12 @@ export interface SiteModel {
   icons?: Record<string, string>;
   /** Frasa (sudah dinormalisasi) → nama ikon, frasa terpanjang lebih dulu. Dipelajari dari keywords paket ikon. */
   iconPhrases?: [string, string][];
-  /** Elemen dekoratif hasil impor: id → definisi. */
+  /** Elemen dekoratif hasil impor: id → definisi (family selalu terisi). */
   elements?: Record<string, ElementDef>;
+  /** Gambar ikon alternatif per gaya (paket varian): gaya → nama ikon → isi SVG. */
+  iconAlts?: Record<string, Record<string, string>>;
+  /** Keluarga elemen: id → label, gaya ikon serasi, kata kunci. */
+  families?: Record<string, ElementFamily>;
 }
 
 export interface TrainAssets {
@@ -372,23 +377,47 @@ export function trainModel(packsIn: DomainPack[], feedback: FeedbackExample[] = 
 }
 
 /** Pelajari paket ikon (frasa → ikon) dan paket elemen. Frasa utuh, bukan per kata: "kaki lima" tidak membuat "lima" → gerobak. */
-function learnAssets(assets: TrainAssets): Pick<SiteModel, "icons" | "iconPhrases" | "elements"> {
+function learnAssets(assets: TrainAssets): Pick<SiteModel, "icons" | "iconPhrases" | "elements" | "iconAlts" | "families"> {
   const icons: Record<string, string> = {};
+  const iconAlts: Record<string, Record<string, string>> = {};
   const phrases = new Map<string, string>();
-  for (const pack of assets.icons ?? [])
+  for (const pack of assets.icons ?? []) {
+    if (pack.variant) {
+      // Paket varian: gambar alternatif untuk satu gaya, tidak menambah ikon/kata kunci baru.
+      const m = (iconAlts[pack.variant] ??= {});
+      for (const ic of pack.icons) if (ic.svg) m[ic.name] = ic.svg;
+      continue;
+    }
     for (const ic of pack.icons) {
       if (ic.svg) icons[ic.name] = ic.svg;
-      for (const k of ic.keywords) {
+      for (const k of ic.keywords ?? []) {
         const n = normText(k);
         if (n.length >= 3) phrases.set(n, ic.name);
       }
     }
+  }
   const elements: Record<string, ElementDef> = {};
-  for (const pack of assets.elements ?? []) for (const el of pack.elements) elements[el.id] = JSON.parse(JSON.stringify(el));
+  const families: Record<string, ElementFamily> = {};
+  for (const pack of assets.elements ?? [])
+    for (const el of pack.elements) {
+      const family = el.family || pack.id;
+      elements[el.id] = { ...JSON.parse(JSON.stringify(el)), family };
+      if (!families[family]) {
+        const meta = pack.families?.[family] ?? {};
+        families[family] = {
+          label: meta.label ?? (family === pack.id ? pack.label : family),
+          iconStyles: (meta.iconStyles ?? []).filter(isIconStyle),
+          keywords: meta.keywords ?? [],
+          templates: meta.templates ?? [],
+        };
+      }
+    }
   return {
     icons,
     iconPhrases: [...phrases.entries()].sort((a, b) => b[0].length - a[0].length),
     elements,
+    iconAlts,
+    families,
   };
 }
 
@@ -400,50 +429,194 @@ function phraseIcon(model: SiteModel, text: string): string | undefined {
   return undefined;
 }
 
-/** Sertakan isi SVG ikon impor yang dipakai website ini (renderer di browser tidak punya paket ikon). */
+/**
+ * Sertakan isi SVG ikon impor yang dipakai website ini (renderer di browser tidak punya paket ikon), plus gambar
+ * alternatif gaya ikon (mis. piksel) untuk ikon yang dipakai, supaya ganti gaya ikon di builder tetap lengkap.
+ */
 export function attachIcons(model: SiteModel, raw: Record<string, unknown>): void {
-  if (!model.icons || !Object.keys(model.icons).length) return;
   const used = new Set<string>();
-  const add = (v: unknown) => typeof v === "string" && model.icons![v] && used.add(v);
+  const add = (v: unknown) => typeof v === "string" && v && used.add(v);
   add(raw.brandIcon);
   for (const f of (raw.features as Record<string, unknown>[] | undefined) ?? []) add(f?.icon);
   for (const it of (raw.items as Record<string, unknown>[] | undefined) ?? []) add(it?.icon);
   const map: Record<string, string> = {};
-  for (const n of used) map[n] = model.icons[n];
+  for (const n of used) if (model.icons?.[n]) map[n] = model.icons[n];
   if (Object.keys(map).length) raw.icons = map;
   else delete raw.icons;
+  const alt: Record<string, Record<string, string>> = {};
+  for (const [style, drawings] of Object.entries(model.iconAlts ?? {})) {
+    const m: Record<string, string> = {};
+    for (const n of used) if (drawings[n]) m[n] = drawings[n];
+    if (Object.keys(m).length) alt[style] = m;
+  }
+  if (Object.keys(alt).length) raw.iconAlt = alt;
+  else delete raw.iconAlt;
 }
 
 /**
- * Pilih ornamen dari paket elemen: yang cocok dengan gaya/keluarga gaya/domain/jenis usaha, diundi dengan peluang
- * fit.chance (bawaan 0,5). Maksimal satu per slot, tiga per website. Acak terpisah supaya isi lain tidak berubah.
+ * Template yang serasi dengan satu keluarga elemen: dari keterangan keluarga (families.templates), atau bila kosong
+ * dari fit.templates anggotanya (paling sering lebih dulu).
  */
-export function pickOrnaments(model: SiteModel, ctx: { style?: StylePack | null; domain: string; kind: Kind; seed: number; variant: number }): SiteOrnament[] {
+export function familyTemplates(model: SiteModel, family: string): string[] {
+  const own = (model.families?.[family]?.templates ?? []).filter((t) => TEMPLATE_IDS.includes(t));
+  if (own.length) return own;
+  const count = new Map<string, number>();
+  for (const el of Object.values(model.elements ?? {}))
+    if (el.family === family) for (const t of el.fit?.templates ?? []) if (TEMPLATE_IDS.includes(t)) count.set(t, (count.get(t) ?? 0) + 1);
+  return [...count.entries()].sort((a, b) => b[1] - a[1] || (a[0] < b[0] ? -1 : 1)).map((x) => x[0]);
+}
+
+/** Keluarga elemen yang diminta di teks (kata kunci keluarga, atau id/label-nya), atau null. */
+export function familyFromText(model: SiteModel, text: string): string | null {
+  const t = ` ${normText(text)} `;
+  let best: string | null = null;
+  let bestLen = 0;
+  for (const [id, fam] of Object.entries(model.families ?? {}))
+    for (const k of [...(fam.keywords ?? []), id, fam.label ?? ""]) {
+      const n = normText(k);
+      if (n.length >= 3 && t.includes(` ${n} `) && n.length > bestLen) (best = id), (bestLen = n.length);
+    }
+  return best;
+}
+
+export interface OrnamentContext {
+  style?: StylePack | null;
+  domain: string;
+  kind: Kind;
+  template: string;
+  seed: number;
+  variant: number;
+  /** Deskripsi/perintah: kata kunci keluarga ("batik", "memphis", "8-bit") memilih keluarga itu. */
+  prompt?: string;
+  /** Paksa satu keluarga (perintah "hiasan memphis"). */
+  family?: string | null;
+  /** Hindari keluarga ini (perintah "hiasan lain"). */
+  exclude?: string | null;
+}
+
+/**
+ * Pilih ornamen dari paket elemen. Satu website = SATU keluarga elemen supaya serasi:
+ *  1. keluarga diminta di deskripsi/perintah, atau
+ *  2. diundi berbobot dari keluarga yang cocok: gaya visual (3), domain (4), template (2), jenis usaha (1);
+ *     bobot keluarga = (rata-rata skor anggotanya)².
+ * Lalu per slot diambil satu elemen keluarga itu yang cocok, masuk dengan peluang fit.chance (bawaan 0,5).
+ * Tanpa gaya visual: maks. 4 (corner, divider, pattern, dan art ATAU badge karena keduanya di blok ajakan).
+ * Dengan gaya visual: maks. 4 (art masuk hero; corner tidak dipakai karena hero gaya sudah padat).
+ * Acak terpisah supaya isi lain tidak berubah.
+ */
+export function pickOrnaments(model: SiteModel, ctx: OrnamentContext): { family: string | null; ornaments: SiteOrnament[] } {
   const all = Object.values(model.elements ?? {});
-  if (!all.length) return [];
+  if (!all.length) return { family: null, ornaments: [] };
   const r = rng(ctx.seed + ctx.variant * 6151 + 99);
-  const fits = (el: ElementDef): boolean => {
+  const famOf = (el: ElementDef) => el.family || "lain";
+  const score = (el: ElementDef): number => {
     const f = el.fit;
-    if (!f) return false;
-    return (
-      (!!ctx.style && ((f.styles ?? []).includes(ctx.style.id) || (!!ctx.style.family && (f.families ?? []).includes(ctx.style.family)))) ||
-      (f.domains ?? []).includes(ctx.domain) ||
-      (f.kinds ?? []).includes(ctx.kind)
-    );
+    if (!f) return 0;
+    let s = 0;
+    if (ctx.style && ((f.styles ?? []).includes(ctx.style.id) || (!!ctx.style.family && (f.families ?? []).includes(ctx.style.family)))) s += 3;
+    if ((f.domains ?? []).includes(ctx.domain)) s += 4;
+    if ((f.templates ?? []).includes(ctx.template)) s += 2;
+    if ((f.kinds ?? []).includes(ctx.kind)) s += 1;
+    return s;
   };
+  const fams = new Set(all.map(famOf));
+  let family = ctx.family && fams.has(ctx.family) ? ctx.family : null;
+  const forced = !!family;
+  if (!family && ctx.prompt) {
+    const asked = familyFromText(model, ctx.prompt);
+    if (asked && fams.has(asked)) family = asked;
+  }
+  const requested = !!family;
+  if (!family) {
+    // Bobot keluarga = (rata-rata skor elemennya)², supaya keluarga besar tidak menang hanya karena jumlah
+    // elemennya, dan keluarga yang paling cocok (mis. domain + template) jauh lebih sering terpilih.
+    const sum = new Map<string, number>();
+    const count = new Map<string, number>();
+    for (const el of all) {
+      const f = famOf(el);
+      count.set(f, (count.get(f) ?? 0) + 1);
+      sum.set(f, (sum.get(f) ?? 0) + score(el));
+    }
+    const weight = new Map<string, number>();
+    for (const [f, sc] of sum) if (sc > 0 && f !== ctx.exclude) weight.set(f, (sc / count.get(f)!) ** 2);
+    const total = [...weight.values()].reduce((a, b) => a + b, 0);
+    if (!total) return { family: null, ornaments: [] };
+    let x = r() * total;
+    for (const [id, w] of [...weight.entries()].sort((a, b) => (a[0] < b[0] ? -1 : 1))) {
+      x -= w;
+      if (x <= 0) {
+        family = id;
+        break;
+      }
+    }
+    family ??= [...weight.keys()][0];
+  }
+  // Keluarga yang diminta: semua anggotanya boleh; selain itu hanya yang cocok dengan konteks.
+  const pool = all.filter((el) => famOf(el) === family && (requested || score(el) > 0));
+  const slots: readonly string[] = ctx.style ? ["art", "badge", "divider", "pattern"] : ELEMENT_SLOTS;
   const out: SiteOrnament[] = [];
   const used = new Set<string>();
-  // Dengan gaya visual: maks. 3 (art masuk hero). Tanpa gaya: maks. 2, dan art & badge sama-sama di blok ajakan → pilih salah satu.
-  const max = ctx.style ? 3 : 2;
-  for (const el of shuffle(r, all.filter(fits))) {
-    if (out.length >= max || used.has(el.slot)) continue;
+  for (const el of shuffle(r, pool)) {
+    if (out.length >= 4 || used.has(el.slot) || !slots.includes(el.slot)) continue;
     if (!ctx.style && (el.slot === "art" || el.slot === "badge") && (used.has("art") || used.has("badge"))) continue;
-    if (r() < (el.fit?.chance ?? 0.5)) {
+    const chance = el.fit?.chance ?? 0.5;
+    if (r() < (forced ? Math.max(chance, 0.85) : requested ? Math.max(chance, 0.7) : chance)) {
       out.push({ id: el.id, slot: el.slot, vb: el.viewBox, svg: el.svg });
       used.add(el.slot);
     }
   }
-  return out;
+  return { family: out.length ? family : null, ornaments: out };
+}
+
+/** Kata yang menyebut satu gaya ikon (dipakai setelah kata "ikon"). */
+const ICON_STYLE_WORDS: [RegExp, IconStyle][] = [
+  [/\b(piksel|pixel|8[ -]?bit|arcade)\b/, "piksel"],
+  [/\b(sketsa|sketch|gambar tangan|hand ?drawn|coretan|doodle)\b/, "sketsa"],
+  [/\b(neon|menyala|glow|berpendar)\b/, "neon"],
+  [/\b(duotone|dua warna|berwarna|berisi)\b/, "duotone"],
+  [/\b(bayangan|shadow|berbayang)\b/, "bayangan"],
+  [/\b(tegas|tebal|bold|kotak)\b/, "tegas"],
+  [/\b(tipis|halus|thin|ramping|minimalis)\b/, "tipis"],
+  [/\b(garis|outline|standar|biasa|polos|normal)\b/, "garis"],
+];
+
+/** Gaya ikon yang disebut di teks setelah kata "ikon" ("ikon tipis", "ganti ikon jadi piksel"), atau null. */
+export function iconStyleFromText(text: string): IconStyle | null {
+  const t = normText(text);
+  const m = /\b(?:ikon|icon)(?:nya)?\b(.*)$/.exec(t);
+  if (m) for (const [re, s] of ICON_STYLE_WORDS) if (re.test(m[1])) return s;
+  return null;
+}
+
+/**
+ * Pilih gaya ikon satu website: (1) diminta di deskripsi ("ikon tipis", "8-bit"), (2) dari paket gaya (iconStyles),
+ * atau (3) dari Template, dipersempit ke gaya yang serasi dengan keluarga elemen bila ada irisannya. Diundi: gaya
+ * pertama berbobot dua.
+ */
+export function pickIconStyle(
+  model: SiteModel,
+  ctx: { prompt?: string; template: string; style?: StylePack | null; family?: string | null; seed: number; variant: number },
+): IconStyle {
+  if (ctx.prompt) {
+    const asked = iconStyleFromText(ctx.prompt);
+    if (asked) return asked;
+    if (/\b(8[ -]?bit|pixel art|seni piksel|game retro|retro game|arcade)\b/.test(normText(ctx.prompt))) return "piksel";
+  }
+  let cands: IconStyle[];
+  if (ctx.style) {
+    // Gaya visual adalah sistem utuh (warna, huruf, tata letak): pilihan ikonnya dipakai apa adanya.
+    const fromStyle = (ctx.style.iconStyles ?? []).filter(isIconStyle);
+    cands = fromStyle.length ? fromStyle : ctx.style.family === "brutalism" ? ["tegas", "garis", "bayangan"] : ["garis"];
+  } else {
+    // Tanpa gaya: gaya ikon Template, dipersempit ke yang serasi dengan keluarga elemen bila ada irisannya.
+    cands = TEMPLATE_ICON_STYLES[ctx.template] ?? ["garis"];
+    const famStyles = ctx.family ? (model.families?.[ctx.family]?.iconStyles ?? []) : [];
+    const both = cands.filter((x) => famStyles.includes(x));
+    if (both.length) cands = both;
+  }
+  const r = rng(ctx.seed + ctx.variant * 3301 + 7);
+  const weighted = [cands[0], ...cands];
+  return weighted[Math.floor(r() * weighted.length) % weighted.length] ?? templateIconStyle(ctx.template);
 }
 
 /* ======================================================================== */
@@ -722,6 +895,10 @@ export interface GenerateResult {
   extracted: Extracted;
   /** id paket gaya yang dipakai, atau null. */
   style?: string | null;
+  /** Gaya ikon terpilih. */
+  iconStyle?: IconStyle;
+  /** Keluarga elemen terpilih, atau null. */
+  family?: string | null;
 }
 
 const DEFAULT_ITEMS: Record<Kind, number> = { umkm: 6, jasa: 4, portofolio: 4, event: 4, profil: 3, artikel: 0 };
@@ -926,11 +1103,26 @@ export function generateSite(model: SiteModel, prompt: string, opts: GenerateOpt
     if (style.layouts.hero.length) raw.hero = style.layouts.hero[(seed + variant) % style.layouts.hero.length];
     if (style.layouts.feat.length) raw.feat = style.layouts.feat[(seed + variant * 3) % style.layouts.feat.length];
   }
-  // Ikon & ornamen hasil impor
+  // Keluarga elemen yang diminta di deskripsi ("8-bit", "batik", "retro"): tanpa gaya visual, Template ikut
+  // menyesuaikan ke Template yang serasi dengan keluarga itu, supaya warna/huruf tidak bertabrakan dengan ornamen.
+  const asked = familyFromText(model, prompt);
+  if (asked && !style) {
+    const ft = familyTemplates(model, asked);
+    if (ft.length && !ft.includes(String(raw.template))) {
+      const both = pack.templates.filter((t) => ft.includes(t));
+      const list = both.length ? both : ft;
+      raw.template = list[(hash(brand) + variant) % list.length];
+    }
+  }
+  // Ornamen (satu keluarga elemen), lalu gaya ikon yang serasi dengan Template/gaya dan keluarga itu.
+  const orn = pickOrnaments(model, { style, domain: pack.id, kind, template: String(raw.template), prompt, seed: hash(brand), variant });
+  if (orn.ornaments.length) {
+    raw.ornaments = orn.ornaments;
+    raw.ornFamily = orn.family;
+  }
+  raw.iconStyle = pickIconStyle(model, { prompt, template: String(raw.template), style, family: orn.family, seed: hash(brand), variant });
   attachIcons(model, raw);
-  const orn = pickOrnaments(model, { style, domain: pack.id, kind, seed: hash(brand), variant });
-  if (orn.length) raw.ornaments = orn;
-  return { raw, domain: pack.id, confidence, extracted: ex, style: style?.id ?? null };
+  return { raw, domain: pack.id, confidence, extracted: ex, style: style?.id ?? null, iconStyle: raw.iconStyle as IconStyle, family: orn.family };
 }
 
 /* ======================================================================== */
@@ -1006,10 +1198,48 @@ export function editSite(model: SiteModel, current: Record<string, unknown>, ins
         continue;
       }
     }
+    // Gaya ikon: "ikon tipis", "ganti gaya ikon jadi piksel". Dicek sebelum gaya/template ("ikon neon" ≠ template neon).
+    if (/\b(ikon|icon)/.test(low)) {
+      const st = iconStyleFromText(part);
+      if (st) {
+        c.iconStyle = st;
+        done.push(`gaya ikon ${st}`);
+        continue;
+      }
+    }
+    // Ornamen dari paket elemen: "hapus ornamen", "hiasan batik", "ganti hiasan lain".
+    if (/\b(hiasan|ornamen|motif|dekorasi|elemen dekor)\b/.test(low)) {
+      if (/\b(hapus|hilangkan|buang|tanpa|matikan)\b/.test(low)) {
+        if (c.ornaments) {
+          delete c.ornaments;
+          delete c.ornFamily;
+          done.push("ornamen dihapus");
+          continue;
+        }
+      } else if (Object.keys(model.elements ?? {}).length) {
+        const kind = (KINDS.includes(c.kind as Kind) ? c.kind : "umkm") as Kind;
+        const domain = classify(model, `${String(c.brand ?? "")} ${String(c.headline ?? "")} ${String(c.subheadline ?? "")}`, kind)[0]?.id ?? "";
+        const lookId = c.look && typeof (c.look as { style?: unknown }).style === "string" ? (c.look as { style: string }).style : "";
+        const style = lookId ? (model.styles?.[lookId] ?? null) : null;
+        const fam = familyFromText(model, part);
+        const cur = typeof c.ornFamily === "string" ? c.ornFamily : null;
+        const base = { style, domain, kind, template: String(c.template ?? ""), seed: hash(String(c.brand ?? "")), variant: hash(`${part}|${cur ?? ""}`) % 997 };
+        let res = pickOrnaments(model, { ...base, family: fam, exclude: fam ? null : cur });
+        // Tidak ada keluarga lain yang cocok: undi ulang elemen keluarga yang sama.
+        if (!res.ornaments.length && !fam && cur) res = pickOrnaments(model, { ...base, family: cur, variant: base.variant + 1 });
+        if (res.ornaments.length) {
+          c.ornaments = res.ornaments;
+          c.ornFamily = res.family;
+          done.push(`ornamen ${model.families?.[res.family ?? ""]?.label ?? res.family}`);
+          continue;
+        }
+      }
+    }
     // Gaya visual hasil latihan: "pakai gaya brutalism" / "hapus gaya"
     if (/\b(gaya|style|tampilan)\b/.test(low)) {
       if (/\b(hapus|lepas|tanpa|matikan|biasa)\b/.test(low) && c.look) {
         delete c.look;
+        c.iconStyle = templateIconStyle(String(c.template ?? ""));
         done.push("gaya visual dilepas (kembali ke template)");
         continue;
       }
@@ -1019,6 +1249,7 @@ export function editSite(model: SiteModel, current: Record<string, unknown>, ins
         if (st.layouts.hero.length) c.hero = st.layouts.hero[0];
         if (st.layouts.feat.length) c.feat = st.layouts.feat[0];
         c.accent = "";
+        c.iconStyle = pickIconStyle(model, { template: String(c.template ?? ""), style: st, family: typeof c.ornFamily === "string" ? c.ornFamily : null, seed: hash(String(c.brand ?? "")), variant: 0 });
         done.push(`gaya ${st.label}`);
         continue;
       }
@@ -1029,6 +1260,7 @@ export function editSite(model: SiteModel, current: Record<string, unknown>, ins
       if (t) {
         c.template = t;
         delete c.look;
+        c.iconStyle = templateIconStyle(t);
         done.push(`template ${t}`);
         continue;
       }
@@ -1147,7 +1379,7 @@ export function editSite(model: SiteModel, current: Record<string, unknown>, ins
     return {
       raw: null,
       note:
-        "Perintah belum dikenali mesin Depup. Contoh yang bisa: \"ganti nama jadi Kopi Senja\", \"ubah judul jadi …\", \"tambah menu Es Teh 5rb, Es Jeruk 7rb\", \"tambah 3 menu minuman\", \"hapus Es Teh\", \"harga Es Teh jadi 6rb\", \"ganti warna jadi hijau\", \"pakai template gelap\", \"ganti nomor wa jadi 0812…\", \"hapus testimoni\".",
+        "Perintah belum dikenali mesin Depup. Contoh yang bisa: \"ganti nama jadi Kopi Senja\", \"ubah judul jadi …\", \"tambah menu Es Teh 5rb, Es Jeruk 7rb\", \"tambah 3 menu minuman\", \"hapus Es Teh\", \"harga Es Teh jadi 6rb\", \"ganti warna jadi hijau\", \"pakai template gelap\", \"ikon tipis\", \"hiasan batik\", \"hapus ornamen\", \"ganti nomor wa jadi 0812…\", \"hapus testimoni\".",
     };
   }
   attachIcons(model, c);

@@ -71,7 +71,7 @@ const prompts = fs.readFileSync(path.join(root, "lib/ai-site-prompts.ts"), "utf8
 const banned = JSON.parse(/BANNED_PHRASES: string\[\] = (\[[\s\S]*?\]);/.exec(prompts)[1].replace(/,\s*\]/, "]"));
 const tpl = fs.readFileSync(path.join(root, "lib/ai-site-templates.ts"), "utf8");
 const union = (name) => new Set([...(new RegExp(`export type ${name} = ([^;]+);`).exec(tpl)?.[1].matchAll(/"([^"]+)"/g) ?? [])].map((m) => m[1]));
-const rules = { icons: new Set([...icons, ...iconPacks.flatMap((p) => p.icons.map((i) => i.name))]), banned, templates: union("TemplateId"), heroes: union("HeroLayout"), feats: union("FeatLayout") };
+const rules = { icons: new Set([...icons, ...iconPacks.filter((p) => !p.variant).flatMap((p) => p.icons.map((i) => i.name))]), banned, templates: union("TemplateId"), heroes: union("HeroLayout"), feats: union("FeatLayout") };
 let problems = 0;
 const ids = new Set();
 for (const p of packs) {

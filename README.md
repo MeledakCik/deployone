@@ -243,10 +243,24 @@ yang berjalan di server Depup sendiri: tanpa token, tanpa kuota harian, dan kode
   `keywords` bahasa Indonesia. Mesin mempelajari frasa → ikon (frasa utuh, terpanjang menang), jadi produk seperti
   "Galon Air Mineral" otomatis memakai ikon `galon`. Entri tanpa `svg` dengan nama ikon bawaan = hanya menambah kata
   kunci. Nama bawaan tidak bisa ditimpa.
-- **Paket elemen** (`"type": "elements"`): elemen dekoratif SVG dengan `slot` (`art` gambar utama, `badge` stiker,
-  `divider` pita di bawah hero, `pattern` motif latar blok ajakan) dan `fit` (`styles`, `families`, `domains`,
-  `kinds`, `chance`). Warna memakai `currentColor`/`var(--a)`/`var(--a2)`/`var(--ink)`/`var(--bg)`/`var(--on)` supaya
-  ikut palet website.
+- **Gaya ikon**: semua ikon satu website memakai satu gaya: `garis`, `tipis`, `tegas`, `duotone`, `bayangan`,
+  `sketsa`, `neon`, atau `piksel` (`treatIcon()` di `lib/site-assets.ts`). Perlakuan diterapkan pada isi SVG, jadi
+  katalog toko yang digambar ulang skrip ikut konsisten. Urutan pilihan: kata "ikon …" di deskripsi ("ikon tipis",
+  "8-bit") → `iconStyles` paket gaya → gaya ikon Template (`TEMPLATE_ICON_STYLES`) yang dipersempit ke `iconStyles`
+  keluarga elemen. Template yang diganti membawa gaya ikon ciri khasnya; isi lama tanpa `iconStyle` tetap `garis`.
+  Pengguna bisa memilih sendiri di **Atur manual → Gaya ikon**, atau mengetik "ikon sketsa".
+- **Paket varian ikon** (`"type": "icons", "variant": "piksel"`): gambar pengganti untuk satu gaya ikon, boleh untuk
+  nama bawaan maupun impor, tanpa kata kunci. Versi piksel ikon bawaan ada di `lib/lucide-pixel.ts`; untuk ikon impor
+  buat dengan `node scripts/pixel-icons.cjs ikon.json piksel.json` (butuh Playwright), lalu bungkus jadi paket varian.
+- **Paket elemen** (`"type": "elements"`): elemen dekoratif SVG dengan `slot` (`corner` hiasan sudut hero, `art`
+  gambar utama, `badge` stiker, `divider` pita di bawah hero, `pattern` motif latar blok ajakan), `family` (keluarga
+  visual; kosong = id paket) dan `fit` (`styles`, `families`, `templates`, `domains`, `kinds`, `chance`). Satu
+  website memakai **satu keluarga**: diminta lewat kata kunci keluarga, atau diundi dengan bobot (rata-rata skor
+  anggota)² dari kecocokan gaya (3), domain (4), template (2), jenis usaha (1). Keterangan keluarga di `families`:
+  `label`, `iconStyles` (gaya ikon serasi), `keywords` (mis. "batik", "8-bit"), `templates` (Template yang dipakai bila
+  keluarga diminta lewat kata kunci). Warna memakai `currentColor`/`var(--a)`/`var(--a2)`/`var(--ink)`/`var(--bg)`/
+  `var(--on)` supaya ikut palet website; `pattern` sebaiknya satu warna (`currentColor`). Perintah ubah: "hiasan
+  batik", "hiasan lain", "hapus ornamen"; pengguna juga bisa menyembunyikannya di **Atur manual → Ornamen**.
 - **Keamanan SVG**: semua SVG impor melewati `sanitizeSvg()` (allow-list: path, circle, rect, ellipse, line, polyline,
   polygon, g + atribut geometri/warna). Script, link, gambar luar, teks, style, dan event handler ditolak; SVG disaring
   ulang setiap isi website dinormalisasi.

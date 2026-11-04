@@ -9,10 +9,11 @@
  * Hasil: satu index.html mandiri (atau dipecah jadi index.html + assets/ untuk ekspor ZIP). Ikon = SVG Lucide
  * inline, tanpa emoji dan tanpa request ke luar (font sistem). Skrip hanya ada untuk situs berkatalog (UMKM).
  */
-import { LUCIDE, isIconName, svgIcon } from "@/lib/lucide-icons";
+import { LUCIDE, isIconName } from "@/lib/lucide-icons";
 import { SHOP_RUNTIME_JS } from "@/lib/ai-site-runtime";
 import { contrast as lookContrast, normalizeLook, type LookFont, type LookFontFamily, type SiteLook } from "@/lib/site-look";
-import { ELEMENT_SLOTS, VIEWBOX, resolveSvgColors, safeSvg, svgDataUri, type SiteOrnament } from "@/lib/site-assets";
+import { ELEMENT_SLOTS, VIEWBOX, isIconStyle, resolveSvgColors, safeSvg, svgDataUri, templateIconStyle, treatIcon, type IconStyle, type SiteOrnament } from "@/lib/site-assets";
+import { pixelIcon } from "@/lib/lucide-pixel";
 
 export type { SiteLook } from "@/lib/site-look";
 
@@ -111,8 +112,14 @@ export interface SiteContent {
   look?: SiteLook;
   /** Ikon hasil impor yang dipakai website ini: nama → isi SVG 24×24 (sudah disaring). */
   icons?: Record<string, string>;
-  /** Elemen dekoratif hasil impor (paket elemen): maks. 3, satu per slot. */
+  /** Gaya ikon pilihan mesin (garis, tipis, tegas, duotone, bayangan, sketsa, neon, piksel). Kosong = "garis". */
+  iconStyle?: IconStyle;
+  /** Gambar ikon alternatif per gaya dari paket varian: gaya → nama → isi SVG (sudah disaring). */
+  iconAlt?: Partial<Record<IconStyle, Record<string, string>>>;
+  /** Elemen dekoratif hasil impor (paket elemen): maks. satu per slot, semuanya dari satu keluarga. */
   ornaments?: SiteOrnament[];
+  /** Keluarga elemen ornamen (mis. "memphis"). */
+  ornFamily?: string;
 }
 
 export const KIND_LABEL: Record<SiteKind, string> = {
@@ -248,11 +255,28 @@ function normalizeIcons(v: unknown): Record<string, string> {
   return out;
 }
 
-/** Ornamen dari isi website: maks. 3, satu per slot, SVG disaring ulang. */
+/** Gambar ikon alternatif per gaya: hanya gaya yang dikenal, nama kebab-case, maks. 60 per gaya, SVG disaring ulang. */
+function normalizeIconAlt(v: unknown): SiteContent["iconAlt"] {
+  if (!v || typeof v !== "object" || Array.isArray(v)) return undefined;
+  const out: NonNullable<SiteContent["iconAlt"]> = {};
+  for (const [style, m] of Object.entries(v as Record<string, unknown>)) {
+    if (!isIconStyle(style) || style === "garis" || !m || typeof m !== "object" || Array.isArray(m)) continue;
+    const clean: Record<string, string> = {};
+    for (const [k, svg] of Object.entries(m as Record<string, unknown>).slice(0, 60)) {
+      if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(k) || k.length > 40) continue;
+      const x = safeSvg(svg, 4000);
+      if (x) clean[k] = x;
+    }
+    if (Object.keys(clean).length) out[style] = clean;
+  }
+  return Object.keys(out).length ? out : undefined;
+}
+
+/** Ornamen dari isi website: maks. satu per slot, SVG disaring ulang. */
 function normalizeOrnaments(v: unknown): SiteOrnament[] {
   if (!Array.isArray(v)) return [];
   const out: SiteOrnament[] = [];
-  for (const o of v.slice(0, 6)) {
+  for (const o of v.slice(0, 8)) {
     if (!o || typeof o !== "object") continue;
     const x = o as Record<string, unknown>;
     const slot = x.slot as SiteOrnament["slot"];
@@ -261,7 +285,7 @@ function normalizeOrnaments(v: unknown): SiteOrnament[] {
     const svg = safeSvg(x.svg, 12000);
     if (!svg) continue;
     out.push({ id: typeof x.id === "string" ? x.id.replace(/[^a-z0-9-]/g, "").slice(0, 48) : "elemen", slot, vb: x.vb, svg });
-    if (out.length >= 3) break;
+    if (out.length >= ELEMENT_SLOTS.length) break;
   }
   return out;
 }
@@ -515,7 +539,11 @@ export function normalizeContent(raw: unknown, forceKind?: SiteKind): SiteConten
     closingText: str(r.closingText, 120),
     ...(normalizeLook(r.look) ? { look: normalizeLook(r.look) } : {}),
     ...(Object.keys(customIcons).length ? { icons: customIcons } : {}),
-    ...(normalizeOrnaments(r.ornaments).length ? { ornaments: normalizeOrnaments(r.ornaments) } : {}),
+    ...(isIconStyle(r.iconStyle) ? { iconStyle: r.iconStyle } : {}),
+    ...(normalizeIconAlt(r.iconAlt) ? { iconAlt: normalizeIconAlt(r.iconAlt) } : {}),
+    ...(normalizeOrnaments(r.ornaments).length
+      ? { ornaments: normalizeOrnaments(r.ornaments), ...(typeof r.ornFamily === "string" && /^[a-z0-9][a-z0-9-]{1,47}$/.test(r.ornFamily) ? { ornFamily: r.ornFamily } : {}) }
+      : {}),
   };
 }
 
@@ -1250,6 +1278,10 @@ export interface RenderOpts {
   };
   /** false = abaikan gaya hasil latihan (content.look), mis. karena pengguna memilih Template/warna sendiri. */
   look?: boolean;
+  /** Gaya ikon pilihan pengguna (mode "Atur manual"). Kosong = pilihan mesin, atau ciri khas Template. */
+  iconStyle?: IconStyle;
+  /** false = sembunyikan ornamen paket elemen (content.ornaments). */
+  ornaments?: boolean;
   /** Gambar unggahan (data URL). */
   images?: SiteImages;
   /** "inline" (default) = data URL tertanam di HTML; "files" = berkas terpisah di assets/img (untuk ZIP). */
@@ -1440,8 +1472,17 @@ ${extraCss(t, bd, hover, extra)}
 .bd-el{position:absolute;right:clamp(14px,3vw,36px);top:clamp(14px,3vw,30px);width:clamp(44px,6vw,72px);height:auto;z-index:0}.bd-el svg{width:100%;height:auto;display:block}
 .band>.row,.band>div:not(.orn){position:relative;z-index:1}
 .bd-txt{display:flex;align-items:center;gap:clamp(14px,2vw,24px);min-width:0}
-${!look && !t.brutal ? ".band .bd-badge,.band .bd-art{--a:var(--on);--a2:var(--on)}" : ""}
+${
+  // Ornamen di blok ajakan berlatar aksen: aksen ⇄ warna teks-di-atas-aksen ditukar supaya stiker tetap kontras
+  // (isian jadi warna teks, detail jadi warna aksen). Gambar memakai warna latar blok untuk bidang "potongan".
+  !look && !t.brutal ? `.band .bd-badge,.band .bd-art{--a:${onColor(a)};--a2:${onColor(a)};--on:${a}}.band .bd-art{--bg:${a}}` : !look ? ".band .bd-art{--bg:#0a0a0a}" : ""
+}
 .bd-badge{flex:none;width:clamp(56px,7vw,88px);transform:rotate(-8deg)}.bd-badge svg{width:100%;height:auto;display:block}
+.orcw{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.orc{position:absolute;top:0;right:0;width:clamp(110px,15vw,210px);line-height:0}
+.orc svg{width:100%;height:auto;display:block}
+.h-split .orc,.h-split-bold .orc,.h-asymmetric .orc{width:clamp(90px,10vw,140px)}
+@media(max-width:620px){.orc,.h-split .orc,.h-split-bold .orc,.h-asymmetric .orc{width:68px;opacity:.6}}
 @media(max-width:620px){.bd-art{display:none}}
 ${poster ? posterCss(t) : ""}
 ${look ? lookCss(look) : ""}
@@ -1643,9 +1684,6 @@ function shopCss(t: Theme, bd: string): string {
 @media(max-width:520px){.adminbar{top:62px}.two{grid-template-columns:1fr}.shop-tools{margin-top:0}}`;
 }
 
-/** Ikon inline dengan ukuran tertentu. */
-const ico = (name: string, size = 24): string => svgIcon(name, size);
-
 /** Aman disisipkan di dalam <script type="application/json">. */
 const jsonForScript = (v: unknown): string => JSON.stringify(v).replace(/</g, "\\u003c").replace(/\u2028/g, "\\u2028").replace(/\u2029/g, "\\u2029");
 
@@ -1661,16 +1699,31 @@ function decodeDataUrl(u: string): { ext: string; data: Uint8Array } | null {
 }
 
 export function buildSite(content: SiteContent, template: TemplateId, accent?: string, opts: RenderOpts = {}): SiteBundle {
-  // Ikon impor (content.icons) dirender dengan gaya Lucide yang sama; nama bawaan tetap dari LUCIDE.
-  const customIcons = content.icons ?? {};
-  const ico = (name: string, size = 24): string =>
-    !isIconName(name) && customIcons[name]
-      ? `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${customIcons[name]}</svg>`
-      : svgIcon(name, size);
   const base = THEMES[template];
   const custom = (opts.palette ?? []).filter(isHexColor).map((x) => x.toLowerCase()).slice(0, MAX_PALETTE);
   // Gaya hasil latihan: dipakai kecuali dimatikan (pengguna memilih Template/warna/gaya sendiri).
   const look = opts.look === false ? undefined : content.look;
+  // Gaya ikon: pilihan manual > pilihan mesin (selama Template/gaya yang dipilih mesin masih dipakai) > ciri khas
+  // Template. Isi lama tanpa iconStyle tetap "garis" supaya website yang sudah terbit tidak berubah sendiri.
+  const iconStyle: IconStyle =
+    opts.iconStyle && isIconStyle(opts.iconStyle)
+      ? opts.iconStyle
+      : content.iconStyle
+        ? look || template === content.template
+          ? content.iconStyle
+          : templateIconStyle(template)
+        : "garis";
+  // Ikon impor (content.icons) memakai pembungkus Lucide yang sama; nama bawaan tetap dari LUCIDE.
+  const customIcons = content.icons ?? {};
+  const iconInner = (name: string): string => {
+    const n = isIconName(name) || customIcons[name] ? name : "sparkles";
+    const inner = isIconName(n) ? LUCIDE[n] : customIcons[n];
+    const alt = iconStyle === "garis" ? undefined : (content.iconAlt?.[iconStyle]?.[n] ?? (iconStyle === "piksel" ? pixelIcon(n) : undefined));
+    return treatIcon(inner, iconStyle, alt);
+  };
+  const ico = (name: string, size = 24): string =>
+    `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${iconInner(name)}</svg>`;
+  const ornaments = opts.ornaments === false ? [] : (content.ornaments ?? []);
   const a =
     custom[0] ??
     (look
@@ -1822,7 +1875,7 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
       .join("")}</div>`;
   /** Warna sorot kata di judul: aksen yang paling kontras dengan latar (min. 3:1 untuk teks besar). */
   const hlColor = look ? ([look.accent2, look.accent].find((x) => lookContrast(x, look.bg) >= 3) ?? look.fg) : a;
-  const ornOf = (slot: SiteOrnament["slot"]) => (content.ornaments ?? []).find((o) => o.slot === slot);
+  const ornOf = (slot: SiteOrnament["slot"]) => ornaments.find((o) => o.slot === slot);
   const ornSvg = (o: SiteOrnament, cls: string) => `<span class="${cls}" aria-hidden="true"><svg viewBox="${o.vb}" focusable="false">${o.svg}</svg></span>`;
   const art = (pref: string[], fallback = "crosshair"): string => {
     const oa = ornOf("art");
@@ -1944,7 +1997,11 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
   const divider = od
     ? `<div class="orn-div" aria-hidden="true" style="background-image:url(&quot;${svgDataUri(od.vb, resolveSvgColors(od.svg, pal))}&quot;);background-size:auto 100%;height:${Math.max(16, Math.min(64, Math.round((odVb[3] / odVb[2]) * 240)))}px"></div>`
     : "";
-  const hero = `<div class="hero h-${heroL}"><div class="glow"></div>${ornamentMarkup(t.deco)}${bignum}<div class="wrap">${heroInner}</div></div>${hazard}${ticker}${divider}`;
+  // Ornamen "corner": bentuk dekoratif di sudut hero (di belakang isi, terpotong rapi di tepi). Hanya tanpa gaya
+  // visual, karena hero gaya (poster, terminal, ...) sudah padat elemen.
+  const oc = look ? undefined : ornOf("corner");
+  const corner = oc ? `<div class="orcw" aria-hidden="true"><div class="orc"><svg viewBox="${oc.vb}" focusable="false">${oc.svg}</svg></div></div>` : "";
+  const hero = `<div class="hero h-${heroL}"><div class="glow"></div>${ornamentMarkup(t.deco)}${corner}${bignum}<div class="wrap">${heroInner}</div></div>${hazard}${ticker}${divider}`;
 
   /* ----- katalog / layanan ----- */
   const priceLabel = (i: SiteItem) => (i.price > 0 ? fmtRp(i.price) : "Tanya harga");
@@ -2067,8 +2124,8 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
   if (shop) {
     const used = new Set<string>([...SHOP_ICONS, ...RUNTIME_UI_ICONS, ...items.map((i) => i.icon)]);
     const icons: Record<string, string> = {};
-    for (const n of used) if (LUCIDE[n]) icons[n] = LUCIDE[n];
-    else if (customIcons[n]) icons[n] = customIcons[n];
+    // Isi ikon sudah diberi gaya ikon website ini, karena skrip katalog menggambar ulang kartu produk di browser.
+    for (const n of used) if (LUCIDE[n] || customIcons[n]) icons[n] = iconInner(n);
     dataScript = `<script type="application/json" id="wb-data">${jsonForScript({
       shop: true,
       key: hash(c.brand).toString(36),
