@@ -343,7 +343,6 @@ export function AiSiteView() {
             if (validTpl(d.template)) setTemplate(d.template);
             if (validPalette(d.palette)) setPalette(d.palette);
             if (validHero(d.heroOpt)) setHeroOpt(d.heroOpt);
-            if (validFeat(d.featOpt)) setFeatOpt(d.featOpt);
             if (validStyle(d.styleOpt)) setStyleOpt(d.styleOpt);
             if (validDecor(d.decorOpt)) setDecorOpt(d.decorOpt);
             if (validBg(d.bgOpt)) setBgOpt(d.bgOpt);
@@ -386,7 +385,8 @@ export function AiSiteView() {
   const accentEff = colors[0];
   const bgEff = bgOpt ?? tpl.swatch[0];
   const heroEff = heroOpt ?? content?.hero ?? "center";
-  const featEff = featOpt ?? content?.feat ?? "grid";
+  // Tata letak keunggulan tidak lagi dipilih manual: selalu mengikuti isi (Template / gaya mesin).
+  const featEff = content?.feat ?? "grid";
   const fontsEff = React.useMemo<RenderOpts["fonts"]>(
     () => ({
       title: { family: fontsOpt.title.family ?? undefined, weight: fontsOpt.title.weight ?? undefined },
@@ -423,7 +423,6 @@ export function AiSiteView() {
       template !== null ||
       palette !== null ||
       heroOpt !== null ||
-      featOpt !== null ||
       styleOpt !== null ||
       decorOpt !== null ||
       bgOpt !== null ||
@@ -733,7 +732,11 @@ export function AiSiteView() {
       setContent(r.content);
       setImages(nextImages);
       setSavedHtml(null);
-      if (again) {
+      // Gaya visual dari mesin (mis. brutalism) mengatur warna, huruf, garis, dan tata letak seluruh halaman.
+      // Pilihan tampilan manual yang tersisa dari sebelumnya (Template, warna, gaya, latar, huruf) akan mematikannya,
+      // jadi dilepas supaya gaya baru benar-benar terlihat di semua bagian.
+      const hadManual = !!(template || palette || styleOpt || bgOpt || decorOpt || heroOpt || fontsOpt.title.family || fontsOpt.sub.family || fontsOpt.body.family);
+      if (again || r.content.look) {
         setTemplate(null);
         setPalette(null);
         setHeroOpt(null);
@@ -743,6 +746,7 @@ export function AiSiteView() {
         setBgOpt(null);
         setFontsOpt(EMPTY_FONTS);
       }
+      if (r.content.look && hadManual && !again) showToast(`Gaya ${r.content.look.name} dipakai. Pilihan tampilan manual sebelumnya dilepas.`);
       pendingFocusRef.current = true;
       say("Website selesai dibuat. Pratinjau sudah diperbarui.");
       if (autoPublish && cfg?.enabled) {
@@ -754,7 +758,7 @@ export function AiSiteView() {
           r.content,
           renderSite(r.content, t0, acc, {
             hero: (again ? null : heroOpt) ?? r.content.hero,
-            feat: (again ? null : featOpt) ?? r.content.feat,
+            feat: r.content.feat,
             shop: shopOn,
             palette: pal ?? undefined,
             style: (again ? null : styleOpt) ?? undefined,
@@ -829,6 +833,17 @@ export function AiSiteView() {
       if (r.changed.includes("template") || r.changed.includes("accent")) {
         setTemplate(null);
         setPalette(null);
+      }
+      // Gaya visual baru dari perintah ("pakai gaya brutalism"): lepas pilihan manual yang akan mematikannya.
+      if (r.changed.includes("look") && r.content.look) {
+        setTemplate(null);
+        setPalette(null);
+        setStyleOpt(null);
+        setBgOpt(null);
+        setDecorOpt(null);
+        setFontsOpt(EMPTY_FONTS);
+        setHeroOpt(null);
+        setFeatOpt(null);
       }
       if (r.changed.includes("hero")) setHeroOpt(null);
       if (r.changed.includes("feat")) setFeatOpt(null);
@@ -945,7 +960,6 @@ export function AiSiteView() {
   const kindName = content ? KIND_OPTIONS.find((k) => k.id === content.kind)?.name ?? content.kind : "";
   const kindNote = content ? KIND_LABEL[content.kind].match(/\((.*)\)/)?.[1] ?? "" : "";
   const heroName = HERO_LAYOUTS.find((l) => l.id === heroEff)?.name ?? heroEff;
-  const featName = FEAT_LAYOUTS.find((l) => l.id === featEff)?.name ?? featEff;
 
   // Izin memakai website ini sebagai contoh latih mesin Depup (default mati, diingat per perangkat).
   const trainConsentBox = (
@@ -1432,7 +1446,7 @@ export function AiSiteView() {
               {tampilanMode === "manual" ? (
                 <div>
                   <div className={`mb-3 ${subheadCls}`}>Tata letak</div>
-                  <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="grid gap-3">
                     <Field label="Bagian paling atas" htmlFor="ai-hero" hint="Judul besar dan tombol di awal halaman.">
                       <Select value={heroEff} onValueChange={(v) => setHeroOpt(v as HeroLayout)}>
                         <SelectTrigger id="ai-hero">
@@ -1445,29 +1459,17 @@ export function AiSiteView() {
                         </SelectContent>
                       </Select>
                     </Field>
-                    <Field label="Bagian keunggulan" htmlFor="ai-feat" hint="Daftar kelebihan di bawah bagian atas.">
-                      <Select value={featEff} onValueChange={(v) => setFeatOpt(v as FeatLayout)}>
-                        <SelectTrigger id="ai-feat">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {FEAT_LAYOUTS.map((l) => (
-                            <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </Field>
                   </div>
                 </div>
               ) : (
                 <details className={cn("group rounded-[14px] bg-[var(--pill-bg)]", ON_MIST)}>
                   <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-3 rounded-[14px] px-3.5 py-2.5 text-[14px] font-medium [&::-webkit-details-marker]:hidden">
                     <span className="min-w-0">
-                      Atur tata letak <span className="font-normal text-text-muted">· {heroName}, {featName}</span>
+                      Atur tata letak <span className="font-normal text-text-muted">· {heroName}</span>
                     </span>
                     <ChevronDown size={16} className="shrink-0 transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden />
                   </summary>
-                  <div className="grid gap-3 px-3.5 pb-3.5 sm:grid-cols-2">
+                  <div className="grid gap-3 px-3.5 pb-3.5">
                     <Field label="Bagian paling atas" htmlFor="ai-hero-c" hint="Judul besar dan tombol di awal halaman.">
                       <Select value={heroEff} onValueChange={(v) => setHeroOpt(v as HeroLayout)}>
                         <SelectTrigger id="ai-hero-c">
@@ -1475,18 +1477,6 @@ export function AiSiteView() {
                         </SelectTrigger>
                         <SelectContent>
                           {HERO_LAYOUTS.map((l) => (
-                            <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </Field>
-                    <Field label="Bagian keunggulan" htmlFor="ai-feat-c" hint="Daftar kelebihan di bawah bagian atas.">
-                      <Select value={featEff} onValueChange={(v) => setFeatOpt(v as FeatLayout)}>
-                        <SelectTrigger id="ai-feat-c">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {FEAT_LAYOUTS.map((l) => (
                             <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
                           ))}
                         </SelectContent>

@@ -2,7 +2,7 @@
   {
     "type": "style",
     "id": "brutalism",
-    "label": "Brutalism",
+    "label": "Brutalism Poster",
     "desc": "Poster tipografi: nama raksasa, blok warna terbalik, grid sel bergaris tebal, sudut lancip, satu aksen keras, label kecil kapital, elemen teknis (target, barcode, panah).",
     "prompts": [
       "website gaya brutalism untuk brand streetwear",
@@ -15,57 +15,1318 @@
       "desain industrial hitam oranye untuk bengkel custom"
     ],
     "keywords": [
-      "brutal", "brutalis", "brutalism", "brutalisme", "neo brutalism",
-      "gaya poster", "ala poster", "seperti poster", "gaya swiss", "swiss style",
-      "tipografi besar", "huruf raksasa", "huruf besar", "desain berani", "tampilan berani", "desain tegas", "tampilan tegas",
-      "kontras tinggi", "streetwear", "underground", "edgy", "industrial", "mentah", "raw", "techno", "rave", "hitam merah", "hitam oranye"
+      "brutal",
+      "brutalis",
+      "brutalism",
+      "brutalisme",
+      "neo brutalism",
+      "gaya poster",
+      "ala poster",
+      "seperti poster",
+      "gaya swiss",
+      "swiss style",
+      "tipografi besar",
+      "huruf raksasa",
+      "desain berani",
+      "tampilan berani",
+      "desain tegas",
+      "kontras tinggi",
+      "hitam merah",
+      "hitam oranye"
     ],
     "fit": {
-      "domains": ["event-musik", "event-bazar", "event-lari", "umkm-fashion", "jasa-konveksi", "portofolio-desain", "portofolio-developer", "jasa-digital", "jasa-barbershop", "jasa-gym-fitness", "jasa-fotografi", "portofolio-penulis"],
-      "kinds": ["event"],
+      "domains": [
+        "event-musik",
+        "event-bazar",
+        "event-lari",
+        "umkm-fashion",
+        "portofolio-desain",
+        "jasa-gym-fitness",
+        "jasa-fotografi",
+        "portofolio-penulis"
+      ],
+      "kinds": [
+        "event"
+      ],
       "chance": 0.4
     },
     "palettes": [
-      { "name": "Poster merah", "bg": "#efebe3", "fg": "#0b0b0b", "ink": "#0b0b0b", "accent": "#e0261d", "accent2": "#0b0b0b" },
-      { "name": "Dossier oranye", "bg": "#e6e5e1", "fg": "#121212", "ink": "#121212", "accent": "#ff5a0a", "accent2": "#121212" },
-      { "name": "Dossier gelap", "bg": "#141414", "fg": "#ecebe7", "ink": "#ecebe7", "accent": "#ff5a0a", "accent2": "#ff5a0a" },
-      { "name": "Klub oranye", "bg": "#0a0a0a", "fg": "#e3dfd6", "ink": "#e3dfd6", "accent": "#ff7a00", "accent2": "#ff3d00" },
-      { "name": "Klub teal", "bg": "#e3dfd6", "fg": "#0a0a0a", "ink": "#0a0a0a", "accent": "#0e8783", "accent2": "#ff3d00" },
-      { "name": "Klub navy", "bg": "#0b2236", "fg": "#e3dfd6", "ink": "#e3dfd6", "accent": "#ff3d00", "accent2": "#ff7a00" },
-      { "name": "Violet lime", "bg": "#ffffff", "fg": "#000000", "ink": "#000000", "accent": "#7d39eb", "accent2": "#c6ff33" },
-      { "name": "Lime malam", "bg": "#000000", "fg": "#ffffff", "ink": "#ffffff", "accent": "#c6ff33", "accent2": "#7d39eb" },
-      { "name": "Neon jalanan", "bg": "#0a0a0a", "fg": "#ffffff", "ink": "#ffffff", "accent": "#e6ff00", "accent2": "#e6ff00" }
+      {
+        "name": "Poster merah",
+        "bg": "#efebe3",
+        "fg": "#0b0b0b",
+        "ink": "#0b0b0b",
+        "accent": "#e0261d",
+        "accent2": "#0b0b0b"
+      },
+      {
+        "name": "Dossier oranye",
+        "bg": "#e6e5e1",
+        "fg": "#121212",
+        "ink": "#121212",
+        "accent": "#ff5a0a",
+        "accent2": "#121212"
+      },
+      {
+        "name": "Dossier gelap",
+        "bg": "#141414",
+        "fg": "#ecebe7",
+        "ink": "#ecebe7",
+        "accent": "#ff5a0a",
+        "accent2": "#ff5a0a"
+      },
+      {
+        "name": "Klub oranye",
+        "bg": "#0a0a0a",
+        "fg": "#e3dfd6",
+        "ink": "#e3dfd6",
+        "accent": "#ff7a00",
+        "accent2": "#ff3d00"
+      },
+      {
+        "name": "Klub teal",
+        "bg": "#e3dfd6",
+        "fg": "#0a0a0a",
+        "ink": "#0a0a0a",
+        "accent": "#0e8783",
+        "accent2": "#ff3d00"
+      },
+      {
+        "name": "Klub navy",
+        "bg": "#0b2236",
+        "fg": "#e3dfd6",
+        "ink": "#e3dfd6",
+        "accent": "#ff3d00",
+        "accent2": "#ff7a00"
+      },
+      {
+        "name": "Violet lime",
+        "bg": "#ffffff",
+        "fg": "#000000",
+        "ink": "#000000",
+        "accent": "#7d39eb",
+        "accent2": "#c6ff33"
+      },
+      {
+        "name": "Lime malam",
+        "bg": "#000000",
+        "fg": "#ffffff",
+        "ink": "#ffffff",
+        "accent": "#c6ff33",
+        "accent2": "#7d39eb"
+      },
+      {
+        "name": "Neon jalanan",
+        "bg": "#0a0a0a",
+        "fg": "#ffffff",
+        "ink": "#ffffff",
+        "accent": "#e6ff00",
+        "accent2": "#e6ff00"
+      }
     ],
     "fonts": {
-      "title": { "family": "condensed", "weight": 900, "upper": true, "tracking": -0.005, "scale": 1.2, "leading": 0.86 },
-      "sub": { "family": "condensed", "weight": 900, "upper": true, "tracking": 0, "leading": 0.92 },
-      "body": { "family": "grotesk", "weight": 400 },
-      "label": { "family": "mono", "weight": 700, "upper": true, "tracking": 0.06 }
+      "title": {
+        "family": "condensed",
+        "weight": 900,
+        "upper": true,
+        "tracking": -0.005,
+        "scale": 1.2,
+        "leading": 0.86
+      },
+      "sub": {
+        "family": "condensed",
+        "weight": 900,
+        "upper": true,
+        "tracking": 0,
+        "leading": 0.92
+      },
+      "body": {
+        "family": "grotesk",
+        "weight": 400
+      },
+      "label": {
+        "family": "mono",
+        "weight": 700,
+        "upper": true,
+        "tracking": 0.06
+      }
     },
     "typeSets": [
       {
-        "title": { "family": "grotesk", "weight": 900, "upper": true, "tracking": -0.045, "scale": 1.1, "leading": 0.9 },
-        "sub": { "family": "grotesk", "weight": 800, "upper": false, "tracking": -0.04, "leading": 0.98 },
-        "body": { "family": "grotesk", "weight": 400 },
-        "label": { "family": "grotesk", "weight": 700, "upper": true, "tracking": 0.02 }
+        "title": {
+          "family": "grotesk",
+          "weight": 900,
+          "upper": true,
+          "tracking": -0.045,
+          "scale": 1.1,
+          "leading": 0.9
+        },
+        "sub": {
+          "family": "grotesk",
+          "weight": 800,
+          "upper": false,
+          "tracking": -0.04,
+          "leading": 0.98
+        },
+        "body": {
+          "family": "grotesk",
+          "weight": 400
+        },
+        "label": {
+          "family": "grotesk",
+          "weight": 700,
+          "upper": true,
+          "tracking": 0.02
+        }
       },
       {
-        "title": { "family": "condensed", "weight": 900, "upper": true, "tracking": 0, "scale": 1.15, "leading": 0.88 },
-        "sub": { "family": "grotesk", "weight": 900, "upper": true, "tracking": -0.03, "leading": 0.95 },
-        "body": { "family": "grotesk", "weight": 400 },
-        "label": { "family": "mono", "weight": 500, "upper": true, "tracking": 0.12 }
+        "title": {
+          "family": "condensed",
+          "weight": 900,
+          "upper": true,
+          "tracking": 0,
+          "scale": 1.15,
+          "leading": 0.88
+        },
+        "sub": {
+          "family": "grotesk",
+          "weight": 900,
+          "upper": true,
+          "tracking": -0.03,
+          "leading": 0.95
+        },
+        "body": {
+          "family": "grotesk",
+          "weight": 400
+        },
+        "label": {
+          "family": "mono",
+          "weight": 500,
+          "upper": true,
+          "tracking": 0.12
+        }
       }
     ],
-    "shape": { "radius": 0, "border": 3, "shadow": "none", "gap": 0, "pad": 24, "width": 1240, "section": 96 },
-    "layouts": { "hero": ["poster", "poster", "editorial"], "feat": ["index", "index", "bento"] },
+    "shape": {
+      "radius": 0,
+      "border": 3,
+      "shadow": "none",
+      "gap": 0,
+      "pad": 24,
+      "width": 1240,
+      "section": 96
+    },
+    "layouts": {
+      "hero": [
+        "poster",
+        "poster",
+        "breaker"
+      ],
+      "feat": [
+        "index",
+        "index",
+        "bento"
+      ]
+    },
     "elements": {
-      "always": ["meta", "index", "arrow"],
-      "pool": ["bands", "ticker", "crosshair", "barcode", "sunburst", "asterisk", "halftone", "plus-grid"]
+      "always": [
+        "meta",
+        "index",
+        "arrow"
+      ],
+      "pool": [
+        "bands",
+        "ticker",
+        "crosshair",
+        "barcode",
+        "sunburst",
+        "asterisk",
+        "halftone",
+        "plus-grid",
+        "checker",
+        "hazard"
+      ]
     },
     "copy": {
-      "meta": ["{city}", "Edisi {year}", "Arsip No. 05", "Tanpa basa-basi", "Dibuat lokal", "Sektor kreatif", "Arah, bukan tren", "Lihat lebih dekat", "Dibuat untuk diingat"],
-      "kicker": ["Bukan sekadar tampil. Ini sikap.", "Jelas, tegas, tanpa basa-basi.", "Arah, bukan sekadar inspirasi.", "Dibuat untuk diingat.", "Tetap penasaran. Tetap jalan."],
-      "ticker": ["{brand} / edisi {year}", "Tanpa basa-basi", "Dibuat untuk diingat", "Lihat lebih dekat", "Arah, bukan tren"]
+      "meta": [
+        "{city}",
+        "Edisi {year}",
+        "Arsip No. 05",
+        "Tanpa basa-basi",
+        "Dibuat lokal",
+        "Sektor kreatif",
+        "Arah, bukan tren",
+        "Lihat lebih dekat",
+        "Dibuat untuk diingat"
+      ],
+      "kicker": [
+        "Bukan sekadar tampil. Ini sikap.",
+        "Jelas, tegas, tanpa basa-basi.",
+        "Arah, bukan sekadar inspirasi.",
+        "Dibuat untuk diingat.",
+        "Tetap penasaran. Tetap jalan."
+      ],
+      "ticker": [
+        "{brand} / edisi {year}",
+        "Tanpa basa-basi",
+        "Dibuat untuk diingat",
+        "Lihat lebih dekat",
+        "Arah, bukan tren"
+      ]
+    },
+    "family": "brutalism",
+    "labels": [
+      "paren",
+      "bracket"
+    ]
+  },
+  {
+    "type": "style",
+    "id": "brutal-acid",
+    "family": "brutalism",
+    "label": "Brutalism Acid",
+    "desc": "Acid graphic: hitam + lime atau krem + kobalt, judul condensed raksasa dengan satu kata berwarna, asterisk dan sparkle, globe wireframe, lencana teks melingkar, pita berjalan, blok bagian terbalik.",
+    "prompts": [
+      "website acid graphic hitam lime untuk acara rave",
+      "portofolio desainer gaya design that breaks the grid",
+      "landing page lime dan kobalt dengan huruf raksasa",
+      "web komunitas kreatif gaya acid",
+      "poster digital hitam stabilo untuk event",
+      "website grunge lime untuk label musik"
+    ],
+    "keywords": [
+      "brutal",
+      "brutalis",
+      "brutalism",
+      "brutalisme",
+      "neo brutalism",
+      "acid",
+      "acid graphic",
+      "grunge",
+      "stabilo",
+      "neon lime",
+      "hijau stabilo",
+      "lime",
+      "kobalt",
+      "biru kobalt",
+      "rave",
+      "break the grid",
+      "breaks the grid",
+      "pecah grid"
+    ],
+    "fit": {
+      "domains": [
+        "event-musik",
+        "portofolio-desain",
+        "jasa-digital",
+        "umkm-fashion",
+        "jasa-gym-fitness",
+        "jasa-barbershop"
+      ],
+      "kinds": [
+        "event",
+        "portofolio"
+      ],
+      "chance": 0.35
+    },
+    "labels": [
+      "paren",
+      "hash"
+    ],
+    "palettes": [
+      {
+        "name": "Acid malam",
+        "bg": "#0b0b0b",
+        "fg": "#f2f2f2",
+        "ink": "#f2f2f2",
+        "accent": "#c8ff2e",
+        "accent2": "#c8ff2e"
+      },
+      {
+        "name": "Kobalt lime",
+        "bg": "#f4f1e9",
+        "fg": "#111111",
+        "ink": "#111111",
+        "accent": "#d7ff3a",
+        "accent2": "#1f3fe6"
+      },
+      {
+        "name": "Kobalt",
+        "bg": "#f4f1e9",
+        "fg": "#111111",
+        "ink": "#111111",
+        "accent": "#1f3fe6",
+        "accent2": "#d7ff3a"
+      },
+      {
+        "name": "Lime krem",
+        "bg": "#ecebe4",
+        "fg": "#0d0d0d",
+        "ink": "#0d0d0d",
+        "accent": "#b6f500",
+        "accent2": "#0d0d0d"
+      },
+      {
+        "name": "Acid arang",
+        "bg": "#1a1a1a",
+        "fg": "#ececec",
+        "ink": "#ececec",
+        "accent": "#b8ff3c",
+        "accent2": "#ffffff"
+      }
+    ],
+    "fonts": {
+      "title": {
+        "family": "condensed",
+        "weight": 900,
+        "upper": true,
+        "tracking": 0,
+        "scale": 1.25,
+        "leading": 0.86
+      },
+      "sub": {
+        "family": "condensed",
+        "weight": 900,
+        "upper": true,
+        "tracking": 0,
+        "leading": 0.9
+      },
+      "body": {
+        "family": "grotesk",
+        "weight": 400,
+        "upper": false,
+        "tracking": 0
+      },
+      "label": {
+        "family": "mono",
+        "weight": 600,
+        "upper": true,
+        "tracking": 0.04
+      }
+    },
+    "typeSets": [
+      {
+        "title": {
+          "family": "grotesk",
+          "weight": 900,
+          "upper": true,
+          "tracking": -0.045,
+          "scale": 1.1,
+          "leading": 0.88
+        },
+        "sub": {
+          "family": "grotesk",
+          "weight": 900,
+          "upper": true,
+          "tracking": -0.03,
+          "leading": 0.92
+        },
+        "body": {
+          "family": "grotesk",
+          "weight": 400,
+          "upper": false,
+          "tracking": 0
+        },
+        "label": {
+          "family": "mono",
+          "weight": 600,
+          "upper": true,
+          "tracking": 0.06
+        }
+      },
+      {
+        "title": {
+          "family": "condensed",
+          "weight": 900,
+          "upper": true,
+          "tracking": 0.01,
+          "scale": 1.2,
+          "leading": 0.86
+        },
+        "sub": {
+          "family": "grotesk",
+          "weight": 800,
+          "upper": true,
+          "tracking": -0.02,
+          "leading": 0.95
+        },
+        "body": {
+          "family": "mono",
+          "weight": 400,
+          "upper": false,
+          "tracking": 0
+        },
+        "label": {
+          "family": "mono",
+          "weight": 700,
+          "upper": true,
+          "tracking": 0.04
+        }
+      }
+    ],
+    "shape": {
+      "radius": 0,
+      "border": 2,
+      "shadow": "none",
+      "gap": 0,
+      "pad": 24,
+      "width": 1260,
+      "section": 100,
+      "pill": 999
+    },
+    "layouts": {
+      "hero": [
+        "breaker",
+        "breaker",
+        "poster"
+      ],
+      "feat": [
+        "bento",
+        "index",
+        "grid"
+      ]
+    },
+    "elements": {
+      "always": [
+        "ticker",
+        "asterisk",
+        "index"
+      ],
+      "pool": [
+        "sparkle",
+        "globe",
+        "ring",
+        "blocks",
+        "numbers",
+        "halftone",
+        "arrow",
+        "crosshair",
+        "brackets"
+      ]
+    },
+    "copy": {
+      "meta": [
+        "Lihat lebih dekat",
+        "Ide, tempat, rasa",
+        "Edisi {year}",
+        "{city}",
+        "Dibuat lokal",
+        "Tanpa batas"
+      ],
+      "kicker": [
+        "Bukan sekadar tampilan.",
+        "Berani beda, tetap jelas.",
+        "Lihat dengan cara lain.",
+        "Detail punya makna."
+      ],
+      "ticker": [
+        "{brand}",
+        "Lihat dengan cara lain",
+        "Edisi {year}",
+        "Berani beda"
+      ]
+    }
+  },
+  {
+    "type": "style",
+    "id": "brutal-cyber",
+    "family": "brutalism",
+    "label": "Brutalism Cyber",
+    "desc": "Cyber brutalism: abu terang atau gelap, serba monospace, label /01, rel samping vertikal, koordinat X_ Y_ Z_, seni piksel, braket, statistik sistem.",
+    "prompts": [
+      "website cyber brutalism untuk studio digital",
+      "landing page gaya terminal monospace",
+      "web futuristik gaya sistem komputer",
+      "portofolio developer gaya hacker",
+      "situs teknologi tampilan sci-fi brutal",
+      "website gaya cyberpunk minimal"
+    ],
+    "keywords": [
+      "brutal",
+      "brutalis",
+      "brutalism",
+      "brutalisme",
+      "neo brutalism",
+      "cyber",
+      "cyberpunk",
+      "cyber brutalism",
+      "terminal",
+      "hacker",
+      "sci-fi",
+      "scifi",
+      "monospace",
+      "gaya sistem",
+      "gaya kode"
+    ],
+    "fit": {
+      "domains": [
+        "jasa-digital",
+        "portofolio-developer",
+        "artikel-teknologi",
+        "event-seminar",
+        "jasa-servis-elektronik"
+      ],
+      "chance": 0.35
+    },
+    "labels": [
+      "slash"
+    ],
+    "palettes": [
+      {
+        "name": "Cyber terang",
+        "bg": "#f1f1f0",
+        "fg": "#0a0a0a",
+        "ink": "#0a0a0a",
+        "accent": "#7b5cff",
+        "accent2": "#e4ff3a"
+      },
+      {
+        "name": "Cyber gelap",
+        "bg": "#0c0c0f",
+        "fg": "#ececec",
+        "ink": "#ececec",
+        "accent": "#8f75ff",
+        "accent2": "#e4ff3a"
+      },
+      {
+        "name": "Terminal hijau",
+        "bg": "#0a0d0a",
+        "fg": "#d9ffd6",
+        "ink": "#d9ffd6",
+        "accent": "#39ff7a",
+        "accent2": "#39ff7a"
+      },
+      {
+        "name": "Kertas sistem",
+        "bg": "#e9e9e6",
+        "fg": "#111111",
+        "ink": "#111111",
+        "accent": "#ff3b1f",
+        "accent2": "#111111"
+      }
+    ],
+    "fonts": {
+      "title": {
+        "family": "condensed",
+        "weight": 900,
+        "upper": true,
+        "tracking": 0,
+        "scale": 1.15,
+        "leading": 0.86
+      },
+      "sub": {
+        "family": "mono",
+        "weight": 700,
+        "upper": true,
+        "tracking": 0.02,
+        "leading": 1.1
+      },
+      "body": {
+        "family": "mono",
+        "weight": 400,
+        "upper": false,
+        "tracking": 0
+      },
+      "label": {
+        "family": "mono",
+        "weight": 600,
+        "upper": true,
+        "tracking": 0.06
+      }
+    },
+    "typeSets": [
+      {
+        "title": {
+          "family": "grotesk",
+          "weight": 800,
+          "upper": true,
+          "tracking": -0.03,
+          "scale": 1.05,
+          "leading": 0.9
+        },
+        "sub": {
+          "family": "mono",
+          "weight": 700,
+          "upper": true,
+          "tracking": 0.02,
+          "leading": 1.1
+        },
+        "body": {
+          "family": "mono",
+          "weight": 400,
+          "upper": false,
+          "tracking": 0
+        },
+        "label": {
+          "family": "mono",
+          "weight": 500,
+          "upper": true,
+          "tracking": 0.1
+        }
+      }
+    ],
+    "shape": {
+      "radius": 0,
+      "border": 2,
+      "shadow": "none",
+      "gap": 18,
+      "pad": 22,
+      "width": 1240,
+      "section": 88
+    },
+    "layouts": {
+      "hero": [
+        "terminal",
+        "terminal",
+        "dashboard"
+      ],
+      "feat": [
+        "index",
+        "grid",
+        "list"
+      ]
+    },
+    "elements": {
+      "always": [
+        "index",
+        "arrow",
+        "brackets"
+      ],
+      "pool": [
+        "pixel",
+        "plus-grid",
+        "hazard",
+        "crosshair",
+        "globe",
+        "numbers",
+        "ticker",
+        "barcode"
+      ]
+    },
+    "copy": {
+      "meta": [
+        "Sistem aktif",
+        "Memuat data",
+        "Simpul {city}",
+        "Versi {year}",
+        "Koneksi aman"
+      ],
+      "kicker": [
+        "Fungsional. Digital. Tanpa basa-basi.",
+        "Bentuk mengikuti fungsi.",
+        "Data dulu, hiasan belakangan.",
+        "Sistem siap dipakai."
+      ],
+      "ticker": [
+        "Koneksi aman",
+        "Sistem aktif",
+        "{brand} / {year}",
+        "Akses dibuka"
+      ]
+    }
+  },
+  {
+    "type": "style",
+    "id": "brutal-mission",
+    "family": "brutalism",
+    "label": "Brutalism Mission",
+    "desc": "Mission control: sage + arang + oranye, grotesk tanpa kapital, angka raksasa terpotong di tepi atas, kartu statistik, tab kapsul, kesan dasbor ekspedisi.",
+    "prompts": [
+      "website gaya misi luar angkasa untuk perusahaan logistik",
+      "landing page dasbor telemetri sage dan oranye",
+      "web rental kendaraan gaya ekspedisi",
+      "company profile industri gaya mission control",
+      "website bengkel offroad gaya ekspedisi mars"
+    ],
+    "keywords": [
+      "brutal",
+      "brutalis",
+      "brutalism",
+      "brutalisme",
+      "neo brutalism",
+      "misi",
+      "mission",
+      "mission control",
+      "luar angkasa",
+      "antariksa",
+      "space",
+      "ekspedisi",
+      "telemetri",
+      "dasbor",
+      "dashboard",
+      "sage",
+      "hijau sage"
+    ],
+    "fit": {
+      "domains": [
+        "jasa-rental-kendaraan",
+        "jasa-bengkel",
+        "jasa-renovasi",
+        "event-lari",
+        "jasa-servis-elektronik",
+        "profil-sekolah"
+      ],
+      "chance": 0.3
+    },
+    "labels": [
+      "paren",
+      "hash"
+    ],
+    "palettes": [
+      {
+        "name": "Sage misi",
+        "bg": "#c9d9c6",
+        "fg": "#222222",
+        "ink": "#222222",
+        "accent": "#ff6a3d",
+        "accent2": "#222222"
+      },
+      {
+        "name": "Arang misi",
+        "bg": "#2a2a2a",
+        "fg": "#c9d9c6",
+        "ink": "#c9d9c6",
+        "accent": "#ff6a3d",
+        "accent2": "#c9d9c6"
+      },
+      {
+        "name": "Dinding oranye",
+        "bg": "#f0e9e1",
+        "fg": "#1e1e1e",
+        "ink": "#1e1e1e",
+        "accent": "#ff5a2c",
+        "accent2": "#1e1e1e"
+      },
+      {
+        "name": "Abu industri",
+        "bg": "#d9d9d6",
+        "fg": "#1c1c1c",
+        "ink": "#1c1c1c",
+        "accent": "#ff6a3d",
+        "accent2": "#1c1c1c"
+      }
+    ],
+    "fonts": {
+      "title": {
+        "family": "grotesk",
+        "weight": 800,
+        "upper": false,
+        "tracking": -0.045,
+        "scale": 1.05,
+        "leading": 0.95
+      },
+      "sub": {
+        "family": "grotesk",
+        "weight": 700,
+        "upper": false,
+        "tracking": -0.03,
+        "leading": 1.0
+      },
+      "body": {
+        "family": "grotesk",
+        "weight": 400,
+        "upper": false,
+        "tracking": 0
+      },
+      "label": {
+        "family": "grotesk",
+        "weight": 700,
+        "upper": true,
+        "tracking": 0.04
+      }
+    },
+    "typeSets": [
+      {
+        "title": {
+          "family": "grotesk",
+          "weight": 900,
+          "upper": true,
+          "tracking": -0.03,
+          "scale": 1.0,
+          "leading": 0.92
+        },
+        "sub": {
+          "family": "grotesk",
+          "weight": 800,
+          "upper": false,
+          "tracking": -0.03,
+          "leading": 1.0
+        },
+        "body": {
+          "family": "grotesk",
+          "weight": 400,
+          "upper": false,
+          "tracking": 0
+        },
+        "label": {
+          "family": "mono",
+          "weight": 600,
+          "upper": true,
+          "tracking": 0.06
+        }
+      }
+    ],
+    "shape": {
+      "radius": 4,
+      "border": 2,
+      "shadow": "none",
+      "gap": 14,
+      "pad": 22,
+      "width": 1220,
+      "section": 92,
+      "pill": 999
+    },
+    "layouts": {
+      "hero": [
+        "dashboard",
+        "dashboard",
+        "poster"
+      ],
+      "feat": [
+        "index",
+        "bento",
+        "grid"
+      ]
+    },
+    "elements": {
+      "always": [
+        "stats",
+        "bignum",
+        "index"
+      ],
+      "pool": [
+        "crosshair",
+        "sparkle",
+        "hazard",
+        "barcode",
+        "plus-grid",
+        "arrow",
+        "numbers",
+        "halftone"
+      ]
+    },
+    "copy": {
+      "meta": [
+        "Laporan misi",
+        "{city}",
+        "Fase 01",
+        "Arsip {year}",
+        "Pusat kendali"
+      ],
+      "kicker": [
+        "Dibangun untuk kerja yang presisi.",
+        "Setiap detail tercatat.",
+        "Rencana jelas, hasil terukur."
+      ],
+      "ticker": [
+        "Fase 01",
+        "Laporan misi {year}",
+        "Pusat kendali {brand}"
+      ]
+    }
+  },
+  {
+    "type": "style",
+    "id": "brutal-label",
+    "family": "brutalism",
+    "label": "Brutalism Label",
+    "desc": "Sistem label: kolom isian SUBJEK/EDISI, huruf inisial raksasa, barcode, garis hazard, papan catur, satu aksen (biru, kuning, merah, lime) di atas abu atau hitam.",
+    "prompts": [
+      "website gaya label pengiriman untuk toko online",
+      "landing page ala shipping label dengan barcode",
+      "web arsip katalog gaya label industri",
+      "toko frozen food gaya stiker label",
+      "website brand kemasan gaya label sistem"
+    ],
+    "keywords": [
+      "brutal",
+      "brutalis",
+      "brutalism",
+      "brutalisme",
+      "neo brutalism",
+      "gaya label",
+      "ala label",
+      "label pengiriman",
+      "shipping label",
+      "label sistem",
+      "sticker label",
+      "stiker label",
+      "barcode",
+      "gaya arsip",
+      "data frame"
+    ],
+    "fit": {
+      "domains": [
+        "umkm-frozen-food",
+        "umkm-oleh-oleh",
+        "jasa-konveksi",
+        "umkm-sembako",
+        "umkm-fashion",
+        "jasa-rental-kendaraan"
+      ],
+      "chance": 0.25
+    },
+    "labels": [
+      "hash",
+      "bracket"
+    ],
+    "palettes": [
+      {
+        "name": "Label abu",
+        "bg": "#e4e4e2",
+        "fg": "#111111",
+        "ink": "#111111",
+        "accent": "#2b4bd8",
+        "accent2": "#111111"
+      },
+      {
+        "name": "Label gelap",
+        "bg": "#161616",
+        "fg": "#e8e8e6",
+        "ink": "#e8e8e6",
+        "accent": "#f5d218",
+        "accent2": "#e8e8e6"
+      },
+      {
+        "name": "Label kuning",
+        "bg": "#ececea",
+        "fg": "#111111",
+        "ink": "#111111",
+        "accent": "#f5d218",
+        "accent2": "#d92222"
+      },
+      {
+        "name": "Hyper lime",
+        "bg": "#e9e9e7",
+        "fg": "#1a1a1a",
+        "ink": "#1a1a1a",
+        "accent": "#c6ff33",
+        "accent2": "#1a1a1a"
+      },
+      {
+        "name": "Merah hazard",
+        "bg": "#efefed",
+        "fg": "#111111",
+        "ink": "#111111",
+        "accent": "#e02424",
+        "accent2": "#111111"
+      }
+    ],
+    "fonts": {
+      "title": {
+        "family": "grotesk",
+        "weight": 900,
+        "upper": true,
+        "tracking": -0.03,
+        "scale": 1.0,
+        "leading": 0.9
+      },
+      "sub": {
+        "family": "grotesk",
+        "weight": 800,
+        "upper": true,
+        "tracking": -0.01,
+        "leading": 0.98
+      },
+      "body": {
+        "family": "grotesk",
+        "weight": 400,
+        "upper": false,
+        "tracking": 0
+      },
+      "label": {
+        "family": "grotesk",
+        "weight": 600,
+        "upper": true,
+        "tracking": 0.02
+      }
+    },
+    "typeSets": [
+      {
+        "title": {
+          "family": "condensed",
+          "weight": 900,
+          "upper": true,
+          "tracking": 0,
+          "scale": 1.1,
+          "leading": 0.88
+        },
+        "sub": {
+          "family": "grotesk",
+          "weight": 800,
+          "upper": true,
+          "tracking": -0.01,
+          "leading": 0.98
+        },
+        "body": {
+          "family": "grotesk",
+          "weight": 400,
+          "upper": false,
+          "tracking": 0
+        },
+        "label": {
+          "family": "mono",
+          "weight": 500,
+          "upper": true,
+          "tracking": 0.08
+        }
+      }
+    ],
+    "shape": {
+      "radius": 0,
+      "border": 2,
+      "shadow": "none",
+      "gap": 0,
+      "pad": 20,
+      "width": 1240,
+      "section": 84
+    },
+    "layouts": {
+      "hero": [
+        "label",
+        "label",
+        "poster",
+        "dashboard"
+      ],
+      "feat": [
+        "index",
+        "grid",
+        "list"
+      ]
+    },
+    "elements": {
+      "always": [
+        "index",
+        "barcode",
+        "brackets"
+      ],
+      "pool": [
+        "hazard",
+        "checker",
+        "globe",
+        "crosshair",
+        "sparkle",
+        "stats",
+        "numbers",
+        "plus-grid",
+        "arrow"
+      ]
+    },
+    "copy": {
+      "meta": [
+        "Label sistem",
+        "Lot 000/0001",
+        "Edisi {year}",
+        "{city}",
+        "Arsip #005"
+      ],
+      "kicker": [
+        "Dicatat, dikemas, dikirim.",
+        "Spesifikasi jelas di setiap label.",
+        "Satu label, semua info."
+      ],
+      "ticker": [
+        "Label sistem",
+        "{brand} / edisi {year}",
+        "Arsip #005"
+      ]
+    }
+  },
+  {
+    "type": "style",
+    "id": "brutal-street",
+    "family": "brutalism",
+    "label": "Brutalism Street",
+    "desc": "Streetwear futuristik: hitam-putih, huruf lebar (extended), sparkle empat sudut, globe wireframe, braket, hazard, papan catur, lencana melingkar.",
+    "prompts": [
+      "website gaya streetwear futuristik hitam putih",
+      "landing page ala urban style dengan huruf lebar",
+      "web merch band gaya hypebeast",
+      "brand kaos gaya futuristic streetwear",
+      "distro gaya street style monokrom"
+    ],
+    "keywords": [
+      "brutal",
+      "brutalis",
+      "brutalism",
+      "brutalisme",
+      "neo brutalism",
+      "gaya streetwear",
+      "ala streetwear",
+      "futuristic streetwear",
+      "streetwear futuristik",
+      "street style",
+      "urban style",
+      "hypebeast",
+      "monokrom",
+      "hitam putih",
+      "huruf lebar"
+    ],
+    "fit": {
+      "domains": [
+        "umkm-fashion",
+        "jasa-konveksi",
+        "event-musik",
+        "jasa-barbershop"
+      ],
+      "chance": 0.35
+    },
+    "labels": [
+      "bracket",
+      "slash"
+    ],
+    "palettes": [
+      {
+        "name": "Hitam putih",
+        "bg": "#050505",
+        "fg": "#f5f5f5",
+        "ink": "#f5f5f5",
+        "accent": "#f5f5f5",
+        "accent2": "#f5f5f5"
+      },
+      {
+        "name": "Putih hitam",
+        "bg": "#f5f5f3",
+        "fg": "#050505",
+        "ink": "#050505",
+        "accent": "#050505",
+        "accent2": "#050505"
+      },
+      {
+        "name": "Street merah",
+        "bg": "#050505",
+        "fg": "#f5f5f5",
+        "ink": "#f5f5f5",
+        "accent": "#ff2a2a",
+        "accent2": "#f5f5f5"
+      },
+      {
+        "name": "Street perak",
+        "bg": "#1b1b1d",
+        "fg": "#e6e6e8",
+        "ink": "#e6e6e8",
+        "accent": "#b9bcc4",
+        "accent2": "#e6e6e8"
+      }
+    ],
+    "fonts": {
+      "title": {
+        "family": "wide",
+        "weight": 900,
+        "upper": true,
+        "tracking": 0.02,
+        "scale": 1.0,
+        "leading": 0.9
+      },
+      "sub": {
+        "family": "wide",
+        "weight": 800,
+        "upper": true,
+        "tracking": 0.03,
+        "leading": 1.0
+      },
+      "body": {
+        "family": "grotesk",
+        "weight": 400,
+        "upper": false,
+        "tracking": 0
+      },
+      "label": {
+        "family": "grotesk",
+        "weight": 700,
+        "upper": true,
+        "tracking": 0.08
+      }
+    },
+    "typeSets": [
+      {
+        "title": {
+          "family": "condensed",
+          "weight": 900,
+          "upper": true,
+          "tracking": 0,
+          "scale": 1.2,
+          "leading": 0.86
+        },
+        "sub": {
+          "family": "grotesk",
+          "weight": 900,
+          "upper": true,
+          "tracking": -0.02,
+          "leading": 0.95
+        },
+        "body": {
+          "family": "grotesk",
+          "weight": 400,
+          "upper": false,
+          "tracking": 0
+        },
+        "label": {
+          "family": "mono",
+          "weight": 600,
+          "upper": true,
+          "tracking": 0.08
+        }
+      }
+    ],
+    "shape": {
+      "radius": 0,
+      "border": 2,
+      "shadow": "none",
+      "gap": 12,
+      "pad": 22,
+      "width": 1240,
+      "section": 92
+    },
+    "layouts": {
+      "hero": [
+        "poster",
+        "breaker",
+        "terminal",
+        "label"
+      ],
+      "feat": [
+        "grid",
+        "index",
+        "bento"
+      ]
+    },
+    "elements": {
+      "always": [
+        "sparkle",
+        "brackets"
+      ],
+      "pool": [
+        "globe",
+        "hazard",
+        "checker",
+        "crosshair",
+        "barcode",
+        "ring",
+        "ticker",
+        "arrow",
+        "numbers",
+        "plus-grid"
+      ]
+    },
+    "copy": {
+      "meta": [
+        "Dari jalanan",
+        "{city}",
+        "Edisi {year}",
+        "Konseptual",
+        "Kode {year}"
+      ],
+      "kicker": [
+        "Lahir di jalan, dibuat dengan niat.",
+        "Tanpa aturan, tetap rapi.",
+        "Gaya kita, aturan kita."
+      ],
+      "ticker": [
+        "{brand}",
+        "Dari jalanan",
+        "Edisi {year}"
+      ]
     }
   }
 ]

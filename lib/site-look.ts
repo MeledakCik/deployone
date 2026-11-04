@@ -11,7 +11,7 @@
  */
 
 /** Keluarga huruf (font sistem; tanpa unduhan font dari luar). */
-export const LOOK_FONTS = ["condensed", "grotesk", "sans", "serif", "slab", "mono", "display"] as const;
+export const LOOK_FONTS = ["condensed", "grotesk", "sans", "serif", "slab", "mono", "display", "wide"] as const;
 export type LookFontFamily = (typeof LOOK_FONTS)[number];
 
 /**
@@ -27,8 +27,22 @@ export type LookFontFamily = (typeof LOOK_FONTS)[number];
  *  asterisk   asterisk tebal di kotak aksen
  *  halftone   bola titik-titik
  *  plus-grid  tanda plus kecil berjajar (kesan blueprint)
+ *  sparkle    bintang empat sudut ✦
+ *  globe      bola dunia wireframe
+ *  hazard     garis miring hazard (strip peringatan)
+ *  brackets   sudut braket [ ] di sekitar bidang visual
+ *  checker    strip papan catur
+ *  pixel      susunan kotak piksel (kubus data)
+ *  ring       lencana teks melingkar yang berputar
+ *  bignum     angka raksasa terpotong di tepi atas hero
+ *  stats      kartu angka (jumlah produk, harga mulai, edisi)
+ *  blocks     bagian berselang dengan latar terbalik penuh
+ *  numbers    nomor 01, 02 di setiap kartu produk/layanan
  */
-export const LOOK_ELEMENTS = ["meta", "bands", "ticker", "index", "arrow", "crosshair", "barcode", "sunburst", "asterisk", "halftone", "plus-grid"] as const;
+export const LOOK_ELEMENTS = [
+  "meta", "bands", "ticker", "index", "arrow", "crosshair", "barcode", "sunburst", "asterisk", "halftone", "plus-grid",
+  "sparkle", "globe", "hazard", "brackets", "checker", "pixel", "ring", "bignum", "stats", "blocks", "numbers",
+] as const;
 export type LookElement = (typeof LOOK_ELEMENTS)[number];
 
 export const LOOK_SHADOWS = ["none", "hard", "soft"] as const;
@@ -71,7 +85,13 @@ export interface LookShape {
   width: number;
   /** jarak antar bagian px (desktop) */
   section: number;
+  /** radius tombol px; kosong = sama dengan radius. 999 = kapsul. */
+  pill?: number;
 }
+
+/** Format nomor bagian: (01) | /01 | #01 | [01] */
+export const LOOK_LABELS = ["paren", "slash", "hash", "bracket"] as const;
+export type LookLabelFmt = (typeof LOOK_LABELS)[number];
 
 /** Data latihan: satu gerakan visual. Semua teks boleh memakai slot {brand} {city} {year} {product}. */
 export interface StylePack {
@@ -79,6 +99,13 @@ export interface StylePack {
   id: string;
   label: string;
   desc?: string;
+  /**
+   * Keluarga gaya (mis. "brutalism"). Bila deskripsi memicu satu anggota keluarga, mesin mengundi di antara semua
+   * anggota keluarga itu, jadi satu permintaan bisa menghasilkan banyak aliran berbeda.
+   */
+  family?: string;
+  /** Format nomor bagian yang boleh dipakai (diundi). */
+  labels?: string[];
   /** Contoh deskripsi pengguna yang meminta gaya ini (mis. "website gaya poster tegas"). */
   prompts: string[];
   /** Kata yang memicu gaya ini bila muncul di deskripsi. */
@@ -123,6 +150,10 @@ export interface SiteLook {
   ticker: string;
   /** Angka besar di baris meta (mis. tahun). */
   num: string;
+  /** Format nomor bagian. */
+  labelFmt: LookLabelFmt;
+  /** Kata yang disorot warna di judul (indeks kata, -1 = tidak ada). */
+  hl: number;
 }
 
 /* ---------------- normalisasi (isi dari mesin/penyimpanan jangan dipercaya mentah) ---------------- */
@@ -168,6 +199,7 @@ export function normalizeShape(v: unknown): LookShape {
     pad: Math.round(num(o.pad, 12, 48, 24)),
     width: Math.round(num(o.width, 880, 1440, 1200)),
     section: Math.round(num(o.section, 40, 180, 88)),
+    ...(o.pill !== undefined ? { pill: Math.round(num(o.pill, 0, 999, 0)) } : {}),
   };
 }
 
@@ -200,6 +232,8 @@ export function normalizeLook(v: unknown): SiteLook | undefined {
     kicker: txt(o.kicker, 60),
     ticker: txt(o.ticker, 80),
     num: txt(o.num, 6),
+    labelFmt: (LOOK_LABELS as readonly string[]).includes(o.labelFmt as string) ? (o.labelFmt as LookLabelFmt) : "paren",
+    hl: Math.round(num(o.hl, -1, 12, -1)),
   };
 }
 
@@ -293,6 +327,9 @@ export function validateStyle(s: StylePack, rules: StyleRules): string[] {
     for (const w of rules.banned)
       if (new RegExp(`(?<![\\p{L}])${w.replace(/ /g, "\\s+")}(?![\\p{L}])`, "iu").test(text)) e.push(`${where}: memakai ungkapan generik terlarang "${w}".`);
   }
+  if (o.labels !== undefined && (!Array.isArray(o.labels) || o.labels.some((x) => !(LOOK_LABELS as readonly string[]).includes(x as string))))
+    e.push(`${where}: "labels" harus berisi ${LOOK_LABELS.join(", ")}.`);
+  if (o.family !== undefined && (typeof o.family !== "string" || !/^[a-z0-9-]{2,40}$/.test(o.family))) e.push(`${where}: "family" hanya huruf kecil, angka, dan tanda minus.`);
   if (o.fit !== undefined) {
     const fit = rec(o.fit);
     if (fit.chance !== undefined && (typeof fit.chance !== "number" || fit.chance < 0 || fit.chance > 1)) e.push(`${where}: fit.chance harus angka 0–1.`);

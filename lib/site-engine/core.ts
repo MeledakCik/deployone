@@ -385,15 +385,19 @@ export function pickStyle(model: SiteModel, prompt: string, pack: DomainPack, ki
     const h = styleHits(st, text);
     if (h > bestHits) (best = st), (bestHits = h);
   }
-  if (best) return best;
   const r = rng(hash(text + "|gaya") + variant * 104729);
-  for (const st of styles) {
-    const fit = st.fit;
-    if (!fit) continue;
-    const ok = (fit.domains ?? []).includes(pack.id) || (fit.kinds ?? []).includes(kind);
-    if (ok && r() < (fit.chance ?? 0)) return st;
+  // Satu keluarga = satu undian: "brutalism" bisa keluar sebagai poster, acid, cyber, mission, label, street, ...
+  const draw = (list: StylePack[]): StylePack => list[Math.floor(r() * list.length) % list.length];
+  if (best) {
+    // Kata kunci khusus satu anggota (mis. "cyber") memberi skor lebih tinggi dan menang;
+    // kata kunci keluarga (mis. "brutalism") dimiliki semua anggota → skor seri → diundi.
+    return draw(styles.filter((x) => styleHits(x, text) === bestHits));
   }
-  return null;
+  const fitting = styles.filter((st) => st.fit && ((st.fit.domains ?? []).includes(pack.id) || (st.fit.kinds ?? []).includes(kind)));
+  if (!fitting.length) return null;
+  // Peluang dipakai = peluang tertinggi di antara gaya yang cocok; bila jadi, gaya diundi di antara yang cocok.
+  const chance = Math.max(...fitting.map((x) => x.fit?.chance ?? 0));
+  return r() < chance ? draw(fitting) : null;
 }
 
 /** Turunkan look satu website dari paket gaya: satu palet, 2–4 elemen pilihan + elemen wajib, label meta terisi slot. */
@@ -422,6 +426,8 @@ export function resolveLook(st: StylePack, slots: Record<string, string>, seed: 
     kicker: pick1(st.copy.kicker),
     ticker: pick1(st.copy.ticker),
     num: slots.year ?? "",
+    labelFmt: (st.labels?.length ? st.labels[Math.floor(r() * st.labels.length)] : "paren") as SiteLook["labelFmt"],
+    hl: Math.floor(r() * 4),
   };
 }
 

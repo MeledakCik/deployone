@@ -186,7 +186,7 @@ const styledModel = trainModel(BUNDLED, [], STYLE);
 test("gaya: file brutalism lolos validasi dan dikenali importer", () => {
   for (const s of STYLE) assert.deepEqual(validateStyle(s, STYLE_RULES), []);
   const r = parseImport(JSON.stringify(STYLE));
-  assert.equal(r.styles.length, 1);
+  assert.equal(r.styles.length, STYLE.length);
   assert.equal(r.packs.length, 0);
   assert.ok(isStylePack(STYLE[0]));
 });
@@ -207,23 +207,41 @@ test("gaya: kesalahan dijelaskan (warna, kontras, elemen, layout)", () => {
 test("gaya: dipicu kata kunci, tidak salah picu, dan tidak dipaksakan ke usaha yang tidak cocok", () => {
   const dom = (p) => styledModel.packs[classify(styledModel, p)[0].id];
   const pick = (p, v = 0) => pickStyle(styledModel, p, dom(p), dom(p).kind, v)?.id ?? null;
-  assert.equal(pick("website brutalism untuk distro streetwear"), "brutalism");
-  assert.equal(pick("landing page ala poster hitam merah untuk studio desain"), "brutalism");
+  const fam = new Set(STYLE.map((x) => x.id));
+  assert.ok(fam.has(pick("website brutalism untuk distro")));
+  assert.ok(fam.has(pick("landing page ala poster hitam merah untuk studio desain")));
+  assert.equal(pick("website cyber brutalism studio digital"), "brutal-cyber");
+  assert.equal(pick("toko frozen food gaya label pengiriman"), "brutal-label");
+  assert.equal(pick("web gaya misi luar angkasa rental mobil"), "brutal-mission");
   assert.equal(pick("jasa cetak poster dan banner"), null);
   for (let v = 0; v < 6; v++) assert.equal(pick("warung bakso urat dan mie ayam", v), null);
   assert.equal(pick("website brutalism tapi tanpa gaya"), null);
+});
+
+test("gaya: satu kata keluarga menghasilkan banyak aliran dan kombinasi", () => {
+  const styles = new Set();
+  const combos = new Set();
+  for (let v = 0; v < 40; v++) {
+    const r = generateSite(styledModel, "website brutalism untuk distro Kalcer Supply", { variant: v });
+    styles.add(r.style);
+    const L = r.raw.look;
+    combos.add([L.style, L.bg, L.accent, L.fonts.title.family, r.raw.hero, r.raw.feat, L.elements.join("+")].join("|"));
+  }
+  assert.equal(styles.size, STYLE.length, "semua aliran keluarga muncul");
+  assert.ok(combos.size >= 38, `kombinasi unik ${combos.size}/40`);
 });
 
 test("gaya: look lengkap, lolos normalisasi, dan layout ikut gaya", () => {
   const seen = new Set();
   for (let v = 0; v < 6; v++) {
     const r = generateSite(styledModel, "website brutal distro Kalcer Supply di Bandung", { variant: v });
-    assert.equal(r.style, "brutalism");
+    assert.ok(r.style && r.style.startsWith("brutal"));
     const L = normalizeLook(r.raw.look);
     assert.ok(L, "look valid");
-    assert.ok(["poster", "editorial"].includes(r.raw.hero));
-    assert.ok(["index", "bento"].includes(r.raw.feat));
-    for (const e of ["meta", "index", "arrow"]) assert.ok(L.elements.includes(e));
+    const st = STYLE.find((x) => x.id === r.style);
+    assert.ok(st.layouts.hero.includes(r.raw.hero));
+    assert.ok(st.layouts.feat.includes(r.raw.feat));
+    for (const e of st.elements.always ?? []) assert.ok(L.elements.includes(e));
     assert.ok(!/\{[a-z]+\}|undefined/i.test(JSON.stringify(L)));
     seen.add(L.bg + L.accent + L.fonts.title.family);
   }
@@ -235,7 +253,7 @@ test("gaya: perintah ubah bisa memakai, melepas, dan mengganti gaya lewat templa
   const base = generateSite(styledModel, "toko kue ulang tahun Manis Legit", {}).raw;
   assert.equal(base.look, undefined);
   const on = editSite2(styledModel, base, "pakai gaya brutalism");
-  assert.ok(on.raw?.look && on.raw.hero === "poster", on.note);
+  assert.ok(on.raw?.look && ["poster", "breaker", "terminal", "dashboard", "label"].includes(on.raw.hero), on.note);
   const off = editSite2(styledModel, on.raw, "hapus gaya");
   assert.equal(off.raw?.look, undefined);
   const tpl = editSite2(styledModel, on.raw, "pakai template elegan");

@@ -18,7 +18,7 @@ export type { SiteLook } from "@/lib/site-look";
 export type TemplateId = "bersih" | "gelap" | "hangat" | "tegas" | "segar" | "elegan" | "pastel" | "neon" | "bakso" | "kue" | "barber" | "tech" | "majalah" | "jurnal";
 export type SiteKind = "umkm" | "jasa" | "portofolio" | "event" | "profil" | "artikel";
 /** center/left/split = lawas; split-bold (60/40 + tumpukan kartu), asymmetric (1 kartu besar + 2 kecil), editorial (headline raksasa) = baru. */
-export type HeroLayout = "center" | "left" | "split" | "split-bold" | "asymmetric" | "editorial" | "poster";
+export type HeroLayout = "center" | "left" | "split" | "split-bold" | "asymmetric" | "editorial" | "poster" | "breaker" | "terminal" | "dashboard" | "label";
 export type FeatLayout = "grid" | "bento" | "list" | "editorial" | "index";
 export type HoverEffect = "lift" | "tilt";
 
@@ -165,6 +165,10 @@ export const HERO_LAYOUTS: { id: HeroLayout; name: string }[] = [
   { id: "asymmetric", name: "Asimetris" },
   { id: "editorial", name: "Editorial" },
   { id: "poster", name: "Poster" },
+  { id: "breaker", name: "Judul pecah grid" },
+  { id: "terminal", name: "Terminal" },
+  { id: "dashboard", name: "Dasbor misi" },
+  { id: "label", name: "Label pengiriman" },
 ];
 
 export const FEAT_LAYOUTS: { id: FeatLayout; name: string }[] = [
@@ -181,7 +185,7 @@ export function isTemplateId(v: unknown): v is TemplateId {
   return typeof v === "string" && TEMPLATES.some((t) => t.id === v);
 }
 export function isHeroLayout(v: unknown): v is HeroLayout {
-  return v === "center" || v === "left" || v === "split" || v === "split-bold" || v === "asymmetric" || v === "editorial" || v === "poster";
+  return v === "center" || v === "left" || v === "split" || v === "split-bold" || v === "asymmetric" || v === "editorial" || v === "poster" || v === "breaker" || v === "terminal" || v === "dashboard" || v === "label";
 }
 export function isFeatLayout(v: unknown): v is FeatLayout {
   return v === "grid" || v === "bento" || v === "list" || v === "editorial" || v === "index";
@@ -845,9 +849,11 @@ export function defaultPalette(template: TemplateId): [string, string] {
 const CONDENSED = `"Bebas Neue","Anton","Oswald","League Gothic",Impact,Haettenschweiler,"HelveticaNeue-CondensedBlack","Arial Narrow Bold","Arial Narrow","sans-serif-condensed",sans-serif`;
 /** Grotesk rapat ala poster Swiss. */
 const GROTESK = `"Helvetica Neue","Neue Haas Grotesk Display Pro",Helvetica,Arial,"Inter",sans-serif`;
-const LOOK_STACK: Record<LookFontFamily, string> = { condensed: CONDENSED, grotesk: GROTESK, sans: SANS, serif: SERIF, slab: SLAB, mono: MONO, display: DISPLAY };
+/** Huruf lebar/extended ala streetwear futuristik. */
+const WIDE = `"Eurostile Extended","Microgramma D Extended","Michroma","Syncopate","Arial Black",sans-serif`;
+const LOOK_STACK: Record<LookFontFamily, string> = { condensed: CONDENSED, grotesk: GROTESK, sans: SANS, serif: SERIF, slab: SLAB, mono: MONO, display: DISPLAY, wide: WIDE };
 /** Perkiraan lebar rata-rata huruf kapital (em) per keluarga, untuk menghitung ukuran judul raksasa supaya muat. */
-const LOOK_WIDTH: Record<LookFontFamily, number> = { condensed: 0.47, grotesk: 0.66, display: 0.76, sans: 0.64, serif: 0.62, slab: 0.68, mono: 0.62 };
+const LOOK_WIDTH: Record<LookFontFamily, number> = { condensed: 0.47, grotesk: 0.66, display: 0.76, sans: 0.64, serif: 0.62, slab: 0.68, mono: 0.62, wide: 0.92 };
 
 /** Campur dua warna hex, k = porsi warna b (0..1). */
 function mixHex(a: string, b: string, k: number): string {
@@ -950,9 +956,34 @@ function lookSvg(id: string, seed = 7): string {
       for (let r = 0; r < 3; r++) for (let c = 0; c < 4; c++) p.push(`<path d="M${12 + c * 26} ${18 + r * 26}h12M${18 + c * 26} ${12 + r * 26}v12"/>`);
       return `${svgOpen("0 0 110 84", ' fill="none" stroke="currentColor" stroke-width="2"')}${p.join("")}</svg>`;
     }
+    case "sparkle":
+      return `${svgOpen("0 0 100 100", ' fill="currentColor"')}<path d="M50 0C53 30 70 47 100 50 70 53 53 70 50 100 47 70 30 53 0 50 30 47 47 30 50 0Z"/></svg>`;
+    case "globe":
+      return `${svgOpen("0 0 100 100", ' fill="none" stroke="currentColor" stroke-width="2.2"')}<circle cx="50" cy="50" r="46"/><ellipse cx="50" cy="50" rx="20" ry="46"/><ellipse cx="50" cy="50" rx="36" ry="46"/><path d="M4 50h92M10 27h80M10 73h80M50 4v92"/></svg>`;
+    case "pixel": {
+      let h = (seed >>> 0) || 1;
+      const cells: string[] = [];
+      const cols = ["var(--fg)", "var(--a)", "var(--a2)", "var(--muted)"];
+      for (let y = 0; y < 10; y++)
+        for (let x = 0; x < 10; x++) {
+          h = (Math.imul(h ^ (h >>> 15), 2246822519) + 3266489917) >>> 0;
+          const d = Math.hypot(x - 5.5, y - 4.5);
+          if (d > 5.2 || h % 100 < 22 + d * 8) continue;
+          const c = cols[h % 7 < 4 ? 0 : h % 7 < 5 ? 1 : h % 7 < 6 ? 2 : 3];
+          cells.push(`<rect x="${x * 20 + 1}" y="${y * 20 + 1}" width="18" height="18" fill="${c}" opacity="${(0.55 + ((h >> 8) % 45) / 100).toFixed(2)}"/>`);
+        }
+      const grid = Array.from({ length: 11 }, (_, i) => `<path d="M${i * 20} 0V200M0 ${i * 20}H200"/>`).join("");
+      return `${svgOpen("0 0 200 200")}<g stroke="currentColor" stroke-width=".6" opacity=".25">${grid}</g>${cells.join("")}</svg>`;
+    }
     default:
       return "";
   }
+}
+
+/** Lencana teks melingkar (berputar pelan; berhenti bila pengguna memilih kurangi gerakan). */
+function ringSvg(text: string, center: string): string {
+  const t = esc(`${text} \u2731 `.repeat(Math.max(2, Math.ceil(40 / (text.length + 3)))).slice(0, 64).toUpperCase());
+  return `<span class="ring" aria-hidden="true"><svg viewBox="0 0 200 200"><defs><path id="rgp" d="M100 100m-78 0a78 78 0 1 1 156 0a78 78 0 1 1-156 0"/></defs><text font-size="15" font-weight="700" letter-spacing="3" fill="currentColor"><textPath href="#rgp">${t}</textPath></text></svg><i>${center}</i></span>`;
 }
 
 const fontCss = (f: LookFont, size: string): string =>
@@ -1002,13 +1033,96 @@ function posterCss(t: Theme): string {
 .tk{display:flex;width:max-content;animation:tk 36s linear infinite;padding:12px 0;font:700 14px/1 ${t.mono};text-transform:uppercase;letter-spacing:.08em;white-space:nowrap}
 .tk span{padding-right:30px}
 @keyframes tk{to{transform:translateX(-50%)}}
+${heroExtraCss(t)}
 @media(max-width:900px){.pst-meta{grid-template-columns:1fr auto}.pm-ln,.pm-s,.pm-l{display:none}.pst-grid{grid-template-columns:1fr}.pc{border-right:0;border-bottom:var(--bw) solid var(--ink)}.pc:last-child{border-bottom:0}.pc-el{min-height:180px}.idx{grid-template-columns:1fr}.idx-h{border-right:0;border-bottom:var(--bw) solid var(--ink)}}`;
+}
+
+/** CSS hero breaker / terminal / dashboard / label dan elemen pendukungnya. Berlaku juga tanpa gaya latihan. */
+function heroExtraCss(t: Theme): string {
+  const lab = `font:600 12px/1.35 ${t.mono};text-transform:uppercase;letter-spacing:.06em`;
+  return `.h-breaker,.h-terminal,.h-dashboard,.h-label{padding:clamp(18px,3vw,36px) 0 clamp(28px,4vw,52px);text-align:left}
+.brk{display:grid;grid-template-columns:1.3fr .95fr .8fr;gap:clamp(18px,2.6vw,34px);align-items:stretch}
+.brk-t{display:flex;flex-direction:column;justify-content:center;min-width:0}
+.h-breaker .brk-h{font-size:clamp(46px,7.4vw,124px);line-height:.88;letter-spacing:${t.tracking ?? "-.02em"};margin:0;max-width:none;${t.upper ? "text-transform:uppercase;" : ""}}
+.brk-h em{font-style:normal;color:var(--hl)}
+.brk-h .ast{display:inline-block;width:.62em;height:.62em;vertical-align:.08em;margin:0 .06em}.brk-h .ast svg{width:100%;height:100%}
+.brk-v{position:relative;min-height:340px;background:var(--a);color:var(--on);display:grid;place-items:center;overflow:hidden;border-radius:var(--r)}
+.brk-v>svg{width:62%;height:auto}.brk-v img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;mix-blend-mode:multiply;filter:grayscale(1) contrast(1.15)}
+.brk-v .spk{position:absolute;width:44px;color:var(--ink)}.brk-v .spk:nth-of-type(1){left:-10px;bottom:24px}.brk-v .spk:nth-of-type(2){right:14px;top:16px;width:26px}
+.brk-s{display:flex;flex-direction:column;gap:20px;justify-content:center}
+.h-breaker .brk-s .sub{${lab};font-size:13.5px;line-height:1.55;color:var(--fg);margin:0;max-width:30ch}
+.brk-s .row{justify-content:flex-start}
+.brk-s .gl{width:clamp(70px,8vw,110px);color:var(--fg);margin-top:8px}
+.trm{display:grid;grid-template-columns:auto 1.1fr 1fr;border:var(--bw) solid var(--ink)}
+.trm-rail{display:flex;flex-direction:column;justify-content:space-between;align-items:center;padding:18px 10px;border-right:var(--bw) solid var(--ink);${lab};color:var(--at)}
+.trm-rail span{writing-mode:vertical-rl;transform:rotate(180deg);max-height:220px;overflow:hidden}.trm-rail b{writing-mode:vertical-rl;transform:rotate(180deg);color:var(--fg)}
+.trm-main{padding:clamp(22px,3.4vw,48px);display:flex;flex-direction:column;gap:18px;min-width:0}
+.trm-n{${lab};color:var(--at);margin:0}
+.trm-g{display:block;line-height:.84}.trm-g svg{display:block;width:100%;height:auto}
+.h-terminal .trm-main h1{font:600 clamp(15px,1.5vw,19px)/1.35 ${t.mono};text-transform:uppercase;letter-spacing:.05em;color:var(--at);margin:0;max-width:none;-webkit-text-fill-color:currentColor;background:none}
+.h-terminal .trm-main .sub{font:400 14.5px/1.65 ${t.mono};color:var(--fg);margin:0;max-width:48ch}
+.trm-main .row{justify-content:flex-start}
+.trm-art{position:relative;border-left:var(--bw) solid var(--ink);display:grid;place-items:center;padding:28px;min-height:360px;overflow:hidden}
+.trm-art>svg{width:min(82%,380px);height:auto;color:var(--fg)}.trm-art img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.trm-st{position:absolute;left:18px;top:16px;${lab};font-size:11.5px;color:var(--fg)}.trm-st b{color:var(--at)}
+.trm-co{position:absolute;right:0;bottom:56px;padding:12px 16px;background:var(--a);color:var(--on);font:600 13px/1.6 ${t.mono}}
+.trm-sc{position:absolute;right:16px;bottom:16px;${lab};font-size:11.5px}
+.dsh-top{display:flex;justify-content:space-between;gap:16px;padding-bottom:12px;border-bottom:var(--bw) solid var(--fg);${lab};font-size:11px}
+.dsh-head{display:grid;grid-template-columns:1.4fr .6fr;gap:28px;align-items:start;margin:clamp(22px,3vw,40px) 0}
+.h-dashboard .dsh-head h1{font-size:clamp(40px,6vw,92px);line-height:.95;margin:0 0 14px;max-width:none}
+.h-dashboard .dsh-head .sub{margin:0 0 24px}
+.dsh-head .row{justify-content:flex-start}
+.dsh-brand{display:flex;align-items:center;justify-content:flex-end;gap:12px;${lab};font-size:14px}
+.dsh-brand i{display:grid;place-items:center;width:44px;height:44px;color:var(--fg)}.dsh-brand i svg{width:100%;height:100%}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));border:var(--bw) solid var(--ink)}
+.stat{position:relative;padding:18px 20px 16px;min-height:150px;display:flex;flex-direction:column;justify-content:space-between;border-right:var(--bw) solid var(--ink);min-width:0}
+.stat:last-child{border-right:0}
+.stat b{font:${t.headWeight} clamp(34px,4.4vw,60px)/.95 ${t.display};letter-spacing:-.03em;overflow-wrap:anywhere}
+.stat span{${lab};font-size:11px;display:flex;justify-content:space-between;gap:10px;border-top:1px solid currentColor;padding-top:10px;opacity:.9}
+.stat:first-child{background:var(--a);color:var(--on)}
+.stat:nth-child(3){background:var(--ink);color:var(--bg)}
+.stat i{position:absolute;right:14px;top:14px;width:20px;height:20px}.stat i svg{width:100%;height:100%}
+.bignum{position:relative;overflow:hidden;aspect-ratio:1000/200;margin-bottom:-2px}
+.bignum svg{position:absolute;left:0;bottom:0;width:100%;height:auto;color:var(--fg)}
+.lbl{display:grid;grid-template-columns:minmax(120px,.55fr) 1fr 1.25fr;grid-template-rows:auto auto;border:var(--bw) solid var(--ink);background:var(--bg)}
+.lbl>*{min-width:0;border-right:var(--bw) solid var(--ink);border-bottom:var(--bw) solid var(--ink)}
+.lbl-a{display:grid;place-items:center;font:${t.headWeight} clamp(96px,14vw,210px)/.8 ${t.display};padding:18px;text-transform:uppercase}
+.lbl-f{display:flex;flex-direction:column}
+.lbl-f dl{margin:0;display:grid;grid-template-columns:auto 1fr}
+.lbl-f dt,.lbl-f dd{margin:0;padding:10px 14px;border-bottom:1px solid var(--ink);${lab};font-size:11.5px}
+.lbl-f dd{text-align:right;font-weight:700;overflow-wrap:anywhere}
+.lbl-bc{padding:12px 14px;margin-top:auto;color:var(--fg)}.lbl-bc svg{width:100%;height:auto;max-height:70px}
+.lbl-h{grid-column:3;grid-row:1/3;border-right:0;padding:clamp(20px,3vw,40px);display:flex;flex-direction:column;gap:16px;justify-content:space-between}
+.lbl-k{${lab};margin:0;color:var(--at)}
+.h-label .lbl-h h1{font-size:clamp(34px,4.6vw,72px);line-height:.92;margin:0;max-width:none}
+.h-label .lbl-h .sub{margin:0}
+.lbl-h .row{justify-content:flex-start}
+.lbl-x{display:grid;place-items:center;padding:16px;color:var(--fg)}.lbl-x svg{width:min(120px,70%);height:auto}
+.lbl-z{border-bottom:0}.lbl-z .hz{height:100%;min-height:90px;border:0}
+.lbl .lbl-x,.lbl .lbl-z{border-bottom:0}
+.hz{height:28px;background:repeating-linear-gradient(-45deg,var(--ink) 0 12px,transparent 12px 24px);border-bottom:var(--bw) solid var(--ink)}
+.ck{height:22px;background:repeating-conic-gradient(var(--ink) 0 25%,transparent 0 50%) 0 0/22px 22px;border-top:var(--bw) solid var(--ink)}
+.brkt{background-image:linear-gradient(var(--fg),var(--fg)),linear-gradient(var(--fg),var(--fg)),linear-gradient(var(--fg),var(--fg)),linear-gradient(var(--fg),var(--fg)),linear-gradient(var(--fg),var(--fg)),linear-gradient(var(--fg),var(--fg)),linear-gradient(var(--fg),var(--fg)),linear-gradient(var(--fg),var(--fg));background-position:left top,left top,right top,right top,left bottom,left bottom,right bottom,right bottom;background-size:22px 3px,3px 22px,22px 3px,3px 22px,22px 3px,3px 22px,22px 3px,3px 22px;background-repeat:no-repeat}
+.ring{position:relative;display:inline-grid;place-items:center;width:clamp(96px,11vw,140px);aspect-ratio:1;color:var(--fg)}
+.ring svg{position:absolute;inset:0;width:100%;height:100%;animation:rg 22s linear infinite}.ring i{width:34%;color:var(--hl,var(--a))}.ring i svg{position:static;animation:none;width:100%;height:auto}
+@keyframes rg{to{transform:rotate(360deg)}}
+@media(max-width:980px){.brk{grid-template-columns:1fr 1fr}.brk-t{grid-column:1/-1}.brk-v{min-height:260px}}
+@media(max-width:900px){.trm{grid-template-columns:auto 1fr}.trm-art{grid-column:1/-1;border-left:0;border-top:var(--bw) solid var(--ink);min-height:280px}.dsh-head{grid-template-columns:1fr}.dsh-brand{justify-content:flex-start}.lbl{grid-template-columns:minmax(90px,.5fr) 1fr}.lbl-h{grid-column:1/-1;grid-row:auto;border-bottom:var(--bw) solid var(--ink)}.lbl-a{font-size:clamp(80px,22vw,140px)}}
+@media(max-width:560px){.stats{grid-template-columns:1fr 1fr}.stat:last-child:nth-child(odd){grid-column:1/-1}.stat{min-height:118px}.brk{grid-template-columns:1fr}.trm-rail{display:none}.trm{grid-template-columns:1fr}.stat{border-bottom:var(--bw) solid var(--ink)}.stat:nth-child(2n){border-right:0}.stat:last-child{border-right:0}.lbl-f dt,.lbl-f dd{padding:8px 10px}}`;
 }
 
 /** CSS tambahan saat gaya hasil latihan aktif: semua komponen ikut karakter gaya (huruf, garis, sudut, blok terbalik). */
 function lookCss(L: SiteLook): string {
   const B = L.shape.border;
   const R = L.shape.radius;
+  const P = L.shape.pill ?? R;
+  const lfContent =
+    L.labelFmt === "slash" ? `"/" counter(sec,decimal-leading-zero)` : L.labelFmt === "hash" ? `"#" counter(sec,decimal-leading-zero)` : L.labelFmt === "bracket" ? `"[" counter(sec,decimal-leading-zero) "]"` : `"(" counter(sec,decimal-leading-zero) ")"`;
+  // Bagian berselang "blocks": warna dibalik lewat variabel CSS, jadi kartu, teks, dan garis ikut terbalik.
+  const invDark = relLum(L.ink) < 0.4;
+  let invMuted = mixHex(L.bg, L.ink, 0.28);
+  if (lookContrast(invMuted, L.ink) < 4.5) invMuted = L.bg;
+  const invAt = readable(L.accent, invDark, L.ink);
   const F = L.fonts;
   const hard = L.shape.shadow === "hard";
   const gap0 = L.shape.gap === 0;
@@ -1020,7 +1134,7 @@ function lookCss(L: SiteLook): string {
 .lk .brand i{border-radius:${R}px;background:var(--ink);color:var(--bg);border:0}
 .lk .links{${lbl("12.5px")};color:var(--fg)}
 .lk .badge{${lbl("12px")};color:var(--fg);border:${Math.max(1, B - 1)}px solid var(--ink);border-radius:${R}px;padding:6px 10px}
-.lk .btn{border-radius:${R}px;border:${B}px solid var(--ink);${lbl("13.5px")};padding:14px 20px;box-shadow:${hard ? "4px 4px 0 var(--ink)" : "none"};transition:background .12s,color .12s,transform .12s}
+.lk .btn{border-radius:${P}px;border:${B}px solid var(--ink);${lbl("13.5px")};padding:14px 20px;box-shadow:${hard ? "4px 4px 0 var(--ink)" : "none"};transition:background .12s,color .12s,transform .12s}
 .lk .btn.ghost{background:transparent;color:var(--fg);border-color:var(--ink);box-shadow:none}
 .lk .btn:hover{opacity:1;background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .lk .btn.sm{padding:9px 13px;font-size:12px}
@@ -1035,6 +1149,7 @@ ${arrow ? `.lk .btn:not(.sm):not(.cartbtn):after{content:"\\2197";font-size:1.25
 .lk .prod.large{background:var(--a);color:var(--on)}.lk .prod.large p,.lk .prod.large .pprice,.lk .prod.large .ptag{color:inherit;border-color:currentColor}
 .lk .ptag{${lbl("11px")};border:1px solid var(--ink);border-radius:${R}px;color:var(--fg)}
 .lk .ptag.hot{background:var(--ink);color:var(--bg)}
+.lk .prod.large .ptag.hot{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .lk .pprice{font-family:${LOOK_STACK[F.title.family]};font-weight:${F.title.weight};font-size:20px}
 .lk .hero{border-bottom:${B}px solid var(--ink)}
 .lk main>section{border-bottom:${B}px solid var(--ink)}
@@ -1054,12 +1169,21 @@ ${arrow ? `.lk .btn:not(.sm):not(.cartbtn):after{content:"\\2197";font-size:1.25
 .lk footer{border-top:0;color:var(--fg)}
 .lk ::selection{background:var(--a);color:var(--on)}
 .lk .glow,.lk .orn{display:none}
+${lookContrast(L.accent, L.ink) < 1.6 ? `.pc-acc .btn,.stat:first-child,.lk .band .btn{background:var(--bg);color:var(--fg);border-color:var(--bg)}.pc-acc .btn.ghost{background:transparent;color:inherit;border-color:currentColor}.lk .ptag.hot{outline:1px solid var(--bg)}` : ""}
 ${gap0 ? `.lk-g0 .grid,.lk-g0 .items,.lk-g0 .bento,.lk-g0 .frows,.lk-g0 .posts{gap:0}
 .lk-g0 .grid>.card,.lk-g0 .items>.card,.lk-g0 .bento>.card,.lk-g0 .frows>.card,.lk-g0 .posts>.card{margin:0 -${B}px -${B}px 0;box-shadow:none}
 .lk-g0 .steps{gap:0 24px}` : ""}
 .lk-idx main{counter-reset:sec}.lk-idx main>section{counter-increment:sec}
-.lk-idx main>section h2:before{content:"(" counter(sec,decimal-leading-zero) ")";display:block;margin-bottom:14px;${lbl("12px")};color:var(--at)}
-.lk-idx .band h2:before{color:inherit;opacity:.7}.lk-idx .idx-h h2:before{display:none}
+.lk-s1 main{counter-reset:sec 1}
+.lk-idx main>section h2:before{content:${lfContent};display:block;margin-bottom:14px;${lbl("12px")};color:var(--at)}
+.lk-idx .band h2:before{color:inherit;opacity:.7}
+.lk-blk main>section:nth-of-type(even){--bg:${L.ink};--fg:${L.bg};--card:${L.ink};--muted:${invMuted};--ink:${L.bg};--line:${L.bg};--at:${invAt};background:var(--bg);color:var(--fg)}
+.lk-blk main>section:nth-of-type(even) .band{background:var(--a);color:var(--on);border-color:var(--a)}
+.lk-num .items{counter-reset:it}.lk-num .items>.card{counter-increment:it}
+.lk-num .items>.card:before{content:counter(it,decimal-leading-zero);position:absolute;left:0;top:0;padding:5px 9px;background:var(--a);color:var(--on);${fontCss({ ...F.label, leading: 1 }, "12px")}}
+.lk-num .items>.card{padding-top:44px}
+.bd-ring{width:auto;opacity:1}.bd-ring .ring{color:var(--bg)}
+.lk .ring{color:var(--fg)}.lk-idx .idx-h h2:before{display:none}
 .lk .steps li{padding:18px 20px 22px}`;
 }
 
@@ -1128,8 +1252,11 @@ function buildCss(t: Theme, a: string, hero: HeroLayout, shop: boolean, hover: H
     ? `background:linear-gradient(120deg,var(--fg) 25%,var(--a) 135%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;`
     : "";
   const heroLeft = hero !== "center";
+  // Blok ajakan gaya brutal: latar hitam, teks & garis tombol memakai warna latar halaman (bukan warna tetap),
+  // atau putih bila latar halaman kurang kontras di atas hitam.
+  const bandInk = contrastRatio(t.bg, "#0a0a0a") >= 4.5 ? t.bg : "#ffffff";
 
-  return `:root{--bg:${t.bg};--fg:${t.fg};--muted:${t.muted};--card:${t.card};--line:${t.line};--a:${a};--at:${aText};--a-soft:rgba(${A},${t.dark ? ".16" : ".11"});--on:${onColor(a)};--r:${t.radius};--sh:${t.shadow};--pill:${t.pill};--a2:${t.acc2 ?? a};--ib:${t.ib ?? "var(--a-soft)"};--ink:${look?.ink ?? (t.brutal ? "#0a0a0a" : t.fg)};--bw:${look ? look.shape.border : t.brutal ? 3 : Math.max(2, t.borderW ?? 1)}px}
+  return `:root{--bg:${t.bg};--fg:${t.fg};--muted:${t.muted};--card:${t.card};--line:${t.line};--a:${a};--at:${aText};--a-soft:rgba(${A},${t.dark ? ".16" : ".11"});--on:${onColor(a)};--r:${t.radius};--sh:${t.shadow};--pill:${t.pill};--a2:${t.acc2 ?? a};--ib:${t.ib ?? "var(--a-soft)"};--ink:${look?.ink ?? (t.brutal ? "#0a0a0a" : t.fg)};--hl:${look ? ([look.accent2, look.accent].find((x) => lookContrast(x, look.bg) >= 3) ?? look.fg) : a};--bw:${look ? look.shape.border : t.brutal ? 3 : Math.max(2, t.borderW ?? 1)}px}
 *{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:96px}
 body{margin:0;background:var(--bg);color:var(--fg);font:${t.bodyWeight ?? 400} 16px/1.65 ${t.body};-webkit-font-smoothing:antialiased;overflow-x:hidden}
 .wrap{max-width:${t.maxWidth ?? 1120}px;margin:0 auto;padding:0 24px;position:relative}
@@ -1258,15 +1385,15 @@ h2{font-size:clamp(${Math.round(28 * (t.heroScale ?? 1))}px,${4.4 * (t.heroScale
 .ci small{display:block;color:var(--muted);font-size:12.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase}
 .ci span{font-weight:600;word-break:break-word}
 .info.one{max-width:520px;margin:0 auto}
-.band{position:relative;overflow:hidden;padding:clamp(32px,5vw,56px);border-radius:var(--r);background:${t.brutal ? "#0a0a0a" : "var(--a)"};color:${t.brutal ? "#fde68a" : "var(--on)"};display:flex;flex-wrap:wrap;gap:20px 32px;align-items:center;justify-content:space-between;${t.brutal ? "box-shadow:8px 8px 0 var(--a);" : ""}}
+.band{position:relative;overflow:hidden;padding:clamp(32px,5vw,56px);border-radius:var(--r);background:${t.brutal ? "#0a0a0a" : "var(--a)"};color:${t.brutal ? bandInk : "var(--on)"};display:flex;flex-wrap:wrap;gap:20px 32px;align-items:center;justify-content:space-between;${t.brutal ? "box-shadow:8px 8px 0 var(--a);" : ""}}
 .band .orn{--a:var(--on);--a2:var(--on);opacity:.5}
 .band>*{position:relative;z-index:1}
 
 .band h2{margin:0 0 6px;color:inherit;-webkit-text-fill-color:currentColor;font-size:clamp(24px,3.6vw,34px)}
 .band p{margin:0;opacity:.88}
 .band .row{justify-content:flex-start}
-.band .btn{background:${t.brutal ? "var(--a)" : "#fff"};color:${t.brutal ? "var(--on)" : "#111"};box-shadow:${t.brutal ? "4px 4px 0 #fde68a" : "none"};${t.brutal ? "border-color:#fde68a;" : ""}}
-.band .btn.ghost{background:transparent;color:inherit;border:2px solid ${t.brutal ? "#fde68a" : "rgba(255,255,255,.65)"};box-shadow:none}
+.band .btn{background:${t.brutal ? "var(--a)" : "#fff"};color:${t.brutal ? "var(--on)" : "#111"};box-shadow:${t.brutal ? `4px 4px 0 ${bandInk}` : "none"};${t.brutal ? `border-color:${bandInk};` : ""}}
+.band .btn.ghost{background:transparent;color:inherit;border:2px solid ${t.brutal ? bandInk : "rgba(255,255,255,.65)"};box-shadow:none}
 footer{padding:34px 0 44px;border-top:${bd};color:var(--muted);font-size:13.5px}
 footer .wrap{display:flex;flex-wrap:wrap;gap:8px 20px;justify-content:space-between}
 ${extraCss(t, bd, hover, extra)}
@@ -1609,8 +1736,95 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
 
   /* Poster: baris meta, nama raksasa (dua nada bila "bands"), lalu grid sel bergaris: teks terbalik | blok aksen + judul + tombol | elemen. */
   const els = new Set<string>(look ? look.elements : ["meta", "arrow", "crosshair"]);
+  const pad2 = (n: number) => String(n).padStart(2, "0");
+  const lf = look?.labelFmt ?? "paren";
+  const secLabel = (n: number): string => (lf === "slash" ? `/${pad2(n)}` : lf === "hash" ? `#${pad2(n)}` : lf === "bracket" ? `[${pad2(n)}]` : `(${pad2(n)})`);
+  const year = String(new Date().getFullYear());
+  const titleFam: LookFontFamily = look?.fonts.title.family ?? (t.display === DISPLAY ? "display" : t.display === SERIF ? "serif" : "sans");
+  /** Satu baris teks raksasa sebagai SVG yang direntangkan pas selebar kolom (muat di font apa pun). */
+  const fitLine = (w: string, cls = "", upper = t.upper): string => {
+    const n = Math.max(3, Array.from(w).length);
+    const fs = Math.min(300, Math.round(1000 / (n * LOOK_WIDTH[titleFam])));
+    const h = Math.round(fs * (upper ? 0.8 : 1.02));
+    const y = Math.round(fs * (upper ? 0.77 : 0.8));
+    return `<span${cls ? ` class="${cls}"` : ""}><svg viewBox="0 0 1000 ${h}" focusable="false"><text x="0" y="${y}" textLength="1000" lengthAdjust="spacingAndGlyphs" font-size="${fs}" font-weight="${look?.fonts.title.weight ?? t.headWeight}" fill="currentColor" style="font-family:${esc(t.display).replace(/&quot;/g, "'")}">${esc(upper ? w.toUpperCase() : w)}</text></svg></span>`;
+  };
+  /** Angka nyata dari isi website (tanpa mengarang klaim): harga mulai, jumlah item, jumlah keunggulan, edisi. */
+  const statList = (): { v: string; k: string }[] => {
+    const prices = items.map((i) => i.price).filter((x) => x > 0);
+    const out: { v: string; k: string }[] = [];
+    if (prices.length) {
+      const m = Math.min(...prices);
+      out.push({ v: m >= 1_000_000 ? `${(m / 1_000_000).toFixed(m % 1_000_000 ? 1 : 0)}jt` : m >= 1000 ? `${Math.round(m / 1000)}rb` : String(m), k: "Harga mulai" });
+    }
+    if (items.length) out.push({ v: String(items.length).padStart(2, "0"), k: clip(c.itemsTitle, 22) });
+    if (arts.length) out.push({ v: String(arts.length).padStart(2, "0"), k: "Artikel" });
+    if (c.features.length) out.push({ v: String(c.features.length).padStart(2, "0"), k: clip(c.featuresTitle, 22) });
+    if (c.steps.length && out.length < 3) out.push({ v: String(c.steps.length).padStart(2, "0"), k: clip(c.stepsTitle, 22) });
+    out.push({ v: year, k: "Edisi" });
+    return out.slice(0, 3);
+  };
+  const statsHtml = (): string =>
+    `<div class="stats">${statList()
+      .map((x, i) => `<div class="stat">${i === 0 && els.has("crosshair") ? `<i aria-hidden="true">${lookSvg("crosshair")}</i>` : i === 1 && els.has("sparkle") ? `<i aria-hidden="true">${lookSvg("sparkle")}</i>` : ""}<b>${esc(x.v)}</b><span><em>${esc(x.k)}</em><em aria-hidden="true">${pad2(i + 1)}</em></span></div>`)
+      .join("")}</div>`;
+  /** Warna sorot kata di judul: aksen yang paling kontras dengan latar (min. 3:1 untuk teks besar). */
+  const hlColor = look ? ([look.accent2, look.accent].find((x) => lookContrast(x, look.bg) >= 3) ?? look.fg) : a;
+  const art = (pref: string[], fallback = "crosshair"): string => {
+    const id = pref.find((x) => els.has(x)) ?? fallback;
+    return id === "ring" ? ringSvg(c.brand, lookSvg(els.has("asterisk") ? "asterisk" : "sparkle")) : lookSvg(id, hash(c.brand) % 1e12);
+  };
+
+  const breakerHero = (): string => {
+    const words = c.headline.split(/\s+/).filter(Boolean);
+    const hi = look && look.hl >= 0 ? Math.min(words.length - 1, [...words.keys()].sort((x, y) => Array.from(words[y]).length - Array.from(words[x]).length)[look.hl % Math.min(3, words.length)]) : -1;
+    const astAt = els.has("asterisk") ? Math.min(1, words.length - 1) : -1;
+    const hiWord = (w: string): string => {
+      const m = /^([^\p{L}\p{N}]*)(.*?)([^\p{L}\p{N}]*)$/u.exec(w);
+      return m && m[2] ? `${esc(m[1])}<em>${esc(m[2])}</em>${esc(m[3])}` : esc(w);
+    };
+    const h1 = words
+      .map((w, i) => `${i === hi ? hiWord(w) : esc(w)}${i === astAt ? ` <span class="ast" aria-hidden="true">${lookSvg(els.has("sparkle") ? "sparkle" : "asterisk")}</span>` : ""}`)
+      .join(" ");
+    // Judul panjang diperkecil supaya kolom tidak menjulang: 6 kata = ukuran penuh, lebih panjang menyusut.
+    const k = Math.min(1, Math.sqrt(6 / Math.max(6, words.length)) * Math.min(1, 26 / Math.max(26, Math.max(...words.map((w) => Array.from(w).length)) * 2.6)));
+    const visual = heroImg ? `<img src="${esc(heroImg)}" alt="${esc(c.brand)}">` : art(["globe", "halftone", "pixel", "crosshair", "sunburst"], "globe");
+    const spk = els.has("sparkle") ? `<span class="spk" aria-hidden="true">${lookSvg("sparkle")}</span><span class="spk" aria-hidden="true">${lookSvg("sparkle")}</span>` : "";
+    const side = els.has("ring") ? ringSvg(c.brand, lookSvg(els.has("asterisk") ? "asterisk" : "sparkle")) : els.has("globe") ? `<span class="gl" aria-hidden="true">${lookSvg("globe")}</span>` : "";
+    return `<div class="brk"><div class="brk-t">${c.badge ? badgeHtml : ""}<h1 class="brk-h" style="font-size:clamp(${Math.round(40 * k)}px,${(7.4 * k).toFixed(2)}vw,${Math.round(124 * k)}px)">${h1}</h1></div><div class="brk-v${els.has("brackets") ? " brkt" : ""}" aria-hidden="${heroImg ? "false" : "true"}">${visual}${spk}</div><div class="brk-s">${c.subheadline ? `<p class="sub">${esc(c.subheadline)}</p>` : ""}${ctaRow}${side}</div></div>`;
+  };
+
+  const terminalHero = (): string => {
+    const h = hash(c.brand);
+    const co = [((h % 9000) / 100).toFixed(4), (-((h >> 7) % 9000) / 100).toFixed(4), (((h >> 13) % 9000) / 100).toFixed(4)];
+    const pct = 60 + (h % 39);
+    const giant = (t.upper ? c.brand.toUpperCase() : c.brand).split(/\s+/).filter(Boolean);
+    const lines = giant.length <= 3 ? giant : [giant.slice(0, Math.ceil(giant.length / 2)).join(" "), giant.slice(Math.ceil(giant.length / 2)).join(" ")];
+    const visual = heroImg ? `<img src="${esc(heroImg)}" alt="${esc(c.brand)}">` : art(["pixel", "globe", "crosshair", "halftone"], "pixel");
+    return `<div class="trm"><aside class="trm-rail" aria-hidden="true"><span>${esc(look?.kicker || c.slogan || c.brand)}</span><b>${year}</b></aside><div class="trm-main"><p class="trm-n" aria-hidden="true">${secLabel(1)}</p><div class="trm-g" aria-hidden="true">${lines.map((w) => fitLine(w)).join("")}</div><h1>${esc(c.headline)}</h1>${c.subheadline ? `<p class="sub">${esc(c.subheadline)}</p>` : ""}${ctaRow}</div><div class="trm-art${els.has("brackets") ? " brkt" : ""}">${visual}<span class="trm-st" aria-hidden="true">&gt; ${esc((look?.meta[0] || "memuat").toUpperCase())}<br><b>${pct}%</b></span><span class="trm-co" aria-hidden="true">X_${co[0]}<br>Y_${co[1]}<br>Z_${co[2]}</span><span class="trm-sc" aria-hidden="true">//${esc((c.brand.split(/\s+/)[0] || "SCN").toUpperCase().slice(0, 8))}_01</span></div></div>`;
+  };
+
+  const dashboardHero = (): string => {
+    const mark = c.brandIcon ? ico(c.brandIcon, 40) : lookSvg("sparkle");
+    return `<div class="dsh"><div class="dsh-top"><span>${esc(look?.meta[0] || c.slogan || c.brand)}</span><span>${esc(look?.meta[1] || "")}${look?.meta[1] ? " · " : ""}${year}</span></div><div class="dsh-head"><div>${c.badge ? badgeHtml : ""}<h1>${esc(c.headline)}</h1>${c.subheadline ? `<p class="sub">${esc(c.subheadline)}</p>` : ""}${ctaRow}</div><div class="dsh-brand" aria-hidden="true"><i>${mark}</i><span>| ${esc(c.brand)}</span></div></div>${statsHtml()}</div>`;
+  };
+
+  const labelHero = (): string => {
+    const h = hash(c.brand);
+    const initial = Array.from(c.brand.trim())[0] ?? "A";
+    const kindName: Record<SiteKind, string> = { umkm: "Toko", jasa: "Jasa", portofolio: "Portofolio", event: "Acara", profil: "Profil", artikel: "Artikel" };
+    const rows: [string, string][] = [
+      ["Subjek", c.brand],
+      ["Edisi", year],
+      ["Jenis", kindName[c.kind]],
+      ["No.", `#${String(h % 1000).padStart(3, "0")}`],
+    ];
+    if (c.address || look?.meta.find((m) => !/\d{4}/.test(m))) rows.splice(3, 0, ["Asal", clip(c.address || look!.meta.find((m) => !/\d{4}/.test(m))!, 24)]);
+    const x = heroImg ? `<img src="${esc(heroImg)}" alt="" style="width:100%;height:100%;object-fit:cover">` : art(["globe", "crosshair", "sparkle", "asterisk"], "globe");
+    return `<div class="lbl"><div class="lbl-a" aria-hidden="true">${esc(initial)}</div><div class="lbl-f"><dl>${rows.map(([k, v]) => `<dt>${esc(k)}:</dt><dd>${esc(v)}</dd>`).join("")}</dl><div class="lbl-bc" aria-hidden="true">${lookSvg("barcode", h % 1e12)}</div></div><div class="lbl-h"><p class="lbl-k">${esc(look?.kicker || c.slogan || c.badge || "")}</p><div><h1>${esc(c.headline)}</h1></div>${c.subheadline ? `<p class="sub">${esc(c.subheadline)}</p>` : ""}${ctaRow}</div><div class="lbl-x${els.has("brackets") ? " brkt" : ""}" aria-hidden="true">${x}</div><div class="lbl-z" aria-hidden="true"><div class="${els.has("checker") ? "ck" : "hz"}" style="height:100%;border:0"></div></div></div>`;
+  };
+
   const posterHero = (): string => {
-    const year = String(new Date().getFullYear());
     const metaLabels = (look?.meta.length ? look.meta : c.features.slice(0, 4).map((f) => clip(f.title, 26))).slice(0, 4);
     const numTxt = (look?.num || year).slice(0, 4);
     const kicker = look?.kicker || c.slogan || c.badge || "";
@@ -1621,26 +1835,14 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
       : "";
     // Judul raksasa = nama usaha, satu kata per baris (≤ 3 kata). Ukuran dihitung dari kata terpanjang supaya muat.
     const giant = (t.upper ? c.brand.toUpperCase() : c.brand).split(/\s+/).filter(Boolean);
-    const fam: LookFontFamily = look?.fonts.title.family ?? (t.display === DISPLAY ? "display" : t.display === SERIF ? "serif" : "sans");
     const lines = giant.length <= 3 ? giant : [giant.slice(0, Math.ceil(giant.length / 2)).join(" "), giant.slice(Math.ceil(giant.length / 2)).join(" ")];
     // Tiap baris = SVG dengan textLength: huruf dirapatkan/diregangkan tepat selebar kolom, di font apa pun (tanpa unduhan font).
     const tone = els.has("bands") && lines.length >= 2;
     const half = Math.ceil(lines.length / 2);
-    const fw = look?.fonts.title.weight ?? t.headWeight;
-    const giantHtml = `<div class="pst-g${tone ? " tone" : ""}" aria-hidden="true">${lines
-      .map((w, i) => {
-        const n = Math.max(3, Array.from(w).length);
-        const fs = Math.min(300, Math.round(1000 / (n * LOOK_WIDTH[fam])));
-        const up = t.upper;
-        const h = Math.round(fs * (up ? 0.8 : 1.02));
-        const y = Math.round(fs * (up ? 0.77 : 0.8));
-        return `<span${tone && i < half ? ' class="inv"' : ""}><svg viewBox="0 0 1000 ${h}" focusable="false"><text x="0" y="${y}" textLength="1000" lengthAdjust="spacingAndGlyphs" font-size="${fs}" font-weight="${fw}" fill="currentColor" style="font-family:${esc(t.display).replace(/&quot;/g, "'")}">${esc(w)}</text></svg></span>`;
-      })
-      .join("")}</div>`;
-    const inkArt = els.has("halftone") ? lookSvg("halftone") : els.has("plus-grid") ? lookSvg("plus-grid") : "";
-    const elId = ["crosshair", "barcode", "sunburst", "asterisk"].find((x) => els.has(x));
-    const elArt = heroImg ? `<img src="${esc(heroImg)}" alt="${esc(c.brand)}">` : elId ? lookSvg(elId, hash(c.brand) % 1e12) : lookSvg("crosshair");
-    const grid = `<div class="pst-grid"><div class="pc pc-ink">${c.subheadline ? `<p class="sub">${esc(c.subheadline)}</p>` : ""}<span class="pc-rule" aria-hidden="true"></span>${inkArt}</div><div class="pc pc-acc">${c.badge && !els.has("meta") ? badgeHtml : ""}<h1>${esc(c.headline)}</h1>${ctaRow}${els.has("arrow") ? `<span class="pc-arw" aria-hidden="true">${lookSvg("arrow")}</span>` : ""}</div><div class="pc pc-el">${elArt}</div></div>`;
+    const giantHtml = `<div class="pst-g${tone ? " tone" : ""}" aria-hidden="true">${lines.map((w, i) => fitLine(w, tone && i < half ? "inv" : "")).join("")}</div>`;
+    const inkArt = els.has("halftone") ? lookSvg("halftone") : els.has("plus-grid") ? lookSvg("plus-grid") : els.has("sparkle") ? lookSvg("sparkle") : "";
+    const elArt = heroImg ? `<img src="${esc(heroImg)}" alt="${esc(c.brand)}">` : art(["crosshair", "barcode", "sunburst", "asterisk", "globe", "pixel", "ring", "sparkle"]);
+    const grid = `<div class="pst-grid"><div class="pc pc-ink${els.has("brackets") ? " brkt" : ""}">${c.subheadline ? `<p class="sub">${esc(c.subheadline)}</p>` : ""}<span class="pc-rule" aria-hidden="true"></span>${inkArt}</div><div class="pc pc-acc">${c.badge && !els.has("meta") ? badgeHtml : ""}<h1>${esc(c.headline)}</h1>${ctaRow}${els.has("arrow") ? `<span class="pc-arw" aria-hidden="true">${lookSvg("arrow")}</span>` : ""}</div><div class="pc pc-el">${elArt}</div></div>`;
     return `<div class="pst">${meta}${giantHtml}${grid}</div>`;
   };
 
@@ -1659,15 +1861,27 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
     heroInner = `<div class="hsplit hasym"><div>${heroText}</div><div class="agrid">${himg}${cards}</div></div>`;
   } else if (heroL === "poster") {
     heroInner = posterHero();
+  } else if (heroL === "breaker") {
+    heroInner = breakerHero();
+  } else if (heroL === "terminal") {
+    heroInner = terminalHero();
+  } else if (heroL === "dashboard") {
+    heroInner = dashboardHero();
+  } else if (heroL === "label") {
+    heroInner = labelHero();
   } else if (heroL === "editorial") {
     heroInner = `<div class="hed"><div class="hed-top"><span class="slo">${esc(c.slogan || c.brand)}</span>${c.badge ? badgeHtml : ""}</div><h1>${esc(c.headline)}</h1><div class="hed-bot">${subHtml}${ctaRow}</div></div>${himg}`;
   }
 
   const tickText = look?.elements.includes("ticker") ? look.ticker || c.slogan || c.brand : "";
+  const sep = els.has("asterisk") ? "\u2731" : els.has("sparkle") ? "\u2726" : "\u25CF";
+  const tickWords = [tickText, ...c.features.slice(0, 4).map((f) => f.title)].filter(Boolean);
   const ticker = tickText
-    ? `<div class="tick" aria-hidden="true"><div class="tk">${Array.from({ length: 12 }, () => `<span>${esc(tickText)}</span><span>\u25CF</span>`).join("")}</div></div>`
+    ? `<div class="tick" aria-hidden="true"><div class="tk">${Array.from({ length: 3 }, () => tickWords.map((w) => `<span>${esc(w)}</span><span>${sep}</span>`).join("")).join("")}${Array.from({ length: 3 }, () => tickWords.map((w) => `<span>${esc(w)}</span><span>${sep}</span>`).join("")).join("")}</div></div>`
     : "";
-  const hero = `<div class="hero h-${heroL}"><div class="glow"></div>${ornamentMarkup(t.deco)}<div class="wrap">${heroInner}</div></div>${ticker}`;
+  const bignum = look && els.has("bignum") ? `<div class="wrap bignum" aria-hidden="true">${fitLine(year.slice(-3), "", false)}</div>` : "";
+  const hazard = look && els.has("hazard") ? `<div class="hz" aria-hidden="true"></div>` : "";
+  const hero = `<div class="hero h-${heroL}"><div class="glow"></div>${ornamentMarkup(t.deco)}${bignum}<div class="wrap">${heroInner}</div></div>${hazard}${ticker}`;
 
   /* ----- katalog / layanan ----- */
   const priceLabel = (i: SiteItem) => (i.price > 0 ? fmtRp(i.price) : "Tanya harga");
@@ -1718,7 +1932,6 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
 
   /* ----- fitur ----- */
   const featCard = (f: SiteFeature, n: number, cls = "") => `<article class="card feat ${cls}${f.span === 2 ? " s2" : ""}"${toneStyle(n + 1)}><div class="ico">${ico(f.icon, 20)}</div><div><h3>${esc(f.title)}</h3><p>${esc(f.text)}</p></div></article>`;
-  const pad2 = (n: number) => String(n).padStart(2, "0");
   const featBody =
     featL === "index"
       ? `<div class="idx"><div class="idx-h"><b class="idx-n" aria-hidden="true">${pad2(c.features.length)}</b><h2>${esc(c.featuresTitle)}</h2>${c.slogan ? `<p>${esc(c.slogan)}</p>` : ""}</div><ol class="idx-l">${c.features
@@ -1767,7 +1980,7 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
   ].join("");
 
   const band = buttons
-    ? `<section id="kontak"><div class="wrap"><div class="band">${ornamentMarkup(t.deco)}${look && (els.has("asterisk") || els.has("arrow")) ? `<span class="bd-el" aria-hidden="true">${lookSvg(els.has("asterisk") ? "asterisk" : "arrow")}</span>` : ""}<div><h2>${esc(c.closing)}</h2>${c.closingText ? `<p>${esc(c.closingText)}</p>` : ""}</div><div class="row">${buttons}</div></div></div></section>`
+    ? `<section id="kontak"><div class="wrap"><div class="band">${ornamentMarkup(t.deco)}${look && els.has("ring") ? `<span class="bd-el bd-ring">${ringSvg(c.brand, lookSvg(els.has("asterisk") ? "asterisk" : "sparkle"))}</span>` : look && (els.has("asterisk") || els.has("arrow") || els.has("sparkle")) ? `<span class="bd-el" aria-hidden="true">${lookSvg(els.has("asterisk") ? "asterisk" : els.has("sparkle") ? "sparkle" : "arrow")}</span>` : ""}<div><h2>${esc(c.closing)}</h2>${c.closingText ? `<p>${esc(c.closingText)}</p>` : ""}</div><div class="row">${buttons}</div></div></div></section>`
     : "";
 
   /* ----- urutan bagian: UMKM = katalog dulu; artikel = daftar artikel dulu; lainnya = keunggulan dulu ----- */
@@ -1797,11 +2010,11 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
     })}</script>`;
   }
 
-  const css = buildCss(t, a, heroL, shop, c.hover ?? "lift", extra, isArticle, look, heroL === "poster" || featL === "index" || !!ticker);
+  const css = buildCss(t, a, heroL, shop, c.hover ?? "lift", extra, isArticle, look, ["poster", "breaker", "terminal", "dashboard", "label"].includes(heroL) || featL === "index" || !!ticker || !!hazard);
   const js = shop ? SHOP_RUNTIME_JS : "";
 
   const bodyCls = look
-    ? ` class="lk lk-${esc(look.style)}${look.shape.gap === 0 ? " lk-g0" : ""}${look.elements.includes("index") ? " lk-idx" : ""}"`
+    ? ` class="lk lk-${esc(look.style)}${heroL === "terminal" ? " lk-s1" : ""}${look.shape.gap === 0 ? " lk-g0" : ""}${look.elements.includes("index") ? " lk-idx" : ""}${look.elements.includes("blocks") ? " lk-blk" : ""}${look.elements.includes("numbers") ? " lk-num" : ""}"`
     : "";
   const head = `<meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -1814,7 +2027,7 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
 ${hero}
 ${sections.join("\n")}
 </main>
-<footer><div class="wrap"><span>© ${esc(c.brand)}${c.slogan ? ` · ${esc(c.slogan)}` : ""}</span><span>Dibuat dengan Depup AI Web Builder</span></div></footer>
+${look && els.has("checker") ? `<div class="ck" aria-hidden="true"></div>` : ""}<footer><div class="wrap"><span>© ${esc(c.brand)}${c.slogan ? ` · ${esc(c.slogan)}` : ""}</span><span>Dibuat dengan Depup AI Web Builder</span></div></footer>
 ${readers}
 ${cartUi}
 ${dataScript}`;
