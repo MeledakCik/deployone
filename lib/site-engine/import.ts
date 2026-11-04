@@ -7,6 +7,7 @@
  */
 import { KINDS, type DomainPack, type FeedbackExample, type Kind } from "./core.ts";
 import { isStylePack, validateStyle, type StylePack } from "../site-look.ts";
+import { isElementPack, isIconPack, validateElementPack, validateIconPack, type ElementPack, type IconPack } from "../site-assets.ts";
 
 export interface PackRules {
   icons: ReadonlySet<string>;
@@ -20,6 +21,10 @@ export interface ParsedImport {
   packs: DomainPack[];
   /** Paket gaya visual (type: "style"). */
   styles: StylePack[];
+  /** Paket ikon (type: "icons"). */
+  iconPacks: IconPack[];
+  /** Paket elemen dekoratif (type: "elements"). */
+  elementPacks: ElementPack[];
   feedback: FeedbackExample[];
   /** Masalah yang membuat satu paket/contoh ditolak. */
   errors: string[];
@@ -48,7 +53,7 @@ const looksLikeFeedback = (v: unknown) => isObj(v) && typeof v.prompt === "strin
  *  - campuran: `{"packs": [...], "feedback": [...]}`
  */
 export function parseImport(text: string): ParsedImport {
-  const out: ParsedImport = { packs: [], styles: [], feedback: [], errors: [], notes: [] };
+  const out: ParsedImport = { packs: [], styles: [], iconPacks: [], elementPacks: [], feedback: [], errors: [], notes: [] };
   const src = text.replace(/^﻿/, "").trim();
   if (!src) {
     out.errors.push("Isi impor kosong.");
@@ -74,6 +79,14 @@ export function parseImport(text: string): ParsedImport {
   }
 
   values.forEach((v, i) => {
+    if (isIconPack(v)) {
+      out.iconPacks.push(v as unknown as IconPack);
+      return;
+    }
+    if (isElementPack(v)) {
+      out.elementPacks.push(v as unknown as ElementPack);
+      return;
+    }
     if (isStylePack(v)) {
       out.styles.push(v as unknown as StylePack);
       return;
@@ -84,7 +97,7 @@ export function parseImport(text: string): ParsedImport {
       if (prompt.length < 10) out.errors.push(`Contoh #${i + 1}: "prompt" terlalu pendek (minimal 10 huruf).`);
       else out.feedback.push({ prompt, content: f.content as Record<string, unknown>, at: typeof f.at === "number" ? f.at : Date.now() });
     } else if (looksLikePack(v)) out.packs.push(v as unknown as DomainPack);
-    else out.errors.push(`Entri #${i + 1}: tidak dikenali. Paket domain butuh "id" dan "prompts"; paket gaya butuh "type": "style"; contoh butuh "prompt" dan "content".`);
+    else out.errors.push(`Entri #${i + 1}: tidak dikenali. Paket domain butuh "id" dan "prompts"; paket gaya/ikon/elemen butuh "type": "style" / "icons" / "elements"; contoh butuh "prompt" dan "content".`);
   });
   return out;
 }
@@ -185,6 +198,16 @@ export type { StylePack };
 
 /** Gabungkan gaya bawaan dengan gaya impor (id sama = impor menggantikan). */
 export function mergeStyles(bundled: StylePack[], imported: StylePack[]): StylePack[] {
+  const byId = new Map(bundled.map((x) => [x.id, x]));
+  for (const x of imported) byId.set(x.id, x);
+  return [...byId.values()];
+}
+
+export { validateIconPack, validateElementPack };
+export type { IconPack, ElementPack };
+
+/** Gabungkan paket (ikon/elemen) bawaan dengan impor; id sama = impor menggantikan. */
+export function mergeById<T extends { id: string }>(bundled: T[], imported: T[]): T[] {
   const byId = new Map(bundled.map((x) => [x.id, x]));
   for (const x of imported) byId.set(x.id, x);
   return [...byId.values()];

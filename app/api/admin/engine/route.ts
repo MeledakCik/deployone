@@ -3,7 +3,21 @@ import { kv } from "@vercel/kv";
 import { fail, ok, withErrorHandling } from "@/app/api/_lib/response";
 import { adminFromReq, audit } from "@/app/api/_lib/admin";
 import { trainModel, type DomainPack, type FeedbackExample, type SiteModel } from "@/lib/site-engine/core";
-import { completePack, mergePacks, mergeStyles, parseImport, validatePack, validateStyle, type PackRules, type StylePack } from "@/lib/site-engine/import";
+import {
+  completePack,
+  mergeById,
+  mergePacks,
+  mergeStyles,
+  parseImport,
+  validateElementPack,
+  validateIconPack,
+  validatePack,
+  validateStyle,
+  type ElementPack,
+  type IconPack,
+  type PackRules,
+  type StylePack,
+} from "@/lib/site-engine/import";
 import {
   ENGINE_FEEDBACK_KEY,
   ENGINE_FEEDBACK_MAX,
@@ -13,6 +27,9 @@ import {
   ENGINE_PACKS_MAX_BYTES,
   ENGINE_STYLES_KEY,
   ENGINE_STYLES_MAX,
+  ENGINE_ICONS_KEY,
+  ENGINE_ELEMENTS_KEY,
+  ENGINE_ASSETS_MAX_BYTES,
   bundledModel,
   loadModel,
   resetModelCache,
@@ -59,6 +76,14 @@ async function readImportedStyles(): Promise<StylePack[]> {
   return Array.isArray(list) ? list : [];
 }
 
+async function readList<T>(key: string): Promise<T[]> {
+  const v = await kv.get<T[] | string>(key).catch(() => null);
+  const list = typeof v === "string" ? (JSON.parse(v) as T[]) : v;
+  return Array.isArray(list) ? list : [];
+}
+const readIconPacks = () => readList<IconPack>(ENGINE_ICONS_KEY);
+const readElementPacks = () => readList<ElementPack>(ENGINE_ELEMENTS_KEY);
+
 async function readImportedPacks(): Promise<DomainPack[]> {
   const v = await kv.get<DomainPack[] | string>(ENGINE_PACKS_KEY).catch(() => null);
   const list = typeof v === "string" ? (JSON.parse(v) as DomainPack[]) : v;
@@ -67,8 +92,8 @@ async function readImportedPacks(): Promise<DomainPack[]> {
 
 /** Latih model dari paket bawaan + paket impor + contoh pengguna, simpan di KV, dan langsung pakai. */
 async function retrain(): Promise<SiteModel> {
-  const [imported, feedback, styles] = await Promise.all([readImportedPacks(), readFeedback(), readImportedStyles()]);
-  const model = trainModel(mergePacks(BUNDLED_PACKS, imported), feedback, mergeStyles(BUNDLED_STYLES, styles));
+  const [imported, feedback, styles, icons, elements] = await Promise.all([readImportedPacks(), readFeedback(), readImportedStyles(), readIconPacks(), readElementPacks()]);
+  const model = trainModel(mergePacks(BUNDLED_PACKS, imported), feedback, mergeStyles(BUNDLED_STYLES, styles), { icons, elements });
   await kv.set(ENGINE_MODEL_KEY, JSON.stringify(model));
   resetModelCache();
   return model;
@@ -82,6 +107,8 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
   const feedback = await readFeedback().catch(() => []);
   const imported = await readImportedPacks().catch(() => []);
   const importedStyles = await readImportedStyles().catch(() => []);
+  const iconPacks = await readIconPacks().catch(() => []);
+  const elementPacks = await readElementPacks().catch(() => []);
   const importedIds = new Set(imported.map((p) => p.id));
   return ok({
     active: { source: stored ? "admin" : "bawaan", trainedAt: active.trainedAt, stats: active.stats },
@@ -96,6 +123,14 @@ export const GET = withErrorHandling(async (req: NextRequest) => {
       keywords: x.keywords.slice(0, 6),
       imported: importedStyles.some((y) => y.id === x.id),
       chance: x.fit?.chance ?? 0,
+    })),
+    iconPacks: iconPacks.map((p) => ({ id: p.id, label: p.label, license: p.license ?? "", count: p.icons.length, sample: p.icons.slice(0, 36).map((i) => ({ name: i.name, svg: i.svg })) })),
+    elementPacks: elementPacks.map((p) => ({
+      id: p.id,
+      label: p.label,
+      license: p.license ?? "",
+      count: p.elements.length,
+      sample: p.elements.slice(0, 24).map((e) => ({ id: e.id, label: e.label, slot: e.slot, vb: e.viewBox, svg: e.svg })),
     })),
     imported: imported.map((p) => ({ id: p.id, kind: p.kind, label: p.label, prompts: p.prompts.length, items: p.items.length, replacesBundled: BUNDLED_IDS.has(p.id) })),
     domains: Object.values(active.packs).map((p) => ({
@@ -137,6 +172,23 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
     const parsed = parseImport(text);
     const errors = [...parsed.errors];
 
+    // Ikon impor (yang sudah tersimpan + yang ada di file ini) boleh dipakai paket domain di file yang sama.
+    const storedIcons = await readIconPacks();
+    const knownIcons = new Set([...RULES.icons, ...mergeById(storedIcons, parsed.iconPacks).flatMap((p) => (Array.isArray(p.icons) ? p.icons.map((i) => i?.name) : []))]);
+    for (const ip of parsed.iconPacks) errors.push(...validateIconPack(ip, RULES.icons));
+    for (const ep of parsed.elementPacks) errors.push(...validateElementPack(ep));
+    const allIconNames = new Map<string, string>();
+    for (const ip of mergeById(storedIcons, parsed.iconPacks))
+      for (const ic of Array.isArray(ip.icons) ? ip.icons : []) {
+        if (allIconNames.has(ic?.name) && allIconNames.get(ic.name) !== ip.id) errors.push(`Ikon "${ic.name}" sudah ada di paket "${allIconNames.get(ic.name)}".`);
+        allIconNames.set(ic?.name, ip.id);
+      }
+    const allElIds = new Map<string, string>();
+    for (const ep of mergeById(await readElementPacks(), parsed.elementPacks))
+      for (const el of Array.isArray(ep.elements) ? ep.elements : []) {
+        if (allElIds.has(el?.id) && allElIds.get(el.id) !== ep.id) errors.push(`Elemen "${el.id}" sudah ada di paket "${allElIds.get(el.id)}".`);
+        allElIds.set(el?.id, ep.id);
+      }
     const styleRules = { heroes: RULES.heroes, feats: RULES.feats, banned: RULES.banned };
     const seenStyle = new Set<string>();
     for (const st of parsed.styles) {
@@ -146,11 +198,11 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
     }
     const seen = new Set<string>();
     for (const p of parsed.packs) {
-      errors.push(...validatePack(p, RULES));
+      errors.push(...validatePack(p, { ...RULES, icons: knownIcons }));
       if (seen.has(p.id)) errors.push(`Paket "${p.id}" muncul dua kali di file ini.`);
       seen.add(p.id);
     }
-    if (!parsed.packs.length && !parsed.styles.length && !parsed.feedback.length && !errors.length) errors.push("Tidak ada paket atau contoh yang bisa diimpor.");
+    if (!parsed.packs.length && !parsed.styles.length && !parsed.iconPacks.length && !parsed.elementPacks.length && !parsed.feedback.length && !errors.length) errors.push("Tidak ada paket atau contoh yang bisa diimpor.");
     // Semua atau tidak sama sekali: file dengan kesalahan tidak diimpor sebagian, supaya mudah diperbaiki lalu diunggah ulang.
     if (errors.length) return ok({ imported: false, errors: errors.slice(0, 50), moreErrors: Math.max(0, errors.length - 50) });
 
@@ -184,6 +236,15 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
 
     if (parsed.packs.length) await kv.set(ENGINE_PACKS_KEY, JSON.stringify(next));
     if (parsed.styles.length) await kv.set(ENGINE_STYLES_KEY, JSON.stringify([...styleById.values()]));
+    if (parsed.iconPacks.length || parsed.elementPacks.length) {
+      const nextIcons = mergeById(storedIcons, parsed.iconPacks);
+      const nextEls = mergeById(await readElementPacks(), parsed.elementPacks);
+      const size = JSON.stringify(nextIcons).length + JSON.stringify(nextEls).length;
+      if (size > ENGINE_ASSETS_MAX_BYTES)
+        return ok({ imported: false, errors: [`Total paket ikon + elemen ${Math.round(size / 1000)} KB, melebihi ${ENGINE_ASSETS_MAX_BYTES / 1000} KB. Hapus paket yang tidak dipakai.`] });
+      if (parsed.iconPacks.length) await kv.set(ENGINE_ICONS_KEY, JSON.stringify(nextIcons));
+      if (parsed.elementPacks.length) await kv.set(ENGINE_ELEMENTS_KEY, JSON.stringify(nextEls));
+    }
     if (parsed.feedback.length) {
       const rows = parsed.feedback.slice(0, ENGINE_FEEDBACK_MAX).map((f) => JSON.stringify(f));
       for (let i = 0; i < rows.length; i += 200) await kv.lpush(ENGINE_FEEDBACK_KEY, ...rows.slice(i, i + 200));
@@ -192,13 +253,26 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
     }
 
     const model = await retrain();
+    for (const ip of parsed.iconPacks) notes.push(`Paket ikon "${ip.label}": ${ip.icons.length} ikon, ${ip.icons.reduce((n, i) => n + i.keywords.length, 0)} kata kunci dipelajari.`);
+    for (const ep of parsed.elementPacks) notes.push(`Paket elemen "${ep.label}": ${ep.elements.length} elemen (${["art", "badge", "divider", "pattern"].map((sl) => `${ep.elements.filter((e) => e.slot === sl).length} ${sl}`).join(", ")}).`);
     for (const st of parsed.styles) notes.push(`Gaya "${st.label}": ${st.palettes.length} palet, ${(st.elements.always ?? []).length + st.elements.pool.length} elemen, dipicu kata ${st.keywords.slice(0, 4).map((k) => `"${k}"`).join(", ")}.`);
     await audit(admin, "engine.import", `paket +${added.length} ~${updated.length}, gaya +${stylesAdded.length} ~${stylesUpdated.length}, contoh +${parsed.feedback.length}`);
-    return ok({ imported: true, added, updated, stylesAdded, stylesUpdated, feedback: parsed.feedback.length, notes, trainedAt: model.trainedAt, stats: model.stats });
+    return ok({ imported: true, added, updated, stylesAdded, stylesUpdated, iconPacks: parsed.iconPacks.length, elementPacks: parsed.elementPacks.length, feedback: parsed.feedback.length, notes, trainedAt: model.trainedAt, stats: model.stats });
   }
 
   if (action === "removePack") {
     const id = typeof body?.id === "string" ? body.id : "";
+    if (body?.kind === "icons" || body?.kind === "elements") {
+      const key = body.kind === "icons" ? ENGINE_ICONS_KEY : ENGINE_ELEMENTS_KEY;
+      const cur = await readList<{ id: string }>(key);
+      const rest = cur.filter((x) => x.id !== id);
+      if (rest.length === cur.length) return fail("Paket tidak ditemukan.", 404, "not_found");
+      if (rest.length) await kv.set(key, JSON.stringify(rest));
+      else await kv.del(key);
+      const m3 = await retrain();
+      await audit(admin, `engine.remove.${body.kind}`, id);
+      return ok({ removed: id, stats: m3.stats });
+    }
     if (body?.kind === "style") {
       const cur = await readImportedStyles();
       const rest = cur.filter((x) => x.id !== id);
@@ -222,7 +296,9 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
   if (action === "exportPacks") {
     const packs = await readImportedPacks();
     const styles = await readImportedStyles();
-    return ok({ json: JSON.stringify([...packs, ...styles], null, 2) + "\n", count: packs.length + styles.length });
+    const ic = await readIconPacks();
+    const el = await readElementPacks();
+    return ok({ json: JSON.stringify([...packs, ...styles, ...ic, ...el], null, 2) + "\n", count: packs.length + styles.length + ic.length + el.length });
   }
 
   if (action === "train") {

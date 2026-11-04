@@ -12,6 +12,7 @@
 import { LUCIDE, isIconName, svgIcon } from "@/lib/lucide-icons";
 import { SHOP_RUNTIME_JS } from "@/lib/ai-site-runtime";
 import { contrast as lookContrast, normalizeLook, type LookFont, type LookFontFamily, type SiteLook } from "@/lib/site-look";
+import { ELEMENT_SLOTS, VIEWBOX, resolveSvgColors, safeSvg, svgDataUri, type SiteOrnament } from "@/lib/site-assets";
 
 export type { SiteLook } from "@/lib/site-look";
 
@@ -108,6 +109,10 @@ export interface SiteContent {
   testimonial?: { text: string; name: string };
   /** Gaya visual hasil latihan (paket gaya), mis. brutalism. Kosong = ikut Template. */
   look?: SiteLook;
+  /** Ikon hasil impor yang dipakai website ini: nama → isi SVG 24×24 (sudah disaring). */
+  icons?: Record<string, string>;
+  /** Elemen dekoratif hasil impor (paket elemen): maks. 3, satu per slot. */
+  ornaments?: SiteOrnament[];
 }
 
 export const KIND_LABEL: Record<SiteKind, string> = {
@@ -224,11 +229,41 @@ function hash(s: string): number {
 }
 
 /** Nama ikon dari AI → nama Lucide yang valid; juga menerima "Utensils" / "chef_hat". */
-function iconName(v: unknown, fallback: string): string {
+function iconName(v: unknown, fallback: string, custom?: Record<string, string>): string {
   // "Clock3" / "ShoppingBag" → "clock-3" / "shopping-bag"; "chef_hat" → "chef-hat"
   const t = typeof v === "string" ? v.trim().replace(/([a-z])([A-Z0-9])/g, "$1-$2").toLowerCase().replace(/[_\s]+/g, "-") : "";
   const alias = /^clock-(?:[1-9]|1[0-2])$/.test(t) ? "clock" : t;
-  return isIconName(alias) ? alias : fallback;
+  return isIconName(alias) || (custom && Object.prototype.hasOwnProperty.call(custom, alias)) ? alias : fallback;
+}
+
+/** Ikon impor dari isi website: hanya nama kebab-case, maks. 40 ikon, SVG disaring ulang. */
+function normalizeIcons(v: unknown): Record<string, string> {
+  const out: Record<string, string> = {};
+  if (!v || typeof v !== "object" || Array.isArray(v)) return out;
+  for (const [k, svg] of Object.entries(v as Record<string, unknown>).slice(0, 40)) {
+    if (!/^[a-z0-9]+(-[a-z0-9]+)*$/.test(k) || k.length > 40 || isIconName(k)) continue;
+    const clean = safeSvg(svg, 3000);
+    if (clean) out[k] = clean;
+  }
+  return out;
+}
+
+/** Ornamen dari isi website: maks. 3, satu per slot, SVG disaring ulang. */
+function normalizeOrnaments(v: unknown): SiteOrnament[] {
+  if (!Array.isArray(v)) return [];
+  const out: SiteOrnament[] = [];
+  for (const o of v.slice(0, 6)) {
+    if (!o || typeof o !== "object") continue;
+    const x = o as Record<string, unknown>;
+    const slot = x.slot as SiteOrnament["slot"];
+    if (!(ELEMENT_SLOTS as readonly string[]).includes(slot) || out.some((y) => y.slot === slot)) continue;
+    if (typeof x.vb !== "string" || !VIEWBOX.test(x.vb)) continue;
+    const svg = safeSvg(x.svg, 12000);
+    if (!svg) continue;
+    out.push({ id: typeof x.id === "string" ? x.id.replace(/[^a-z0-9-]/g, "").slice(0, 48) : "elemen", slot, vb: x.vb, svg });
+    if (out.length >= 3) break;
+  }
+  return out;
 }
 
 const FEATURE_FALLBACK_ICONS = ["sparkles", "badge-check", "heart", "zap", "shield-check", "star"];
@@ -339,6 +374,7 @@ export function normalizeContent(raw: unknown, forceKind?: SiteKind): SiteConten
 
   const brand = str(r.brand, 40);
   const headline = str(r.headline, 90);
+  const customIcons = normalizeIcons(r.icons);
 
   const features: SiteFeature[] = [];
   if (Array.isArray(r.features)) {
@@ -348,7 +384,7 @@ export function normalizeContent(raw: unknown, forceKind?: SiteKind): SiteConten
       const title = str(o.title, 50);
       const text = str(o.text ?? o.desc, 160);
       const span: 1 | 2 = Number(o.col_span ?? o.span) === 2 ? 2 : 1;
-      if (title && text) features.push({ icon: iconName(o.icon, FEATURE_FALLBACK_ICONS[features.length % 6]), title, text, span });
+      if (title && text) features.push({ icon: iconName(o.icon, FEATURE_FALLBACK_ICONS[features.length % 6], customIcons), title, text, span });
     }
   }
   // Toleran: model kecil kadang memberi <2 fitur. Lengkapi dari produk/langkah daripada gagal total.
@@ -357,7 +393,7 @@ export function normalizeContent(raw: unknown, forceKind?: SiteKind): SiteConten
       if (features.length >= 3 || !it || typeof it !== "object") continue;
       const o = it as Record<string, unknown>;
       const title = str(o.name, 50);
-      if (title) features.push({ icon: iconName(o.icon, FEATURE_FALLBACK_ICONS[features.length % 6]), title, text: str(o.desc, 160) || str(r.subheadline, 160) || title });
+      if (title) features.push({ icon: iconName(o.icon, FEATURE_FALLBACK_ICONS[features.length % 6], customIcons), title, text: str(o.desc, 160) || str(r.subheadline, 160) || title });
     }
   }
   const kind: SiteKind = forceKind && KINDS.includes(forceKind) ? forceKind : KINDS.includes(r.kind as SiteKind) ? (r.kind as SiteKind) : "profil";
@@ -421,7 +457,7 @@ export function normalizeContent(raw: unknown, forceKind?: SiteKind): SiteConten
         desc: str(o.desc, 140),
         price: Number.isFinite(p) && p > 0 ? Math.min(Math.round(p), 999_999_999) : 0,
         category: str(o.category, 24),
-        icon: iconName(o.icon, "package"),
+        icon: iconName(o.icon, "package", customIcons),
         img: "",
         size: o.size === "large" ? "large" : "small",
         tag: str(o.tag, 20),
@@ -457,7 +493,7 @@ export function normalizeContent(raw: unknown, forceKind?: SiteKind): SiteConten
     hero,
     feat,
     brand,
-    brandIcon: iconName(r.brandIcon, ""),
+    brandIcon: iconName(r.brandIcon, "", customIcons),
     badge: str(r.badge, 40),
     headline,
     subheadline: str(r.subheadline, 220),
@@ -478,6 +514,8 @@ export function normalizeContent(raw: unknown, forceKind?: SiteKind): SiteConten
     closing: str(r.closing, 60) || "Hubungi kami",
     closingText: str(r.closingText, 120),
     ...(normalizeLook(r.look) ? { look: normalizeLook(r.look) } : {}),
+    ...(Object.keys(customIcons).length ? { icons: customIcons } : {}),
+    ...(normalizeOrnaments(r.ornaments).length ? { ornaments: normalizeOrnaments(r.ornaments) } : {}),
   };
 }
 
@@ -1397,6 +1435,14 @@ h2{font-size:clamp(${Math.round(28 * (t.heroScale ?? 1))}px,${4.4 * (t.heroScale
 footer{padding:34px 0 44px;border-top:${bd};color:var(--muted);font-size:13.5px}
 footer .wrap{display:flex;flex-wrap:wrap;gap:8px 20px;justify-content:space-between}
 ${extraCss(t, bd, hover, extra)}
+.orn-div{background-repeat:repeat-x;background-position:center;border-bottom:${bd}}
+.bd-art{flex:none;width:clamp(84px,11vw,150px);color:currentColor;position:relative;z-index:1}.bd-art svg{width:100%;height:auto;display:block}
+.bd-el{position:absolute;right:clamp(14px,3vw,36px);top:clamp(14px,3vw,30px);width:clamp(44px,6vw,72px);height:auto;z-index:0}.bd-el svg{width:100%;height:auto;display:block}
+.band>.row,.band>div:not(.orn){position:relative;z-index:1}
+.bd-txt{display:flex;align-items:center;gap:clamp(14px,2vw,24px);min-width:0}
+${!look && !t.brutal ? ".band .bd-badge,.band .bd-art{--a:var(--on);--a2:var(--on)}" : ""}
+.bd-badge{flex:none;width:clamp(56px,7vw,88px);transform:rotate(-8deg)}.bd-badge svg{width:100%;height:auto;display:block}
+@media(max-width:620px){.bd-art{display:none}}
 ${poster ? posterCss(t) : ""}
 ${look ? lookCss(look) : ""}
 ${article ? articleCss(t, bd) : ""}
@@ -1615,6 +1661,12 @@ function decodeDataUrl(u: string): { ext: string; data: Uint8Array } | null {
 }
 
 export function buildSite(content: SiteContent, template: TemplateId, accent?: string, opts: RenderOpts = {}): SiteBundle {
+  // Ikon impor (content.icons) dirender dengan gaya Lucide yang sama; nama bawaan tetap dari LUCIDE.
+  const customIcons = content.icons ?? {};
+  const ico = (name: string, size = 24): string =>
+    !isIconName(name) && customIcons[name]
+      ? `<svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${customIcons[name]}</svg>`
+      : svgIcon(name, size);
   const base = THEMES[template];
   const custom = (opts.palette ?? []).filter(isHexColor).map((x) => x.toLowerCase()).slice(0, MAX_PALETTE);
   // Gaya hasil latihan: dipakai kecuali dimatikan (pengguna memilih Template/warna/gaya sendiri).
@@ -1770,7 +1822,11 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
       .join("")}</div>`;
   /** Warna sorot kata di judul: aksen yang paling kontras dengan latar (min. 3:1 untuk teks besar). */
   const hlColor = look ? ([look.accent2, look.accent].find((x) => lookContrast(x, look.bg) >= 3) ?? look.fg) : a;
+  const ornOf = (slot: SiteOrnament["slot"]) => (content.ornaments ?? []).find((o) => o.slot === slot);
+  const ornSvg = (o: SiteOrnament, cls: string) => `<span class="${cls}" aria-hidden="true"><svg viewBox="${o.vb}" focusable="false">${o.svg}</svg></span>`;
   const art = (pref: string[], fallback = "crosshair"): string => {
+    const oa = ornOf("art");
+    if (oa) return `<svg viewBox="${oa.vb}" aria-hidden="true" focusable="false">${oa.svg}</svg>`;
     const id = pref.find((x) => els.has(x)) ?? fallback;
     return id === "ring" ? ringSvg(c.brand, lookSvg(els.has("asterisk") ? "asterisk" : "sparkle")) : lookSvg(id, hash(c.brand) % 1e12);
   };
@@ -1881,7 +1937,14 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
     : "";
   const bignum = look && els.has("bignum") ? `<div class="wrap bignum" aria-hidden="true">${fitLine(year.slice(-3), "", false)}</div>` : "";
   const hazard = look && els.has("hazard") ? `<div class="hz" aria-hidden="true"></div>` : "";
-  const hero = `<div class="hero h-${heroL}"><div class="glow"></div>${ornamentMarkup(t.deco)}${bignum}<div class="wrap">${heroInner}</div></div>${hazard}${ticker}`;
+  // Ornamen "divider": pita motif selebar layar di bawah hero (gambar latar berulang, warna sudah diselesaikan).
+  const pal = { fg: t.fg, bg: t.bg, a, a2: t.acc2 ?? a, ink: look?.ink ?? t.fg, on: onColor(a) };
+  const od = ornOf("divider");
+  const odVb = od ? od.vb.split(" ").map(Number) : [];
+  const divider = od
+    ? `<div class="orn-div" aria-hidden="true" style="background-image:url(&quot;${svgDataUri(od.vb, resolveSvgColors(od.svg, pal))}&quot;);background-size:auto 100%;height:${Math.max(16, Math.min(64, Math.round((odVb[3] / odVb[2]) * 240)))}px"></div>`
+    : "";
+  const hero = `<div class="hero h-${heroL}"><div class="glow"></div>${ornamentMarkup(t.deco)}${bignum}<div class="wrap">${heroInner}</div></div>${hazard}${ticker}${divider}`;
 
   /* ----- katalog / layanan ----- */
   const priceLabel = (i: SiteItem) => (i.price > 0 ? fmtRp(i.price) : "Tanya harga");
@@ -1979,8 +2042,14 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
     mail ? `<a class="btn ${wa ? "ghost" : ""}" href="${mail}">${ico("mail", 18)}${wa || isArticle ? "Kirim Email" : esc(c.ctaLabel)}</a>` : "",
   ].join("");
 
+  // Ornamen "pattern": motif tipis di latar blok ajakan, warnanya ikut warna teks blok.
+  const op = ornOf("pattern");
+  const bandText = look ? look.bg : t.brutal ? (contrastRatio(t.bg, "#0a0a0a") >= 4.5 ? t.bg : "#ffffff") : onColor(a);
+  const bandPattern = op
+    ? ` style="background-image:url(&quot;${svgDataUri(op.vb, `<g opacity=".16">${resolveSvgColors(op.svg, { ...pal, fg: bandText, ink: bandText })}</g>`)}&quot;);background-size:${Math.round(Number(op.vb.split(" ")[2]) * 0.6)}px auto"`
+    : "";
   const band = buttons
-    ? `<section id="kontak"><div class="wrap"><div class="band">${ornamentMarkup(t.deco)}${look && els.has("ring") ? `<span class="bd-el bd-ring">${ringSvg(c.brand, lookSvg(els.has("asterisk") ? "asterisk" : "sparkle"))}</span>` : look && (els.has("asterisk") || els.has("arrow") || els.has("sparkle")) ? `<span class="bd-el" aria-hidden="true">${lookSvg(els.has("asterisk") ? "asterisk" : els.has("sparkle") ? "sparkle" : "arrow")}</span>` : ""}<div><h2>${esc(c.closing)}</h2>${c.closingText ? `<p>${esc(c.closingText)}</p>` : ""}</div><div class="row">${buttons}</div></div></div></section>`
+    ? `<section id="kontak"><div class="wrap"><div class="band"${bandPattern}>${ornamentMarkup(t.deco)}${ornOf("badge") ? "" : look && els.has("ring") ? `<span class="bd-el bd-ring">${ringSvg(c.brand, lookSvg(els.has("asterisk") ? "asterisk" : "sparkle"))}</span>` : look && (els.has("asterisk") || els.has("arrow") || els.has("sparkle")) ? `<span class="bd-el" aria-hidden="true">${lookSvg(els.has("asterisk") ? "asterisk" : els.has("sparkle") ? "sparkle" : "arrow")}</span>` : ""}<div class="bd-txt">${ornOf("badge") ? ornSvg(ornOf("badge")!, "bd-badge") : ""}<div><h2>${esc(c.closing)}</h2>${c.closingText ? `<p>${esc(c.closingText)}</p>` : ""}</div></div>${ornOf("art") && !look ? ornSvg(ornOf("art")!, "bd-art") : ""}<div class="row">${buttons}</div></div></div></section>`
     : "";
 
   /* ----- urutan bagian: UMKM = katalog dulu; artikel = daftar artikel dulu; lainnya = keunggulan dulu ----- */
@@ -1999,6 +2068,7 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
     const used = new Set<string>([...SHOP_ICONS, ...RUNTIME_UI_ICONS, ...items.map((i) => i.icon)]);
     const icons: Record<string, string> = {};
     for (const n of used) if (LUCIDE[n]) icons[n] = LUCIDE[n];
+    else if (customIcons[n]) icons[n] = customIcons[n];
     dataScript = `<script type="application/json" id="wb-data">${jsonForScript({
       shop: true,
       key: hash(c.brand).toString(36),

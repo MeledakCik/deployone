@@ -239,6 +239,17 @@ yang berjalan di server Depup sendiri: tanpa token, tanpa kuota harian, dan kode
   kecocokan otomatis (`fit.domains`/`fit.kinds`/`fit.chance`). Impor lewat **Impor data latihan** seperti paket
   domain, atau taruh di `data/site-engine/styles/` lalu `npm run engine:train`. Website yang memakai gaya menyimpan
   `content.look`; pengguna melepasnya dengan "hapus gaya" atau memilih Template/warna sendiri.
+- **Paket ikon** (`"type": "icons"`, lihat `lib/site-assets.ts`): ikon SVG gaya Lucide (24×24, garis) dengan
+  `keywords` bahasa Indonesia. Mesin mempelajari frasa → ikon (frasa utuh, terpanjang menang), jadi produk seperti
+  "Galon Air Mineral" otomatis memakai ikon `galon`. Entri tanpa `svg` dengan nama ikon bawaan = hanya menambah kata
+  kunci. Nama bawaan tidak bisa ditimpa.
+- **Paket elemen** (`"type": "elements"`): elemen dekoratif SVG dengan `slot` (`art` gambar utama, `badge` stiker,
+  `divider` pita di bawah hero, `pattern` motif latar blok ajakan) dan `fit` (`styles`, `families`, `domains`,
+  `kinds`, `chance`). Warna memakai `currentColor`/`var(--a)`/`var(--a2)`/`var(--ink)`/`var(--bg)`/`var(--on)` supaya
+  ikut palet website.
+- **Keamanan SVG**: semua SVG impor melewati `sanitizeSvg()` (allow-list: path, circle, rect, ellipse, line, polyline,
+  polygon, g + atribut geometri/warna). Script, link, gambar luar, teks, style, dan event handler ditolak; SVG disaring
+  ulang setiap isi website dinormalisasi.
 - **Melatih dari repo**
   1. Tambah atau ubah pengetahuan di `data/site-engine/packs/*.json` (satu paket = satu jenis usaha: contoh deskripsi,
      kata kunci, kalimat, produk, fitur, langkah, artikel).

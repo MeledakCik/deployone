@@ -260,3 +260,83 @@ test("gaya: perintah ubah bisa memakai, melepas, dan mengganti gaya lewat templa
   assert.equal(tpl.raw?.look, undefined);
   assert.equal(tpl.raw?.template, "elegan");
 });
+
+/* ---------------- paket ikon & elemen ---------------- */
+import { sanitizeSvg, validateIconPack, validateElementPack } from "../lib/site-assets.ts";
+import { attachIcons } from "../lib/site-engine/core.ts";
+
+const ICONS = JSON.parse(fs.readFileSync(new URL("./fixtures/icons-nusantara.json", import.meta.url), "utf8"));
+const ELEMENTS = JSON.parse(fs.readFileSync(new URL("./fixtures/elements-dekor.json", import.meta.url), "utf8"));
+
+test("svg: bentuk yang sah lolos dan dibangun ulang dengan rapi", () => {
+  const r = sanitizeSvg(`<path d="M3 21 21 3"/><circle cx='8.5' cy='15.5' r='2'></circle><g transform="rotate(45 12 12)"><rect x="1" y="2" width="3" height="4" fill="var(--a)"/></g>`);
+  assert.deepEqual(r.errors, []);
+  assert.equal(r.svg, `<path d="M3 21 21 3"/><circle cx="8.5" cy="15.5" r="2"/><g transform="rotate(45 12 12)"><rect x="1" y="2" width="3" height="4" fill="var(--a)"/></g>`);
+});
+
+test("svg: semua bentuk serangan ditolak", () => {
+  const bad = [
+    `<script>alert(1)</script>`,
+    `<path d="M0 0" onload="alert(1)"/>`,
+    `<a href="javascript:alert(1)"><path d="M0 0"/></a>`,
+    `<image href="https://jahat.example/x.png"/>`,
+    `<path d="M0 0" style="background:url(https://jahat.example)"/>`,
+    `<path d="M0 0" fill="url(https://jahat.example#x)"/>`,
+    `<path d="M0 0" fill="red;onload=alert(1)"/>`,
+    `<foreignObject><div>x</div></foreignObject>`,
+    `<text>halo</text>`,
+    `halo <path d="M0 0"/>`,
+    `<path d="M0 0" xlink:href="#x"/>`,
+    `<path d="M0 0\\" onload=\\"alert(1)"/>`,
+    `<use href="#a"/>`,
+    `<path d="javascript:alert(1)"/>`,
+    `<g><path d="M0 0"/>`,
+    `<svg onload="alert(1)"><path d="M0 0"/></svg>`,
+    `<path d="M0 0" transform="translate(1) url(x)"/>`,
+  ];
+  for (const b of bad) {
+    const r = sanitizeSvg(b);
+    assert.ok(r.errors.length > 0, `harus ditolak: ${b}`);
+    assert.equal(r.svg, "");
+  }
+});
+
+test("ikon & elemen: paket contoh lolos validasi, nama bawaan dilindungi", () => {
+  for (const p of ICONS) assert.deepEqual(validateIconPack(p, RULES.icons), []);
+  for (const p of ELEMENTS) assert.deepEqual(validateElementPack(p), []);
+  const hijack = { type: "icons", id: "jahat", label: "x", icons: [{ name: "store", svg: '<path d="M0 0h24"/>', keywords: ["toko"] }] };
+  assert.match(validateIconPack(hijack, RULES.icons).join(), /ikon bawaan/);
+  const kwOnly = { type: "icons", id: "kata", label: "x", icons: [{ name: "store", keywords: ["kelontong"] }] };
+  assert.deepEqual(validateIconPack(kwOnly, RULES.icons), []);
+});
+
+test("ikon: mesin belajar frasa → ikon dan menyertakan SVG-nya di isi website", () => {
+  const m = trainModel(BUNDLED, [], [], { icons: ICONS, elements: ELEMENTS });
+  const r = generateSite(m, "Warung bakso Pak Kumis. Menu: bakso urat 18rb, mie ayam 15rb, es teh manis 5rb", {});
+  const icon = Object.fromEntries(r.raw.items.map((i) => [i.name, i.icon]));
+  assert.equal(icon["Bakso Urat"], "bakso-mangkuk");
+  assert.equal(icon["Mie Ayam"], "mie");
+  assert.equal(icon["Es Teh Manis"], "es-teh");
+  assert.equal(r.raw.brandIcon, "bakso-mangkuk");
+  for (const n of ["bakso-mangkuk", "mie", "es-teh"]) assert.ok(r.raw.icons[n], `SVG ${n} ikut`);
+  // frasa utuh: "kaki lima" tidak membuat kata "lima" sendirian memicu gerobak
+  const r2 = generateSite(m, "toko roti lima rasa", {});
+  assert.notEqual(r2.raw.brandIcon, "gerobak");
+  const raw = { brandIcon: "store", features: [], items: [{ icon: "galon" }] };
+  attachIcons(m, raw);
+  assert.deepEqual(Object.keys(raw.icons), ["galon"]);
+});
+
+test("elemen: ornamen dipilih sesuai aturan, maks. satu per slot, tidak berlebihan", () => {
+  const m = trainModel(BUNDLED, [], [], { icons: ICONS, elements: ELEMENTS });
+  let seen = 0;
+  for (let v = 0; v < 20; v++) {
+    const r = generateSite(m, "toko batik tulis di Solo namanya Batik Sekar", { variant: v });
+    const o = r.raw.ornaments ?? [];
+    seen += o.length;
+    assert.ok(o.length <= 2, "tanpa gaya maks. 2");
+    assert.equal(new Set(o.map((x) => x.slot)).size, o.length);
+    assert.ok(!(o.some((x) => x.slot === "art") && o.some((x) => x.slot === "badge")));
+  }
+  assert.ok(seen > 0, "batik mendapat ornamen nusantara");
+});

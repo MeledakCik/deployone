@@ -3,6 +3,7 @@
 import * as React from "react";
 import { RefreshCw, Bot, Download, Trash2, RotateCcw, Upload, X } from "@/components/ui/icons";
 import { feedbackTemplateText, packTemplateText } from "@/lib/site-engine/import-template";
+import { safeSvg } from "@/lib/site-assets";
 import { adminFetch, useAdminData } from "./api";
 import { Badge, Btn, Card, Empty, ErrorBox, KpiCard, Loading, PageHead, fmtDateTime } from "./ui";
 
@@ -13,11 +14,13 @@ interface EngineStatus {
   recent: { prompt: string; kind: string; brand: string; at: number | null }[];
   imported: { id: string; kind: string; label: string; prompts: number; items: number; replacesBundled: boolean }[];
   styles?: { id: string; label: string; desc: string; palettes: string[][]; keywords: string[]; imported: boolean; chance: number }[];
+  iconPacks?: { id: string; label: string; license: string; count: number; sample: { name: string; svg: string }[] }[];
+  elementPacks?: { id: string; label: string; license: string; count: number; sample: { id: string; label: string; slot: string; vb: string; svg: string }[] }[];
   domains: { id: string; kind: string; label: string; prompts: number; items: number; generic: boolean; imported: boolean }[];
 }
 
 type ImportResult =
-  | { imported: true; added: string[]; updated: string[]; stylesAdded?: string[]; stylesUpdated?: string[]; feedback: number; notes: string[]; stats: { packs: number; prompts: number } }
+  | { imported: true; added: string[]; updated: string[]; stylesAdded?: string[]; stylesUpdated?: string[]; iconPacks?: number; elementPacks?: number; feedback: number; notes: string[]; stats: { packs: number; prompts: number } }
   | { imported: false; errors: string[]; moreErrors?: number };
 
 function download(name: string, text: string, type = "application/json") {
@@ -76,8 +79,9 @@ export function EngineTab({ toast }: { toast: (m: string) => void }) {
     }
   }
 
-  async function removePack(id: string, kind: "pack" | "style" = "pack") {
-    if (!window.confirm(`Hapus ${kind === "style" ? "gaya" : "paket"} impor "${id}"? Mesin akan dilatih ulang tanpanya.`)) return;
+  async function removePack(id: string, kind: "pack" | "style" | "icons" | "elements" = "pack") {
+    const what = kind === "style" ? "gaya" : kind === "icons" ? "paket ikon" : kind === "elements" ? "paket elemen" : "paket";
+    if (!window.confirm(`Hapus ${what} impor "${id}"? Mesin akan dilatih ulang tanpanya.`)) return;
     setBusy(`rm:${id}`);
     try {
       await adminFetch("/api/admin/engine", { method: "POST", body: { action: "removePack", id, kind } });
@@ -236,6 +240,8 @@ export function EngineTab({ toast }: { toast: (m: string) => void }) {
                 Berhasil. {result.added.length > 0 && `${result.added.length} paket baru. `}
                 {result.updated.length > 0 && `${result.updated.length} paket diperbarui. `}
                 {!!result.stylesAdded?.length && `${result.stylesAdded.length} gaya visual baru. `}
+                {!!result.iconPacks && `${result.iconPacks} paket ikon. `}
+                {!!result.elementPacks && `${result.elementPacks} paket elemen. `}
                 {!!result.stylesUpdated?.length && `${result.stylesUpdated.length} gaya visual diperbarui. `}
                 {result.feedback > 0 && `${result.feedback} contoh ditambahkan. `}
                 Mesin sekarang mengenal {result.stats.packs} domain.
@@ -251,6 +257,76 @@ export function EngineTab({ toast }: { toast: (m: string) => void }) {
           )}
         </div>
       </Card>
+
+      {!!data.iconPacks?.length && (
+        <Card title="Paket ikon" action={<Badge tone="neutral">{data.iconPacks.reduce((n, p) => n + p.count, 0)} ikon</Badge>}>
+          <ul className="divide-y divide-[var(--surface-line)]">
+            {data.iconPacks.map((p) => (
+              <li key={p.id} className="space-y-3 px-6 py-4 text-[14px]">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-medium">{p.label}</p>
+                    <p className="text-[13px] text-text-muted">
+                      <code>{p.id}</code> · {p.count} ikon{p.license ? ` · ${p.license}` : ""}
+                    </p>
+                  </div>
+                  <Btn variant="danger" aria-label={`Hapus paket ikon ${p.label}`} busy={busy === `rm:${p.id}`} onClick={() => removePack(p.id, "icons")}>
+                    <Trash2 size={13} />
+                  </Btn>
+                </div>
+                <ul className="grid grid-cols-[repeat(auto-fill,minmax(64px,1fr))] gap-2" aria-label={`Contoh ikon ${p.label}`}>
+                  {p.sample.map((ic) => (
+                    <li key={ic.name} className="flex flex-col items-center gap-1 rounded-[12px] bg-[var(--chip-bg)] px-1 py-2 text-center" title={ic.name}>
+                      <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden dangerouslySetInnerHTML={{ __html: safeSvg(ic.svg, 3000) }} />
+                      <span className="w-full truncate text-[10.5px] text-text-muted">{ic.name}</span>
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ul>
+          <p className="px-6 pb-5 text-[13px] text-text-muted">
+            Mesin mempelajari kata kunci tiap ikon. Produk, layanan, atau usaha yang namanya memuat kata itu otomatis memakai ikon tersebut.
+          </p>
+        </Card>
+      )}
+
+      {!!data.elementPacks?.length && (
+        <Card title="Paket elemen" action={<Badge tone="neutral">{data.elementPacks.reduce((n, p) => n + p.count, 0)} elemen</Badge>}>
+          <ul className="divide-y divide-[var(--surface-line)]">
+            {data.elementPacks.map((p) => (
+              <li key={p.id} className="space-y-3 px-6 py-4 text-[14px]">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-medium">{p.label}</p>
+                    <p className="text-[13px] text-text-muted">
+                      <code>{p.id}</code> · {p.count} elemen{p.license ? ` · ${p.license}` : ""}
+                    </p>
+                  </div>
+                  <Btn variant="danger" aria-label={`Hapus paket elemen ${p.label}`} busy={busy === `rm:${p.id}`} onClick={() => removePack(p.id, "elements")}>
+                    <Trash2 size={13} />
+                  </Btn>
+                </div>
+                <ul className="grid grid-cols-[repeat(auto-fill,minmax(120px,1fr))] gap-2" aria-label={`Contoh elemen ${p.label}`}>
+                  {p.sample.map((el) => (
+                    <li key={el.id} className="flex flex-col gap-1.5 rounded-[12px] bg-[var(--chip-bg)] p-2" title={el.id}>
+                      <span className="grid h-16 place-items-center overflow-hidden text-text [--a:#7c5cff] [--a2:#c6f432] [--ink:currentColor] [--bg:var(--surface)] [--fg:currentColor] [--on:#fff]">
+                        <svg viewBox={el.vb} className="max-h-16 w-full" aria-hidden dangerouslySetInnerHTML={{ __html: safeSvg(el.svg, 12000) }} />
+                      </span>
+                      <span className="truncate text-[11.5px] font-medium">{el.label}</span>
+                      <span className="text-[10.5px] text-text-muted">{el.slot}</span>
+                    </li>
+                  ))}
+                </ul>
+              </li>
+            ))}
+          </ul>
+          <p className="px-6 pb-5 text-[13px] text-text-muted">
+            Slot: <b>art</b> = gambar utama, <b>badge</b> = stiker kecil, <b>divider</b> = pita pembatas di bawah bagian atas, <b>pattern</b> = motif latar blok ajakan.
+            Elemen dipakai otomatis bila cocok dengan gaya, jenis usaha, atau domain websitenya.
+          </p>
+        </Card>
+      )}
 
       {!!data.styles?.length && (
         <Card title="Gaya visual" action={<Badge tone="neutral">{data.styles.length}</Badge>}>

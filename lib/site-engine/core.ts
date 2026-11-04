@@ -25,6 +25,7 @@
 /* ======================================================================== */
 
 import type { SiteLook, StylePack } from "../site-look.ts";
+import type { ElementDef, ElementPack, IconPack, SiteOrnament } from "../site-assets.ts";
 
 export type Kind = "umkm" | "jasa" | "portofolio" | "event" | "profil" | "artikel";
 export const KINDS: Kind[] = ["umkm", "jasa", "portofolio", "event", "profil", "artikel"];
@@ -124,6 +125,17 @@ export interface SiteModel {
   packs: Record<string, DomainPack>;
   /** Paket gaya visual hasil latihan (mis. brutalism). Kosong/absen = website ikut Template. */
   styles?: Record<string, StylePack>;
+  /** Ikon hasil impor: nama → isi SVG (24×24). */
+  icons?: Record<string, string>;
+  /** Frasa (sudah dinormalisasi) → nama ikon, frasa terpanjang lebih dulu. Dipelajari dari keywords paket ikon. */
+  iconPhrases?: [string, string][];
+  /** Elemen dekoratif hasil impor: id → definisi. */
+  elements?: Record<string, ElementDef>;
+}
+
+export interface TrainAssets {
+  icons?: IconPack[];
+  elements?: ElementPack[];
 }
 
 /* ======================================================================== */
@@ -277,7 +289,7 @@ function absorbFeedback(pack: DomainPack, c: Record<string, unknown>): void {
  * Contoh pengguna dimasukkan ke domain hasil klasifikasi model sementara (tanpa contoh), lalu:
  * deskripsinya menambah data klasifikasi, isinya memperkaya bank frasa domain itu.
  */
-export function trainModel(packsIn: DomainPack[], feedback: FeedbackExample[] = [], stylesIn: StylePack[] = []): SiteModel {
+export function trainModel(packsIn: DomainPack[], feedback: FeedbackExample[] = [], stylesIn: StylePack[] = [], assets: TrainAssets = {}): SiteModel {
   const packs: Record<string, DomainPack> = {};
   for (const p of packsIn) packs[p.id] = JSON.parse(JSON.stringify(p));
 
@@ -355,7 +367,83 @@ export function trainModel(packsIn: DomainPack[], feedback: FeedbackExample[] = 
     iconLex,
     packs,
     styles: Object.fromEntries(stylesIn.map((st) => [st.id, JSON.parse(JSON.stringify(st)) as StylePack])),
+    ...learnAssets(assets),
   };
+}
+
+/** Pelajari paket ikon (frasa → ikon) dan paket elemen. Frasa utuh, bukan per kata: "kaki lima" tidak membuat "lima" → gerobak. */
+function learnAssets(assets: TrainAssets): Pick<SiteModel, "icons" | "iconPhrases" | "elements"> {
+  const icons: Record<string, string> = {};
+  const phrases = new Map<string, string>();
+  for (const pack of assets.icons ?? [])
+    for (const ic of pack.icons) {
+      if (ic.svg) icons[ic.name] = ic.svg;
+      for (const k of ic.keywords) {
+        const n = normText(k);
+        if (n.length >= 3) phrases.set(n, ic.name);
+      }
+    }
+  const elements: Record<string, ElementDef> = {};
+  for (const pack of assets.elements ?? []) for (const el of pack.elements) elements[el.id] = JSON.parse(JSON.stringify(el));
+  return {
+    icons,
+    iconPhrases: [...phrases.entries()].sort((a, b) => b[0].length - a[0].length),
+    elements,
+  };
+}
+
+/** Ikon dari frasa hasil latihan (paket ikon), atau undefined. */
+function phraseIcon(model: SiteModel, text: string): string | undefined {
+  if (!model.iconPhrases?.length) return undefined;
+  const t = ` ${normText(text)} `;
+  for (const [ph, icon] of model.iconPhrases) if (t.includes(` ${ph} `)) return icon;
+  return undefined;
+}
+
+/** Sertakan isi SVG ikon impor yang dipakai website ini (renderer di browser tidak punya paket ikon). */
+export function attachIcons(model: SiteModel, raw: Record<string, unknown>): void {
+  if (!model.icons || !Object.keys(model.icons).length) return;
+  const used = new Set<string>();
+  const add = (v: unknown) => typeof v === "string" && model.icons![v] && used.add(v);
+  add(raw.brandIcon);
+  for (const f of (raw.features as Record<string, unknown>[] | undefined) ?? []) add(f?.icon);
+  for (const it of (raw.items as Record<string, unknown>[] | undefined) ?? []) add(it?.icon);
+  const map: Record<string, string> = {};
+  for (const n of used) map[n] = model.icons[n];
+  if (Object.keys(map).length) raw.icons = map;
+  else delete raw.icons;
+}
+
+/**
+ * Pilih ornamen dari paket elemen: yang cocok dengan gaya/keluarga gaya/domain/jenis usaha, diundi dengan peluang
+ * fit.chance (bawaan 0,5). Maksimal satu per slot, tiga per website. Acak terpisah supaya isi lain tidak berubah.
+ */
+export function pickOrnaments(model: SiteModel, ctx: { style?: StylePack | null; domain: string; kind: Kind; seed: number; variant: number }): SiteOrnament[] {
+  const all = Object.values(model.elements ?? {});
+  if (!all.length) return [];
+  const r = rng(ctx.seed + ctx.variant * 6151 + 99);
+  const fits = (el: ElementDef): boolean => {
+    const f = el.fit;
+    if (!f) return false;
+    return (
+      (!!ctx.style && ((f.styles ?? []).includes(ctx.style.id) || (!!ctx.style.family && (f.families ?? []).includes(ctx.style.family)))) ||
+      (f.domains ?? []).includes(ctx.domain) ||
+      (f.kinds ?? []).includes(ctx.kind)
+    );
+  };
+  const out: SiteOrnament[] = [];
+  const used = new Set<string>();
+  // Dengan gaya visual: maks. 3 (art masuk hero). Tanpa gaya: maks. 2, dan art & badge sama-sama di blok ajakan → pilih salah satu.
+  const max = ctx.style ? 3 : 2;
+  for (const el of shuffle(r, all.filter(fits))) {
+    if (out.length >= max || used.has(el.slot)) continue;
+    if (!ctx.style && (el.slot === "art" || el.slot === "badge") && (used.has("art") || used.has("badge"))) continue;
+    if (r() < (el.fit?.chance ?? 0.5)) {
+      out.push({ id: el.id, slot: el.slot, vb: el.viewBox, svg: el.svg });
+      used.add(el.slot);
+    }
+  }
+  return out;
 }
 
 /* ======================================================================== */
@@ -654,6 +742,8 @@ const fillSlots = (tpl: string, slots: Record<string, string>): string => fill(t
 
 /** Ikon untuk nama produk: leksikon terlatih, lalu ikon paket. */
 function iconFor(model: SiteModel, text: string, fallback: string): string {
+  const ph = phraseIcon(model, text);
+  if (ph) return ph;
   for (const t of tokens(text)) if (model.iconLex[t]) return model.iconLex[t];
   return fallback;
 }
@@ -748,7 +838,8 @@ export function generateSite(model: SiteModel, prompt: string, opts: GenerateOpt
     for (const it of shuffle(r, pack.items)) {
       if (items.length >= target) break;
       if (items.some((x) => String(x.name).toLowerCase() === it.name.toLowerCase())) continue;
-      items.push({ name: fill(it.name, slots), desc: fill(it.desc, slots), price: it.price ?? 0, category: it.category ?? "", icon: it.icon ?? pack.brandIcon, tag: it.tag ?? "" });
+      const nm = fill(it.name, slots);
+      items.push({ name: nm, desc: fill(it.desc, slots), price: it.price ?? 0, category: it.category ?? "", icon: phraseIcon(model, nm) ?? it.icon ?? pack.brandIcon, tag: it.tag ?? "" });
     }
   }
   if (items.length >= 3) {
@@ -803,7 +894,7 @@ export function generateSite(model: SiteModel, prompt: string, opts: GenerateOpt
     hero: pack.heroes[(hash(brand) + variant * 3) % pack.heroes.length],
     feat,
     brand,
-    brandIcon: pack.brandIcon,
+    brandIcon: phraseIcon(model, subject) ?? pack.brandIcon,
     slogan: F(pack.slogans),
     badge: F(pack.badges),
     headline: F(pack.headlines),
@@ -835,6 +926,10 @@ export function generateSite(model: SiteModel, prompt: string, opts: GenerateOpt
     if (style.layouts.hero.length) raw.hero = style.layouts.hero[(seed + variant) % style.layouts.hero.length];
     if (style.layouts.feat.length) raw.feat = style.layouts.feat[(seed + variant * 3) % style.layouts.feat.length];
   }
+  // Ikon & ornamen hasil impor
+  attachIcons(model, raw);
+  const orn = pickOrnaments(model, { style, domain: pack.id, kind, seed: hash(brand), variant });
+  if (orn.length) raw.ornaments = orn;
   return { raw, domain: pack.id, confidence, extracted: ex, style: style?.id ?? null };
 }
 
@@ -1055,5 +1150,6 @@ export function editSite(model: SiteModel, current: Record<string, unknown>, ins
         "Perintah belum dikenali mesin Depup. Contoh yang bisa: \"ganti nama jadi Kopi Senja\", \"ubah judul jadi …\", \"tambah menu Es Teh 5rb, Es Jeruk 7rb\", \"tambah 3 menu minuman\", \"hapus Es Teh\", \"harga Es Teh jadi 6rb\", \"ganti warna jadi hijau\", \"pakai template gelap\", \"ganti nomor wa jadi 0812…\", \"hapus testimoni\".",
     };
   }
+  attachIcons(model, c);
   return { raw: c, note: `Diubah: ${done.join(", ")}.${skipped.length ? ` Tidak dikenali: "${skipped.join('", "')}".` : ""}` };
 }

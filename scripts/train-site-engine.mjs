@@ -9,6 +9,8 @@
  *   data/site-engine/feedback/*.jsonl      contoh dari pengguna: satu baris = {"prompt": "...", "content": {...}}
  *                                          (ekspor dari Panel Admin → Mesin AI, atau tulis sendiri)
  *   data/site-engine/styles/*.json         paket gaya visual (opsional), mis. brutalism
+ *   data/site-engine/icons/*.json          paket ikon (opsional)
+ *   data/site-engine/elements/*.json       paket elemen dekoratif (opsional)
  * Keluaran:
  *   lib/site-engine/model.json             model yang dibundel ke aplikasi
  *
@@ -21,6 +23,7 @@ import { fileURLToPath } from "node:url";
 import { trainModel, classify } from "../lib/site-engine/core.ts";
 import { validatePack } from "../lib/site-engine/import.ts";
 import { validateStyle } from "../lib/site-look.ts";
+import { validateIconPack, validateElementPack } from "../lib/site-assets.ts";
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const packDir = path.join(root, "data/site-engine/packs");
@@ -36,6 +39,10 @@ const styleDir = path.join(root, "data/site-engine/styles");
 const styles = fs.existsSync(styleDir)
   ? fs.readdirSync(styleDir).filter((f) => f.endsWith(".json")).flatMap((f) => [].concat(JSON.parse(fs.readFileSync(path.join(styleDir, f), "utf8"))))
   : [];
+
+const readDir = (d) => (fs.existsSync(path.join(root, d)) ? fs.readdirSync(path.join(root, d)).filter((f) => f.endsWith(".json")).flatMap((f) => [].concat(JSON.parse(fs.readFileSync(path.join(root, d, f), "utf8")))) : []);
+const iconPacks = readDir("data/site-engine/icons");
+const elementPacks = readDir("data/site-engine/elements");
 
 const feedback = fs.existsSync(fbDir)
   ? fs
@@ -64,7 +71,7 @@ const prompts = fs.readFileSync(path.join(root, "lib/ai-site-prompts.ts"), "utf8
 const banned = JSON.parse(/BANNED_PHRASES: string\[\] = (\[[\s\S]*?\]);/.exec(prompts)[1].replace(/,\s*\]/, "]"));
 const tpl = fs.readFileSync(path.join(root, "lib/ai-site-templates.ts"), "utf8");
 const union = (name) => new Set([...(new RegExp(`export type ${name} = ([^;]+);`).exec(tpl)?.[1].matchAll(/"([^"]+)"/g) ?? [])].map((m) => m[1]));
-const rules = { icons, banned, templates: union("TemplateId"), heroes: union("HeroLayout"), feats: union("FeatLayout") };
+const rules = { icons: new Set([...icons, ...iconPacks.flatMap((p) => p.icons.map((i) => i.name))]), banned, templates: union("TemplateId"), heroes: union("HeroLayout"), feats: union("FeatLayout") };
 let problems = 0;
 const ids = new Set();
 for (const p of packs) {
@@ -72,6 +79,8 @@ for (const p of packs) {
   if (ids.has(p.id)) (console.error(`  x Paket "${p.id}": id ganda`), problems++);
   ids.add(p.id);
 }
+for (const ip of iconPacks) for (const e of validateIconPack(ip, icons)) (console.error(`  x ${e}`), problems++);
+for (const ep of elementPacks) for (const e of validateElementPack(ep)) (console.error(`  x ${e}`), problems++);
 for (const st of styles) for (const e of validateStyle(st, { heroes: rules.heroes, feats: rules.feats, banned })) (console.error(`  x ${e}`), problems++);
 if (problems) {
   console.error(`\n${problems} masalah pada paket. Perbaiki dulu, lalu jalankan lagi.`);
@@ -79,7 +88,7 @@ if (problems) {
 }
 
 /* ---- training ---- */
-const model = trainModel(packs, feedback, styles);
+const model = trainModel(packs, feedback, styles, { icons: iconPacks, elements: elementPacks });
 fs.writeFileSync(out, JSON.stringify(model));
 
 /* ---- evaluasi leave-one-out (domain) ---- */
