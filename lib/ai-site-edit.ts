@@ -95,3 +95,55 @@ export function remapImages(oldC: SiteContent, newC: SiteContent, images: SiteIm
   move((oldC.articles ?? []).map((a) => ({ id: a.id, label: a.title })), (newC.articles ?? []).map((a) => ({ id: a.id, label: a.title })), "article");
   return out;
 }
+
+/* ---------------- editor kanvas: ubah satu teks langsung di pratinjau ---------------- */
+
+/** Bidang teks yang boleh diubah lewat klik di kanvas, dengan batas panjang & boleh-kosong. */
+const FIELD_RULES: { re: RegExp; max: number; optional?: boolean }[] = [
+  { re: /^brand$/, max: 40 },
+  { re: /^headline$/, max: 140 },
+  { re: /^subheadline$/, max: 260, optional: true },
+  { re: /^badge$/, max: 40, optional: true },
+  { re: /^(featuresTitle|itemsTitle|stepsTitle|aboutTitle)$/, max: 70 },
+  { re: /^about$/, max: 700, optional: true },
+  { re: /^closing$/, max: 80 },
+  { re: /^closingText$/, max: 220, optional: true },
+  { re: /^testimonial\.text$/, max: 320 },
+  { re: /^testimonial\.name$/, max: 40, optional: true },
+  { re: /^features\.\d{1,2}\.title$/, max: 70 },
+  { re: /^features\.\d{1,2}\.text$/, max: 220, optional: true },
+  { re: /^steps\.\d{1,2}\.title$/, max: 70 },
+  { re: /^steps\.\d{1,2}\.text$/, max: 220, optional: true },
+  { re: /^items\.\d{1,2}\.name$/, max: 70 },
+  { re: /^items\.\d{1,2}\.desc$/, max: 220, optional: true },
+];
+
+export const isEditableField = (path: unknown): path is string => typeof path === "string" && FIELD_RULES.some((r) => r.re.test(path));
+
+/**
+ * Terapkan satu teks hasil ketikan di kanvas ke isi website. Kembalikan null bila jalurnya tidak dikenal, nilainya
+ * kosong untuk bidang wajib, atau tidak ada yang berubah. Spasi dirapikan; isi dinormalisasi ulang.
+ */
+export function setContentField(c: SiteContent, path: string, value: unknown): SiteContent | null {
+  const rule = FIELD_RULES.find((r) => r.re.test(path));
+  if (!rule || typeof value !== "string") return null;
+  const v = value.replace(/[\u0000-\u001f\u007f]+/g, " ").replace(/\s+/g, " ").trim().slice(0, rule.max);
+  if (!v && !rule.optional) return null;
+  const next = structuredClone(c) as unknown as Record<string, unknown>;
+  const parts = path.split(".");
+  if (parts.length === 1) {
+    if (next[parts[0]] === v) return null;
+    next[parts[0]] = v;
+  } else if (parts[0] === "testimonial") {
+    const t = { text: "", name: "", ...((next.testimonial as Record<string, string> | undefined) ?? {}) };
+    if (t[parts[1] as "text" | "name"] === v) return null;
+    t[parts[1] as "text" | "name"] = v;
+    next.testimonial = t;
+  } else {
+    const list = next[parts[0]] as Record<string, unknown>[] | undefined;
+    const i = Number(parts[1]);
+    if (!Array.isArray(list) || !list[i] || list[i][parts[2]] === v) return null;
+    list[i] = { ...list[i], [parts[2]]: v };
+  }
+  return normalizeContent(next);
+}

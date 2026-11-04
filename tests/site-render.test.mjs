@@ -179,3 +179,45 @@ test("svg: warna swatch --s1..--s5 lolos sanitasi dan diselesaikan untuk data-UR
   assert.equal(resolveSvgColors('<rect fill="var(--s1)"/><rect fill="var(--s2)"/>', pal), '<rect fill="#ff0000"/><rect fill="#00ff00"/>', "tanpa swatch → aksen");
   assert.equal(resolveSvgColors('<rect fill="var(--s4)" stroke="var(--a2)"/>', { ...pal, s4: "#123456" }), '<rect fill="#123456" stroke="#00ff00"/>');
 });
+
+/* ---------------- editor kanvas ala Canva ---------------- */
+const { setContentField, isEditableField } = await import(new URL("lib/ai-site-edit.ts", ROOT).href);
+
+test("kanvas: mode editable menandai teks, bagian, dan gambar; publish tetap bersih", () => {
+  const c = normalizeContent({ ...sampleContent("jasa"), template: "bersih", whatsapp: "6281234567890" });
+  const plain = html(c, "bersih");
+  const ed = html(c, "bersih", { editable: true });
+  assert.ok(!/data-f=|data-sec=|data-img=/.test(plain), "HTML publish tanpa penanda editor");
+  for (const f of ["brand", "headline", "featuresTitle", "features.0.title", "features.0.text", "closing"]) assert.ok(ed.includes(`data-f="${f}"`), f);
+  assert.match(ed, /<div class="hero h-[a-z-]+" data-sec="hero">/);
+  assert.match(ed, /<section data-sec="fitur" id="fitur">/);
+  assert.match(ed, /<i[^>]* data-img="logo">/);
+  for (const m of ed.matchAll(/data-f="([^"]+)"/g)) assert.ok(isEditableField(m[1]), `bidang ${m[1]} dikenali setContentField`);
+});
+
+test("kanvas: urutan & sembunyi bagian ikut ke HTML dan menu", () => {
+  const c = normalizeContent({ ...sampleContent("jasa"), template: "bersih", whatsapp: "6281234567890", sections: { order: ["cara", "fitur", "bukan"], hidden: ["testimoni", "fitur"] } });
+  assert.deepEqual(c.sections, { order: ["cara", "fitur"], hidden: ["testimoni", "fitur"] });
+  const h = html(c, "bersih");
+  assert.ok(!h.includes('<section id="fitur"') && !h.includes('href="#fitur"'), "keunggulan tersembunyi, termasuk di menu");
+  assert.ok(!h.includes('id="testimoni"'));
+  if (c.steps.length && c.items.length) assert.ok(h.indexOf('id="cara"') < h.indexOf('id="layanan"'), "langkah dipindah ke atas");
+});
+
+test("kanvas: setContentField hanya mengubah bidang yang dikenal, merapikan, dan menolak kosong untuk bidang wajib", () => {
+  const c = normalizeContent({ ...sampleContent("umkm"), template: "hangat" });
+  const a = setContentField(c, "headline", "  Judul   baru\nkita ");
+  assert.equal(a.headline, "Judul baru kita");
+  assert.equal(setContentField(c, "headline", "   "), null, "judul wajib");
+  assert.equal(setContentField(c, "headline", c.headline), null, "tidak berubah");
+  assert.equal(setContentField(c, "look", "x"), null);
+  assert.equal(setContentField(c, "features.0.icon", "x"), null);
+  assert.equal(setContentField(c, "__proto__.x", "x"), null);
+  const b = setContentField(c, "features.1.text", "Teks fitur kedua");
+  assert.equal(b.features[1].text, "Teks fitur kedua");
+  assert.equal(c.features[1].text !== "Teks fitur kedua", true, "isi lama tidak ikut berubah");
+  const t = setContentField(c, "testimonial.text", "Enak sekali");
+  assert.equal(t.testimonial.text, "Enak sekali");
+  assert.equal(setContentField(c, "items.99.name", "x"), null);
+  assert.equal(a.items[0].id, c.items[0].id, "id produk tetap (gambar tetap terpasang)");
+});

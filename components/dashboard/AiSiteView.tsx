@@ -2,11 +2,12 @@
 
 import * as React from "react";
 import {
-  Sparkles, KeyRound, ExternalLink, Copy, Trash2, CircleAlert, Check, RefreshCw, Download, FileCode2,
-  FileJson, Package, Monitor, Smartphone, Store, Pencil, ImagePlus, ImageIcon, X, Palette, Undo2, Eye,
-  Info, ChevronDown, Loader2,
+  Sparkles, ExternalLink, Copy, Trash2, CircleAlert, Check, RefreshCw, Download, FileCode2,
+  FileJson, Package, Monitor, Smartphone, Store, Pencil, ImagePlus, ImageIcon, X, Palette, Undo2, Redo2,
+  Info, ChevronDown, Loader2, LayoutTemplate, PanelsTopLeft, Type, Shapes, Rows3, FileText, WandSparkles, Send,
+  Globe, Rocket, SlidersHorizontal, MousePointerClick, type LucideIcon,
 } from "lucide-react";
-import { PageHead, Card, Btn, BtnLink, Badge, Loading } from "@/components/ui/primitives";
+import { PageHead, Btn, BtnLink, Loading } from "@/components/ui/primitives";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { ViewFade } from "@/components/ui/ViewFade";
 import { useToast } from "@/components/ui/Toast";
@@ -54,17 +55,19 @@ import {
   type ImageSlot,
 } from "@/lib/ai-site-images";
 import { assignPhotos, type PhotoDraft } from "@/lib/ai-site-photos";
-import { remapImages } from "@/lib/ai-site-edit";
+import { remapImages, setContentField } from "@/lib/ai-site-edit";
 import { ICON_STYLES, isIconStyle, templateIconStyle, treatIcon, type IconStyle } from "@/lib/site-assets";
 import { LUCIDE } from "@/lib/lucide-icons";
 import { pixelIcon } from "@/lib/lucide-pixel";
 import { Field, api, checkCls, chipCls, ChipLabel, subheadCls, swatchTileCls, ON_MIST, hintCls, isHex, labelCls, timeLeftLabel, ttlLabel, useReducedMotion } from "./ai-site/shared";
-import { PreviewFrame } from "./ai-site/ScaledFrame";
 import { PaletteEditor } from "./ai-site/PaletteEditor";
 import { PhotoPool } from "./ai-site/PhotoPool";
 import { TemplatePicker } from "./ai-site/TemplatePicker";
 import { StylePicker } from "./ai-site/StylePicker";
 import { FontRolePicker } from "./ai-site/FontRolePicker";
+import { CanvasFrame, type CanvasHandle, type CanvasMsg } from "./ai-site/CanvasFrame";
+import { HeroLayoutPicker, FeatLayoutPicker } from "./ai-site/LayoutPicker";
+import { SectionsPanel } from "./ai-site/SectionsPanel";
 
 interface KeyStatus {
   hasKey: boolean;
@@ -80,6 +83,58 @@ function editSuggestions(kind: SiteKind): string[] {
   if (kind === "umkm") return ["Tambah 3 menu minuman", ...base];
   if (kind === "event") return ["Ganti tombol jadi Daftar sekarang", ...base];
   return ["Ganti tombol jadi Hubungi kami", ...base];
+}
+
+/** Panel editor ala Canva (rel kiri di layar lebar, bilah bawah + lembar di HP). */
+type PanelId = "desain" | "tata" | "warna" | "huruf" | "elemen" | "bagian" | "foto" | "isi" | "terbit";
+const PANELS: { id: Exclude<PanelId, "terbit">; label: string; icon: LucideIcon }[] = [
+  { id: "desain", label: "Desain", icon: LayoutTemplate },
+  { id: "tata", label: "Tata letak", icon: PanelsTopLeft },
+  { id: "warna", label: "Warna", icon: Palette },
+  { id: "huruf", label: "Huruf", icon: Type },
+  { id: "elemen", label: "Elemen", icon: Shapes },
+  { id: "bagian", label: "Bagian", icon: Rows3 },
+  { id: "foto", label: "Foto", icon: ImageIcon },
+  { id: "isi", label: "Deskripsi", icon: FileText },
+];
+
+/** Gaya hasil latihan yang bisa dipasang sekali klik (lewat perintah ubah; butuh paket gayanya sudah diimpor). */
+const QUICK_STYLES: { label: string; name: string; cmd: string }[] = [
+  { label: "Brutalism", name: "Brutalism Poster", cmd: "pakai gaya brutalism" },
+  { label: "Neo brutal", name: "Neo Brutal Klasik", cmd: "pakai gaya neo brutal klasik" },
+  { label: "Neo pop", name: "Neo Pop Stiker", cmd: "pakai gaya neo pop" },
+  { label: "Neo pastel", name: "Neo Pastel", cmd: "pakai gaya neo pastel" },
+  { label: "Neo kolase", name: "Neo Zine Kolase", cmd: "pakai gaya neo kolase" },
+  { label: "Neo geometris", name: "Neo Geometris", cmd: "pakai gaya neo geometris" },
+];
+
+/** Keluarga ornamen bawaan paket elemen Depup. */
+const ORN_FAMILIES: { id: string; label: string }[] = [
+  { id: "neo", label: "Neo brutal" },
+  { id: "memphis", label: "Memphis" },
+  { id: "nusantara", label: "Nusantara" },
+  { id: "organik", label: "Organik" },
+  { id: "retro", label: "Retro" },
+  { id: "y2k", label: "Y2K" },
+  { id: "minimal", label: "Minimal" },
+  { id: "doodle", label: "Doodle" },
+  { id: "kertas", label: "Kertas" },
+  { id: "pantai", label: "Pantai" },
+  { id: "piksel", label: "Piksel" },
+  { id: "grafis", label: "Grafis" },
+];
+
+/** true di layar lebar (≥1024px): panel di samping kanvas, bukan lembar bawah. */
+function useIsWide(): boolean {
+  const [wide, setWide] = React.useState(true);
+  React.useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    setWide(mq.matches);
+    const on = (e: MediaQueryListEvent) => setWide(e.matches);
+    mq.addEventListener("change", on);
+    return () => mq.removeEventListener("change", on);
+  }, []);
+  return wide;
 }
 
 const EXAMPLES: { label: string; text: string }[] = [
@@ -324,10 +379,20 @@ export function AiSiteView() {
     setAnnounce(msg + (announceTick.current % 2 ? "" : "\u00A0"));
   }, []);
 
-  const [previewVisible, setPreviewVisible] = React.useState(true);
-  const previewRef = React.useRef<HTMLElement>(null);
+  const [panel, setPanel] = React.useState<PanelId | null>(null);
+  // Layar lebar: panel Desain langsung terbuka seperti Canva. HP: kanvas dulu, panel dibuka dari bilah bawah.
+  React.useEffect(() => {
+    if (window.matchMedia("(min-width: 1024px)").matches) setPanel("desain");
+    else setDevice("mobile");
+  }, []);
+  const [selSec, setSelSec] = React.useState<string | null>(null);
+  const [future, setFuture] = React.useState<Snapshot[]>([]);
+  const [canvasNonce, setCanvasNonce] = React.useState(0);
+  const canvasRef = React.useRef<CanvasHandle>(null);
+  const lastPushRef = React.useRef(0);
+  const isWide = useIsWide();
   const promptRef = React.useRef<HTMLTextAreaElement>(null);
-  const editRef = React.useRef<HTMLTextAreaElement>(null);
+  const editRef = React.useRef<HTMLInputElement>(null);
   const pendingFocusRef = React.useRef(false);
 
   /* ---------- muat data awal + pulihkan draft ---------- */
@@ -383,7 +448,6 @@ export function AiSiteView() {
 
   /* ---------- turunan tampilan ---------- */
 
-  const isSample = !content;
   // Sebelum ada hasil AI, pratinjau memakai isi contoh supaya pilihan template/warna langsung terlihat efeknya.
   const previewContent = React.useMemo<SiteContent>(
     () => content ?? sampleContent(kindPick === "auto" ? "jasa" : kindPick),
@@ -399,8 +463,7 @@ export function AiSiteView() {
   const accentEff = colors[0];
   const bgEff = bgOpt ?? tpl.swatch[0];
   const heroEff = heroOpt ?? content?.hero ?? "center";
-  // Tata letak keunggulan tidak lagi dipilih manual: selalu mengikuti isi (Template / gaya mesin).
-  const featEff = content?.feat ?? "grid";
+  const featEff = featOpt ?? content?.feat ?? "grid";
   const fontsEff = React.useMemo<RenderOpts["fonts"]>(
     () => ({
       title: { family: fontsOpt.title.family ?? undefined, weight: fontsOpt.title.weight ?? undefined },
@@ -435,6 +498,11 @@ export function AiSiteView() {
   const html = React.useMemo(
     () => renderSite(previewContent, tplId, accentEff, renderOpts),
     [previewContent, tplId, accentEff, renderOpts],
+  );
+  // Kanvas editor: versi yang bisa diklik (data-f/data-sec/data-img). Publish & ekspor tetap memakai `html` di atas.
+  const canvasHtml = React.useMemo(
+    () => renderSite(previewContent, tplId, accentEff, { ...renderOpts, editable: true }) + (canvasNonce ? `<!--${canvasNonce}-->` : ""),
+    [previewContent, tplId, accentEff, renderOpts, canvasNonce],
   );
   const shopActive = !!content && hasShop(content) && shopOn;
   const imgBytes = totalImageBytes(images);
@@ -522,32 +590,12 @@ export function AiSiteView() {
     else if (busy === "publish") say("Sedang mempublikasikan website.");
   }, [busy, say]);
 
-  // Setelah generate: gulir dan pindahkan fokus ke pratinjau.
+  // Setelah generate: kembali ke atas supaya editor terlihat penuh.
   React.useEffect(() => {
     if (!content || !pendingFocusRef.current) return;
     pendingFocusRef.current = false;
-    const el = previewRef.current;
-    if (!el) return;
-    el.scrollIntoView({ block: "start", behavior: reduced ? "auto" : "smooth" });
-    el.focus({ preventScroll: true });
+    window.scrollTo({ top: 0, behavior: reduced ? "auto" : "smooth" });
   }, [content, reduced]);
-
-  // Tombol "Lihat pratinjau" di layar sempit hanya tampil saat pratinjau di luar layar.
-  const ready = !!keyStatus && !!cfg;
-  React.useEffect(() => {
-    const el = previewRef.current;
-    if (!ready || !el || typeof IntersectionObserver === "undefined") return;
-    const io = new IntersectionObserver(([e]) => setPreviewVisible(e.isIntersecting), { threshold: 0.05 });
-    io.observe(el);
-    return () => io.disconnect();
-  }, [ready]);
-
-  function goPreview() {
-    const el = previewRef.current;
-    if (!el) return;
-    el.scrollIntoView({ block: "start", behavior: reduced ? "auto" : "smooth" });
-    el.focus({ preventScroll: true });
-  }
 
   /* ---------- riwayat / urungkan ---------- */
 
@@ -557,12 +605,54 @@ export function AiSiteView() {
 
   function pushHistory() {
     const s = snapshot();
-    if (s) setHistory((h) => [...h.slice(-9), s]);
+    if (s) setHistory((h) => [...h.slice(-29), s]);
+    setFuture([]);
+    lastPushRef.current = Date.now();
+  }
+
+  /**
+   * Satu perubahan tampilan dari panel: simpan titik urungkan lalu jalankan. `merge` = perubahan beruntun (geser warna)
+   * digabung jadi satu langkah urungkan selama jedanya < 1,2 detik.
+   */
+  function change(fn: () => void, merge = false) {
+    if (!merge || Date.now() - lastPushRef.current > 1200) pushHistory();
+    else lastPushRef.current = Date.now();
+    fn();
+  }
+
+  function restore(s: Snapshot) {
+    setContent(s.content);
+    setImages(s.images);
+    setTemplate(s.template);
+    setPalette(s.palette);
+    setHeroOpt(s.heroOpt);
+    setFeatOpt(s.featOpt);
+    setStyleOpt(s.styleOpt);
+    setDecorOpt(s.decorOpt);
+    setBgOpt(s.bgOpt);
+    setFontsOpt(s.fontsOpt);
+    setIconOpt(s.iconOpt);
+    setOrnOff(s.ornOff);
+    setVariant(s.variant);
+    setShopOn(s.shopOn);
+  }
+
+  function redo() {
+    const next = future[future.length - 1];
+    const cur = snapshot();
+    if (!next || !cur || busy !== null) return;
+    setFuture(future.slice(0, -1));
+    setHistory((h) => [...h.slice(-29), cur]);
+    restore(next);
+    setPublished(null);
+    showToast("Perubahan diulang.");
   }
 
   function undo() {
     const last = history[history.length - 1];
     if (!last || busy !== null) return;
+    const cur = snapshot();
+    if (cur) setFuture((f) => [...f.slice(-29), cur]);
     setHistory(history.slice(0, -1));
     setContent(last.content);
     setImages(last.images);
@@ -843,9 +933,10 @@ export function AiSiteView() {
     await generate(again);
   }
 
-  async function applyEdit() {
+  async function applyEdit(command?: string) {
     if (!content || busy !== null) return;
-    if (!canUseAi || !editReady) {
+    const instruction = command ?? editText;
+    if (!command && (!canUseAi || !editReady)) {
       say(editHint);
       editRef.current?.focus();
       return;
@@ -856,10 +947,11 @@ export function AiSiteView() {
       const r = await api<{ content: SiteContent; changed: string[]; note: string }>("/api/ai/site/edit", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ instruction: editText, current: content }),
+        body: JSON.stringify({ instruction, current: content }),
       });
       if (r.changed.length === 0) {
-        setEditError(r.note || "Tidak ada yang berubah. Coba kalimat yang lebih spesifik.");
+        if (command) showToast(r.note || "Belum bisa diterapkan.");
+        else setEditError(r.note || "Tidak ada yang berubah. Coba kalimat yang lebih spesifik.");
         return;
       }
       pushHistory();
@@ -887,7 +979,7 @@ export function AiSiteView() {
       if (r.changed.includes("iconStyle")) setIconOpt(null);
       if (r.changed.includes("ornaments")) setOrnOff(false);
       setPublished(null);
-      setEditText("");
+      if (!command) setEditText("");
       showToast(r.note || "Perubahan diterapkan.");
     } catch (e) {
       setEditError((e as Error).message);
@@ -895,6 +987,65 @@ export function AiSiteView() {
       setBusy(null);
     }
   }
+
+  /** Tombol panel yang memakai perintah mesin (gaya siap pakai, keluarga hiasan). */
+  async function runCommand(cmd: string) {
+    await applyEdit(cmd);
+  }
+
+  /* ---------- kanvas: ketik langsung, klik gambar, pilih bagian ---------- */
+
+  function setSections(next: NonNullable<SiteContent["sections"]>) {
+    change(() => setContent((c) => (c ? { ...c, sections: next } : c)));
+    setPublished(null);
+  }
+
+  function selectSection(id: string) {
+    setSelSec(id);
+    canvasRef.current?.select(id);
+  }
+
+  function onCanvasMsg(m: CanvasMsg) {
+    if (!content) return;
+    if (m.dp === "edit") {
+      const next = setContentField(content, m.f, m.v);
+      if (next) {
+        pushHistory();
+        setContent(next);
+        setPublished(null);
+        say("Teks diperbarui.");
+      } else {
+        // Teks wajib dikosongkan / bidang tak dikenal: kembalikan kanvas ke isi semula.
+        if (!m.v.trim()) showToast("Teks ini wajib diisi, jadi dikembalikan.");
+        setCanvasNonce((n) => n + 1);
+      }
+    } else if (m.dp === "img") {
+      const def = imageSlots.find((d) => d.key === m.k);
+      if (def) pickImage(def);
+    } else if (m.dp === "sec") {
+      setSelSec(m.id);
+      setPanel(m.id === "hero" || m.id === "fitur" ? "tata" : "bagian");
+    }
+  }
+
+  // Ctrl/⌘+Z = urungkan, Ctrl/⌘+Shift+Z atau Ctrl+Y = ulangi (kecuali sedang mengetik di kolom).
+  React.useEffect(() => {
+    const on = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.isContentEditable)) return;
+      const k = e.key.toLowerCase();
+      if (k === "z" && !e.shiftKey) {
+        e.preventDefault();
+        undo();
+      } else if ((k === "z" && e.shiftKey) || k === "y") {
+        e.preventDefault();
+        redo();
+      }
+    };
+    window.addEventListener("keydown", on);
+    return () => window.removeEventListener("keydown", on);
+  });
 
   async function resetAll() {
     const { ok } = await confirm({
@@ -924,6 +1075,8 @@ export function AiSiteView() {
     setShopOn(true);
     setVariant(0);
     setHistory([]);
+    setFuture([]);
+    setSelSec(null);
     setPublished(null);
     setSavedHtml(null);
     setEditText("");
@@ -999,8 +1152,6 @@ export function AiSiteView() {
   const busyLabel =
     busy === "edit" ? "Mesin sedang mengubah…" : busy === "ai" ? progress || "Mesin sedang menyusun…" : busy === "publish" ? progress || "Mempublikasikan…" : null;
   const kindName = content ? KIND_OPTIONS.find((k) => k.id === content.kind)?.name ?? content.kind : "";
-  const kindNote = content ? KIND_LABEL[content.kind].match(/\((.*)\)/)?.[1] ?? "" : "";
-  const heroName = HERO_LAYOUTS.find((l) => l.id === heroEff)?.name ?? heroEff;
 
   // Izin memakai website ini sebagai contoh latih mesin Depup (default mati, diingat per perangkat).
   const trainConsentBox = (
@@ -1025,248 +1176,49 @@ export function AiSiteView() {
     </label>
   );
 
-  const engineCard = (
-    <Card title="Tentang mesin pembuat isi" action={<Badge tone="good" dot>Tanpa AI luar</Badge>}>
-      <div className="space-y-3 px-6 py-5 text-[14px] leading-relaxed">
-        <p className="text-text-muted">
-          Isi website disusun oleh mesin milik Depup sendiri: ia mengenali jenis usahamu, mengambil nama, kota, produk, harga, dan kontak dari
-          deskripsimu, lalu menyusun teks dari contoh yang sudah dilatihkan. Tidak butuh token, tidak ada jatah harian, dan deskripsimu tidak dikirim
-          ke layanan lain.
-        </p>
-        <p className="text-text-muted">
-          Supaya hasilnya pas, sebut nama usaha, kota, produk beserta harga, dan kontak. Perubahan lanjutan bisa lewat kolom “Ubah dengan perintah”.
-        </p>
-        {trainConsentBox}
-      </div>
-    </Card>
-  );
-
-  const editCard = content ? (
-    <Card title="Ubah dengan perintah">
-      <div className="space-y-3 px-6 py-5">
-        <label htmlFor="ai-edit" className={labelCls}>Mau diubah apa?</label>
-        <textarea
-          ref={editRef}
-          id="ai-edit"
-          rows={2}
-          maxLength={600}
-          value={editText}
-          onChange={(e) => setEditText(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-              e.preventDefault();
-              void applyEdit();
-            }
-          }}
-          aria-describedby="ai-edit-hint edit-hint"
-          placeholder="Contoh: ganti nama jadi Kopi Fajar, tambah menu Es Teh 5rb, ganti warna jadi hijau"
-          className="input-solid w-full resize-y px-3.5 py-3 text-[14px] leading-relaxed"
-        />
-        <div className="flex flex-wrap gap-1.5">
-          {editSuggestions(content.kind).map((t) => (
-            <Btn key={t} onClick={() => { setEditText(t); editRef.current?.focus(); }} className="whitespace-normal text-left">
-              {t}
-            </Btn>
+  const ttlField = (
+    <Field label="Masa aktif link" htmlFor="ai-ttl">
+      <Select value={String(ttlHours)} onValueChange={(v) => setTtlHours(Number(v))}>
+        <SelectTrigger id="ai-ttl">
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent>
+          {cfg.ttlOptionsHours.map((h) => (
+            <SelectItem key={h} value={String(h)}>{ttlLabel(h)}</SelectItem>
           ))}
-        </div>
-        <Btn
-          variant="primary"
-          className="!py-2.5 !text-[13px] max-sm:w-full"
-          busy={busy === "edit"}
-          disabled={busy !== null || !canUseAi || !editReady}
-          softDisabled
-          aria-describedby="edit-hint"
-          onDisabledClick={() => { say(editHint); editRef.current?.focus(); }}
-          onClick={() => void applyEdit()}
-        >
-          <Sparkles size={14} /> {busy === "edit" ? "AI sedang mengubah…" : "Terapkan perubahan"}
-        </Btn>
-        <p id="edit-hint" className={cn(hintCls, "min-h-[1.1rem]")}>{editHint}</p>
-        {editError && (
-          <div className="notice notice-bad" role="alert">
-            <CircleAlert size={15} className="mt-0.5 shrink-0" aria-hidden /> <span className="min-w-0">{editError}</span>
-          </div>
-        )}
-        <p id="ai-edit-hint" className={`leading-relaxed ${hintCls}`}>
-          Hanya bagian yang kamu sebut yang berubah; gambar dan pilihan di bagian 2 (Tampilan) tetap. Tekan Ctrl/⌘ + Enter untuk menerapkan.
-          Salah ubah? Tombol Urungkan di kartu Pratinjau mengembalikannya. Perubahan tidak otomatis dipublish.
-        </p>
-      </div>
-    </Card>
-  ) : null;
-
-  const publishArea =
-    content && !isSample ? (
-      <div className="space-y-3">
-        {published && (
-          <div className="notice notice-ok !block space-y-2.5 !p-4">
-            <div className="flex items-start gap-1.5 font-semibold">
-              <Check size={15} className="mt-0.5 shrink-0" aria-hidden />
-              <span className="min-w-0">
-                Online sampai {new Date(published.expiresAt).toLocaleString("id-ID")} ({timeLeftLabel(published.expiresAt)})
-              </span>
-            </div>
-            <input
-              readOnly
-              aria-label="Link website"
-              value={published.url}
-              onFocus={(e) => e.currentTarget.select()}
-              className="input-solid mono h-11 w-full px-3.5 text-[13px] text-text"
-            />
-            <div className="flex flex-wrap gap-2">
-              <BtnLink variant="primary" href={published.url} target="_blank" rel="noopener noreferrer">
-                <ExternalLink size={13} aria-hidden /> Buka website<span className="sr-only"> (tab baru)</span>
-              </BtnLink>
-              {shopActive && (
-                <BtnLink href={`${published.url}#kelola`} target="_blank" rel="noopener noreferrer">
-                  <Pencil size={13} aria-hidden /> Mode kelola<span className="sr-only"> (tab baru)</span>
-                </BtnLink>
-              )}
-              <Btn onClick={() => void copyText(published.url, "Link disalin.")}>
-                <Copy size={13} /> Salin link
-              </Btn>
-              <Btn
-                busy={exporting === "zip"}
-                onClick={() => void runExport("zip", () => downloadZip(content, tplId, accentEff, renderOpts), "ZIP project diunduh.")}
-              >
-                <Package size={13} /> Unduh ZIP
-              </Btn>
-            </div>
-            <p className={`leading-relaxed ${hintCls} !text-current opacity-90`}>
-              Setelah masa aktif habis, link mati otomatis. Opsi perpanjangan waktu akan tersedia mulai 3 hari sebelum link kedaluwarsa. Unduh ZIP kalau kamu mau menyimpan websitenya permanen. Link ini juga ada di menu Link Instan.
-            </p>
-          </div>
-        )}
-
-        {!cfg.enabled ? (
-          <div className="notice notice-warn flex items-start gap-2 !p-3 text-[13px]">
-            <Info size={15} className="mt-0.5 shrink-0" aria-hidden />
-            <span className="min-w-0">Link Instan sedang tidak aktif di server ini, jadi websitenya hanya bisa dilihat di pratinjau dan diekspor sebagai file.</span>
-          </div>
-        ) : (
-          <div className="space-y-2.5">
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-              <Btn
-                variant={published ? "ghost" : "primary"}
-                busy={busy === "publish"}
-                disabled={busy !== null}
-                softDisabled
-                onClick={() => void publish(content, html)}
-              >
-                {busy === "publish"
-                  ? progress || "Mempublikasikan…"
-                  : published
-                    ? "Publish sebagai link baru"
-                    : lastPubId
-                      ? "Publish versi terbaru"
-                      : "Publish ke Link Instan"}
-              </Btn>
-              <span className={`tabular-nums ${hintCls}`}>Link aktif: {siteCount} dari {cfg.maxSites}</span>
-            </div>
-            {lastPubId && (
-              <label className="flex min-h-[44px] items-start gap-2.5 text-[14px]">
-                <input type="checkbox" checked={replacePrev} onChange={(e) => setReplacePrev(e.target.checked)} className={checkCls} />
-                <span className="min-w-0">
-                  Matikan link sebelumnya setelah publish
-                  <span className={`block ${hintCls}`}>
-                    Isi link lama tidak ikut berubah. Kalau sudah kamu bagikan, bagikan lagi link yang baru.
-                  </span>
-                </span>
-              </label>
-            )}
-            <p className={`leading-relaxed ${hintCls}`}>
-              Ganti template, warna, atau gambar di kolom pengaturan untuk melihat tampilan lain tanpa memanggil AI lagi. Setiap publish membuat link baru yang aktif {ttlLabel(ttlHours)}. Opsi perpanjangan waktu akan tersedia mulai 3 hari sebelum link kedaluwarsa.
-            </p>
-          </div>
-        )}
-      </div>
-    ) : null;
-
-  const previewCard = (
-    <Card
-      title="Pratinjau"
-      action={
-        <div className="flex flex-wrap items-center gap-1.5">
-          {history.length > 0 && (
-            <Btn onClick={undo} disabled={busy !== null} softDisabled>
-              <Undo2 size={13} /> Urungkan
-            </Btn>
-          )}
-          <span className="flex gap-1" role="group" aria-label="Ukuran pratinjau">
-            <Btn variant={device === "desktop" ? "primary" : "ghost"} aria-pressed={device === "desktop"} onClick={() => setDevice("desktop")}>
-              <Monitor size={13} /> Desktop
-            </Btn>
-            <Btn variant={device === "mobile" ? "primary" : "ghost"} aria-pressed={device === "mobile"} onClick={() => setDevice("mobile")}>
-              <Smartphone size={13} /> HP
-            </Btn>
-          </span>
-        </div>
-      }
-    >
-      <div className="space-y-4 px-4 py-4 sm:px-6 sm:py-5">
-        {isSample ? (
-          <div className="notice notice-info flex items-start gap-2 !p-3 text-[13px] leading-snug">
-            <Info size={15} className="mt-0.5 shrink-0" aria-hidden />
-            <span className="min-w-0">
-              Ini contoh tampilan dengan isi bayangan, supaya kamu bisa mencoba template dan warna dulu. Isi websitemu muncul setelah kamu menekan Buat website.
-            </span>
-          </div>
-        ) : (
-          <div className="flex flex-wrap items-center gap-2 text-[13px] text-text-muted">
-            <Badge tone="good">{kindName}</Badge>
-            {kindNote && <span className="min-w-0">{kindNote.charAt(0).toUpperCase() + kindNote.slice(1)}</span>}
-          </div>
-        )}
-
-        <div className={cn("relative rounded-[14px] bg-[var(--pill-bg)] p-2 sm:p-3", ON_MIST, busy === "ai" && "opacity-60 transition-opacity motion-reduce:transition-none")} aria-busy={busy === "ai" || undefined}>
-          <PreviewFrame html={html} device={device} />
-          {busy === "ai" && (
-            <div className="absolute inset-0 grid place-items-center" aria-hidden>
-              <span className="notice notice-info inline-flex items-center gap-2 !px-4 !py-2.5 text-[13px] font-medium [box-shadow:var(--surface-shadow)]">
-                <Loader2 size={15} className="animate-spin motion-reduce:animate-none" /> AI sedang merancang…
-              </span>
-            </div>
-          )}
-        </div>
-
-        {publishArea}
-      </div>
-    </Card>
+        </SelectContent>
+      </Select>
+    </Field>
   );
 
-  return (
-    <ViewFade>
-      <PageHead
-        title="AI Web Builder"
-        desc="Ceritakan usahamu atau topik blogmu. Mesin Depup menentukan jenis situs, gaya, dan isinya — tanpa layanan AI luar. Kamu tinggal atur tampilan dan gambar, lalu publish ke Link Instan atau ekspor file."
-      />
-      <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">{announce}</div>
+  const errorBox = error && (
+    <div className="notice notice-bad" role="alert">
+      <CircleAlert size={15} className="mt-0.5 shrink-0" aria-hidden /> <span className="min-w-0">{error}</span>
+    </div>
+  );
 
-      {/* Layar lebar: pengaturan di kiri, pratinjau menempel di kanan. Layar sempit: satu kolom, pratinjau di atas setelah ada hasil. */}
-      <div className="mt-6 grid min-w-0 gap-5 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] xl:items-start">
-        <section
-          ref={previewRef}
-          tabIndex={-1}
-          aria-label="Pratinjau website"
-          className={cn(
-            "min-w-0 scroll-mt-4 outline-none xl:sticky xl:top-4 xl:col-start-2 xl:row-start-1 xl:max-h-[calc(100dvh-2rem)] xl:overflow-y-auto",
-            !content && "max-xl:hidden",
-          )}
-        >
-          {previewCard}
-        </section>
+  /* ===== Layar mulai: belum ada website ===== */
+  if (!content) {
+    return (
+      <ViewFade>
+        <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">{announce}</div>
+        <section className="mx-auto mt-2 max-w-3xl">
+          <div className="rounded-[28px] bg-[var(--surface-solid)] px-5 py-8 [box-shadow:var(--surface-shadow)] sm:px-10 sm:py-12">
+            <p className="flex items-center justify-center gap-1.5 text-[13px] font-medium text-text-muted">
+              <Sparkles size={14} aria-hidden /> AI Web Builder · mesin Depup, tanpa AI luar
+            </p>
+            <h1 className="mt-3 text-center text-[clamp(26px,4vw,40px)] font-bold leading-tight tracking-[-0.02em]">Mau bikin website apa hari ini?</h1>
+            <p className="mx-auto mt-2 max-w-xl text-center text-[15px] leading-relaxed text-text-muted">
+              Ceritakan usahamu dalam satu-dua kalimat. Setelah jadi, semua bisa kamu ubah langsung di kanvas: klik teks untuk mengetik, pilih gaya, warna, dan susunan dari panel samping.
+            </p>
 
-        <div className="min-w-0 space-y-5 xl:col-start-1 xl:row-start-1">
-          {editCard}
-
-          <Card title="1. Ceritakan websitemu" action={content ? <Btn onClick={() => void resetAll()}>Mulai baru</Btn> : undefined}>
-            <div className="space-y-4 px-6 py-5">
-              <div>
-                <label htmlFor="ai-prompt" className={labelCls}>Deskripsi</label>
+            <div className="mt-7">
+              <label htmlFor="ai-prompt" className="sr-only">Deskripsi website</label>
+              <div className="rounded-[20px] bg-[var(--pill-bg)] p-2 focus-within:ring-2 focus-within:ring-[var(--ring)]">
                 <textarea
                   ref={promptRef}
                   id="ai-prompt"
-                  rows={5}
+                  rows={4}
                   maxLength={1400}
                   value={prompt}
                   onChange={(e) => setPrompt(e.target.value)}
@@ -1277,565 +1229,580 @@ export function AiSiteView() {
                     }
                   }}
                   aria-describedby="ai-prompt-hint gen-hint"
-                  placeholder="Contoh: Warung bakso Pak Slamet, buka 10–21. Menu: bakso urat 15rb, es teler 12rb. Pesan via WA 0812…"
-                  className="input-solid w-full resize-y px-3.5 py-3 text-[14px] leading-relaxed"
+                  placeholder="Contoh: Warung bakso Pak Slamet di Banjar, buka 10–21. Menu: bakso urat 15rb, es teler 12rb. Pesan via WA 0812…"
+                  className="w-full resize-none bg-transparent px-3 py-2.5 text-[16px] leading-relaxed outline-none placeholder:text-text-faint"
                 />
-                <div className="mt-1.5 flex items-start justify-between gap-3">
-                  <span id="ai-prompt-hint" className={`min-w-0 ${hintCls}`}>
-                    Sebutkan nama, produk atau topik, harga, jam buka, dan kontak. Makin detail, makin pas. Ctrl/⌘ + Enter untuk membuat.
-                  </span>
-                  <span className={`shrink-0 tabular-nums ${hintCls}`}>{prompt.length}/1400</span>
-                </div>
-                <div className="mt-2.5 flex flex-wrap gap-1.5">
-                  {EXAMPLES.map((ex) => (
-                    <Btn key={ex.label} onClick={() => { setPrompt(ex.text); promptRef.current?.focus(); }} className="whitespace-normal text-left">
-                      {ex.label}
-                    </Btn>
-                  ))}
-                </div>
-              </div>
-
-              <Field label="Foto (opsional)">
-                <PhotoPool
-                  photos={photos}
-                  adding={photosAdding}
-                  usedCount={photosUsed}
-                  hasContent={!!content}
-                  onAdd={addPhotos}
-                  onRemove={removePhoto}
-                  onMove={movePhoto}
-                  onClear={clearPhotos}
-                />
-              </Field>
-
-              <Field label="Jenis situs" htmlFor="ai-kind" hint={kindPick === "auto" ? "Mesin memilih sendiri dari deskripsimu." : KIND_LABEL[kindPick]}>
-                <Select value={kindPick} onValueChange={(v) => setKindPick(v as SiteKind | "auto")}>
-                  <SelectTrigger id="ai-kind" aria-label="Jenis situs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="auto">Otomatis (saran AI)</SelectItem>
-                    {KIND_OPTIONS.map((k) => (
-                      <SelectItem key={k.id} value={k.id}>{k.name}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </Field>
-
-              <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_150px] sm:items-end">
-                <label className="flex min-h-[44px] items-start gap-2.5 text-[14px]">
-                  <input
-                    type="checkbox"
-                    checked={autoPublish && cfg.enabled}
-                    disabled={!cfg.enabled}
-                    onChange={(e) => setAutoPublish(e.target.checked)}
-                    className={checkCls}
-                  />
-                  <span className="min-w-0">
-                    Langsung publish setelah dibuat
-                    <span className={`block ${hintCls}`}>
-                      {cfg.enabled
-                        ? `Memakai 1 dari ${cfg.maxSites} slot link aktif. Kalau tidak dicentang, kamu bisa melihat hasilnya dulu lalu publish sendiri.`
-                        : "Link Instan sedang tidak aktif di server ini, jadi hanya pratinjau."}
-                    </span>
-                  </span>
-                </label>
-                <Field label="Masa aktif link" htmlFor="ai-ttl">
-                  <Select value={String(ttlHours)} onValueChange={(v) => setTtlHours(Number(v))}>
-                    <SelectTrigger id="ai-ttl">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {cfg.ttlOptionsHours.map((h) => (
-                        <SelectItem key={h} value={String(h)}>{ttlLabel(h)}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </Field>
-              </div>
-
-              <p className={`-mt-1 leading-relaxed ${hintCls}`}>
-                Masa aktif link maksimal 30 hari, lalu link dan filenya terhapus otomatis. Opsi perpanjangan waktu akan tersedia mulai 3 hari sebelum link kedaluwarsa.
-              </p>
-
-              <div className="space-y-2">
-                <Btn
-                  variant="primary"
-                  className="w-full !py-2.5 !text-[13px]"
-                  busy={busy !== null}
-                  disabled={!canGenerate}
-                  softDisabled
-                  aria-describedby="gen-hint"
-                  onDisabledClick={explainGenerate}
-                  onClick={() => void requestGenerate(false)}
-                >
-                  <Sparkles size={14} /> {busyLabel ?? (content ? "Buat ulang dari deskripsi" : "Buat website")}
-                </Btn>
-                {content && (
+                <div className="flex flex-wrap items-center justify-between gap-2 px-2 pb-1">
+                  <span className={`tabular-nums ${hintCls}`}>{prompt.length}/1400</span>
                   <Btn
-                    className="w-full !py-2.5 !text-[13px]"
+                    variant="primary"
+                    className="!px-5 !py-2.5 !text-[14px]"
                     busy={busy !== null}
                     disabled={!canGenerate}
                     softDisabled
                     aria-describedby="gen-hint"
                     onDisabledClick={explainGenerate}
-                    onClick={() => void requestGenerate(true)}
+                    onClick={() => void requestGenerate(false)}
                   >
-                    <RefreshCw size={13} /> Coba gaya lain
+                    <Sparkles size={15} /> {busyLabel ?? "Buat website"}
                   </Btn>
-                )}
-                <p id="gen-hint" className={cn(hintCls, "min-h-[1.1rem]")}>{genHint}</p>
-                {content && (
-                  <p className={`leading-relaxed ${hintCls}`}>
-                    &ldquo;Buat ulang dari deskripsi&rdquo; mengganti hasil sekarang. &ldquo;Coba gaya lain&rdquo; memakai deskripsi yang sama, tetapi mesin memilih template, tata letak, dan warna yang berbeda (isi tulisan bisa ikut berubah).
-                    Keduanya bisa dibatalkan dengan tombol Urungkan.
-                  </p>
-                )}
-              </div>
-              {error && (
-                <div className="notice notice-bad" role="alert">
-                  <CircleAlert size={15} className="mt-0.5 shrink-0" aria-hidden /> <span className="min-w-0">{error}</span>
                 </div>
-              )}
-            </div>
-          </Card>
-
-          <Card title="2. Tampilan" action={isSample ? <span className={hintCls}>Pratinjau memakai isi contoh</span> : undefined}>
-            <div className="space-y-5 px-6 py-5">
-              <div role="radiogroup" aria-label="Cara mengatur tampilan" className="flex items-center gap-2">
-                <Btn
-                  variant={tampilanMode === "ai" ? "primary" : "ghost"}
-                  aria-pressed={tampilanMode === "ai"}
-                  onClick={() => setTampilanMode("ai")}
-                  className="flex-1"
-                >
-                  Ikuti saran AI
-                </Btn>
-                <Btn
-                  variant={tampilanMode === "manual" ? "primary" : "ghost"}
-                  aria-pressed={tampilanMode === "manual"}
-                  onClick={() => setTampilanMode("manual")}
-                  className="flex-1"
-                >
-                  Atur manual
-                </Btn>
               </div>
-              <p className={`leading-relaxed ${hintCls}`}>
-                {tampilanMode === "ai"
-                  ? "AI menyarankan gaya yang serasi. Tata letak & huruf ikut gaya terpilih, bisa diubah di \u201cAtur manual\u201d."
-                  : "Atur gaya, tata letak, warna, dan huruf satu per satu. Pratinjau di samping langsung berubah tiap pilihan diganti."}
+              <p id="gen-hint" className={cn(hintCls, "mt-2 min-h-[1.1rem]")}>{genHint}</p>
+              <p id="ai-prompt-hint" className={`mt-1 ${hintCls}`}>
+                Sebutkan nama, produk atau topik, harga, jam buka, dan kontak. Mau gaya tertentu? Tulis saja, mis. &ldquo;gaya neo brutalism pastel&rdquo;.
               </p>
-
-              {content?.look && (
-                <div className={`flex flex-wrap items-center justify-between gap-2 rounded-[14px] bg-[var(--pill-bg)] px-3.5 py-2.5 leading-relaxed ${hintCls}`}>
-                  <span className="min-w-0">
-                    {lookOn ? (
-                      <>
-                        Memakai gaya <b className="font-semibold text-text">{content.look.name}</b> hasil latihan mesin. Memilih Template, warna, atau gaya lain akan
-                        menggantikannya.
-                      </>
-                    ) : (
-                      <>
-                        Gaya <b className="font-semibold text-text">{content.look.name}</b> sedang tidak dipakai karena kamu memilih tampilan sendiri.
-                      </>
-                    )}
-                  </span>
-                  {lookOn ? (
-                    <button type="button" onClick={() => setContent((c) => (c ? { ...c, look: undefined } : c))} className="text-[13px] text-text-muted underline max-md:min-h-[40px]">
-                      Lepas gaya
-                    </button>
-                  ) : (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setTemplate(null);
-                        setPalette(null);
-                        setStyleOpt(null);
-                        setBgOpt(null);
-                      }}
-                      className="text-[13px] text-text-muted underline max-md:min-h-[40px]"
-                    >
-                      Pakai lagi
-                    </button>
-                  )}
-                </div>
-              )}
-
-              {tampilanMode === "ai" && (
-                <div>
-                  <div className="mb-2 flex items-center justify-between gap-2">
-                    <span className="text-[13px] font-medium text-text-muted">Template</span>
-                    {template && (
-                      <button type="button" onClick={() => setTemplate(null)} className="text-[13px] text-text-muted underline max-md:min-h-[40px]">
-                        {content ? "Ikuti saran AI" : "Atur ulang"}
-                      </button>
-                    )}
-                  </div>
-                  <TemplatePicker
-                    value={tplId}
-                    suggestedId={content && !template ? content.template : null}
-                    preview={previewContent}
-                    palette={palette}
-                    onPick={setTemplate}
-                  />
-                  <p className={`mt-2.5 rounded-[14px] bg-[var(--pill-bg)] px-3.5 py-2.5 leading-relaxed ${hintCls}`}>
-                    <b className="font-semibold text-text">{tpl.name}</b> · {tpl.desc}
-                  </p>
-                </div>
-              )}
-
-              {tampilanMode === "manual" ? (
-                <div>
-                  <div className={`mb-3 ${subheadCls}`}>Tata letak</div>
-                  <div className="grid gap-3">
-                    <Field label="Bagian paling atas" htmlFor="ai-hero" hint="Judul besar dan tombol di awal halaman.">
-                      <Select value={heroEff} onValueChange={(v) => setHeroOpt(v as HeroLayout)}>
-                        <SelectTrigger id="ai-hero">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {HERO_LAYOUTS.map((l) => (
-                            <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </Field>
-                  </div>
-                </div>
-              ) : (
-                <details className={cn("group rounded-[14px] bg-[var(--pill-bg)]", ON_MIST)}>
-                  <summary className="flex min-h-[44px] cursor-pointer list-none items-center justify-between gap-3 rounded-[14px] px-3.5 py-2.5 text-[14px] font-medium [&::-webkit-details-marker]:hidden">
-                    <span className="min-w-0">
-                      Atur tata letak <span className="font-normal text-text-muted">· {heroName}</span>
-                    </span>
-                    <ChevronDown size={16} className="shrink-0 transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden />
-                  </summary>
-                  <div className="grid gap-3 px-3.5 pb-3.5">
-                    <Field label="Bagian paling atas" htmlFor="ai-hero-c" hint="Judul besar dan tombol di awal halaman.">
-                      <Select value={heroEff} onValueChange={(v) => setHeroOpt(v as HeroLayout)}>
-                        <SelectTrigger id="ai-hero-c">
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {HERO_LAYOUTS.map((l) => (
-                            <SelectItem key={l.id} value={l.id}>{l.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </Field>
-                  </div>
-                </details>
-              )}
-
-              <div>
-                <div className="mb-2 flex items-center gap-1.5 text-[13px] font-medium text-text-muted">
-                  <Palette size={13} aria-hidden /> Warna
-                </div>
-                <PaletteEditor colors={colors} custom={palette !== null} pageBg={bgEff} onChange={setPalette} onReset={() => setPalette(null)} />
-              </div>
-
-              {tampilanMode === "manual" && (
-                <div>
-                  <div className="mb-2 flex items-center justify-between gap-2">
-                    <span className={subheadCls}>Warna latar</span>
-                    {bgOpt && (
-                      <button type="button" onClick={() => setBgOpt(null)} className="text-[13px] text-text-muted underline max-md:min-h-[40px]">
-                        Bawaan template
-                      </button>
-                    )}
-                  </div>
-                  <div role="radiogroup" aria-label="Pilih warna latar" className="flex flex-wrap items-center gap-2">
-                    {BG_PRESETS.map((p) => (
-                      <button
-                        key={p.hex}
-                        type="button"
-                        role="radio"
-                        aria-checked={bgEff.toLowerCase() === p.hex}
-                        aria-label={p.name}
-                        title={p.name}
-                        onClick={() => setBgOpt(p.hex)}
-                        className={swatchTileCls(bgEff.toLowerCase() === p.hex)}
-                      >
-                        <span aria-hidden className="h-7 w-7 rounded-[10px]" style={{ background: p.hex }} />
-                      </button>
-                    ))}
-                    <label className={swatchTileCls(false)} title="Warna lain">
-                      <span aria-hidden className="h-7 w-7 rounded-[10px]" style={{ background: bgEff }} />
-                      <input
-                        type="color"
-                        value={bgEff}
-                        aria-label="Pilih warna latar lain"
-                        onChange={(e) => setBgOpt(e.target.value.toLowerCase())}
-                        className="absolute inset-0 h-full w-full cursor-pointer rounded-[14px] opacity-0"
-                      />
-                    </label>
-                  </div>
-                  <p className={`mt-2.5 leading-relaxed ${hintCls}`}>
-                    Teks, kartu, dan garis otomatis disesuaikan supaya tetap terbaca di atas warna latar ini.
-                  </p>
-                </div>
-              )}
-
-              {tampilanMode === "manual" && (
-                <div>
-                  <div className="mb-2 flex items-center justify-between gap-2">
-                    <span className="text-[13px] font-medium text-text-muted">Gaya desain</span>
-                    {styleOpt && (
-                      <button type="button" onClick={() => setStyleOpt(null)} className="text-[13px] text-text-muted underline max-md:min-h-[40px]">
-                        Ikuti Template
-                      </button>
-                    )}
-                  </div>
-                  <StylePicker
-                    value={styleOpt}
-                    template={tplId}
-                    accent={accentEff}
-                    palette={palette}
-                    fonts={fontsEff}
-                    preview={previewContent}
-                    onPick={setStyleOpt}
-                  />
-                  <p className={`mt-2.5 rounded-[14px] bg-[var(--pill-bg)] px-3.5 py-2.5 leading-relaxed ${hintCls}`}>
-                    {styleOpt ? (
-                      <>
-                        <b className="font-semibold text-text">{DESIGN_STYLES.find((s) => s.id === styleOpt)?.name}</b> ·{" "}
-                        {DESIGN_STYLES.find((s) => s.id === styleOpt)?.desc}
-                      </>
-                    ) : (
-                      "Belum diubah, masih mengikuti bentuk bawaan Template di atas."
-                    )}
-                  </p>
-                </div>
-              )}
-
-              {tampilanMode === "manual" && (
-                <div>
-                  <div className="mb-2 flex items-center justify-between gap-2">
-                    <span className={subheadCls}>Hiasan</span>
-                    {decorOpt && (
-                      <button type="button" onClick={() => setDecorOpt(null)} className="text-[13px] text-text-muted underline max-md:min-h-[40px]">
-                        Ikuti Gaya desain
-                      </button>
-                    )}
-                  </div>
-                  <div role="radiogroup" aria-label="Pilih hiasan" className="flex flex-wrap gap-1.5">
-                    {DECOR_OPTIONS.map((d) => (
-                      <button
-                        key={d.id}
-                        type="button"
-                        role="radio"
-                        aria-checked={decorOpt === d.id}
-                        onClick={() => setDecorOpt(d.id)}
-                        title={d.desc}
-                        className={chipCls(decorOpt === d.id, true)}
-                      >
-                        <ChipLabel selected={decorOpt === d.id}>{d.name}</ChipLabel>
-                      </button>
-                    ))}
-                  </div>
-                  <p className={`mt-2.5 leading-relaxed ${hintCls}`}>
-                    Hiasan murni di belakang judul, tidak membungkus teks/gambar — aman dipadukan dengan Gaya desain mana pun.
-                  </p>
-                </div>
-              )}
-
-              {tampilanMode === "manual" && content && (
-                <div>
-                  <div className="mb-2 flex items-center justify-between gap-2">
-                    <span className={subheadCls}>Gaya ikon</span>
-                    {iconOpt && (
-                      <button type="button" onClick={() => setIconOpt(null)} className="text-[13px] text-text-muted underline max-md:min-h-[40px]">
-                        Ikuti saran AI
-                      </button>
-                    )}
-                  </div>
-                  <div role="radiogroup" aria-label="Pilih gaya ikon" className="flex flex-wrap gap-1.5">
-                    {ICON_STYLES.map((st) => (
-                      <button
-                        key={st.id}
-                        type="button"
-                        role="radio"
-                        aria-checked={iconEff === st.id}
-                        onClick={() => setIconOpt(st.id)}
-                        title={st.desc}
-                        className={cn(chipCls(iconEff === st.id, true), "inline-flex items-center gap-1.5")}
-                      >
-                        <svg
-                          viewBox="0 0 24 24"
-                          width="16"
-                          height="16"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          aria-hidden
-                          className="shrink-0"
-                          dangerouslySetInnerHTML={{ __html: iconGlyph(st.id) }}
-                        />
-                        <ChipLabel selected={iconEff === st.id}>{st.name}</ChipLabel>
-                      </button>
-                    ))}
-                  </div>
-                  <p className={`mt-2.5 leading-relaxed ${hintCls}`}>
-                    {iconOpt ? "Pilihanmu" : content.iconStyle ? "Saran AI" : "Bawaan"}: <b className="font-semibold text-text">{ICON_STYLES.find((x) => x.id === iconEff)?.name}</b> ·{" "}
-                    {ICON_STYLES.find((x) => x.id === iconEff)?.desc} Berlaku untuk semua ikon, termasuk katalog produk.
-                  </p>
-                </div>
-              )}
-
-              {tampilanMode === "manual" && !!content?.ornaments?.length && (
-                <div>
-                  <div className={`mb-2 ${subheadCls}`}>Ornamen</div>
-                  <div role="radiogroup" aria-label="Tampilkan ornamen" className="flex flex-wrap gap-1.5">
-                    {[
-                      { on: true, label: "Tampilkan" },
-                      { on: false, label: "Sembunyikan" },
-                    ].map((o) => (
-                      <button key={o.label} type="button" role="radio" aria-checked={!ornOff === o.on} onClick={() => setOrnOff(!o.on)} className={chipCls(!ornOff === o.on, true)}>
-                        <ChipLabel selected={!ornOff === o.on}>{o.label}</ChipLabel>
-                      </button>
-                    ))}
-                  </div>
-                  <p className={`mt-2.5 leading-relaxed ${hintCls}`}>
-                    {content.ornaments.length} ornamen dari paket elemen{content.ornFamily ? ` keluarga ${content.ornFamily}` : ""}. Untuk keluarga lain, ketik di kotak ubah:
-                    &ldquo;hiasan lain&rdquo; atau &ldquo;hiasan batik&rdquo;.
-                  </p>
-                </div>
-              )}
-
-              {tampilanMode === "manual" && (
-                <div>
-                  <div className={`mb-3 ${subheadCls}`}>Huruf</div>
-                  <FontRolePicker
-                    title={fontsOpt.title}
-                    sub={fontsOpt.sub}
-                    body={fontsOpt.body}
-                    onTitleFamily={(id) => setFontsOpt((f) => ({ ...f, title: { ...f.title, family: id } }))}
-                    onTitleWeight={(w) => setFontsOpt((f) => ({ ...f, title: { ...f.title, weight: w } }))}
-                    onTitleWeightFollow={() => setFontsOpt((f) => ({ ...f, title: { ...f.title, weight: null } }))}
-                    onSubFamily={(id) => setFontsOpt((f) => ({ ...f, sub: { ...f.sub, family: id } }))}
-                    onSubFamilyFollow={() => setFontsOpt((f) => ({ ...f, sub: { ...f.sub, family: null } }))}
-                    onSubWeight={(w) => setFontsOpt((f) => ({ ...f, sub: { ...f.sub, weight: w } }))}
-                    onSubWeightFollow={() => setFontsOpt((f) => ({ ...f, sub: { ...f.sub, weight: null } }))}
-                    onBodyFamily={(id) => setFontsOpt((f) => ({ ...f, body: { ...f.body, family: id } }))}
-                    onBodyWeight={(w) => setFontsOpt((f) => ({ ...f, body: { ...f.body, weight: w } }))}
-                    onBodyWeightFollow={() => setFontsOpt((f) => ({ ...f, body: { ...f.body, weight: null } }))}
-                  />
-                </div>
-              )}
-
-              {content && hasShop(content) && (
-                <label className="flex min-h-[44px] items-start gap-2.5 rounded-[14px] bg-[var(--pill-bg)] p-3.5 text-[14px]">
-                  <input type="checkbox" checked={shopOn} onChange={(e) => setShopOn(e.target.checked)} className={checkCls} />
-                  <span className="min-w-0">
-                    <span className="flex items-center gap-1.5 font-medium"><Store size={14} className="shrink-0" aria-hidden /> Katalog, keranjang, dan mode kelola</span>
-                    <span className={`mt-0.5 block leading-snug ${hintCls}`}>Pengunjung bisa cari produk, mengisi keranjang, lalu memesan lewat WhatsApp.</span>
-                  </span>
-                </label>
-              )}
-            </div>
-          </Card>
-
-          <Card title="3. Gambar" action={<span className={`tabular-nums ${hintCls}`}>{formatBytes(imgBytes)} / {formatBytes(IMAGE_BUDGET_BYTES)}</span>}>
-            <div className="space-y-4 px-6 py-5">
-              <div
-                className="h-1.5 overflow-hidden rounded-full bg-[var(--pill-bg)]"
-                role="progressbar"
-                aria-label="Ukuran gambar terpakai"
-                aria-valuemin={0}
-                aria-valuemax={100}
-                aria-valuenow={Math.min(100, Math.round((imgBytes / IMAGE_BUDGET_BYTES) * 100))}
-              >
-                <div className="h-full rounded-full bg-[var(--accent)] transition-[width] motion-reduce:transition-none" style={{ width: `${Math.min(100, (imgBytes / IMAGE_BUDGET_BYTES) * 100)}%` }} />
-              </div>
-              <ul className="space-y-3">
-                {visibleSlots.map((d) => (
-                  <ImageRow key={d.key} def={d} src={images[d.key]} busy={imgBusy === d.key} onPick={() => pickImage(d)} onRemove={() => removeImage(d.key)} />
+              <div className="mt-3 flex flex-wrap justify-center gap-1.5">
+                {EXAMPLES.map((ex) => (
+                  <button key={ex.label} type="button" onClick={() => { setPrompt(ex.text); promptRef.current?.focus(); }} className={chipCls(false)}>
+                    {ex.label}
+                  </button>
                 ))}
-              </ul>
-              {imageSlots.length > 6 && (
-                <button type="button" onClick={() => setShowAllImgs((v) => !v)} aria-expanded={showAllImgs} className="text-[13px] text-text-muted underline max-md:min-h-[40px]">
-                  {showAllImgs ? "Tampilkan lebih sedikit" : `Tampilkan semua (${imageSlots.length})`}
-                </button>
-              )}
-              {!content && (
-                <p className={`leading-snug ${hintCls}`}>
-                  Belum mengunggah foto di bagian 1? Tidak masalah. Foto produk atau sampul artikel muncul di sini setelah websitenya dibuat, lalu unggah satu per satu.
-                </p>
-              )}
-              <p className={`leading-snug ${hintCls}`}>
-                PNG, JPG, WebP, atau GIF. Gambar otomatis dikecilkan di browser dan ikut tertanam saat publish atau ekspor. Gambar tidak ikut draf otomatis, jadi unduh ZIP atau publish sebelum menutup halaman.
-              </p>
-              <input ref={fileRef} type="file" accept={IMAGE_ACCEPT} className="hidden" tabIndex={-1} aria-hidden onChange={onFile} />
+              </div>
             </div>
-          </Card>
 
-          {content && shopActive && (
-            <Card title="Kelola produk (untuk pemilik)" action={<Badge tone="good" dot>Aktif</Badge>}>
-              <div className="space-y-4 px-6 py-5">
-                <ol className="list-decimal space-y-2 pl-5 text-[14px] leading-relaxed text-text-muted marker:font-medium marker:text-text">
-                  <li>Pratinjau sudah dalam <b className="text-text">mode kelola</b>: coba tambah, ubah, atau hapus produk langsung di kartunya.</li>
-                  <li>Di situs yang sudah online, tambahkan <code className="mono">#kelola</code> di akhir link untuk masuk mode kelola. Pengunjung biasa tidak melihatnya.</li>
-                  <li>Setelah selesai, tekan <b className="text-text">Unduh situs</b> di bilah kelola, lalu upload ulang file itu supaya semua pengunjung melihat versi terbaru.</li>
-                </ol>
-                <div className="notice notice-warn flex items-start gap-2 !p-3 text-[13px] leading-snug">
-                  <CircleAlert size={15} className="mt-0.5 shrink-0" aria-hidden />
-                  <span className="min-w-0">
-                    Perubahan produk hanya tersimpan di browser pemilik, bukan di server. Kalau ganti browser atau data browser dihapus sebelum kamu mengunduh situsnya, perubahan itu hilang.
-                  </span>
+            {errorBox && <div className="mt-4">{errorBox}</div>}
+
+            <div className="mt-8 grid gap-3">
+              <details className={cn("group rounded-[18px] bg-[var(--pill-bg)]", ON_MIST)}>
+                <summary className="flex min-h-[48px] cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-[14px] font-medium [&::-webkit-details-marker]:hidden">
+                  <span className="flex items-center gap-2"><ImagePlus size={15} aria-hidden /> Foto (opsional){photos.length ? ` · ${photos.length}` : ""}</span>
+                  <ChevronDown size={16} className="shrink-0 transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden />
+                </summary>
+                <div className="px-4 pb-4">
+                  <PhotoPool photos={photos} adding={photosAdding} usedCount={photosUsed} hasContent={false} onAdd={addPhotos} onRemove={removePhoto} onMove={movePhoto} onClear={clearPhotos} />
                 </div>
-              </div>
-            </Card>
-          )}
-
-          {content && (
-            <Card title="Ekspor file">
-              <div className="space-y-3 px-6 py-5">
-                <div className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
-                  <Btn variant="primary" busy={exporting === "zip"} onClick={() => void runExport("zip", () => downloadZip(content, tplId, accentEff, renderOpts), "ZIP project diunduh.")}>
-                    <Package size={13} /> Unduh ZIP project
-                  </Btn>
-                  <Btn busy={exporting === "html"} onClick={() => void runExport("html", () => downloadHtml(content, tplId, accentEff, renderOpts), "File HTML diunduh.")}>
-                    <FileCode2 size={13} /> Unduh index.html
-                  </Btn>
-                  <Btn busy={exporting === "json"} onClick={() => void runExport("json", () => downloadJson(content, tplId, accentEff, renderOpts), "content.json diunduh.")}>
-                    <FileJson size={13} /> content.json
-                  </Btn>
-                  <Btn
-                    onClick={async () => {
-                      const ok = await copyHtml(content, tplId, accentEff, renderOpts);
-                      if (ok) setSavedHtml(html);
-                      showToast(ok ? "Kode HTML disalin." : "Tidak bisa menyalin otomatis. Pakai tombol unduh.");
-                    }}
-                  >
-                    <Copy size={13} /> Salin HTML
-                  </Btn>
+              </details>
+              <details className={cn("group rounded-[18px] bg-[var(--pill-bg)]", ON_MIST)}>
+                <summary className="flex min-h-[48px] cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-[14px] font-medium [&::-webkit-details-marker]:hidden">
+                  <span className="flex items-center gap-2"><SlidersHorizontal size={15} aria-hidden /> Pengaturan lain</span>
+                  <ChevronDown size={16} className="shrink-0 transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden />
+                </summary>
+                <div className="grid gap-4 px-4 pb-4">
+                  <Field label="Jenis situs" htmlFor="ai-kind" hint={kindPick === "auto" ? "Mesin memilih sendiri dari deskripsimu." : KIND_LABEL[kindPick]}>
+                    <Select value={kindPick} onValueChange={(v) => setKindPick(v as SiteKind | "auto")}>
+                      <SelectTrigger id="ai-kind" aria-label="Jenis situs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="auto">Otomatis (saran AI)</SelectItem>
+                        {KIND_OPTIONS.map((k) => (
+                          <SelectItem key={k.id} value={k.id}>{k.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </Field>
+                  <div>
+                    <div className={`mb-2 ${labelCls}`}>Mulai dari Template (opsional)</div>
+                    <TemplatePicker value={tplId} suggestedId={null} preview={previewContent} palette={palette} onPick={setTemplate} />
+                  </div>
+                  <label className="flex min-h-[44px] items-start gap-2.5 text-[14px]">
+                    <input type="checkbox" checked={autoPublish && cfg.enabled} disabled={!cfg.enabled} onChange={(e) => setAutoPublish(e.target.checked)} className={checkCls} />
+                    <span className="min-w-0">
+                      Langsung publish setelah dibuat
+                      <span className={`block ${hintCls}`}>
+                        {cfg.enabled ? `Memakai 1 dari ${cfg.maxSites} slot link aktif.` : "Link Instan sedang tidak aktif di server ini, jadi hanya pratinjau."}
+                      </span>
+                    </span>
+                  </label>
+                  {cfg.enabled && ttlField}
+                  {trainConsentBox}
                 </div>
-                <p className={`flex items-start gap-1.5 leading-relaxed ${hintCls}`}>
-                  <Download size={13} className="mt-0.5 shrink-0" aria-hidden />
-                  <span className="min-w-0">
-                    ZIP berisi index.html, assets/style.css{shopActive ? ", assets/app.js" : ""}
-                    {imgBytes > 0 ? ", assets/img (gambarmu)" : ""}, content.json, dan README. Bisa dibuka langsung di browser dan di-upload ke hosting statis mana pun.
-                  </span>
-                </p>
-              </div>
-            </Card>
-          )}
+              </details>
+            </div>
+          </div>
+        </section>
+      </ViewFade>
+    );
+  }
 
-          {engineCard}
+  /* ===== Editor ala Canva ===== */
+
+  const lookBox = content.look && (
+    <div className={`flex flex-wrap items-center justify-between gap-2 rounded-[14px] bg-[var(--pill-bg)] px-3.5 py-2.5 leading-relaxed ${hintCls}`}>
+      <span className="min-w-0">
+        {lookOn ? (
+          <>Memakai gaya <b className="font-semibold text-text">{content.look.name}</b>. Memilih Template, warna, atau gaya lain akan menggantikannya.</>
+        ) : (
+          <>Gaya <b className="font-semibold text-text">{content.look.name}</b> sedang tidak dipakai.</>
+        )}
+      </span>
+      {lookOn ? (
+        <button type="button" onClick={() => change(() => setContent((c) => (c ? { ...c, look: undefined } : c)))} className="text-[13px] text-text-muted underline max-md:min-h-[40px]">
+          Lepas gaya
+        </button>
+      ) : (
+        <button type="button" onClick={() => change(() => { setTemplate(null); setPalette(null); setStyleOpt(null); setBgOpt(null); })} className="text-[13px] text-text-muted underline max-md:min-h-[40px]">
+          Pakai lagi
+        </button>
+      )}
+    </div>
+  );
+
+  const resetLink = (show: boolean, label: string, fn: () => void) =>
+    show ? (
+      <button type="button" onClick={() => change(fn)} className="text-[13px] text-text-muted underline max-md:min-h-[40px]">
+        {label}
+      </button>
+    ) : null;
+
+  const subhead = (title: string, extra?: React.ReactNode) => (
+    <div className="mb-2.5 flex items-center justify-between gap-2">
+      <span className={subheadCls}>{title}</span>
+      {extra}
+    </div>
+  );
+
+  const panelBody: Record<PanelId, React.ReactNode> = {
+    desain: (
+      <div className="space-y-6">
+        {lookBox}
+        <div>
+          {subhead("Gaya siap pakai")}
+          <div className="flex flex-wrap gap-1.5">
+            {QUICK_STYLES.map((q) => (
+              <button key={q.cmd} type="button" disabled={busy !== null} onClick={() => void runCommand(q.cmd)} className={cn(chipCls(content.look?.name === q.name), "disabled:opacity-50")}>
+                <ChipLabel selected={content.look?.name === q.name}>{q.label}</ChipLabel>
+              </button>
+            ))}
+          </div>
+          <Btn className="mt-3 w-full" busy={busy === "ai"} disabled={busy !== null || !canGenerate} softDisabled onDisabledClick={explainGenerate} onClick={() => void requestGenerate(true)}>
+            <RefreshCw size={13} /> Acak gaya lain
+          </Btn>
+        </div>
+        <div>
+          {subhead("Template", resetLink(!!template, "Ikuti saran AI", () => setTemplate(null)))}
+          <TemplatePicker value={tplId} suggestedId={!template ? content.template : null} preview={previewContent} palette={palette} onPick={(v) => change(() => setTemplate(v))} />
+        </div>
+        <div>
+          {subhead("Gaya desain", resetLink(!!styleOpt, "Ikuti Template", () => setStyleOpt(null)))}
+          <StylePicker value={styleOpt} template={tplId} accent={accentEff} palette={palette} fonts={fontsEff} preview={previewContent} onPick={(v) => change(() => setStyleOpt(v))} />
+        </div>
+        <div>
+          {subhead("Hiasan latar", resetLink(!!decorOpt, "Ikuti Gaya desain", () => setDecorOpt(null)))}
+          <div role="radiogroup" aria-label="Pilih hiasan" className="flex flex-wrap gap-1.5">
+            {DECOR_OPTIONS.map((d) => (
+              <button key={d.id} type="button" role="radio" aria-checked={decorOpt === d.id} onClick={() => change(() => setDecorOpt(d.id))} title={d.desc} className={chipCls(decorOpt === d.id, true)}>
+                <ChipLabel selected={decorOpt === d.id}>{d.name}</ChipLabel>
+              </button>
+            ))}
+          </div>
         </div>
       </div>
-
-      {/* Layar sempit: jalan pintas kembali ke pratinjau saat sedang mengatur di bawah. */}
-      {content && !previewVisible && (
-        <Btn
-          variant="primary"
-          onClick={goPreview}
-          className="fixed bottom-24 right-[var(--edge)] z-40 [box-shadow:var(--surface-shadow)] xl:hidden"
-        >
-          <Eye size={15} aria-hidden /> Lihat pratinjau
+    ),
+    tata: (
+      <div className="space-y-6">
+        <div>
+          {subhead("Bagian paling atas", resetLink(!!heroOpt, "Saran AI", () => setHeroOpt(null)))}
+          <HeroLayoutPicker value={heroEff} suggested={content.hero} onPick={(v) => change(() => setHeroOpt(v))} />
+        </div>
+        <div>
+          {subhead("Keunggulan", resetLink(!!featOpt, "Saran AI", () => setFeatOpt(null)))}
+          <FeatLayoutPicker value={featEff} onPick={(v) => change(() => setFeatOpt(v))} />
+        </div>
+        {hasShop(content) && (
+          <label className="flex min-h-[44px] items-start gap-2.5 rounded-[14px] bg-[var(--pill-bg)] p-3.5 text-[14px]">
+            <input type="checkbox" checked={shopOn} onChange={(e) => { const v = e.target.checked; change(() => setShopOn(v)); }} className={checkCls} />
+            <span className="min-w-0">
+              <span className="flex items-center gap-1.5 font-medium"><Store size={14} className="shrink-0" aria-hidden /> Katalog, keranjang, dan mode kelola</span>
+              <span className={`mt-0.5 block leading-snug ${hintCls}`}>Pengunjung bisa cari produk, mengisi keranjang, lalu memesan lewat WhatsApp.</span>
+            </span>
+          </label>
+        )}
+      </div>
+    ),
+    warna: (
+      <div className="space-y-6">
+        <div>
+          {subhead("Palet")}
+          <PaletteEditor colors={colors} custom={palette !== null} pageBg={bgEff} onChange={(p) => change(() => setPalette(p), true)} onReset={() => change(() => setPalette(null))} />
+        </div>
+        <div>
+          {subhead("Warna latar", resetLink(!!bgOpt, "Bawaan", () => setBgOpt(null)))}
+          <div role="radiogroup" aria-label="Pilih warna latar" className="flex flex-wrap items-center gap-2">
+            {BG_PRESETS.map((p) => (
+              <button key={p.hex} type="button" role="radio" aria-checked={bgEff.toLowerCase() === p.hex} aria-label={p.name} title={p.name} onClick={() => change(() => setBgOpt(p.hex))} className={swatchTileCls(bgEff.toLowerCase() === p.hex)}>
+                <span aria-hidden className="h-7 w-7 rounded-[10px]" style={{ background: p.hex }} />
+              </button>
+            ))}
+            <label className={swatchTileCls(false)} title="Warna lain">
+              <span aria-hidden className="h-7 w-7 rounded-[10px]" style={{ background: bgEff }} />
+              <input type="color" value={bgEff} aria-label="Pilih warna latar lain" onChange={(e) => { const v = e.target.value.toLowerCase(); change(() => setBgOpt(v), true); }} className="absolute inset-0 h-full w-full cursor-pointer rounded-[14px] opacity-0" />
+            </label>
+          </div>
+          <p className={`mt-2.5 leading-relaxed ${hintCls}`}>Teks, kartu, dan garis otomatis disesuaikan supaya tetap terbaca.</p>
+        </div>
+      </div>
+    ),
+    huruf: (
+      <FontRolePicker
+        title={fontsOpt.title}
+        sub={fontsOpt.sub}
+        body={fontsOpt.body}
+        onTitleFamily={(id) => change(() => setFontsOpt((f) => ({ ...f, title: { ...f.title, family: id } })))}
+        onTitleWeight={(w) => change(() => setFontsOpt((f) => ({ ...f, title: { ...f.title, weight: w } })))}
+        onTitleWeightFollow={() => change(() => setFontsOpt((f) => ({ ...f, title: { ...f.title, weight: null } })))}
+        onSubFamily={(id) => change(() => setFontsOpt((f) => ({ ...f, sub: { ...f.sub, family: id } })))}
+        onSubFamilyFollow={() => change(() => setFontsOpt((f) => ({ ...f, sub: { ...f.sub, family: null } })))}
+        onSubWeight={(w) => change(() => setFontsOpt((f) => ({ ...f, sub: { ...f.sub, weight: w } })))}
+        onSubWeightFollow={() => change(() => setFontsOpt((f) => ({ ...f, sub: { ...f.sub, weight: null } })))}
+        onBodyFamily={(id) => change(() => setFontsOpt((f) => ({ ...f, body: { ...f.body, family: id } })))}
+        onBodyWeight={(w) => change(() => setFontsOpt((f) => ({ ...f, body: { ...f.body, weight: w } })))}
+        onBodyWeightFollow={() => change(() => setFontsOpt((f) => ({ ...f, body: { ...f.body, weight: null } })))}
+      />
+    ),
+    elemen: (
+      <div className="space-y-6">
+        <div>
+          {subhead("Gaya ikon", resetLink(!!iconOpt, "Saran AI", () => setIconOpt(null)))}
+          <div role="radiogroup" aria-label="Pilih gaya ikon" className="grid grid-cols-2 gap-2">
+            {ICON_STYLES.map((st) => (
+              <button key={st.id} type="button" role="radio" aria-checked={iconEff === st.id} onClick={() => change(() => setIconOpt(st.id))} title={st.desc} className={cn(chipCls(iconEff === st.id, true), "inline-flex items-center justify-start gap-2 !rounded-[14px] !py-2.5")}>
+                <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="shrink-0" dangerouslySetInnerHTML={{ __html: iconGlyph(st.id) }} />
+                <ChipLabel selected={iconEff === st.id}>{st.name}</ChipLabel>
+              </button>
+            ))}
+          </div>
+        </div>
+        <div>
+          {subhead("Ornamen")}
+          {!!content.ornaments?.length && (
+            <div role="radiogroup" aria-label="Tampilkan ornamen" className="mb-3 flex flex-wrap gap-1.5">
+              {[{ on: true, label: "Tampilkan" }, { on: false, label: "Sembunyikan" }].map((o) => (
+                <button key={o.label} type="button" role="radio" aria-checked={!ornOff === o.on} onClick={() => change(() => setOrnOff(!o.on))} className={chipCls(!ornOff === o.on, true)}>
+                  <ChipLabel selected={!ornOff === o.on}>{o.label}</ChipLabel>
+                </button>
+              ))}
+            </div>
+          )}
+          <div className="flex flex-wrap gap-1.5">
+            {ORN_FAMILIES.map((f) => (
+              <button key={f.id} type="button" disabled={busy !== null} onClick={() => void runCommand(`hiasan ${f.id}`)} className={cn(chipCls(content.ornFamily === f.id), "disabled:opacity-50")}>
+                <ChipLabel selected={content.ornFamily === f.id}>{f.label}</ChipLabel>
+              </button>
+            ))}
+          </div>
+          <Btn className="mt-3 w-full" disabled={busy !== null} onClick={() => void runCommand("ganti hiasan lain")}>
+            <Shapes size={13} /> Acak hiasan lain
+          </Btn>
+          <p className={`mt-2.5 leading-relaxed ${hintCls}`}>
+            {content.ornaments?.length ? `${content.ornaments.length} ornamen dari keluarga ${content.ornFamily ?? "-"}.` : "Belum ada ornamen."} Ornamen hanya muncul bila paket elemennya sudah diimpor di Panel Admin.
+          </p>
+        </div>
+      </div>
+    ),
+    bagian: (
+      <div className="space-y-3">
+        <SectionsPanel content={content} shop={shopActive} selected={selSec} onChange={setSections} onSelect={selectSection} />
+        <p className={`leading-relaxed ${hintCls}`}>Seret untuk mengubah urutan, atau pakai panah. Ikon mata menyembunyikan bagian tanpa menghapus isinya.</p>
+      </div>
+    ),
+    foto: (
+      <div className="space-y-4">
+        <div className="h-1.5 overflow-hidden rounded-full bg-[var(--pill-bg)]" role="progressbar" aria-label="Ukuran gambar terpakai" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100, Math.round((imgBytes / IMAGE_BUDGET_BYTES) * 100))}>
+          <div className="h-full rounded-full bg-[var(--accent)] transition-[width] motion-reduce:transition-none" style={{ width: `${Math.min(100, (imgBytes / IMAGE_BUDGET_BYTES) * 100)}%` }} />
+        </div>
+        <p className={`tabular-nums ${hintCls}`}>{formatBytes(imgBytes)} dari {formatBytes(IMAGE_BUDGET_BYTES)}</p>
+        <ul className="space-y-3">
+          {visibleSlots.map((d) => (
+            <ImageRow key={d.key} def={d} src={images[d.key]} busy={imgBusy === d.key} onPick={() => pickImage(d)} onRemove={() => change(() => removeImage(d.key))} />
+          ))}
+        </ul>
+        {imageSlots.length > 6 && (
+          <button type="button" onClick={() => setShowAllImgs((v) => !v)} aria-expanded={showAllImgs} className="text-[13px] text-text-muted underline max-md:min-h-[40px]">
+            {showAllImgs ? "Tampilkan lebih sedikit" : `Tampilkan semua (${imageSlots.length})`}
+          </button>
+        )}
+        <p className={`leading-snug ${hintCls}`}>Tips: klik logo, foto utama, atau ikon produk di kanvas untuk langsung mengganti gambarnya. Gambar tidak ikut draf otomatis, jadi publish atau unduh ZIP sebelum menutup halaman.</p>
+      </div>
+    ),
+    isi: (
+      <div className="space-y-4">
+        <div>
+          <label htmlFor="ai-prompt" className={labelCls}>Deskripsi</label>
+          <textarea
+            ref={promptRef}
+            id="ai-prompt"
+            rows={6}
+            maxLength={1400}
+            value={prompt}
+            onChange={(e) => setPrompt(e.target.value)}
+            aria-describedby="gen-hint"
+            className="input-solid w-full resize-y px-3.5 py-3 text-[14px] leading-relaxed"
+          />
+          <p id="gen-hint" className={cn(hintCls, "mt-1 min-h-[1.1rem]")}>{genHint}</p>
+        </div>
+        <Btn variant="primary" className="w-full !py-2.5" busy={busy === "ai"} disabled={busy !== null || !canGenerate} softDisabled onDisabledClick={explainGenerate} onClick={() => void requestGenerate(false)}>
+          <Sparkles size={14} /> Buat ulang dari deskripsi
         </Btn>
+        <Field label="Jenis situs" htmlFor="ai-kind" hint={kindPick === "auto" ? `Sekarang: ${kindName}.` : KIND_LABEL[kindPick]}>
+          <Select value={kindPick} onValueChange={(v) => setKindPick(v as SiteKind | "auto")}>
+            <SelectTrigger id="ai-kind" aria-label="Jenis situs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="auto">Otomatis (saran AI)</SelectItem>
+              {KIND_OPTIONS.map((k) => (
+                <SelectItem key={k.id} value={k.id}>{k.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </Field>
+        {errorBox}
+        <p className={`leading-relaxed ${hintCls}`}>Buat ulang mengganti isi dan gaya dengan hasil baru. Bisa dibatalkan dengan Urungkan.</p>
+        <Btn className="w-full" onClick={() => void resetAll()}>
+          <Trash2 size={13} /> Mulai dari kosong
+        </Btn>
+        {trainConsentBox}
+      </div>
+    ),
+    terbit: (
+      <div className="space-y-5">
+        {published && (
+          <div className="notice notice-ok !block space-y-2.5 !p-4">
+            <div className="flex items-start gap-1.5 font-semibold">
+              <Check size={15} className="mt-0.5 shrink-0" aria-hidden />
+              <span className="min-w-0">Online sampai {new Date(published.expiresAt).toLocaleString("id-ID")} ({timeLeftLabel(published.expiresAt)})</span>
+            </div>
+            <input readOnly aria-label="Link website" value={published.url} onFocus={(e) => e.currentTarget.select()} className="input-solid mono h-11 w-full px-3.5 text-[13px] text-text" />
+            <div className="flex flex-wrap gap-2">
+              <BtnLink variant="primary" href={published.url} target="_blank" rel="noopener noreferrer">
+                <ExternalLink size={13} aria-hidden /> Buka<span className="sr-only"> website (tab baru)</span>
+              </BtnLink>
+              {shopActive && (
+                <BtnLink href={`${published.url}#kelola`} target="_blank" rel="noopener noreferrer">
+                  <Pencil size={13} aria-hidden /> Mode kelola<span className="sr-only"> (tab baru)</span>
+                </BtnLink>
+              )}
+              <Btn onClick={() => void copyText(published.url, "Link disalin.")}>
+                <Copy size={13} /> Salin link
+              </Btn>
+            </div>
+          </div>
+        )}
+        {!cfg.enabled ? (
+          <div className="notice notice-warn flex items-start gap-2 !p-3 text-[13px]">
+            <Info size={15} className="mt-0.5 shrink-0" aria-hidden />
+            <span className="min-w-0">Link Instan sedang tidak aktif di server ini. Websitenya bisa diunduh sebagai file di bawah.</span>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {ttlField}
+            <Btn variant={published ? "ghost" : "primary"} className="w-full !py-2.5" busy={busy === "publish"} disabled={busy !== null} softDisabled onClick={() => void publish(content, html)}>
+              <Globe size={14} /> {busy === "publish" ? progress || "Mempublikasikan…" : published ? "Publish sebagai link baru" : lastPubId ? "Publish versi terbaru" : "Publish ke Link Instan"}
+            </Btn>
+            <p className={`tabular-nums ${hintCls}`}>Link aktif: {siteCount} dari {cfg.maxSites}. Setiap publish membuat link baru yang aktif {ttlLabel(ttlHours)}.</p>
+            {lastPubId && (
+              <label className="flex min-h-[44px] items-start gap-2.5 text-[14px]">
+                <input type="checkbox" checked={replacePrev} onChange={(e) => setReplacePrev(e.target.checked)} className={checkCls} />
+                <span className="min-w-0">
+                  Matikan link sebelumnya setelah publish
+                  <span className={`block ${hintCls}`}>Kalau link lama sudah kamu bagikan, bagikan lagi link yang baru.</span>
+                </span>
+              </label>
+            )}
+          </div>
+        )}
+        {errorBox}
+        <div>
+          {subhead("Unduh")}
+          <div className="grid grid-cols-2 gap-2">
+            <Btn busy={exporting === "zip"} onClick={() => void runExport("zip", () => downloadZip(content, tplId, accentEff, renderOpts), "ZIP project diunduh.")}>
+              <Package size={13} /> ZIP project
+            </Btn>
+            <Btn busy={exporting === "html"} onClick={() => void runExport("html", () => downloadHtml(content, tplId, accentEff, renderOpts), "File HTML diunduh.")}>
+              <FileCode2 size={13} /> index.html
+            </Btn>
+            <Btn busy={exporting === "json"} onClick={() => void runExport("json", () => downloadJson(content, tplId, accentEff, renderOpts), "content.json diunduh.")}>
+              <FileJson size={13} /> content.json
+            </Btn>
+            <Btn
+              onClick={async () => {
+                const ok = await copyHtml(content, tplId, accentEff, renderOpts);
+                if (ok) setSavedHtml(html);
+                showToast(ok ? "Kode HTML disalin." : "Tidak bisa menyalin otomatis. Pakai tombol unduh.");
+              }}
+            >
+              <Copy size={13} /> Salin HTML
+            </Btn>
+          </div>
+          <p className={`mt-2.5 flex items-start gap-1.5 leading-relaxed ${hintCls}`}>
+            <Download size={13} className="mt-0.5 shrink-0" aria-hidden />
+            <span className="min-w-0">ZIP bisa dibuka langsung di browser dan di-upload ke hosting statis mana pun.</span>
+          </p>
+        </div>
+        {shopActive && (
+          <div className="rounded-[14px] bg-[var(--pill-bg)] p-3.5 text-[13px] leading-relaxed text-text-muted">
+            <b className="text-text">Kelola produk:</b> di situs yang sudah online, tambahkan <code className="mono">#kelola</code> di akhir link. Perubahan produk tersimpan di browser pemilik, jadi unduh situsnya lalu upload ulang supaya semua pengunjung melihat versi terbaru.
+          </div>
+        )}
+      </div>
+    ),
+  };
+
+  const panelTitle = PANELS.find((p) => p.id === panel)?.label ?? (panel === "terbit" ? "Publish & unduh" : "");
+
+  const railBtn = (p: (typeof PANELS)[number], mobile = false) => {
+    const on = panel === p.id;
+    const Icon = p.icon;
+    return (
+      <button
+        key={p.id}
+        type="button"
+        aria-pressed={on}
+        aria-controls="ai-panel"
+        onClick={() => setPanel(on && !mobile ? null : p.id)}
+        className={cn(
+          "flex shrink-0 flex-col items-center justify-center gap-1 rounded-[14px] text-[11.5px] font-medium transition",
+          mobile ? "h-[58px] min-w-[68px] px-2" : "h-[62px] w-[64px]",
+          on ? "bg-[var(--ink-fill)] text-[var(--ink-fill-text)]" : "text-text-muted hover:bg-[var(--pill-bg)] hover:text-text",
+        )}
+      >
+        <Icon size={19} aria-hidden />
+        {p.label}
+      </button>
+    );
+  };
+
+  const magicBar = (
+    <form
+      className="w-full"
+      onSubmit={(e) => {
+        e.preventDefault();
+        void applyEdit();
+      }}
+    >
+      <div className="flex items-center gap-2 rounded-[18px] bg-[var(--surface-solid)] p-1.5 pl-3.5 [box-shadow:var(--surface-shadow)] focus-within:ring-2 focus-within:ring-[var(--ring)]">
+        <WandSparkles size={17} className="shrink-0 text-[var(--accent)]" aria-hidden />
+        <label htmlFor="ai-edit" className="sr-only">Minta perubahan ke AI</label>
+        <input
+          ref={editRef}
+          id="ai-edit"
+          maxLength={600}
+          value={editText}
+          onChange={(e) => setEditText(e.target.value)}
+          placeholder="Minta ke AI: tambah menu Es Teh 5rb, ganti warna jadi hijau…"
+          className="min-w-0 flex-1 bg-transparent py-2 text-[14px] outline-none placeholder:text-text-faint"
+          autoComplete="off"
+          list="ai-edit-ideas"
+        />
+        <datalist id="ai-edit-ideas">
+          {editSuggestions(content.kind).map((t) => (
+            <option key={t} value={t} />
+          ))}
+        </datalist>
+        <Btn type="submit" variant="primary" busy={busy === "edit"} disabled={busy !== null || !editReady} softDisabled onDisabledClick={() => { say(editHint); editRef.current?.focus(); }}>
+          <Send size={13} /> <span className="max-sm:sr-only">Terapkan</span>
+        </Btn>
+      </div>
+      {editError && (
+        <p className="mt-2 rounded-[12px] bg-bad-bg px-3 py-2 text-[13px] text-bad-fg" role="alert">
+          {editError}
+        </p>
+      )}
+    </form>
+  );
+
+  const topBar = (
+    <div className="flex min-h-[56px] items-center gap-2 border-b border-[var(--surface-line)] px-3 sm:px-4">
+      <div className="min-w-0 flex-1">
+        <p className="truncate text-[15px] font-semibold">{content.brand}</p>
+        <p className={`truncate ${hintCls} !text-[12px]`}>{kindName}{content.look && lookOn ? ` · ${content.look.name}` : ` · ${tpl.name}`}</p>
+      </div>
+      <div className="flex items-center gap-1" role="group" aria-label="Riwayat">
+        <button type="button" onClick={undo} disabled={!history.length || busy !== null} aria-label="Urungkan" title="Urungkan (Ctrl+Z)" className="grid h-10 w-10 place-items-center rounded-[12px] hover:bg-[var(--pill-bg)] disabled:opacity-35">
+          <Undo2 size={17} aria-hidden />
+        </button>
+        <button type="button" onClick={redo} disabled={!future.length || busy !== null} aria-label="Ulangi" title="Ulangi (Ctrl+Shift+Z)" className="grid h-10 w-10 place-items-center rounded-[12px] hover:bg-[var(--pill-bg)] disabled:opacity-35">
+          <Redo2 size={17} aria-hidden />
+        </button>
+      </div>
+      <div className="flex rounded-[12px] bg-[var(--pill-bg)] p-1" role="group" aria-label="Ukuran pratinjau">
+        <button type="button" aria-pressed={device === "desktop"} onClick={() => setDevice("desktop")} title="Desktop" className={cn("grid h-8 w-9 place-items-center rounded-[9px]", device === "desktop" && "bg-[var(--surface-solid)] [box-shadow:var(--surface-shadow)]")}>
+          <Monitor size={15} aria-hidden /><span className="sr-only">Desktop</span>
+        </button>
+        <button type="button" aria-pressed={device === "mobile"} onClick={() => setDevice("mobile")} title="HP" className={cn("grid h-8 w-9 place-items-center rounded-[9px]", device === "mobile" && "bg-[var(--surface-solid)] [box-shadow:var(--surface-shadow)]")}>
+          <Smartphone size={15} aria-hidden /><span className="sr-only">HP</span>
+        </button>
+      </div>
+      <Btn variant="primary" className="!px-4" onClick={() => setPanel("terbit")} aria-pressed={panel === "terbit"}>
+        <Rocket size={14} /> <span className="max-sm:sr-only">{published ? "Online" : "Publish"}</span>
+      </Btn>
+    </div>
+  );
+
+  const panelBox = panel && (
+    <div className="flex h-full min-h-0 flex-col">
+      <div className="flex min-h-[52px] items-center justify-between gap-2 px-4">
+        <h2 className="text-[15px] font-semibold">{panelTitle}</h2>
+        <button type="button" onClick={() => setPanel(null)} aria-label="Tutup panel" className="grid h-9 w-9 place-items-center rounded-[10px] hover:bg-[var(--pill-bg)]">
+          <X size={16} aria-hidden />
+        </button>
+      </div>
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 pb-6">{panelBody[panel]}</div>
+    </div>
+  );
+
+  return (
+    <ViewFade>
+      <div className="sr-only" role="status" aria-live="polite" aria-atomic="true">{announce}</div>
+      <input ref={fileRef} type="file" accept={IMAGE_ACCEPT} className="hidden" tabIndex={-1} aria-hidden onChange={onFile} />
+
+      <div className="overflow-hidden rounded-[24px] bg-[var(--surface-solid)] [box-shadow:var(--surface-shadow)]">
+        {topBar}
+        {/* Bilah panel (layar sempit): tepat di bawah bilah atas, karena bawah layar dipakai menu aplikasi. */}
+        <nav aria-label="Panel editor" className="flex gap-1 overflow-x-auto border-b border-[var(--surface-line)] px-2 py-2 lg:hidden">
+          {PANELS.map((p) => railBtn(p, true))}
+        </nav>
+        <div
+          className={cn(
+            "grid min-h-0",
+            "lg:h-[calc(100dvh-9.5rem)] lg:min-h-[620px]",
+            panel ? "lg:grid-cols-[80px_340px_minmax(0,1fr)]" : "lg:grid-cols-[80px_minmax(0,1fr)]",
+          )}
+        >
+          {/* Rel kiri (layar lebar) */}
+          <nav aria-label="Panel editor" className="hidden flex-col items-center gap-1 border-r border-[var(--surface-line)] py-3 lg:flex">
+            {PANELS.map((p) => railBtn(p))}
+          </nav>
+
+          {/* Panel samping (layar lebar) */}
+          {panel && isWide && (
+            <aside id="ai-panel" aria-label={panelTitle} className="hidden min-h-0 border-r border-[var(--surface-line)] lg:block">
+              {panelBox}
+            </aside>
+          )}
+
+          {/* Kanvas */}
+          <section aria-label="Kanvas website" className="relative flex min-h-0 flex-col bg-[var(--pill-bg)]">
+            <div className="flex items-center justify-center gap-1.5 px-4 pt-3 text-[12.5px] text-text-muted">
+              <MousePointerClick size={14} aria-hidden /> Klik teks untuk mengetik langsung<span className="max-sm:hidden"> · klik gambar untuk mengganti · klik bagian untuk mengaturnya</span>
+            </div>
+            <div className="relative h-[58dvh] min-h-[400px] lg:h-auto lg:min-h-0 lg:flex-1">
+              <CanvasFrame ref={canvasRef} html={canvasHtml} device={device} onMessage={onCanvasMsg} busy={busy === "ai" || busy === "edit"} />
+              {(busy === "ai" || busy === "edit") && (
+                <div className="pointer-events-none absolute inset-0 grid place-items-center" aria-hidden>
+                  <span className="notice notice-info inline-flex items-center gap-2 !px-4 !py-2.5 text-[13px] font-medium [box-shadow:var(--surface-shadow)]">
+                    <Loader2 size={15} className="animate-spin motion-reduce:animate-none" /> {busyLabel}
+                  </span>
+                </div>
+              )}
+            </div>
+            <div className="px-3 pb-3 pt-1 sm:px-6 sm:pb-4">{magicBar}</div>
+          </section>
+        </div>
+
+      </div>
+
+      {/* Lembar bawah (layar sempit) */}
+      {panel && !isWide && (
+        <div id="ai-panel" className="fixed inset-0 z-[70] lg:hidden" role="dialog" aria-modal="true" aria-label={panelTitle}>
+          <button type="button" aria-label="Tutup panel" className="absolute inset-0 bg-black/30" onClick={() => setPanel(null)} />
+          <div className="absolute inset-x-0 bottom-0 max-h-[78dvh] overflow-hidden rounded-t-[24px] bg-[var(--surface-solid)] pb-[env(safe-area-inset-bottom)] [box-shadow:var(--surface-shadow)]">
+            <div className="mx-auto mt-2 h-1.5 w-10 rounded-full bg-[var(--surface-line)]" aria-hidden />
+            <div className="flex max-h-[calc(78dvh-14px)] flex-col">{panelBox}</div>
+          </div>
+        </div>
       )}
     </ViewFade>
   );

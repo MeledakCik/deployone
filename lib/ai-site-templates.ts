@@ -120,6 +120,26 @@ export interface SiteContent {
   ornaments?: SiteOrnament[];
   /** Keluarga elemen ornamen (mis. "memphis"). */
   ornFamily?: string;
+  /** Urutan & bagian yang disembunyikan (diatur pengguna di editor). Kosong = urutan bawaan jenis situs. */
+  sections?: { order?: SectionId[]; hidden?: SectionId[] };
+}
+
+/** Bagian halaman di bawah hero yang bisa diurutkan / disembunyikan. */
+export type SectionId = "katalog" | "artikel" | "fitur" | "testimoni" | "cara" | "tentang" | "kontak";
+export const SECTION_IDS: SectionId[] = ["katalog", "artikel", "fitur", "testimoni", "cara", "tentang", "kontak"];
+export const isSectionId = (v: unknown): v is SectionId => SECTION_IDS.includes(v as SectionId);
+
+/** Urutan bawaan: UMKM berkatalog = katalog dulu; artikel = daftar artikel dulu; lainnya = keunggulan dulu. */
+export function defaultSectionOrder(kind: SiteKind, shop: boolean): SectionId[] {
+  if (kind === "artikel") return ["artikel", "fitur", "testimoni", "cara", "tentang", "kontak"];
+  return shop ? ["katalog", "fitur", "testimoni", "cara", "tentang", "kontak"] : ["fitur", "katalog", "testimoni", "cara", "tentang", "kontak"];
+}
+
+/** Urutan efektif: pilihan pengguna dulu (yang valid), sisanya ikut urutan bawaan. */
+export function sectionOrder(c: Pick<SiteContent, "kind" | "sections">, shop: boolean): SectionId[] {
+  const base = defaultSectionOrder(c.kind, shop);
+  const own = (c.sections?.order ?? []).filter((x) => base.includes(x));
+  return [...new Set([...own, ...base])];
 }
 
 export const KIND_LABEL: Record<SiteKind, string> = {
@@ -540,6 +560,7 @@ export function normalizeContent(raw: unknown, forceKind?: SiteKind): SiteConten
     closing: str(r.closing, 60) || "Hubungi kami",
     closingText: str(r.closingText, 120),
     ...(normalizeLook(r.look) ? { look: normalizeLook(r.look) } : {}),
+    ...(normSections(r.sections) ? { sections: normSections(r.sections) } : {}),
     ...(Object.keys(customIcons).length ? { icons: customIcons } : {}),
     ...(isIconStyle(r.iconStyle) ? { iconStyle: r.iconStyle } : {}),
     ...(normalizeIconAlt(r.iconAlt) ? { iconAlt: normalizeIconAlt(r.iconAlt) } : {}),
@@ -1550,6 +1571,11 @@ export interface RenderOpts {
   ornaments?: boolean;
   /** Gambar unggahan (data URL). */
   images?: SiteImages;
+  /**
+   * Mode editor (pratinjau di builder): teks diberi data-f="bidang", bagian data-sec, gambar data-img supaya kanvas
+   * bisa diklik untuk mengubah. Jangan dipakai untuk publish/ekspor.
+   */
+  editable?: boolean;
   /** "inline" (default) = data URL tertanam di HTML; "files" = berkas terpisah di assets/img (untuk ZIP). */
   imageMode?: "inline" | "files";
 }
@@ -1971,6 +1997,17 @@ function decodeDataUrl(u: string): { ext: string; data: Uint8Array } | null {
   return { ext: m[1] === "jpeg" ? "jpg" : m[1], data: out };
 }
 
+/** Urutan/sembunyi bagian dari data yang tidak dipercaya: hanya id dikenal, tanpa duplikat. */
+function normSections(v: unknown): SiteContent["sections"] | undefined {
+  if (!v || typeof v !== "object") return undefined;
+  const o = v as { order?: unknown; hidden?: unknown };
+  const list = (x: unknown): SectionId[] => (Array.isArray(x) ? [...new Set(x.filter(isSectionId))] : []);
+  const order = list(o.order);
+  const hidden = list(o.hidden);
+  if (!order.length && !hidden.length) return undefined;
+  return { ...(order.length ? { order } : {}), ...(hidden.length ? { hidden } : {}) };
+}
+
 export function buildSite(content: SiteContent, template: TemplateId, accent?: string, opts: RenderOpts = {}): SiteBundle {
   const base = THEMES[template];
   const custom = (opts.palette ?? []).filter(isHexColor).map((x) => x.toLowerCase()).slice(0, MAX_PALETTE);
@@ -2041,6 +2078,10 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
   };
 
   const c = content;
+  /** Penanda bidang untuk editor kanvas (hanya di mode editable). */
+  const ef = (f: string): string => (opts.editable ? ` data-f="${f}"` : "");
+  const efImg = (k: string): string => (opts.editable ? ` data-img="${esc(k)}"` : "");
+  const hiddenSec = new Set<SectionId>(c.sections?.hidden ?? []);
   const heroL = opts.hero ?? c.hero;
   const featL = opts.feat ?? c.feat;
   const shop = hasShop(c) && opts.shop !== false;
@@ -2072,19 +2113,30 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
 
   const wa = c.whatsapp ? `https://wa.me/${c.whatsapp}` : "";
   const mail = c.email ? `mailto:${esc(c.email)}` : "";
-  const firstId = isArticle ? "artikel" : shop ? "katalog" : "fitur";
-  const ctaHref = isArticle ? "#artikel" : wa || mail || `#${firstId}`;
+  // Bagian pertama yang benar-benar tampil (ikut urutan & sembunyi dari editor) = tujuan tombol kedua di hero.
+  const secShown: Record<SectionId, boolean> = {
+    katalog: hasItems && !isArticle,
+    artikel: isArticle,
+    fitur: hasFeatures,
+    testimoni: !!c.testimonial?.text,
+    cara: c.steps.length > 0,
+    tentang: !!c.about || hasContact,
+    kontak: !!(wa || mail),
+  };
+  const firstSec = sectionOrder(c, shop).find((id) => secShown[id] && !hiddenSec.has(id));
+  const firstId = firstSec === "katalog" ? (shop ? "katalog" : "layanan") : (firstSec ?? "kontak");
+  const ctaHref = isArticle && !hiddenSec.has("artikel") ? "#artikel" : wa || mail || `#${firstId}`;
   const logo = imgSrc("logo");
   const brandMark = logo ? `<img src="${esc(logo)}" alt="">` : c.brandIcon ? ico(c.brandIcon, 20) : esc(Array.from(c.brand)[0]?.toUpperCase() ?? "•");
 
   const nav = [
-    isArticle ? `<a href="#artikel">${esc(c.itemsTitle)}</a>` : "",
-    hasItems && shop ? `<a href="#katalog">Katalog</a>` : "",
-    hasFeatures ? `<a href="#fitur">Keunggulan</a>` : "",
-    hasItems && !shop ? `<a href="#layanan">${esc(c.itemsTitle)}</a>` : "",
-    c.steps.length ? `<a href="#cara">${esc(c.stepsTitle)}</a>` : "",
-    c.about ? `<a href="#tentang">${esc(c.aboutTitle)}</a>` : "",
-    wa || mail || c.address ? `<a href="#kontak">Kontak</a>` : "",
+    isArticle && !hiddenSec.has("artikel") ? `<a href="#artikel">${esc(c.itemsTitle)}</a>` : "",
+    hasItems && shop && !hiddenSec.has("katalog") ? `<a href="#katalog">Katalog</a>` : "",
+    hasFeatures && !hiddenSec.has("fitur") ? `<a href="#fitur">Keunggulan</a>` : "",
+    hasItems && !shop && !isArticle && !hiddenSec.has("katalog") ? `<a href="#layanan">${esc(c.itemsTitle)}</a>` : "",
+    c.steps.length && !hiddenSec.has("cara") ? `<a href="#cara">${esc(c.stepsTitle)}</a>` : "",
+    c.about && !hiddenSec.has("tentang") ? `<a href="#tentang">${esc(c.aboutTitle)}</a>` : "",
+    (wa || mail) && !hiddenSec.has("kontak") ? `<a href="#kontak">Kontak</a>` : c.address && !hiddenSec.has("tentang") ? `<a href="#tentang">Kontak</a>` : "",
   ]
     .filter(Boolean)
     .slice(0, 5)
@@ -2107,7 +2159,9 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
     ? c.about || hasContact
       ? { label: "Tentang kami", href: "#tentang" }
       : null
-    : { label: shop ? "Lihat katalog" : "Lihat keunggulan", href: `#${firstId}` };
+    : firstSec && firstSec !== "kontak"
+      ? { label: firstSec === "katalog" ? (shop ? "Lihat katalog" : `Lihat ${c.itemsTitle.toLowerCase()}`.slice(0, 32)) : firstSec === "fitur" ? "Lihat keunggulan" : "Lihat selengkapnya", href: `#${firstId}` }
+      : null;
   const badgeHtml = c.badge ? `<div class="badge">${esc(c.badge)}</div>` : "<div></div>";
   const subHtml = c.subheadline ? `<p class="sub">${esc(c.subheadline)}</p>` : "<div></div>";
   const ctaRow = `<div class="row"><a class="btn" href="${ctaHref}">${esc(c.ctaLabel)}</a>${ghost ? `<a class="btn ghost" href="${ghost.href}">${ghost.label}</a>` : ""}</div>`;
@@ -2357,14 +2411,22 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
   const oc = look && !(neoL && !els.has("shapes")) ? undefined : ornOf("corner");
   const shapes = look && els.has("shapes") ? neoShapes(hash(c.brand)) : "";
   const corner = oc ? `<div class="orcw" aria-hidden="true"><div class="orc"><svg viewBox="${oc.vb}" focusable="false">${oc.svg}</svg></div></div>` : "";
-  const hero = `<div class="hero h-${heroL}"><div class="glow"></div>${ornamentMarkup(t.deco)}${shapes}${corner}${bignum}<div class="wrap">${heroInner}</div></div>${hazard}${ticker}${divider}`;
+  if (opts.editable) {
+    // Editor kanvas: judul, sub-judul, lencana, dan foto utama bisa diklik.
+    heroInner = heroInner
+      .replace(/<h1(?=[\s>])/, '<h1 data-f="headline"')
+      .replace('<p class="sub">', '<p class="sub" data-f="subheadline">')
+      .replace('<div class="badge">', '<div class="badge" data-f="badge">');
+    if (heroImg) heroInner = heroInner.split(`<img src="${esc(heroImg)}"`).join(`<img data-img="hero" src="${esc(heroImg)}"`);
+  }
+  const hero = `<div class="hero h-${heroL}"${opts.editable ? ' data-sec="hero"' : ""}><div class="glow"></div>${ornamentMarkup(t.deco)}${shapes}${corner}${bignum}<div class="wrap">${heroInner}</div></div>${hazard}${ticker}${divider}`;
 
   /* ----- katalog / layanan ----- */
   const priceLabel = (i: SiteItem) => (i.price > 0 ? fmtRp(i.price) : "Tanya harga");
   const itemCard = (i: SiteItem, n: number): string =>
     `<article class="card prod${i.size === "large" ? " large" : ""}"${toneStyle(n)}>${
-      i.img ? `<div class="pimg"><img src="${esc(i.img)}" alt="${esc(i.name)}" loading="lazy"></div>` : `<div class="pico">${ico(i.icon, 20)}</div>`
-    }<div class="pbody">${i.tag || i.category ? `<div class="ptags">${i.tag ? `<span class="ptag hot">${esc(i.tag)}</span>` : ""}${i.category ? `<span class="ptag">${esc(i.category)}</span>` : ""}</div>` : ""}<h3>${esc(i.name)}</h3>${i.desc ? `<p>${esc(i.desc)}</p>` : ""}</div>${
+      i.img ? `<div class="pimg"${efImg(`item:${i.id}`)}><img src="${esc(i.img)}" alt="${esc(i.name)}" loading="lazy"></div>` : `<div class="pico"${efImg(`item:${i.id}`)}>${ico(i.icon, 20)}</div>`
+    }<div class="pbody">${i.tag || i.category ? `<div class="ptags">${i.tag ? `<span class="ptag hot">${esc(i.tag)}</span>` : ""}${i.category ? `<span class="ptag">${esc(i.category)}</span>` : ""}</div>` : ""}<h3${shop ? "" : ef(`items.${n}.name`)}>${esc(i.name)}</h3>${i.desc ? `<p${shop ? "" : ef(`items.${n}.desc`)}>${esc(i.desc)}</p>` : ""}</div>${
       shop
         ? `<div class="pfoot"><strong class="pprice">${esc(priceLabel(i))}</strong><button type="button" class="btn sm add">${ico("plus", 16)}Tambah</button></div>`
         : i.price > 0
@@ -2375,8 +2437,8 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
   const catalog = !hasItems
     ? ""
     : shop
-      ? `<section id="katalog"><div class="wrap"><h2>${esc(c.itemsTitle)}</h2><div class="shop-tools"><label class="search">${ico("search", 18)}<input id="wb-q" type="search" placeholder="Cari produk…" aria-label="Cari produk" autocomplete="off"></label><div id="wb-cats" data-wb-dyn></div></div><div id="wb-grid" class="items" data-wb-dyn>${items.map(itemCard).join("")}</div></div></section>`
-      : `<section id="layanan"><div class="wrap"><h2>${esc(c.itemsTitle)}</h2><div class="items">${items.map(itemCard).join("")}</div></div></section>`;
+      ? `<section id="katalog"><div class="wrap"><h2${ef("itemsTitle")}>${esc(c.itemsTitle)}</h2><div class="shop-tools"><label class="search">${ico("search", 18)}<input id="wb-q" type="search" placeholder="Cari produk…" aria-label="Cari produk" autocomplete="off"></label><div id="wb-cats" data-wb-dyn></div></div><div id="wb-grid" class="items" data-wb-dyn>${items.map(itemCard).join("")}</div></div></section>`
+      : `<section id="layanan"><div class="wrap"><h2${ef("itemsTitle")}>${esc(c.itemsTitle)}</h2><div class="items">${items.map(itemCard).join("")}</div></div></section>`;
 
   /* ----- artikel: daftar + halaman baca (murni CSS :target, tanpa skrip) ----- */
   const artMeta = (x: SiteArticle): string => [x.author, `${x.readMin} mnt baca`].filter(Boolean).map(esc).join(" · ");
@@ -2393,7 +2455,7 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
   };
   const postCard = (x: SiteArticle, i: number): string =>
     `<article class="card post${i === 0 ? " top" : tailSpan(i)}">${artCover(x)}<div class="pcont">${x.category ? `<div class="ptags"><span class="ptag hot">${esc(x.category)}</span></div>` : ""}<h3><a href="#a-${x.id}">${esc(x.title)}</a></h3><p>${esc(x.excerpt)}</p><div class="pmeta"><span>${artMeta(x)}</span><span class="more">Baca${ico("arrow-right", 16)}</span></div></div></article>`;
-  const articlesSec = isArticle ? `<section id="artikel"><div class="wrap"><h2>${esc(c.itemsTitle)}</h2><div class="posts">${arts.map(postCard).join("")}</div></div></section>` : "";
+  const articlesSec = isArticle ? `<section id="artikel"><div class="wrap"><h2${ef("itemsTitle")}>${esc(c.itemsTitle)}</h2><div class="posts">${arts.map(postCard).join("")}</div></div></section>` : "";
   const readers = isArticle
     ? arts
         .map((x, i) => {
@@ -2407,32 +2469,32 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
     : "";
 
   /* ----- fitur ----- */
-  const featCard = (f: SiteFeature, n: number, cls = "") => `<article class="card feat ${cls}${f.span === 2 ? " s2" : ""}"${toneStyle(n + 1)}><div class="ico">${ico(f.icon, 20)}</div><div><h3>${esc(f.title)}</h3><p>${esc(f.text)}</p></div></article>`;
+  const featCard = (f: SiteFeature, n: number, cls = "") => `<article class="card feat ${cls}${f.span === 2 ? " s2" : ""}"${toneStyle(n + 1)}><div class="ico">${ico(f.icon, 20)}</div><div><h3${ef(`features.${n}.title`)}>${esc(f.title)}</h3><p${ef(`features.${n}.text`)}>${esc(f.text)}</p></div></article>`;
   const featBody =
     featL === "index"
-      ? `<div class="idx"><div class="idx-h"><b class="idx-n" aria-hidden="true">${pad2(c.features.length)}</b><h2>${esc(c.featuresTitle)}</h2>${c.slogan ? `<p>${esc(c.slogan)}</p>` : ""}</div><ol class="idx-l">${c.features
-          .map((f, i) => `<li><span class="idx-i">${pad2(i + 1)}</span><div><h3>${esc(f.title)}</h3><p>${esc(f.text)}</p></div></li>`)
+      ? `<div class="idx"><div class="idx-h"><b class="idx-n" aria-hidden="true">${pad2(c.features.length)}</b><h2${ef("featuresTitle")}>${esc(c.featuresTitle)}</h2>${c.slogan ? `<p>${esc(c.slogan)}</p>` : ""}</div><ol class="idx-l">${c.features
+          .map((f, i) => `<li><span class="idx-i">${pad2(i + 1)}</span><div><h3${ef(`features.${i}.title`)}>${esc(f.title)}</h3><p${ef(`features.${i}.text`)}>${esc(f.text)}</p></div></li>`)
           .join("")}</ol></div>`
       : featL === "bento"
-      ? `<h2>${esc(c.featuresTitle)}</h2><div class="bento ${c.features.some((f) => f.span === 2) ? "bx" : `b${c.features.length}`}">${c.features.map((f, n) => featCard(f, n)).join("")}</div>`
+      ? `<h2${ef("featuresTitle")}>${esc(c.featuresTitle)}</h2><div class="bento ${c.features.some((f) => f.span === 2) ? "bx" : `b${c.features.length}`}">${c.features.map((f, n) => featCard(f, n)).join("")}</div>`
       : featL === "editorial"
-        ? `<div class="flist"><div class="head"><h2>${esc(c.featuresTitle)}</h2>${c.slogan ? `<p>${esc(c.slogan)}</p>` : ""}</div><ol class="fedlist">${c.features
-            .map((f, i) => `<li class="fe"><span class="fn">${String(i + 1).padStart(2, "0")}</span><h3>${esc(f.title)}</h3><p>${esc(f.text)}</p></li>`)
+        ? `<div class="flist"><div class="head"><h2${ef("featuresTitle")}>${esc(c.featuresTitle)}</h2>${c.slogan ? `<p>${esc(c.slogan)}</p>` : ""}</div><ol class="fedlist">${c.features
+            .map((f, i) => `<li class="fe"><span class="fn">${String(i + 1).padStart(2, "0")}</span><h3${ef(`features.${i}.title`)}>${esc(f.title)}</h3><p${ef(`features.${i}.text`)}>${esc(f.text)}</p></li>`)
             .join("")}</ol></div>`
         : featL === "list"
-          ? `<div class="flist"><div class="head"><h2>${esc(c.featuresTitle)}</h2>${c.subheadline ? `<p>${esc(c.subheadline)}</p>` : ""}</div><div class="frows">${c.features.map((f, n) => featCard(f, n, "frow")).join("")}</div></div>`
-          : `<h2>${esc(c.featuresTitle)}</h2><div class="grid">${c.features.map((f, n) => featCard(f, n)).join("")}</div>`;
+          ? `<div class="flist"><div class="head"><h2${ef("featuresTitle")}>${esc(c.featuresTitle)}</h2>${c.subheadline ? `<p>${esc(c.subheadline)}</p>` : ""}</div><div class="frows">${c.features.map((f, n) => featCard(f, n, "frow")).join("")}</div></div>`
+          : `<h2${ef("featuresTitle")}>${esc(c.featuresTitle)}</h2><div class="grid">${c.features.map((f, n) => featCard(f, n)).join("")}</div>`;
   const features = hasFeatures ? `<section id="fitur"><div class="wrap">${featBody}</div></section>` : "";
 
   const steps = c.steps.length
-    ? `<section id="cara"><div class="wrap"><h2>${esc(c.stepsTitle)}</h2><ol class="steps">${c.steps
-        .map((s0, i) => `<li class="card"><b>${String(i + 1).padStart(2, "0")}</b><h3>${esc(s0.title)}</h3><p>${esc(s0.text)}</p></li>`)
+    ? `<section id="cara"><div class="wrap"><h2${ef("stepsTitle")}>${esc(c.stepsTitle)}</h2><ol class="steps">${c.steps
+        .map((s0, i) => `<li class="card"><b>${String(i + 1).padStart(2, "0")}</b><h3${ef(`steps.${i}.title`)}>${esc(s0.title)}</h3><p${ef(`steps.${i}.text`)}>${esc(s0.text)}</p></li>`)
         .join("")}</ol></div></section>`
     : "";
 
   const quoteIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z"/><path d="M5 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z"/></svg>`;
   const testi = c.testimonial?.text
-    ? `<section id="testimoni"><div class="wrap"><div class="tq"><div class="tqh"><div class="ico">${quoteIcon}</div><small>Kata pelanggan</small></div><blockquote><p>${esc(c.testimonial.text)}</p>${c.testimonial.name ? `<cite>${esc(c.testimonial.name)}</cite>` : ""}</blockquote></div></div></section>`
+    ? `<section id="testimoni"><div class="wrap"><div class="tq"><div class="tqh"><div class="ico">${quoteIcon}</div><small>Kata pelanggan</small></div><blockquote><p${ef("testimonial.text")}>${esc(c.testimonial.text)}</p>${c.testimonial.name ? `<cite${ef("testimonial.name")}>${esc(c.testimonial.name)}</cite>` : ""}</blockquote></div></div></section>`
     : "";
 
   const contactItems = [
@@ -2443,7 +2505,7 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
   ].join("");
 
   const about = c.about
-    ? `<section id="tentang"><div class="wrap split"><div><h2>${esc(c.aboutTitle)}</h2><p class="lead">${esc(c.about)}</p></div>${
+    ? `<section id="tentang"><div class="wrap split"><div><h2${ef("aboutTitle")}>${esc(c.aboutTitle)}</h2><p class="lead"${ef("about")}>${esc(c.about)}</p></div>${
         contactItems ? `<div class="card info">${contactItems}</div>` : ""
       }</div></section>`
     : contactItems
@@ -2462,11 +2524,14 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
     ? ` style="background-image:url(&quot;${svgDataUri(op.vb, `<g opacity=".16">${resolveSvgColors(op.svg, { ...pal, fg: bandText, ink: bandText })}</g>`)}&quot;);background-size:${Math.round(Number(op.vb.split(" ")[2]) * 0.6)}px auto"`
     : "";
   const band = buttons
-    ? `<section id="kontak"><div class="wrap"><div class="band"${bandPattern}>${ornamentMarkup(t.deco)}${ornOf("badge") ? "" : look && els.has("ring") ? `<span class="bd-el bd-ring">${ringSvg(c.brand, lookSvg(els.has("asterisk") ? "asterisk" : "sparkle"))}</span>` : look && (els.has("asterisk") || els.has("arrow") || els.has("sparkle")) ? `<span class="bd-el" aria-hidden="true">${lookSvg(els.has("asterisk") ? "asterisk" : els.has("sparkle") ? "sparkle" : "arrow")}</span>` : ""}<div class="bd-txt">${ornOf("badge") ? ornSvg(ornOf("badge")!, "bd-badge") : ""}<div><h2>${esc(c.closing)}</h2>${c.closingText ? `<p>${esc(c.closingText)}</p>` : ""}</div></div>${ornOf("art") && !look ? ornSvg(ornOf("art")!, "bd-art") : ""}<div class="row">${buttons}</div></div></div></section>`
+    ? `<section id="kontak"><div class="wrap"><div class="band"${bandPattern}>${ornamentMarkup(t.deco)}${ornOf("badge") ? "" : look && els.has("ring") ? `<span class="bd-el bd-ring">${ringSvg(c.brand, lookSvg(els.has("asterisk") ? "asterisk" : "sparkle"))}</span>` : look && (els.has("asterisk") || els.has("arrow") || els.has("sparkle")) ? `<span class="bd-el" aria-hidden="true">${lookSvg(els.has("asterisk") ? "asterisk" : els.has("sparkle") ? "sparkle" : "arrow")}</span>` : ""}<div class="bd-txt">${ornOf("badge") ? ornSvg(ornOf("badge")!, "bd-badge") : ""}<div><h2${ef("closing")}>${esc(c.closing)}</h2>${c.closingText ? `<p${ef("closingText")}>${esc(c.closingText)}</p>` : ""}</div></div>${ornOf("art") && !look ? ornSvg(ornOf("art")!, "bd-art") : ""}<div class="row">${buttons}</div></div></div></section>`
     : "";
 
   /* ----- urutan bagian: UMKM = katalog dulu; artikel = daftar artikel dulu; lainnya = keunggulan dulu ----- */
-  const sections = isArticle ? [articlesSec, features, testi, steps, about, band] : shop ? [catalog, features, testi, steps, about, band] : [features, catalog, testi, steps, about, band];
+  const secHtml: Record<SectionId, string> = { katalog: isArticle ? "" : catalog, artikel: articlesSec, fitur: features, testimoni: testi, cara: steps, tentang: about, kontak: band };
+  const sections = sectionOrder(c, shop)
+    .filter((id) => !hiddenSec.has(id) && secHtml[id])
+    .map((id) => (opts.editable ? secHtml[id].replace(/^<section /, `<section data-sec="${id}" `) : secHtml[id]));
 
   /* ----- keranjang + data untuk skrip ----- */
   const cartBtn = shop ? `<button type="button" id="wb-cartbtn" class="btn ghost cartbtn" aria-label="Buka keranjang">${ico("shopping-cart", 18)}<b id="wb-count" style="display:none">0</b></button>` : "";
@@ -2509,7 +2574,7 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
     look && els.has("topbar")
       ? `<div class="ntop"><div class="wrap"><span>${esc(clip(look.ticker || look.kicker || c.slogan || c.brand, 70))}</span>${c.hours ? `<span>${esc(clip(c.hours, 40))}</span>` : c.address ? `<span>${esc(clip(c.address, 40))}</span>` : ""}</div></div>\n`
       : "";
-  const body = `<a class="skip" href="#main">Lewati ke konten</a>\n${topbar}<header class="nav"><div class="wrap"><a class="brand" href="#"><i${logo ? ' class="logo"' : ""}>${brandMark}</i><span>${esc(c.brand)}</span></a><nav class="links" aria-label="Menu utama">${nav}</nav>${cartBtn}<a class="btn" href="${ctaHref}">${esc(c.ctaLabel)}</a></div></header>
+  const body = `<a class="skip" href="#main">Lewati ke konten</a>\n${topbar}<header class="nav"><div class="wrap"><a class="brand" href="#"><i${logo ? ' class="logo"' : ""}${efImg("logo")}>${brandMark}</i><span${ef("brand")}>${esc(c.brand)}</span></a><nav class="links" aria-label="Menu utama">${nav}</nav>${cartBtn}<a class="btn" href="${ctaHref}">${esc(c.ctaLabel)}</a></div></header>
 <main id="main" tabindex="-1">
 ${hero}
 ${sections.join("\n")}
