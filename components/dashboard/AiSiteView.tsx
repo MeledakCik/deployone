@@ -455,13 +455,20 @@ export function AiSiteView() {
   );
   const tplId: TemplateId = template ?? content?.template ?? "bersih";
   const tpl = TEMPLATES.find((t) => t.id === tplId)!;
+  // Gaya hasil latihan (content.look) tetap dipakai walau warnanya diubah; Template/gaya desain/latar sendiri melepasnya.
+  const lookOn = !!content?.look && !template && !styleOpt && !bgOpt;
   const baseColors = React.useMemo<string[]>(() => {
+    // Gaya aktif: panel Warna menampilkan warna gaya itu (aksen, aksen kedua, lalu warna kartu/stiker).
+    if (lookOn && content?.look) {
+      const L = content.look;
+      return [...new Set([(content.accent && isHex(content.accent) ? content.accent : L.accent).toLowerCase(), L.accent2, ...L.swatches])].slice(0, MAX_PALETTE);
+    }
     const d = defaultPalette(tplId);
     return [(!template && content?.accent) || d[0], d[1]];
-  }, [tplId, template, content?.accent]);
+  }, [tplId, template, content?.accent, content?.look, lookOn]);
   const colors = palette ?? baseColors;
   const accentEff = colors[0];
-  const bgEff = bgOpt ?? tpl.swatch[0];
+  const bgEff = bgOpt ?? (lookOn && content?.look ? content.look.bg : tpl.swatch[0]);
   const heroEff = heroOpt ?? content?.hero ?? "center";
   const featEff = featOpt ?? content?.feat ?? "grid";
   const fontsEff = React.useMemo<RenderOpts["fonts"]>(
@@ -472,8 +479,6 @@ export function AiSiteView() {
     }),
     [fontsOpt],
   );
-  // Gaya hasil latihan (content.look) dipakai selama pengguna belum memilih Template/warna/gaya/latar sendiri.
-  const lookOn = !!content?.look && !template && !palette && !styleOpt && !bgOpt;
   // Gaya ikon yang sedang tampil (sama dengan aturan di buildSite): manual > pilihan mesin > ciri khas Template.
   const iconEff: IconStyle =
     iconOpt ?? (content?.iconStyle ? (lookOn || tplId === content.template ? content.iconStyle : templateIconStyle(tplId)) : "garis");
@@ -889,7 +894,7 @@ export function AiSiteView() {
             style: (again ? null : styleOpt) ?? undefined,
             decor: (again ? null : decorOpt) ?? undefined,
             bg: (again ? null : bgOpt) ?? undefined,
-            look: again || !(template || palette || styleOpt || bgOpt),
+            look: again || !(template || styleOpt || bgOpt),
             iconStyle: (again ? null : iconOpt) ?? undefined,
             fonts: again
               ? undefined
@@ -1322,7 +1327,7 @@ export function AiSiteView() {
     <div className={`flex flex-wrap items-center justify-between gap-2 rounded-[14px] bg-[var(--pill-bg)] px-3.5 py-2.5 leading-relaxed ${hintCls}`}>
       <span className="min-w-0">
         {lookOn ? (
-          <>Memakai gaya <b className="font-semibold text-text">{content.look.name}</b>. Memilih Template, warna, atau gaya lain akan menggantikannya.</>
+          <>Memakai gaya <b className="font-semibold text-text">{content.look.name}</b>. Warna bisa diubah tanpa melepas gaya; memilih Template, gaya desain, atau warna latar lain akan menggantikannya.</>
         ) : (
           <>Gaya <b className="font-semibold text-text">{content.look.name}</b> sedang tidak dipakai.</>
         )}

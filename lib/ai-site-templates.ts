@@ -1314,7 +1314,9 @@ function siteSwatches(t: Theme, a: string, look: SiteLook | undefined, custom: s
     const v = x?.toLowerCase();
     if (v && isHexColor(v) && !out.includes(v)) out.push(v);
   };
-  if (custom.length >= 2) [...custom.slice(1), custom[0]].forEach(add);
+  // Palet kustom di atas gaya latihan = [aksen, aksen kedua, ...warna kartu] (urutan sama dengan panel Warna).
+  if (look && custom.length >= 3) custom.slice(2).forEach(add);
+  else if (custom.length >= 2) [...custom.slice(1), custom[0]].forEach(add);
   else (look?.swatches ?? []).forEach(add);
   add(a);
   add(t.acc2);

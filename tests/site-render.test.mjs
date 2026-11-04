@@ -169,7 +169,11 @@ test("neo: hero neo & kolase bisa dipakai tanpa gaya latihan (warna dari Templat
 
 test("neo: palet kustom pengguna menjadi warna swatch", () => {
   const h = html(neoContent(), "hangat", { palette: ["#ff0000", "#00aa00", "#0000ff"] });
-  assert.match(h, /--s1:#00aa00;--s1t:#[0-9a-f]{6};--s2:#0000ff;--s2t:#[0-9a-f]{6};--s3:#ff0000/);
+  // Di atas gaya latihan urutannya [aksen, aksen kedua, ...warna kartu], jadi warna ke-3 menjadi kartu pertama.
+  assert.match(h, /--a:#ff0000;/);
+  assert.match(h, /--s1:#0000ff;--s1t:#[0-9a-f]{6};--s2:#ff0000/);
+  const plain = html(normalizeContent({ ...sampleContent("jasa"), template: "bersih" }), "bersih", { palette: ["#ff0000", "#00aa00", "#0000ff"] });
+  assert.match(plain, /--s1:#00aa00;--s1t:#[0-9a-f]{6};--s2:#0000ff;--s2t:#[0-9a-f]{6};--s3:#ff0000/, "tanpa gaya: urutan lama");
 });
 
 test("svg: warna swatch --s1..--s5 lolos sanitasi dan diselesaikan untuk data-URI", () => {
@@ -220,4 +224,18 @@ test("kanvas: setContentField hanya mengubah bidang yang dikenal, merapikan, dan
   assert.equal(t.testimonial.text, "Enak sekali");
   assert.equal(setContentField(c, "items.99.name", "x"), null);
   assert.equal(a.items[0].id, c.items[0].id, "id produk tetap (gambar tetap terpasang)");
+});
+
+test("warna: palet panel (aksen, aksen kedua, swatch) di atas gaya latihan menjaga gaya & warna kartu", () => {
+  const c = neoContent();
+  const L = c.look;
+  const pal = [...new Set([c.accent || L.accent, L.accent2, ...L.swatches])].slice(0, 6);
+  const base = html(c);
+  const same = html(c, c.template, { palette: pal });
+  const v = (h, k) => new RegExp(`--${k}:(#[0-9a-f]{6})`).exec(h)[1];
+  for (const k of ["a", "a2", "s1", "s2", "s3", "s4"]) assert.equal(v(same, k), v(base, k), k);
+  assert.match(same, /<body class="lk lk-neo-brutal[^"]* lkn/, "gaya tetap aktif");
+  const changed = html(c, c.template, { palette: ["#e11d48", ...pal.slice(1)] });
+  assert.equal(v(changed, "a"), "#e11d48");
+  assert.equal(v(changed, "s1"), v(base, "s1"), "warna kartu tidak bergeser");
 });
