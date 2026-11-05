@@ -239,3 +239,24 @@ test("warna: palet panel (aksen, aksen kedua, swatch) di atas gaya latihan menja
   assert.equal(v(changed, "a"), "#e11d48");
   assert.equal(v(changed, "s1"), v(base, "s1"), "warna kartu tidak bergeser");
 });
+
+test("optimasi: meta pratinjau tautan, favicon, dan aturan sentuh HP ada di setiap website", () => {
+  const h = html(normalizeContent({ ...sampleContent("umkm"), template: "hangat" }));
+  assert.match(h, /<meta property="og:title" content="[^"]+">/);
+  assert.match(h, /<meta property="og:description" content="[^"]{1,160}">/);
+  assert.match(h, /<link rel="icon" href="data:image\/svg\+xml,/);
+  assert.match(h, /@media\(max-width:640px\)\{\.btn\{min-height:44px\}/);
+  assert.match(h, /\.search input,\.fld input,\.fld textarea,\.fld select\{font-size:16px\}/, "input 16px supaya iPhone tidak zoom");
+});
+
+test("HP: menu lipat berisi semua tautan bagian + tombol utama, dan tidak ada bila menu kosong", () => {
+  const c = normalizeContent({ ...sampleContent("jasa"), template: "bersih", whatsapp: "6281234567890" });
+  const h = html(c, "bersih");
+  const links = /<nav class="links"[^>]*>([\s\S]*?)<\/nav>/.exec(h)[1];
+  const m = /<details class="mnav"><summary aria-label="Buka menu">[\s\S]*?<nav class="mlinks" aria-label="Menu">([\s\S]*?)<\/nav><\/details>/.exec(h);
+  assert.ok(m, "menu HP ada");
+  assert.ok(m[1].startsWith(links), "isi menu = tautan menu utama");
+  assert.match(m[1], /<a class="btn" href="https:\/\/wa\.me\/6281234567890">/);
+  assert.match(h, /\.mlinks a:not\(\.btn\)\{display:flex;align-items:center;min-height:48px/);
+  assert.match(h, /@media\(max-width:480px\)\{\.nav \.wrap>\.btn:not\(\.cartbtn\)\{display:none\}/, "tombol menu atas disembunyikan, tombol di menu tetap");
+});

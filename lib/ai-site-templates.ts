@@ -1352,8 +1352,8 @@ function neoCss(L: SiteLook): string {
 .lk.lkn .btn.ghost{background:var(--card);color:var(--fg)}
 .lk.lkn .btn.ghost:hover{background:var(--s2);color:var(--s2t)}
 .lk.lkn .btn.sm{padding:8px 13px;font-size:13px;box-shadow:${sh(2)}}
-.lk.lkn .nav .btn{padding:9px 16px;font-size:14px;box-shadow:${sh(3)}}
-@media(max-width:520px){.lk.lkn .nav .btn{padding:8px 12px;font-size:13px}}
+.lk.lkn .nav .wrap>.btn{padding:9px 16px;font-size:14px;box-shadow:${sh(3)}}
+@media(max-width:520px){.lk.lkn .nav .wrap>.btn{padding:8px 12px;font-size:13px}}
 .lk.lkn .btn:not(.sm):not(.cartbtn):after{content:none}
 .lk.lkn .badge{border-radius:999px;border:${B}px solid var(--ink);background:var(--s2);color:var(--s2t);padding:7px 14px;box-shadow:${sh(2)};${lbl("12px")}}
 .lk.lkn h2{${fontCss(F.sub, `clamp(30px,4.6vw,${Math.round(60 * (F.title.scale ?? 1))}px)`)}}
@@ -1646,7 +1646,7 @@ svg{display:block;flex:none}
 .btn.ghost{background:${t.dark ? "rgba(255,255,255,.06)" : t.brutal ? "#fff" : "transparent"};color:var(--fg);border:${t.brutal ? "3px solid #0a0a0a" : `1px solid ${t.dark ? "rgba(255,255,255,.18)" : "var(--line)"}`};box-shadow:${t.brutal ? "4px 4px 0 #0a0a0a" : "none"}}
 .btn.danger{background:#dc2626;color:#fff;box-shadow:none}
 .btn.sm{padding:8px 14px;font-size:13px;gap:6px}
-.nav .btn{padding:10px 20px;font-size:14px;white-space:nowrap;flex:none}
+.nav .wrap>.btn{padding:10px 20px;font-size:14px;white-space:nowrap;flex:none}
 .cartbtn{position:relative;padding:10px 14px!important}
 .cartbtn b{position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;border-radius:99px;background:var(--a);color:var(--on);font:700 11px/20px ${SANS};text-align:center;padding:0 5px;border:2px solid var(--bg)}
 .hero{position:relative;padding:clamp(56px,9vw,120px) 0 clamp(56px,8vw,104px);border-bottom:${bd};${heroLeft ? "" : "text-align:center"}}
@@ -1770,6 +1770,8 @@ ${extraCss(t, bd, hover, extra)}
 .bd-el{position:absolute;right:clamp(14px,3vw,36px);top:clamp(14px,3vw,30px);width:clamp(44px,6vw,72px);height:auto;z-index:0}.bd-el svg{width:100%;height:auto;display:block}
 .band>.row,.band>div:not(.orn){position:relative;z-index:1}
 .bd-txt{display:flex;align-items:center;gap:clamp(14px,2vw,24px);min-width:0}
+.bd-txt>div{min-width:0}.band h2{overflow-wrap:break-word}
+@media(max-width:420px){.bd-txt{flex-direction:column;align-items:flex-start}}
 ${
   // Ornamen di blok ajakan berlatar aksen: aksen ⇄ warna teks-di-atas-aksen ditukar supaya stiker tetap kontras
   // (isian jadi warna teks, detail jadi warna aksen). Gambar memakai warna latar blok untuk bidang "potongan".
@@ -1792,12 +1794,25 @@ ${shop ? shopCss(t, bd) : ""}
 
 
 @media(max-width:900px){.hsplit{grid-template-columns:1fr;gap:36px}.vrow:nth-child(n){margin:0}.flist{grid-template-columns:1fr;gap:24px}.flist .head{position:static}.bento{grid-template-columns:repeat(2,1fr)}.bento .feat,.bento.b4 .feat,.bento.b5 .feat:nth-child(-n+2),.bento.b2 .feat{grid-column:span 1}.bento .feat:first-child{grid-column:span 2}}
-@media(max-width:980px){.links{display:none}}
+.mnav{display:none;flex:none}
+.mnav summary{list-style:none;display:grid;place-items:center;width:44px;height:44px;border-radius:calc(var(--pill) * .6);border:1px solid var(--line);cursor:pointer;color:var(--fg)}
+.mnav summary::-webkit-details-marker{display:none}
+.mnav[open] summary{background:var(--fg);color:var(--bg);border-color:var(--fg)}
+.mlinks{position:absolute;left:12px;right:12px;top:calc(100% + 6px);display:grid;gap:2px;padding:10px 16px 16px;background:var(--bg);color:var(--fg);border:1px solid var(--line);border-radius:var(--r);box-shadow:0 18px 40px rgba(0,0,0,.18);z-index:30;max-height:calc(100dvh - 90px);overflow:auto}
+.mlinks a:not(.btn){display:flex;align-items:center;min-height:48px;padding:0 4px;border-bottom:1px solid var(--line);text-decoration:none;font-weight:600;font-size:16px}
+.mlinks .btn{margin-top:12px;width:100%}
+@media(max-width:980px){.links{display:none}.mnav{display:block}}
 @media(max-width:820px){.split{grid-template-columns:1fr}}
-@media(max-width:520px){.wrap{padding:0 18px}.nav .wrap{height:62px;gap:12px}.nav .btn{padding:9px 16px}.card{padding:24px}.bento{grid-template-columns:1fr}.bento .feat:first-child{grid-column:span 1}.frow{grid-template-columns:1fr}}
+@media(max-width:520px){.wrap{padding:0 18px}.nav .wrap{height:62px;gap:12px}.nav .wrap>.btn{padding:9px 16px}.card{padding:24px}.bento{grid-template-columns:1fr}.bento .feat:first-child{grid-column:span 1}.frow{grid-template-columns:1fr}}
 .skip{position:absolute;left:12px;top:-80px;z-index:100;background:var(--a);color:var(--on);padding:10px 16px;border-radius:10px;font:600 14px ${SANS};text-decoration:none}.skip:focus{top:12px}
 a:focus-visible,button:focus-visible,summary:focus-visible,[tabindex]:focus-visible,.search input:focus-visible,.fld input:focus-visible,.fld textarea:focus-visible,.fld select:focus-visible{outline:3px solid var(--at);outline-offset:3px}
 main:focus{outline:none}
+@media(max-width:480px){.nav .wrap>.btn:not(.cartbtn){display:none}.nav .brand{font-size:17px}}
+@media(max-width:600px){.ptag,.lk .ptag,.lk.lkn .ptag{font-size:12px!important}.h-terminal .trm-main h1{font-size:17px}}
+.brand{min-height:44px}
+.post{position:relative}.post h3 a::after{content:"";position:absolute;inset:0;border-radius:inherit}.post h3 a:focus-visible{outline:none}.post:focus-within{outline:3px solid var(--at);outline-offset:3px}
+@media(max-width:1100px){.orc{width:clamp(70px,11vw,120px);opacity:.8}.nshp .sa{width:clamp(90px,13vw,140px)}}
+@media(max-width:640px){.btn{min-height:44px}.btn.sm{min-height:40px}.cat{min-height:40px}.search input,.fld input,.fld textarea,.fld select{font-size:16px}.dsh-top,.stat span{font-size:12px}}
 @media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}`;
 }
 
@@ -2152,7 +2167,7 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
       : c.features.slice(0, 3).map((f) => ({ icon: f.icon, title: f.title, text: f.text, tail: "" }));
   const clip = (t0: string, n: number): string => (t0.length > n ? t0.slice(0, n - 2).trimEnd() + "…" : t0);
   const heroImg = imgSrc("hero");
-  const himg = heroImg ? `<div class="himg"><img src="${esc(heroImg)}" alt="${esc(c.brand)}"></div>` : "";
+  const himg = heroImg ? `<div class="himg"><img src="${esc(heroImg)}" alt="${esc(c.brand)}" fetchpriority="high" decoding="async"></div>` : "";
   const visualRows = heroRows
     .map((r) => `<div class="vrow"><i>${ico(r.icon, 20)}</i><div><b>${esc(r.title)}</b><small>${esc(clip(r.text, 60))}</small></div>${r.tail ? `<em>${esc(r.tail)}</em>` : ""}</div>`)
     .join("");
@@ -2410,8 +2425,10 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
   // visual, karena hero gaya (poster, terminal, ...) sudah padat elemen.
   // Hero neo/kolase cukup lega, jadi ornamen sudut tetap boleh tampil di gaya latihan (kecuali sudah ada bentuk geometris).
   const neoL = heroL === "neo" || heroL === "collage";
-  const oc = look && !(neoL && !els.has("shapes")) ? undefined : ornOf("corner");
-  const shapes = look && els.has("shapes") ? neoShapes(hash(c.brand)) : "";
+  // Hero padat (poster, judul pecah, terminal, dasbor, label) tidak diberi hiasan sudut supaya tidak menimpa judul.
+  const denseHero = ["poster", "breaker", "terminal", "dashboard", "label"].includes(heroL);
+  const oc = denseHero || (look && !(neoL && !els.has("shapes"))) ? undefined : ornOf("corner");
+  const shapes = look && els.has("shapes") && !denseHero ? neoShapes(hash(c.brand)) : "";
   const corner = oc ? `<div class="orcw" aria-hidden="true"><div class="orc"><svg viewBox="${oc.vb}" focusable="false">${oc.svg}</svg></div></div>` : "";
   if (opts.editable) {
     // Editor kanvas: judul, sub-judul, lencana, dan foto utama bisa diklik.
@@ -2566,17 +2583,31 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
   const bodyCls = look
     ? ` class="lk lk-${esc(look.style)}${heroL === "terminal" ? " lk-s1" : ""}${look.shape.gap === 0 ? " lk-g0" : ""}${look.elements.includes("index") ? " lk-idx" : ""}${look.elements.includes("blocks") ? " lk-blk" : ""}${look.elements.includes("numbers") ? " lk-num" : ""}${look.base === "neo" ? " lkn" : ""}${NEO_BODY_CLS.filter(([e]) => look.elements.includes(e)).map(([, k]) => ` ${k}`).join("")}"`
     : "";
+  // Deskripsi untuk mesin pencari & pratinjau tautan (WhatsApp, Facebook): maks. ±155 karakter.
+  const metaDesc = clip(c.subheadline || c.headline, 155);
+  const favInitial = esc((Array.from(c.brand.trim())[0] ?? "•").toUpperCase());
+  const favicon = `data:image/svg+xml,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><rect width="64" height="64" rx="14" fill="${a}"/><text x="32" y="44" font-family="Arial,Helvetica,sans-serif" font-size="34" font-weight="700" text-anchor="middle" fill="${onColor(a)}">${favInitial}</text></svg>`)}`;
   const head = `<meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>${esc(c.brand)} | ${esc(c.headline)}</title>
-<meta name="description" content="${esc(c.subheadline || c.headline)}">
-<meta name="theme-color" content="${t.bg}">`;
+<title>${esc(c.brand)} | ${esc(clip(c.headline, 70))}</title>
+<meta name="description" content="${esc(metaDesc)}">
+<meta name="theme-color" content="${t.bg}">
+<meta property="og:type" content="website">
+<meta property="og:title" content="${esc(c.brand)}">
+<meta property="og:description" content="${esc(metaDesc)}">
+<meta property="og:locale" content="id_ID">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="${favicon}">`;
 
   const topbar =
     look && els.has("topbar")
       ? `<div class="ntop"><div class="wrap"><span>${esc(clip(look.ticker || look.kicker || c.slogan || c.brand, 70))}</span>${c.hours ? `<span>${esc(clip(c.hours, 40))}</span>` : c.address ? `<span>${esc(clip(c.address, 40))}</span>` : ""}</div></div>\n`
       : "";
-  const body = `<a class="skip" href="#main">Lewati ke konten</a>\n${topbar}<header class="nav"><div class="wrap"><a class="brand" href="#"><i${logo ? ' class="logo"' : ""}${efImg("logo")}>${brandMark}</i><span${ef("brand")}>${esc(c.brand)}</span></a><nav class="links" aria-label="Menu utama">${nav}</nav>${cartBtn}<a class="btn" href="${ctaHref}">${esc(c.ctaLabel)}</a></div></header>
+  // Menu HP: tautan bagian + tombol utama di panel lipat (tanpa skrip; satu baris skrip menutupnya setelah diklik).
+  const burger = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>`;
+  const mnav = nav ? `<details class="mnav"><summary aria-label="Buka menu">${burger}</summary><nav class="mlinks" aria-label="Menu">${nav}<a class="btn" href="${ctaHref}">${esc(c.ctaLabel)}</a></nav></details>` : "";
+  const mnavJs = nav ? `<script>document.addEventListener("click",function(e){var t=e.target,d=document.querySelector(".mnav[open]");if(!d)return;if(!t.closest||!t.closest(".mnav")||t.closest(".mlinks a"))d.open=false;});</script>` : "";
+  const body = `<a class="skip" href="#main">Lewati ke konten</a>\n${topbar}<header class="nav"><div class="wrap"><a class="brand" href="#"><i${logo ? ' class="logo"' : ""}${efImg("logo")}>${brandMark}</i><span${ef("brand")}>${esc(c.brand)}</span></a><nav class="links" aria-label="Menu utama">${nav}</nav>${cartBtn}<a class="btn" href="${ctaHref}">${esc(c.ctaLabel)}</a>${mnav}</div></header>
 <main id="main" tabindex="-1">
 ${hero}
 ${sections.join("\n")}
@@ -2584,7 +2615,8 @@ ${sections.join("\n")}
 ${look && els.has("checker") ? `<div class="ck" aria-hidden="true"></div>` : ""}<footer><div class="wrap"><span>© ${esc(c.brand)}${c.slogan ? ` · ${esc(c.slogan)}` : ""}</span><span>Dibuat dengan Depup AI Web Builder</span></div></footer>
 ${readers}
 ${cartUi}
-${dataScript}`;
+${dataScript}
+${mnavJs}`;
 
   const single = `<!doctype html>
 <html lang="id">

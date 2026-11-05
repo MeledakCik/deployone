@@ -857,7 +857,7 @@ export function extract(prompt: string): Extracted {
     if (q) brand = cleanName(q[1]);
   }
   if (!brand) {
-    const re = new RegExp(`\\b(${BIZ_WORDS})\\s+((?:[A-Z][\\w'&.-]*|\\d+)(?:\\s+(?:[A-Z][\\w'&.-]*|\\d+)){0,3})`);
+    const re = new RegExp(`\\b(${BIZ_WORDS})\\s+((?:[A-Z][\\w'&-]*(?:\\.[\\w'&-]+)*(?:(?<=\\b[A-Z][a-z]{0,2})\\.)?|\\d+)(?:\\s+(?:[A-Z][\\w'&-]*(?:\\.[\\w'&-]+)*(?:(?<=\\b[A-Z][a-z]{0,2})\\.)?|\\d+)){0,3})`);
     const m = re.exec(p);
     if (m) brand = cleanName(titleCase(m[1]) + " " + m[2]);
   }

@@ -600,3 +600,7 @@ test("ekstraksi: harga dengan titik/koma (Rp15.000, 1,5jt, 1.5jt) tidak memotong
   const c = extract("jual kopi 1.5jt dan teh 2,5 juta, gula 1.250rb");
   assert.deepEqual(c.products.map((p) => p.price), [1500000, 2500000, 1250000]);
 });
+
+test("ekstraksi: nama usaha tidak melewati akhir kalimat", () => {
+  assert.equal(extract("Blog Catatan Kopi Nusantara: panduan seduh V60, profil petani kopi Gayo. Kontak halo@kopinusantara.id").brand, "Kopi Gayo");
+});
