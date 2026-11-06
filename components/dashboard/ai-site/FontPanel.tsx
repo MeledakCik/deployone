@@ -140,44 +140,22 @@ export function TextStyleBar({
     );
   const step = (d: number) => onStyle({ size: Math.round(Math.min(1.8, Math.max(0.6, size + d)) * 100) / 100 });
   const changed = !!style && Object.keys(style).length > 0;
-  return (
-    <div className={cn("flex flex-wrap items-center gap-1", compact ? "" : "rounded-[14px] bg-[var(--pill-bg)] p-1")} role="toolbar" aria-label={t("Gaya teks {role}", { role: t(ROLE_LABEL[role]) })}>
-      <div className="flex items-center rounded-[10px] bg-[var(--surface-solid)]">
-        <button type="button" className={btn(false)} onClick={() => step(-0.1)} disabled={size <= 0.6} aria-label={t("Perkecil")}>
-          <Minus size={14} aria-hidden />
-        </button>
-        <span className="min-w-[46px] text-center text-[13px] font-semibold tabular-nums" aria-live="polite" title={t("Ukuran teks")}>
-          {Math.round(size * 100)}%
-        </span>
-        <button type="button" className={btn(false)} onClick={() => step(0.1)} disabled={size >= 1.8} aria-label={t("Perbesar")}>
-          <Plus size={14} aria-hidden />
-        </button>
-      </div>
-      <button type="button" className={btn(bold)} aria-pressed={bold} onClick={() => onWeight(bold ? 400 : role === "body" ? 700 : DEFAULT_WEIGHT[role])} aria-label={t("Tebal")} title={t("Tebal")}>
-        <Bold size={15} aria-hidden />
-      </button>
-      <button type="button" className={btn(!!style?.italic)} aria-pressed={!!style?.italic} onClick={() => onStyle({ italic: !style?.italic })} aria-label={t("Miring")} title={t("Miring")}>
-        <Italic size={15} aria-hidden />
-      </button>
-      <button
-        type="button"
-        className={btn(style?.upper === true)}
-        aria-pressed={style?.upper === true}
-        onClick={() => onStyle({ upper: style?.upper !== true })}
-        aria-label={t("Huruf kapital")}
-        title={t("Huruf kapital")}
-      >
-        aA
-      </button>
-      <div className="relative">
-        <button type="button" className={btn(open || style?.spacing !== undefined || style?.line !== undefined)} aria-expanded={open} onClick={() => setOpen((o) => !o)} title={t("Jarak")}>
-          <span className="inline-flex items-center gap-0.5 whitespace-nowrap text-[13px]">
-            {t("Jarak")}
-            <ChevronDown size={13} aria-hidden />
-          </span>
-        </button>
-        {open && (
-          <div className="absolute right-0 top-full z-30 mt-1.5 w-[240px] rounded-[14px] bg-[var(--surface-solid)] p-3.5 text-text [box-shadow:var(--surface-shadow)]">
+  const wrapRef = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    if (!open || !compact) return;
+    const onDown = (e: PointerEvent) => {
+      if (wrapRef.current && !wrapRef.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    document.addEventListener("pointerdown", onDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("pointerdown", onDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open, compact]);
+  const spacingControls = (
+    <>
             <label className="block text-[13px] font-medium">
               <span className="flex justify-between">
                 {t("Jarak huruf")}
@@ -211,6 +189,47 @@ export function TextStyleBar({
             <button type="button" onClick={() => onStyle({ spacing: undefined, line: undefined })} className="mt-3 text-[13px] text-text-muted underline">
               {t("Atur ulang jarak")}
             </button>
+    </>
+  );
+  return (
+    <div className={cn("flex flex-wrap items-center gap-1", compact ? "" : "rounded-[14px] bg-[var(--pill-bg)] p-1")} role="toolbar" aria-label={t("Gaya teks {role}", { role: t(ROLE_LABEL[role]) })}>
+      <div className="flex items-center rounded-[10px] bg-[var(--surface-solid)]">
+        <button type="button" className={btn(false)} onClick={() => step(-0.1)} disabled={size <= 0.6} aria-label={t("Perkecil")}>
+          <Minus size={14} aria-hidden />
+        </button>
+        <span className="min-w-[46px] text-center text-[13px] font-semibold tabular-nums" aria-live="polite" title={t("Ukuran teks")}>
+          {Math.round(size * 100)}%
+        </span>
+        <button type="button" className={btn(false)} onClick={() => step(0.1)} disabled={size >= 1.8} aria-label={t("Perbesar")}>
+          <Plus size={14} aria-hidden />
+        </button>
+      </div>
+      <button type="button" className={btn(bold)} aria-pressed={bold} onClick={() => onWeight(bold ? 400 : role === "body" ? 700 : DEFAULT_WEIGHT[role])} aria-label={t("Tebal")} title={t("Tebal")}>
+        <Bold size={15} aria-hidden />
+      </button>
+      <button type="button" className={btn(!!style?.italic)} aria-pressed={!!style?.italic} onClick={() => onStyle({ italic: !style?.italic })} aria-label={t("Miring")} title={t("Miring")}>
+        <Italic size={15} aria-hidden />
+      </button>
+      <button
+        type="button"
+        className={btn(style?.upper === true)}
+        aria-pressed={style?.upper === true}
+        onClick={() => onStyle({ upper: style?.upper !== true })}
+        aria-label={t("Huruf kapital")}
+        title={t("Huruf kapital")}
+      >
+        aA
+      </button>
+      <div className="relative" ref={wrapRef}>
+        <button type="button" className={btn(open || style?.spacing !== undefined || style?.line !== undefined)} aria-expanded={open} onClick={() => setOpen((o) => !o)} title={t("Jarak")}>
+          <span className="inline-flex items-center gap-0.5 whitespace-nowrap text-[13px]">
+            {t("Jarak")}
+            <ChevronDown size={13} aria-hidden />
+          </span>
+        </button>
+        {open && compact && (
+          <div className="absolute right-0 top-full z-30 mt-1.5 w-[260px] rounded-[14px] bg-[var(--surface-solid)] p-3.5 text-text [box-shadow:var(--surface-shadow)]">
+            {spacingControls}
           </div>
         )}
       </div>
@@ -219,6 +238,7 @@ export function TextStyleBar({
           <RotateCcw size={14} aria-hidden />
         </button>
       )}
+      {open && !compact && <div className="basis-full rounded-[10px] bg-[var(--surface-solid)] p-3.5 text-text">{spacingControls}</div>}
     </div>
   );
 }
