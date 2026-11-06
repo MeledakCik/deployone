@@ -45,6 +45,10 @@ import {
   GOOGLE_FONTS,
   googleFontsHref,
   isGoogleFont,
+  normTextStyles,
+  type TextRole,
+  type TextStyle,
+  type TextStyles,
   type RenderOpts,
 } from "@/lib/ai-site-templates";
 import { downloadZip, downloadHtml, downloadJson, copyHtml } from "@/lib/ai-site-export";
@@ -74,7 +78,7 @@ import { FontRolePicker } from "./ai-site/FontRolePicker";
 import { CanvasFrame, type CanvasHandle, type CanvasMsg } from "./ai-site/CanvasFrame";
 import { HeroLayoutPicker, FeatLayoutPicker } from "./ai-site/LayoutPicker";
 import { SectionsPanel } from "./ai-site/SectionsPanel";
-import { GoogleFontPicker } from "./ai-site/GoogleFontPicker";
+import { FontPanel, TextStyleBar, ROLE_LABEL, roleFontName, type FontPick, type RoleFont } from "./ai-site/FontPanel";
 
 interface KeyStatus {
   hasKey: boolean;
@@ -242,13 +246,27 @@ interface ShapeOpt {
 interface GfOpt {
   title: string | null;
   body: string | null;
+  /** Google Font khusus Sub-judul (kosong = ikut Judul). */
+  sub?: string | null;
+  /** Gaya teks per peran: ukuran, miring, kapital, jarak (seperti bilah teks Canva). */
+  style?: TextStyles;
 }
 const EMPTY_SHAPE: ShapeOpt = { radius: null, pill: null };
 const EMPTY_GF: GfOpt = { title: null, body: null };
 const numOrNull = (v: unknown) => v === null || (typeof v === "number" && v >= 0 && (v <= 40 || v === 999));
 const validShape = (v: unknown): v is ShapeOpt => !!v && typeof v === "object" && numOrNull((v as ShapeOpt).radius) && numOrNull((v as ShapeOpt).pill);
 const validGf = (v: unknown): v is GfOpt =>
-  !!v && typeof v === "object" && ((v as GfOpt).title === null || isGoogleFont((v as GfOpt).title)) && ((v as GfOpt).body === null || isGoogleFont((v as GfOpt).body));
+  !!v &&
+  typeof v === "object" &&
+  ((v as GfOpt).title === null || isGoogleFont((v as GfOpt).title)) &&
+  ((v as GfOpt).body === null || isGoogleFont((v as GfOpt).body)) &&
+  ((v as GfOpt).sub == null || isGoogleFont((v as GfOpt).sub)) &&
+  ((v as GfOpt).style === undefined || typeof (v as GfOpt).style === "object");
+/** Opsi render huruf dari state panel Huruf. */
+const gfRender = (g: GfOpt) => ({
+  gfonts: g.title || g.body || g.sub ? { title: g.title ?? undefined, sub: g.sub ?? undefined, body: g.body ?? undefined } : undefined,
+  textStyle: normTextStyles(g.style),
+});
 const validPalette = (v: unknown): v is string[] =>
   Array.isArray(v) && v.length >= 2 && v.length <= MAX_PALETTE && v.every((x) => typeof x === "string" && isHex(x));
 
@@ -362,6 +380,9 @@ export function AiSiteView() {
   // Sudut kartu & tombol (null = ikut Template/gaya), dan huruf Google Fonts untuk judul & isi (null = huruf bawaan).
   const [shapeOpt, setShapeOpt] = React.useState<ShapeOpt>(EMPTY_SHAPE);
   const [gfOpt, setGfOpt] = React.useState<GfOpt>(EMPTY_GF);
+  /** Peran teks yang sedang diatur di panel Huruf, dan teks yang sedang dipilih di kanvas (bilah teks di atas kanvas). */
+  const [textRole, setTextRole] = React.useState<TextRole>("title");
+  const [pickedText, setPickedText] = React.useState<TextRole | null>(null);
   // null per peran = ikut Gaya desain/Template (Sub-judul: ikut Judul lebih dulu, lihat lib/ai-site-templates.ts)
   const [fontsOpt, setFontsOpt] = React.useState<FontRoles>(EMPTY_FONTS);
   // Cara menampilkan kartu "2. Tampilan": "ai" = ringkas (Template + Warna, tata letak disembunyikan),
@@ -531,7 +552,7 @@ export function AiSiteView() {
       style: styleOpt ?? undefined, decor: decorOpt ?? undefined, bg: bgOpt ?? undefined, fonts: fontsEff, images, look: lookOn,
       iconStyle: iconOpt ?? undefined, ornaments: !ornOff,
       radius: shapeOpt.radius ?? undefined, pill: shapeOpt.pill ?? undefined,
-      gfonts: gfOpt.title || gfOpt.body ? { title: gfOpt.title ?? undefined, body: gfOpt.body ?? undefined } : undefined,
+      ...gfRender(gfOpt),
     }),
     [heroEff, featEff, shopOn, palette, styleOpt, decorOpt, bgOpt, fontsEff, images, lookOn, iconOpt, ornOff, shapeOpt, gfOpt],
   );
@@ -949,7 +970,7 @@ export function AiSiteView() {
             images: nextImages,
             radius: shapeOpt.radius ?? undefined,
             pill: shapeOpt.pill ?? undefined,
-            gfonts: gfOpt.title || gfOpt.body ? { title: gfOpt.title ?? undefined, body: gfOpt.body ?? undefined } : undefined,
+            ...gfRender(gfOpt),
           }),
         );
       }
@@ -1056,7 +1077,55 @@ export function AiSiteView() {
     canvasRef.current?.select(id);
   }
 
+  /* ---- panel Huruf ---- */
+  const roleFonts: Record<TextRole, RoleFont> = {
+    title: { google: gfOpt.title, system: fontsOpt.title.family, weight: fontsOpt.title.weight },
+    sub: { google: gfOpt.sub ?? null, system: fontsOpt.sub.family, weight: fontsOpt.sub.weight },
+    body: { google: gfOpt.body, system: fontsOpt.body.family, weight: fontsOpt.body.weight },
+  };
+  function setRoleFont(role: TextRole, pick: FontPick) {
+    change(() => {
+      setGfOpt((g) => ({ ...g, [role]: pick.kind === "google" ? pick.name : null }));
+      setFontsOpt((f) => ({ ...f, [role]: { ...f[role], family: pick.kind === "system" ? pick.id : null } }));
+    });
+  }
+  function setFontPair(title: string, body: string) {
+    change(() => {
+      setGfOpt((g) => ({ ...g, title, body, sub: null }));
+      setFontsOpt((f) => ({ title: { ...f.title, family: null }, sub: { ...f.sub, family: null }, body: { ...f.body, family: null } }));
+    });
+    say(tr("Kombinasi font {title} + {body} dipakai.", { title, body }));
+  }
+  function setRoleStyle(role: TextRole, patch: Partial<TextStyle> | null, merge = false) {
+    change(() => setGfOpt((g) => {
+      const next = { ...(g.style ?? {}) };
+      if (patch === null) delete next[role];
+      else next[role] = { ...(next[role] ?? {}), ...patch };
+      return { ...g, style: normTextStyles(next) };
+    }), merge);
+  }
+  function setRoleWeight(role: TextRole, w: number | null) {
+    change(() => setFontsOpt((f) => ({ ...f, [role]: { ...f[role], weight: w as FontWeightId | null } })));
+  }
+  function resetFonts() {
+    change(() => {
+      setGfOpt(EMPTY_GF);
+      setFontsOpt(EMPTY_FONTS);
+    });
+  }
+
   function onCanvasMsg(m: CanvasMsg) {
+    if (m.dp === "pick") {
+      setPickedText(m.role);
+      if (m.role && panel === "huruf") setTextRole(m.role);
+      return;
+    }
+    if (m.dp === "font") {
+      setTextRole(m.role);
+      setPickedText(m.role);
+      setPanel("huruf");
+      return;
+    }
     if (!content) return;
     if (m.dp === "edit") {
       const next = setContentField(content, m.f, m.v);
@@ -1557,15 +1626,20 @@ export function AiSiteView() {
     ),
     huruf: (
       <div className="space-y-6">
-        <div className="space-y-4">
-          {subhead(tr("Google Fonts"), resetLink(!!(gfOpt.title || gfOpt.body), "Bawaan", () => setGfOpt(EMPTY_GF)))}
-          <GoogleFontPicker label={tr("Judul")} value={gfOpt.title} onPick={(v) => change(() => setGfOpt((g) => ({ ...g, title: v })))} />
-          <GoogleFontPicker label={tr("Isi teks")} value={gfOpt.body} onPick={(v) => change(() => setGfOpt((g) => ({ ...g, body: v })))} />
-          <p className={`leading-relaxed ${hintCls}`}>{tr("Huruf Google Fonts dimuat dari server Google saat website dibuka. Bila tidak terjangkau, huruf sistem yang mirip dipakai.")}</p>
-        </div>
+        <FontPanel
+          role={textRole}
+          onRole={setTextRole}
+          fonts={roleFonts}
+          styles={gfOpt.style ?? {}}
+          onFont={setRoleFont}
+          onPair={setFontPair}
+          onStyle={setRoleStyle}
+          onWeight={setRoleWeight}
+          onResetAll={resetFonts}
+        />
         <details className="group rounded-[14px] bg-[var(--pill-bg)]">
           <summary className="flex min-h-[48px] cursor-pointer list-none items-center justify-between gap-3 px-3.5 text-[14px] font-medium [&::-webkit-details-marker]:hidden">
-            {tr("Huruf sistem & ketebalan")}{" "}<ChevronDown size={16} className="transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden />
+            {tr("Ketebalan per teks (lanjutan)")}{" "}<ChevronDown size={16} className="transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden />
           </summary>
           <div className="px-3.5 pb-3.5">
       <FontRolePicker
@@ -1911,9 +1985,40 @@ export function AiSiteView() {
 
           {/* Kanvas */}
           <section aria-label={tr("Kanvas website")} className="relative flex min-h-0 flex-col bg-[var(--pill-bg)]">
-            <div className="flex items-center justify-center gap-1.5 px-4 pt-3 text-[12.5px] text-text-muted">
-              <MousePointerClick size={14} aria-hidden />{" "}{tr("Klik teks untuk mengetik langsung")}<span className="max-sm:hidden">{" "}{tr("· klik gambar untuk mengganti · klik bagian untuk mengaturnya")}</span>
-            </div>
+            {pickedText ? (
+              <div className="flex flex-wrap items-center justify-center gap-1.5 px-3 pt-2.5" role="region" aria-label={tr("Bilah teks")}>
+                <span className="rounded-full bg-[var(--surface-solid)] px-3 py-1.5 text-[12.5px] font-semibold">{tr(ROLE_LABEL[pickedText])}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setTextRole(pickedText);
+                    setPanel("huruf");
+                  }}
+                  className="flex h-9 min-w-[140px] max-w-[220px] items-center justify-between gap-2 rounded-[10px] bg-[var(--surface-solid)] px-3 text-[14px] hover:bg-[var(--card-hover)]"
+                  aria-label={tr("Ganti font {role}", { role: tr(ROLE_LABEL[pickedText]) })}
+                >
+                  <span className="truncate">{tr(roleFontName(roleFonts, pickedText, "Bawaan gaya"))}</span>
+                  <ChevronDown size={14} className="shrink-0 opacity-70" aria-hidden />
+                </button>
+                <div className="rounded-[12px] bg-[var(--surface-solid)] p-0.5">
+                  <TextStyleBar
+                    compact
+                    role={pickedText}
+                    style={gfOpt.style?.[pickedText]}
+                    weight={fontsOpt[pickedText].weight}
+                    onStyle={(p, m) => setRoleStyle(pickedText, p, m)}
+                    onWeight={(w) => setRoleWeight(pickedText, w)}
+                  />
+                </div>
+                <button type="button" onClick={() => setPickedText(null)} aria-label={tr("Tutup bilah teks")} className="grid h-9 w-9 place-items-center rounded-[10px] hover:bg-[var(--card-hover)]">
+                  <X size={15} aria-hidden />
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center justify-center gap-1.5 px-4 pt-3 text-[12.5px] text-text-muted">
+                <MousePointerClick size={14} aria-hidden />{" "}{tr("Klik teks untuk mengetik langsung")}<span className="max-sm:hidden">{" "}{tr("· klik gambar untuk mengganti · klik bagian untuk mengaturnya")}</span>
+              </div>
+            )}
             <div className="relative h-[58dvh] min-h-[400px] lg:h-auto lg:min-h-0 lg:flex-1">
               <CanvasFrame ref={canvasRef} html={canvasHtml} device={device} onMessage={onCanvasMsg} busy={busy === "ai" || busy === "edit"} />
               {(busy === "ai" || busy === "edit") && (

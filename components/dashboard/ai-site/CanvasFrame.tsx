@@ -18,6 +18,7 @@ const BRIDGE_EN: [string, string][] = [
   ["Jalankan aksi", "Run action"],
   ["Ganti gambar", "Replace image"],
   ["Edit teks", "Edit text"],
+  ["Aa Huruf", "Aa Font"],
   ["<b>Ini pratinjau</b>Di website yang sudah online, tombol ini akan ", "<b>This is a preview</b>On the live website, this button will "],
   ["membuka WhatsApp untuk mengirim pesan", "open WhatsApp to send a message"],
   ["membuka aplikasi email", "open the email app"],
@@ -64,14 +65,15 @@ var r=x!=null&&document.caretRangeFromPoint?document.caretRangeFromPoint(x,y):nu
 el.addEventListener("blur",function(){done(true);},{once:true});}
 /* ---- seleksi + bilah aksi ---- */
 var bar=null;
-function hideBar(){if(bar){bar.remove();bar=null;}if(pick){pick.classList.remove("dp-pick");pick=null;}}
+function role(f){var h=f.closest("h1,h2,h3,h4");return h?(h.tagName==="H1"?"title":"sub"):"body";}
+function hideBar(){if(bar){bar.remove();bar=null;}if(pick){pick.classList.remove("dp-pick");pick=null;P.postMessage({dp:"pick",role:null},"*");}}
 function place(){if(!bar||!pick)return;var r=pick.getBoundingClientRect(),bw=bar.offsetWidth/S,bh=bar.offsetHeight/S;
 var x=Math.max(4,Math.min(window.innerWidth-bw*S-4,r.left))+window.scrollX,y=r.top+window.scrollY-bh*S-10;if(r.top-bh*S-10<0)y=r.bottom+window.scrollY+10;bar.style.left=x+"px";bar.style.top=y+"px";}
 function select(el,x,y){hideBar();pick=el;el.classList.add("dp-pick");
 var f=el.matches("[data-f]")?el:el.querySelector("[data-f]"),a=el.closest("a[href]"),im=el.closest("[data-img]");
 bar=document.createElement("div");bar.id="dp-bar";bar.setAttribute("role","toolbar");bar.style.transform="scale("+(1/S)+")";
 function add(label,fn){var b=document.createElement("button");b.type="button";b.textContent=label;b.addEventListener("click",function(e){e.preventDefault();e.stopPropagation();fn();});bar.appendChild(b);}
-if(f)add("\\u270E Edit teks",function(){start(f,null,null);});
+if(f){var rl=role(f);add("\\u270E Edit teks",function(){start(f,null,null);});add("Aa Huruf",function(){P.postMessage({dp:"font",role:rl},"*");});P.postMessage({dp:"pick",role:rl},"*");}
 if(a){var h=a.getAttribute("href")||"";add(h.charAt(0)==="#"?"\\u2193 Jalankan aksi":"\\u2197 Jalankan aksi",function(){hideBar();run(a);});}
 if(im)add("\\u21BB Ganti gambar",function(){hideBar();P.postMessage({dp:"img",k:im.getAttribute("data-img")},"*");});
 document.body.appendChild(bar);place();var fb=bar.querySelector("button");if(fb)fb.focus({preventScroll:true});}
@@ -95,7 +97,8 @@ if(e.data.dp==="scale"&&typeof e.data.s==="number"&&e.data.s>0){S=e.data.s;if(ba
 if(e.data.dp!=="select")return;if(sec)sec.classList.remove("dp-sel");sec=null;if(!e.data.id)return;var s=document.querySelector('[data-sec="'+String(e.data.id).replace(/[^a-z-]/g,"")+'"]');if(s){sec=s;s.classList.add("dp-sel");s.scrollIntoView({block:"start",behavior:"smooth"});}});
 })();`;
 
-export type CanvasMsg = { dp: "edit"; f: string; v: string } | { dp: "img"; k: string } | { dp: "sec"; id: string };
+export type TextRoleMsg = "title" | "sub" | "body";
+export type CanvasMsg = { dp: "edit"; f: string; v: string } | { dp: "img"; k: string } | { dp: "sec"; id: string } | { dp: "pick"; role: TextRoleMsg | null } | { dp: "font"; role: TextRoleMsg };
 
 export interface CanvasHandle {
   /** Sorot & gulir ke satu bagian (null = hapus sorotan). */
@@ -134,6 +137,8 @@ export const CanvasFrame = React.forwardRef<
       else if (d.dp === "edit" && typeof d.f === "string" && typeof d.v === "string" && d.f.length < 60 && d.v.length < 4000) cb.current({ dp: "edit", f: d.f, v: d.v });
       else if (d.dp === "img" && typeof d.k === "string" && d.k.length < 80) cb.current({ dp: "img", k: d.k });
       else if (d.dp === "sec" && typeof d.id === "string" && d.id.length < 30) cb.current({ dp: "sec", id: d.id });
+      else if (d.dp === "pick" && (d.role === null || d.role === "title" || d.role === "sub" || d.role === "body")) cb.current({ dp: "pick", role: d.role });
+      else if (d.dp === "font" && (d.role === "title" || d.role === "sub" || d.role === "body")) cb.current({ dp: "font", role: d.role });
     };
     window.addEventListener("message", on);
     return () => window.removeEventListener("message", on);

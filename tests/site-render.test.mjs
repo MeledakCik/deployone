@@ -297,3 +297,21 @@ test("sudut & Google Fonts: dipasang dari pilihan, nama di luar daftar diabaikan
   assert.ok(GOOGLE_FONTS.length >= 20);
   assert.equal(setContentField(c, "ctaLabel", "Pesan sekarang").ctaLabel, "Pesan sekarang");
 });
+
+test("gaya teks ala Canva: ukuran, miring, kapital, jarak per peran + font Google untuk sub-judul", async () => {
+  const { normTextStyles, textStyleCss } = await import(new URL("lib/ai-site-templates.ts", ROOT).href);
+  const st = normTextStyles({ title: { size: 9, italic: true, upper: true, spacing: 2 }, body: { line: 0.1 }, bogus: { size: 1 } });
+  assert.equal(st.title.size, 1.8);
+  assert.equal(st.title.spacing, 0.4);
+  assert.equal(st.body.line, 0.8);
+  assert.equal(st.bogus, undefined);
+  assert.equal(normTextStyles({}), undefined);
+  const css = textStyleCss(st);
+  assert.match(css, /h1\{[^}]*font-style:italic/);
+  assert.match(css, /text-transform:uppercase/);
+  const html = renderSite(base(), "hangat", undefined, { gfonts: { title: "Fraunces", sub: "Caveat", body: "Inter" }, textStyle: st });
+  assert.match(html, /family=Fraunces/);
+  assert.match(html, /Caveat/);
+  assert.match(html, /font-style:italic/);
+  assert.doesNotMatch(html, /<\/style>[^]*bogus/);
+});

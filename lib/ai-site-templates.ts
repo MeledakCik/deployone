@@ -784,6 +784,11 @@ export const GOOGLE_FONTS: { name: string; cat: "sans" | "serif" | "display" | "
   { name: "Inter", cat: "sans", w: [400, 500, 600, 700, 800] },
   { name: "Plus Jakarta Sans", cat: "sans", w: [400, 500, 600, 700, 800] },
   { name: "Poppins", cat: "sans", w: [400, 500, 600, 700, 800] },
+  { name: "Montserrat", cat: "sans", w: [400, 500, 600, 700, 800, 900] },
+  { name: "Open Sans", cat: "sans", w: [400, 500, 600, 700, 800] },
+  { name: "Lato", cat: "sans", w: [400, 700, 900] },
+  { name: "Roboto", cat: "sans", w: [400, 500, 700, 900] },
+  { name: "Raleway", cat: "sans", w: [400, 500, 600, 700, 800] },
   { name: "Sora", cat: "sans", w: [400, 500, 600, 700, 800] },
   { name: "Space Grotesk", cat: "sans", w: [400, 500, 600, 700] },
   { name: "DM Sans", cat: "sans", w: [400, 500, 600, 700, 800] },
@@ -792,20 +797,61 @@ export const GOOGLE_FONTS: { name: string; cat: "sans" | "serif" | "display" | "
   { name: "Nunito", cat: "sans", w: [400, 500, 600, 700, 800] },
   { name: "Rubik", cat: "sans", w: [400, 500, 600, 700, 800] },
   { name: "Work Sans", cat: "sans", w: [400, 500, 600, 700, 800] },
+  { name: "Figtree", cat: "sans", w: [400, 500, 600, 700, 800] },
+  { name: "Lexend", cat: "sans", w: [400, 500, 600, 700, 800] },
+  { name: "Urbanist", cat: "sans", w: [400, 500, 600, 700, 800] },
+  { name: "Quicksand", cat: "sans", w: [400, 500, 600, 700] },
+  { name: "Josefin Sans", cat: "sans", w: [400, 500, 600, 700] },
+  { name: "Barlow", cat: "sans", w: [400, 500, 600, 700, 800] },
+  { name: "Kanit", cat: "sans", w: [400, 500, 600, 700, 800] },
+  { name: "Mulish", cat: "sans", w: [400, 500, 600, 700, 800] },
+  { name: "Red Hat Display", cat: "sans", w: [400, 500, 600, 700, 800] },
+  { name: "Be Vietnam Pro", cat: "sans", w: [400, 500, 600, 700, 800] },
   { name: "Playfair Display", cat: "serif", w: [400, 500, 600, 700, 800] },
   { name: "Lora", cat: "serif", w: [400, 500, 600, 700] },
   { name: "Fraunces", cat: "serif", w: [400, 500, 600, 700, 800] },
   { name: "Cormorant Garamond", cat: "serif", w: [400, 500, 600, 700] },
+  { name: "Merriweather", cat: "serif", w: [400, 700, 900] },
+  { name: "Libre Baskerville", cat: "serif", w: [400, 700] },
+  { name: "EB Garamond", cat: "serif", w: [400, 500, 600, 700, 800] },
+  { name: "Crimson Pro", cat: "serif", w: [400, 500, 600, 700, 800] },
+  { name: "Bitter", cat: "serif", w: [400, 500, 600, 700, 800] },
+  { name: "Roboto Slab", cat: "serif", w: [400, 500, 600, 700, 800] },
   { name: "DM Serif Display", cat: "serif", w: [400] },
   { name: "Instrument Serif", cat: "serif", w: [400] },
+  { name: "Young Serif", cat: "serif", w: [400] },
+  { name: "Cinzel", cat: "serif", w: [400, 500, 600, 700, 800] },
   { name: "Bebas Neue", cat: "display", w: [400] },
   { name: "Anton", cat: "display", w: [400] },
   { name: "Archivo Black", cat: "display", w: [400] },
+  { name: "Oswald", cat: "display", w: [400, 500, 600, 700] },
   { name: "Syne", cat: "display", w: [400, 500, 600, 700, 800] },
   { name: "Unbounded", cat: "display", w: [400, 500, 600, 700, 800] },
+  { name: "Bricolage Grotesque", cat: "display", w: [400, 500, 600, 700, 800] },
+  { name: "Abril Fatface", cat: "display", w: [400] },
+  { name: "Alfa Slab One", cat: "display", w: [400] },
+  { name: "Righteous", cat: "display", w: [400] },
+  { name: "Fredoka", cat: "display", w: [400, 500, 600, 700] },
+  { name: "Titan One", cat: "display", w: [400] },
+  { name: "Bungee", cat: "display", w: [400] },
+  { name: "Lobster", cat: "display", w: [400] },
+  { name: "Orbitron", cat: "display", w: [400, 500, 600, 700, 800] },
+  { name: "Chakra Petch", cat: "display", w: [400, 500, 600, 700] },
+  { name: "Press Start 2P", cat: "display", w: [400] },
   { name: "JetBrains Mono", cat: "mono", w: [400, 500, 600, 700, 800] },
   { name: "Space Mono", cat: "mono", w: [400, 700] },
+  { name: "IBM Plex Mono", cat: "mono", w: [400, 500, 600, 700] },
+  { name: "Fira Code", cat: "mono", w: [400, 500, 600, 700] },
+  { name: "DM Mono", cat: "mono", w: [400, 500] },
   { name: "Caveat", cat: "hand", w: [400, 500, 600, 700] },
+  { name: "Pacifico", cat: "hand", w: [400] },
+  { name: "Dancing Script", cat: "hand", w: [400, 500, 600, 700] },
+  { name: "Kalam", cat: "hand", w: [400, 700] },
+  { name: "Patrick Hand", cat: "hand", w: [400] },
+  { name: "Permanent Marker", cat: "hand", w: [400] },
+  { name: "Satisfy", cat: "hand", w: [400] },
+  { name: "Great Vibes", cat: "hand", w: [400] },
+  { name: "Shadows Into Light", cat: "hand", w: [400] },
 ];
 const GF_FALLBACK: Record<(typeof GOOGLE_FONTS)[number]["cat"], string> = {
   sans: "system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif",
@@ -820,10 +866,68 @@ export function googleFontsHref(names: string[]): string {
   const fams = [...new Set(names)].map((n) => GOOGLE_FONTS.find((f) => f.name === n)).filter((f): f is (typeof GOOGLE_FONTS)[number] => !!f);
   return `https://fonts.googleapis.com/css2?${fams.map((f) => `family=${f.name.replace(/ /g, "+")}${f.w.length > 1 ? `:wght@${f.w.join(";")}` : ""}`).join("&")}&display=swap`;
 }
-const gfStack = (name: string): string => {
+export const gfStack = (name: string): string => {
   const f = GOOGLE_FONTS.find((x) => x.name === name)!;
   return `'${f.name}',${GF_FALLBACK[f.cat]}`;
 };
+
+/* ---------- gaya teks per peran (Judul / Sub-judul / Isi), seperti bilah teks Canva ---------- */
+export type TextRole = "title" | "sub" | "body";
+export interface TextStyle {
+  /** Skala ukuran, 0.6–1.8 (1 = bawaan). */
+  size?: number;
+  italic?: boolean;
+  /** true = HURUF KAPITAL, false = biasa; kosong = ikut gaya desain. */
+  upper?: boolean;
+  /** Jarak antar huruf dalam em, -0.1–0.4. */
+  spacing?: number;
+  /** Jarak antar baris, 0.8–2.4. */
+  line?: number;
+}
+export type TextStyles = Partial<Record<TextRole, TextStyle>>;
+const TEXT_SEL: Record<TextRole, string> = { title: "h1", sub: "h2,h3", body: "p,li,blockquote,dd,.lead" };
+const clampN = (v: unknown, lo: number, hi: number): number | undefined => (typeof v === "number" && Number.isFinite(v) ? Math.min(hi, Math.max(lo, Math.round(v * 100) / 100)) : undefined);
+
+/** Bersihkan gaya teks dari draf/klien: angka dibatasi, nilai bawaan dibuang. */
+export function normTextStyles(v: unknown): TextStyles | undefined {
+  if (!v || typeof v !== "object") return undefined;
+  const out: TextStyles = {};
+  for (const r of ["title", "sub", "body"] as const) {
+    const x = (v as Record<string, unknown>)[r];
+    if (!x || typeof x !== "object") continue;
+    const o = x as Record<string, unknown>;
+    const st: TextStyle = {};
+    const size = clampN(o.size, 0.6, 1.8);
+    if (size !== undefined && size !== 1) st.size = size;
+    if (typeof o.italic === "boolean" && o.italic) st.italic = true;
+    if (typeof o.upper === "boolean") st.upper = o.upper;
+    const sp = clampN(o.spacing, -0.1, 0.4);
+    if (sp !== undefined) st.spacing = sp;
+    const ln = clampN(o.line, 0.8, 2.4);
+    if (ln !== undefined) st.line = ln;
+    if (Object.keys(st).length) out[r] = st;
+  }
+  return Object.keys(out).length ? out : undefined;
+}
+
+/** CSS penimpa di akhir stylesheet. Ukuran memakai zoom supaya semua tata letak (yang ukurannya berbeda-beda) ikut terskala. */
+export function textStyleCss(v: TextStyles | undefined): string {
+  const ts = normTextStyles(v);
+  if (!ts) return "";
+  let css = "\n/* gaya teks pilihan pengguna */";
+  for (const r of ["title", "sub", "body"] as const) {
+    const st = ts[r];
+    if (!st) continue;
+    const d: string[] = [];
+    if (st.size !== undefined) d.push(`zoom:${st.size}`);
+    if (st.italic) d.push("font-style:italic!important");
+    if (st.upper !== undefined) d.push(`text-transform:${st.upper ? "uppercase" : "none"}!important`);
+    if (st.spacing !== undefined) d.push(`letter-spacing:${st.spacing}em!important`);
+    if (st.line !== undefined) d.push(`line-height:${st.line}!important`);
+    if (d.length) css += `\n${TEXT_SEL[r]}{${d.join(";")}}`;
+  }
+  return css;
+}
 
 export const FONT_ROLES: { id: FontRoleId; name: string; desc: string; stack: string }[] = [
   { id: "sans", name: "Sans-serif", desc: "Tanpa serif, bersih — Inter/Helvetica.", stack: SANS },
@@ -1650,7 +1754,9 @@ export interface RenderOpts {
   /** Sudut tombol & label (px, 0–40; 999 = kapsul). Kosong = ikut Template/gaya. */
   pill?: number;
   /** Huruf Google Fonts untuk judul & isi (nama dari GOOGLE_FONTS). Kosong = huruf sistem bawaan. */
-  gfonts?: { title?: string; body?: string };
+  gfonts?: { title?: string; sub?: string; body?: string };
+  /** Gaya teks per peran (ukuran, miring, kapital, jarak) — seperti bilah teks Canva. */
+  textStyle?: TextStyles;
   /** "inline" (default) = data URL tertanam di HTML; "files" = berkas terpisah di assets/img (untuk ZIP). */
   imageMode?: "inline" | "files";
 }
@@ -2206,7 +2312,9 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
   // Google Fonts: judul & isi (nama di-whitelist). Ditimpa paling akhir di CSS supaya berlaku di semua gaya.
   const gfT = isGoogleFont(opts.gfonts?.title) ? opts.gfonts!.title! : undefined;
   const gfB = isGoogleFont(opts.gfonts?.body) ? opts.gfonts!.body! : undefined;
-  if (gfT) t = { ...t, display: gfStack(gfT), sub: gfStack(gfT) };
+  const gfS = isGoogleFont(opts.gfonts?.sub) ? opts.gfonts!.sub! : undefined;
+  if (gfT) t = { ...t, display: gfStack(gfT), sub: opts.fonts?.sub?.family ? t.sub : gfStack(gfT) };
+  if (gfS) t = { ...t, sub: gfStack(gfS) };
   if (gfB) t = { ...t, body: gfStack(gfB) };
   const extra = custom.slice(2);
   const swatches = siteSwatches(t, a, look, custom);
@@ -2728,8 +2836,8 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
 <link rel="icon" href="${favicon}">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">${
-    gfT || gfB
-      ? `\n<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n<link rel="stylesheet" href="${googleFontsHref([gfT, gfB].filter((x): x is string => !!x))}">`
+    gfT || gfB || gfS
+      ? `\n<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n<link rel="stylesheet" href="${googleFontsHref([gfT, gfS, gfB].filter((x): x is string => !!x))}">`
       : ""
   }
 <script type="application/ld+json">${jsonForScript(structuredData(c, items, arts))}</script>`;
@@ -2758,7 +2866,7 @@ ${mnavJs}`;
 <head>
 ${head}
 <style>
-${css}
+${css}${textStyleCss(opts.textStyle)}
 </style>
 </head>
 <body${bodyCls}>
