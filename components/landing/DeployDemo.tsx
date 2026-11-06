@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/public";
 import * as React from "react";
 import { Check } from "@/components/ui/icons";
 import { Badge } from "@/components/ui/primitives";
@@ -67,6 +69,7 @@ function usePrefersReducedMotion() {
 }
 
 export function DeployDemo() {
+  const tr = useT();
   const reduced = usePrefersReducedMotion();
   const rootRef = React.useRef<HTMLDivElement>(null);
   const [scenario, setScenario] = React.useState(0);
@@ -125,12 +128,12 @@ export function DeployDemo() {
   return (
     <section id="demo" className="mx-auto w-full max-w-6xl scroll-mt-24 px-4 pb-16 pt-4 sm:px-8 sm:pb-20">
       <div className="mx-auto mb-10 max-w-3xl text-center">
-        <h2 className="lp-h2">Lihat Depup bekerja.</h2>
-        <p className="lp-lead">Pilih jenis project-mu dan tonton alurnya, dari link repo sampai situs online.</p>
+        <h2 className="lp-h2">{tr("Lihat Depup bekerja.")}</h2>
+        <p className="lp-lead">{tr("Pilih jenis project-mu dan tonton alurnya, dari link repo sampai situs online.")}</p>
       </div>
 
       <div ref={rootRef}>
-        <div className="mb-5 flex flex-wrap items-center justify-center gap-2" role="group" aria-label="Pilih jenis project">
+        <div className="mb-5 flex flex-wrap items-center justify-center gap-2" role="group" aria-label={tr("Pilih jenis project")}>
           {SCENARIOS.map((sc, i) => (
             <button
               key={sc.key}
@@ -140,7 +143,7 @@ export function DeployDemo() {
               className={`pill px-4 py-2.5 text-[13px] font-semibold ${i === scenario ? "" : "bg-[var(--surface-solid)] text-text-muted"}`}
               style={i === scenario ? { background: "var(--ink-fill)", color: "var(--ink-fill-text)" } : undefined}
             >
-              {sc.tab}
+              {tr(sc.tab)}
             </button>
           ))}
         </div>
@@ -154,7 +157,7 @@ export function DeployDemo() {
                 <span className="h-2.5 w-2.5 rounded-full bg-tone-lemon" />
                 <span className="h-2.5 w-2.5 rounded-full bg-tone-mint" />
               </div>
-              <ol className="flex min-w-0 items-center gap-1 sm:gap-2" aria-label="Tahap deploy">
+              <ol className="flex min-w-0 items-center gap-1 sm:gap-2" aria-label={tr("Tahap deploy")}>
                 {STEPS.map((label, i) => {
                   const done = i < phase;
                   const active = i === phase;
@@ -176,7 +179,7 @@ export function DeployDemo() {
                         >
                           {done ? <Check size={11} /> : i + 1}
                         </span>
-                        <span className="hidden md:inline">{label}</span>
+                        <span className="hidden md:inline">{tr(label)}</span>
                       </button>
                       {i < STEPS.length - 1 && <span className="hidden h-px w-3 bg-[var(--line)] sm:block" aria-hidden="true" />}
                     </li>
@@ -189,7 +192,7 @@ export function DeployDemo() {
                 <button
                   type="button"
                   onClick={() => setPlaying((p) => !p)}
-                  aria-label={playing ? "Jeda animasi" : "Putar animasi"}
+                  aria-label={playing ? tr("Jeda animasi") : tr("Putar animasi")}
                   className="pill grid h-[34px] w-[34px] place-items-center"
                 >
                   {playing ? (
@@ -210,13 +213,13 @@ export function DeployDemo() {
             <div className="relative min-h-[320px] px-4 py-6 sm:min-h-[340px] sm:px-8 sm:py-8" aria-hidden="true">
               {phase === 0 && (
                 <div key={`${s.key}-0`} className="dd-in">
-                  <div className="mb-2 text-[12px] font-bold text-text-faint">Link repo GitHub</div>
+                  <div className="mb-2 text-[12px] font-bold text-text-faint">{tr("Link repo GitHub")}</div>
                   <div className="flex items-center gap-2 rounded-[14px] border border-[var(--line-strong)] bg-[var(--surface-solid)] px-4 py-3.5 font-mono text-[13px] sm:text-[14px]">
                     <span className="truncate font-semibold text-text">{s.repo.slice(0, typed)}</span>
                     <span className="dd-caret h-[18px] w-[2px] shrink-0" style={{ background: "var(--ink-fill)" }} />
                   </div>
                   <div className="mt-4 flex flex-col items-stretch gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <span className="text-[12px] leading-snug text-text-muted">Repo private? Tambahkan token GitHub di Pengaturan.</span>
+                    <span className="text-[12px] leading-snug text-text-muted">{tr("Repo private? Tambahkan token GitHub di Pengaturan.")}</span>
                     <span
                       className={`shrink-0 whitespace-nowrap rounded-full px-5 py-2.5 text-center text-[13px] font-semibold transition-transform ${typingDone ? "dd-press" : ""}`}
                       // Sebelum link selesai diketik: gaya "belum aktif" dengan kontras teks tetap terbaca (bukan opacity 60%).
@@ -226,7 +229,7 @@ export function DeployDemo() {
                           : { background: "var(--pill-bg)", color: "var(--text-muted)" }
                       }
                     >
-                      Periksa repo
+                      {tr("Periksa repo")}
                     </span>
                   </div>
                 </div>
@@ -236,29 +239,29 @@ export function DeployDemo() {
                 <div key={`${s.key}-1`}>
                   <div className="dd-in mb-4 flex items-center gap-2 font-mono text-[12px] text-text-muted">
                     <span className="live-dot" />
-                    {s.repo}
+                    {tr(s.repo)}
                   </div>
                   <div className={`rounded-[14px] p-4 sm:p-5 ${s.tone}`}>
                     <div className="dd-in mb-1 text-[12px] font-bold text-text-faint" style={{ animationDelay: "120ms" }}>
-                      Hasil pemeriksaan
+                      {tr("Hasil pemeriksaan")}
                     </div>
                     <div className="dd-in text-[18px] font-bold tracking-[-0.02em] sm:text-[22px]" style={{ animationDelay: "250ms" }}>
-                      {s.kind}
+                      {tr(s.kind)}
                     </div>
                     <ul className="mt-4 flex flex-col gap-2 text-[13px]">
                       {s.checks.map((c, i) => (
                         <li key={c} className="dd-in flex items-center gap-2 text-ok-fg" style={{ animationDelay: `${600 + i * 450}ms` }}>
                           <Check size={14} />
-                          <span className="font-medium text-text">{c}</span>
+                          <span className="font-medium text-text">{tr(c)}</span>
                         </li>
                       ))}
                     </ul>
                   </div>
                   <div className="dd-in mt-4 flex items-center justify-between gap-3" style={{ animationDelay: "1600ms" }}>
-                    <span className="text-[13px] text-text-muted">Platform yang cocok</span>
+                    <span className="text-[13px] text-text-muted">{tr("Platform yang cocok")}</span>
                     <Badge tone="good">
                       <Check size={13} strokeWidth={3} />
-                      {s.platform}
+                      {tr(s.platform)}
                     </Badge>
                   </div>
                 </div>
@@ -268,7 +271,7 @@ export function DeployDemo() {
                 <div key={`${s.key}-2`} className="dd-in">
                   <div className="mb-5 flex items-center justify-between gap-3">
                     <div className="text-[13px] text-text-muted">
-                      Deploy ke <b className="font-semibold text-text">{s.platform}</b>
+                      {tr("Deploy ke")}{" "}<b className="font-semibold text-text">{tr(s.platform)}</b>
                     </div>
                     <span className="font-mono text-[13px] font-semibold tabular-nums text-text">{Math.round(progress)}%</span>
                   </div>
@@ -279,7 +282,7 @@ export function DeployDemo() {
                     />
                   </div>
                   <div className="mt-5 grid grid-cols-3 gap-2 text-center text-[12px] font-semibold">
-                    {["Build", "Deploy", "Live"].map((name, i) => (
+                    {["Build", tr("Deploy"), "Live"].map((name, i) => (
                       <div
                         key={name}
                         className={`rounded-[14px] px-2 py-2.5 transition-colors ${i <= stageIdx ? "bg-tone-lilac text-text" : "bg-[var(--frame)] text-text-faint"}`}
@@ -293,7 +296,7 @@ export function DeployDemo() {
                       progress > i * 30 + 4 ? (
                         <div key={l} className="dd-in flex items-center gap-2 text-text-muted">
                           <span className="text-ok-fg">›</span>
-                          {l}
+                          {tr(l)}
                         </div>
                       ) : null,
                     )}
@@ -317,17 +320,17 @@ export function DeployDemo() {
                     <Check size={30} />
                   </span>
                   <div className="dd-in text-[22px] font-bold tracking-[-0.02em] sm:text-[26px]" style={{ animationDelay: "250ms" }}>
-                    Situsmu sudah online
+                    {tr("Situsmu sudah online")}
                   </div>
                   <div
                     className="dd-in mt-4 inline-flex max-w-full items-center gap-2 rounded-full bg-tone-mint px-4 py-2.5 font-mono text-[12px] font-semibold sm:text-[14px]"
                     style={{ animationDelay: "500ms" }}
                   >
                     <span className="live-dot" />
-                    <span className="truncate">https://{s.url}</span>
+                    <span className="truncate">https://{tr(s.url)}</span>
                   </div>
                   <div className="dd-in mt-3 text-[12px] text-text-muted" style={{ animationDelay: "700ms" }}>
-                    Project masuk ke daftar Projects, siap dideploy ulang kapan saja.
+                    {tr("Project masuk ke daftar Projects, siap dideploy ulang kapan saja.")}
                   </div>
                 </div>
               )}
@@ -337,10 +340,9 @@ export function DeployDemo() {
 
         {/* Ringkasan untuk pembaca layar, karena animasinya disembunyikan dari aksesibilitas */}
         <p className="sr-only">
-          Contoh alur deploy: tempel link repo GitHub, Depup memeriksa isinya (misalnya {s.kind}) dan merekomendasikan {s.platform}, lalu
-          deploy berjalan dari build sampai live dan situs online di {s.url}.
+          {tr("Contoh alur deploy: tempel link repo GitHub, Depup memeriksa isinya (misalnya {kind}) dan merekomendasikan {platform}, lalu deploy berjalan dari build sampai live dan situs online di {url}.", { kind: tr(s.kind), platform: tr(s.platform), url: tr(s.url) })}
         </p>
-        <p className="mt-4 text-center text-[12px] text-text-muted">Contoh tampilan. Klik tahap di atas untuk melompat.</p>
+        <p className="mt-4 text-center text-[12px] text-text-muted">{tr("Contoh tampilan. Klik tahap di atas untuk melompat.")}</p>
       </div>
     </section>
   );

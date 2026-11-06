@@ -1,4 +1,6 @@
 "use client";
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import { greeting } from "@/lib/mobile-routes";
 
 import * as React from "react";
@@ -11,6 +13,7 @@ import { WA_COMMUNITY_URL, openExternal } from "@/lib/community";
 import { HistoryTable, HistoryTableSkeleton, type HistoryFilter } from "./HistoryTable";
 
 export function DashboardHomeView() {
+  const t = useT();
   const { stats, history, historyReady, setView, redeploy } = useDeploy();
   const { user } = useAuth();
   const [filter, setFilter] = React.useState<HistoryFilter>("all");
@@ -45,7 +48,7 @@ export function DashboardHomeView() {
 
   const deployButton = (
     <button type="button" onClick={() => setView("deploy")} className="btn-primary btn-md inline-flex items-center gap-2 whitespace-nowrap">
-      <Plus size={16} /> Deploy baru
+      <Plus size={16} />{" "}{t("Deploy baru")}
     </button>
   );
 
@@ -54,7 +57,7 @@ export function DashboardHomeView() {
     return (
       <ViewFade>
         <div className="space-y-5">
-          <PageHead title={`${greeting()}, ${firstName}`} desc="Memuat riwayat deploy kamu…" />
+          <PageHead title={`${greeting()}, ${firstName}`} desc={t("Memuat riwayat deploy kamu…")} />
           <div className="grid gap-4 sm:grid-cols-3 md:grid-cols-1 lg:grid-cols-3" aria-hidden>
             {[0, 1, 2].map((i) => (
               <Skeleton key={i} className="h-[148px] !rounded-card" />
@@ -71,23 +74,23 @@ export function DashboardHomeView() {
     return (
       <ViewFade>
         <div className="space-y-5">
-          <PageHead title={`${greeting()}, ${firstName}`} desc="Mulai dari satu project. Riwayat dan statusnya akan muncul di sini." />
+          <PageHead title={`${greeting()}, ${firstName}`} desc={t("Mulai dari satu project. Riwayat dan statusnya akan muncul di sini.")} />
           <Card>
             <Empty
               icon={Rocket}
-              title="Belum ada deploy"
+              title={t("Belum ada deploy")}
               action={
                 <>
                   <button type="button" onClick={() => setView("deploy")} className="btn-primary btn-md inline-flex items-center gap-2">
-                    <Rocket size={16} /> Deploy project
+                    <Rocket size={16} />{" "}{t("Deploy project")}
                   </button>
                   <button type="button" onClick={() => setView("upload")} className="pill btn-md inline-flex items-center gap-2 font-semibold">
-                    <UploadCloud size={16} /> Unggah zip
+                    <UploadCloud size={16} />{" "}{t("Unggah zip")}
                   </button>
                 </>
               }
             >
-              Deploy repo GitHub ke Vercel, Cloudflare Pages, atau Railway. Atau unggah zip project dan biarkan Depup mengurus sisanya.
+              {t("Deploy repo GitHub ke Vercel, Cloudflare Pages, atau Railway. Atau unggah zip project dan biarkan Depup mengurus sisanya.")}
             </Empty>
           </Card>
         </div>
@@ -100,7 +103,7 @@ export function DashboardHomeView() {
   return (
     <ViewFade>
       <div className="space-y-5">
-        <PageHead title={`${greeting()}, ${firstName}`} desc={`Ringkasan ${stats.total} deploy terakhir kamu. Depup menyimpan maksimal 10 riwayat.`} right={deployButton} />
+        <PageHead title={`${greeting()}, ${firstName}`} desc={t("Ringkasan {total} deploy terakhir kamu. Depup menyimpan maksimal 10 riwayat.", { total: stats.total })} right={deployButton} />
 
         {/* Yang butuh tindakan didahulukan. Tidak ada banner bila semuanya sehat. */}
         {stats.failed > 0 && (
@@ -110,19 +113,19 @@ export function DashboardHomeView() {
             </span>
             <div className="min-w-0 flex-1">
               <p className="text-[16px] font-bold tracking-tight">
-                {latestFailed ? `Deploy terakhir gagal: ${latestFailed.name}` : `${stats.failed} deploy gagal di riwayat`}
+                {latestFailed ? t("Deploy terakhir gagal: {name}", { name: latestFailed.name }) : t("{failed} deploy gagal di riwayat", { failed: stats.failed })}
               </p>
               <p className="mt-0.5 text-[13px]">
-                {latestFailed ? "Coba deploy ulang, atau periksa log di Projects bila gagal lagi." : "Lihat daftarnya, lalu coba deploy ulang yang masih dibutuhkan."}
+                {latestFailed ? t("Coba deploy ulang, atau periksa log di Projects bila gagal lagi.") : t("Lihat daftarnya, lalu coba deploy ulang yang masih dibutuhkan.")}
               </p>
             </div>
             <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
               {latestFailed && (
                 <Btn variant="primary" onClick={() => redeploy(latestFailed.name)}>
-                  Coba lagi
+                  {t("Coba lagi")}
                 </Btn>
               )}
-              <Btn onClick={() => pick("failed")}>Lihat yang gagal</Btn>
+              <Btn onClick={() => pick("failed")}>{t("Lihat yang gagal")}</Btn>
               <a
                 href={WA_COMMUNITY_URL}
                 target="_blank"
@@ -130,20 +133,20 @@ export function DashboardHomeView() {
                 onClick={(e) => openExternal(e, WA_COMMUNITY_URL)}
                 className="inline-flex items-center px-2 text-[13px] font-semibold underline underline-offset-4"
               >
-                Tanya di komunitas
+                {t("Tanya di komunitas")}
               </a>
             </div>
           </div>
         )}
 
         {stats.ready > 0 && !communityHidden && (
-          <div className="notice notice-info flex-wrap items-center !rounded-[28px] !p-5" role="region" aria-label="Ajakan gabung komunitas">
+          <div className="notice notice-info flex-wrap items-center !rounded-[28px] !p-5" role="region" aria-label={t("Ajakan gabung komunitas")}>
             <span className="grid h-11 w-11 shrink-0 place-items-center rounded-[14px] bg-[var(--tone-chip)]">
               <Users size={20} />
             </span>
             <div className="min-w-0 flex-1">
-              <p className="text-[16px] font-bold tracking-tight">Deploy pertamamu sudah online 🎉</p>
-              <p className="mt-0.5 text-[13px]">Gabung komunitas Depup untuk dapat kabar fitur baru dan bantuan dari sesama pengguna.</p>
+              <p className="text-[16px] font-bold tracking-tight">{t("Deploy pertamamu sudah online 🎉")}</p>
+              <p className="mt-0.5 text-[13px]">{t("Gabung komunitas Depup untuk dapat kabar fitur baru dan bantuan dari sesama pengguna.")}</p>
             </div>
             <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto">
               <a
@@ -156,12 +159,12 @@ export function DashboardHomeView() {
                 }}
                 className="btn-primary btn-md inline-flex items-center gap-2"
               >
-                Gabung komunitas
+                {t("Gabung komunitas")}
               </a>
               <button type="button" onClick={() => setView("community")} className="px-2 text-[13px] font-semibold underline underline-offset-4">
-                Lihat semua
+                {t("Lihat semua")}
               </button>
-              <button type="button" aria-label="Tutup ajakan" onClick={dismissCommunity} className="grid h-8 w-8 place-items-center rounded-full opacity-80 hover:opacity-100">
+              <button type="button" aria-label={t("Tutup ajakan")} onClick={dismissCommunity} className="grid h-8 w-8 place-items-center rounded-full opacity-80 hover:opacity-100">
                 <X size={15} />
               </button>
             </div>
@@ -169,13 +172,13 @@ export function DashboardHomeView() {
         )}
 
         <div className="grid gap-4 sm:grid-cols-3 md:grid-cols-1 lg:grid-cols-3">
-          <KpiCard icon={Boxes} label="Deploy terakhir" value={stats.total} sub="Maksimal 10 riwayat disimpan" onClick={() => pick("all")} selected={filter === "all"} />
-          <KpiCard icon={CheckCircle2} label="Berhasil" value={stats.ready} sub={`${readyPct}% dari riwayat`} onClick={() => pick("ready")} selected={filter === "ready"} />
+          <KpiCard icon={Boxes} label={t("Deploy terakhir")} value={stats.total} sub={t("Maksimal 10 riwayat disimpan")} onClick={() => pick("all")} selected={filter === "all"} />
+          <KpiCard icon={CheckCircle2} label={t("Berhasil")} value={stats.ready} sub={t("{readyPct}% dari riwayat", { readyPct })} onClick={() => pick("ready")} selected={filter === "ready"} />
           <KpiCard
             icon={XCircle}
-            label="Gagal"
+            label={t("Gagal")}
             value={stats.failed}
-            sub={stats.failed > 0 ? "Perlu diperiksa" : "Tidak ada yang gagal"}
+            sub={stats.failed > 0 ? t("Perlu diperiksa") : t("Tidak ada yang gagal")}
             tone={stats.failed > 0 ? "bad" : "neutral"}
             onClick={() => pick("failed")}
             selected={filter === "failed"}

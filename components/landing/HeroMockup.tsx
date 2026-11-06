@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/public";
 import * as React from "react";
 import Image from "next/image";
 import {
@@ -103,12 +105,13 @@ const SIDE_ICONS = [LayoutDashboard, FolderKanban, Rocket, Globe2];
  * supaya yang dilihat orang di landing sama dengan yang mereka dapat setelah masuk.
  */
 export function HeroMockup() {
+  const t = useT();
   const [i, setI] = React.useState(0);
   const s = SAMPLES[i];
   const platforms = Object.keys(s.verdict) as Platform[];
 
   return (
-    <section className="relative mx-auto mb-8 w-full max-w-6xl px-3 sm:px-8" id="dashboard" aria-label="Contoh tampilan dashboard">
+    <section className="relative mx-auto mb-8 w-full max-w-6xl px-3 sm:px-8" id="dashboard" aria-label={t("Contoh tampilan dashboard")}>
       <div className="lp-window isolate overflow-hidden">
         <div className="flex gap-3 p-4 sm:gap-4 sm:p-5">
           {/* Sidebar ungu mini (hanya hiasan) */}
@@ -137,19 +140,19 @@ export function HeroMockup() {
             {/* Judul halaman + kolom repo */}
             <div className="flex flex-col items-stretch justify-between gap-3 sm:flex-row sm:items-end">
               <div className="min-w-0 text-left">
-                <h2 className="text-[24px] font-bold leading-[1.1] tracking-[-0.03em] sm:text-[28px]">Deploy</h2>
-                <p className="mt-1.5 text-[14px] leading-relaxed text-text-muted">Depup membaca isi repo sebelum deploy dimulai.</p>
+                <h2 className="text-[24px] font-bold leading-[1.1] tracking-[-0.03em] sm:text-[28px]">{t("Deploy")}</h2>
+                <p className="mt-1.5 text-[14px] leading-relaxed text-text-muted">{t("Depup membaca isi repo sebelum deploy dimulai.")}</p>
               </div>
               <div className="input-solid flex w-full items-center gap-2 truncate px-3.5 py-2.5 sm:w-96">
                 <Search size={15} className="shrink-0 text-text-faint" aria-hidden="true" />
                 <span key={s.repo} className="truncate font-mono text-[12px] text-text">
-                  github.com/{s.repo}
+                  {t("github.com/{repo}", { repo: t(s.repo) })}
                 </span>
               </div>
             </div>
 
             {/* Pilih contoh repo */}
-            <div role="tablist" aria-label="Contoh repo" className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:self-start">
+            <div role="tablist" aria-label={t("Contoh repo")} className="grid grid-cols-2 gap-2 sm:flex sm:flex-wrap sm:self-start">
               {SAMPLES.map((x, idx) => (
                 <button
                   key={x.tab}
@@ -160,7 +163,7 @@ export function HeroMockup() {
                     idx === i ? "chip-on" : "pill"
                   }`}
                 >
-                  {x.tab}
+                  {t(x.tab)}
                 </button>
               ))}
             </div>
@@ -168,11 +171,11 @@ export function HeroMockup() {
             {/* Hasil pengecekan: kartu putih yang sama dengan KpiCard dashboard */}
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 sm:gap-3 lg:grid-cols-4" aria-live="polite">
               <div className="surface-solid flex flex-col gap-1 px-4 py-3 text-left sm:p-5">
-                <span className="text-[13px] font-medium text-text-muted">Terdeteksi</span>
+                <span className="text-[13px] font-medium text-text-muted">{t("Terdeteksi")}</span>
                 <span key={s.type} className="mt-1 text-[20px] font-bold leading-tight tracking-[-0.02em] sm:mt-3 sm:text-[22px]">
-                  {s.type}
+                  {t(s.type)}
                 </span>
-                <span className="mt-1 hidden text-[12px] text-text-muted sm:block">dibaca dari isi repo</span>
+                <span className="mt-1 hidden text-[12px] text-text-muted sm:block">{t("dibaca dari isi repo")}</span>
               </div>
               {platforms.map((name) => {
                 const [level, note] = s.verdict[name];
@@ -188,10 +191,10 @@ export function HeroMockup() {
                     <span className="sm:mt-3">
                       <Badge tone={BADGE[level]}>
                         <Icon size={13} strokeWidth={level === "ok" ? 3 : 2} aria-hidden="true" />
-                        {LABEL[level]}
+                        {t(LABEL[level])}
                       </Badge>
                     </span>
-                    <span className="mt-1 hidden text-[12px] text-text-muted sm:block">{note}</span>
+                    <span className="mt-1 hidden text-[12px] text-text-muted sm:block">{t(note)}</span>
                   </div>
                 );
               })}
@@ -201,11 +204,11 @@ export function HeroMockup() {
             <div className="surface-solid hidden overflow-hidden text-left sm:block">
               <div className="flex items-center justify-between gap-3 px-5 py-4 sm:px-6">
                 <div className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1.5">
-                  <span className="text-[16px] font-bold tracking-tight">Deploy terakhir</span>
-                  <Badge tone="violet">Contoh data</Badge>
+                  <span className="text-[16px] font-bold tracking-tight">{t("Deploy terakhir")}</span>
+                  <Badge tone="violet">{t("Contoh data")}</Badge>
                 </div>
                 <span className="hidden items-center gap-1.5 text-[12px] font-medium text-text-muted sm:flex">
-                  <RefreshCw size={14} aria-hidden="true" /> Redeploy
+                  <RefreshCw size={14} aria-hidden="true" />{" "}{t("Redeploy")}
                 </span>
               </div>
               <ul>
@@ -218,25 +221,25 @@ export function HeroMockup() {
                     >
                       {/* Mobile: [nama | status] / [platform · cabang · waktu] / [link]. Desktop: satu baris 4 kolom. */}
                       <div className="flex min-w-0 items-center gap-3 md:col-span-4">
-                        <span className="truncate font-mono text-[13px] font-semibold">{d.name}</span>
+                        <span className="truncate font-mono text-[13px] font-semibold">{t(d.name)}</span>
                         <span className="hidden md:inline-flex">
-                          <Badge>{d.platform}</Badge>
+                          <Badge>{t(d.platform)}</Badge>
                         </span>
                       </div>
                       <div className="order-2 md:order-3 md:col-span-3">
                         <Badge tone={st.tone} dot>
-                          {st.label}
+                          {t(st.label)}
                         </Badge>
                       </div>
                       <div className="order-3 col-span-2 flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-1 text-text-muted md:order-2 md:col-span-3">
                         <span className="mr-1 inline-flex md:hidden">
-                          <Badge>{d.platform}</Badge>
+                          <Badge>{t(d.platform)}</Badge>
                         </span>
                         {d.ref === "main" ? <GitCommitHorizontal size={15} aria-hidden="true" /> : <GitBranch size={15} aria-hidden="true" />}
-                        <span className="min-w-0 break-all font-mono text-[12px]">{d.ref}</span>
-                        <span className="text-[12px]">· {d.when}</span>
+                        <span className="min-w-0 break-all font-mono text-[12px]">{t(d.ref)}</span>
+                        <span className="text-[12px]">· {t(d.when)}</span>
                       </div>
-                      <div className="order-4 col-span-2 truncate font-mono text-[12px] text-text-muted md:col-span-2 md:text-right">{d.link}</div>
+                      <div className="order-4 col-span-2 truncate font-mono text-[12px] text-text-muted md:col-span-2 md:text-right">{t(d.link)}</div>
                     </li>
                   );
                 })}

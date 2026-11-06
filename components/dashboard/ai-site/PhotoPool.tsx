@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import * as React from "react";
 import { ChevronLeft, ChevronRight, ImagePlus, X } from "lucide-react";
 import { Btn } from "@/components/ui/primitives";
@@ -32,6 +34,7 @@ export function PhotoPool({
   onMove: (id: string, dir: -1 | 1) => void;
   onClear: () => void;
 }) {
+  const t = useT();
   const inputRef = React.useRef<HTMLInputElement>(null);
   const [drag, setDrag] = React.useState(false);
   const bytes = photos.reduce((n, p) => n + p.file.size, 0);
@@ -56,15 +59,15 @@ export function PhotoPool({
     >
       <div className="flex flex-wrap items-center gap-2">
         <Btn busy={adding} onClick={() => inputRef.current?.click()}>
-          <ImagePlus size={13} /> {photos.length ? "Tambah foto" : "Pilih foto"}
+          <ImagePlus size={13} /> {photos.length ? t("Tambah foto") : t("Pilih foto")}
         </Btn>
         {photos.length > 0 && (
           <Btn variant="ghost" onClick={onClear}>
-            Hapus semua
+            {t("Hapus semua")}
           </Btn>
         )}
         <span className={`ml-auto tabular-nums ${hintCls}`}>
-          {photos.length} foto · {formatBytes(bytes)} / {formatBytes(MAX_PRELOAD_BYTES)}
+          {t("{length} foto · {formatBytes} / {formatBytes2}", { length: photos.length, formatBytes: formatBytes(bytes), formatBytes2: formatBytes(MAX_PRELOAD_BYTES) })}
         </span>
       </div>
 
@@ -73,7 +76,7 @@ export function PhotoPool({
           <div
             className="h-1.5 overflow-hidden rounded-full bg-[var(--line)]"
             role="progressbar"
-            aria-label="Ukuran foto terpakai"
+            aria-label={t("Ukuran foto terpakai")}
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={Math.round(pct)}
@@ -84,14 +87,14 @@ export function PhotoPool({
             {photos.map((p, i) => (
               <li key={p.id} className="relative aspect-square overflow-hidden rounded-[14px]">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={p.preview} alt={`Foto ${i + 1}: ${p.file.name}`} className="h-full w-full object-cover" />
+                <img src={p.preview} alt={t("Foto {v}: {name}", { v: i + 1, name: p.file.name })} className="h-full w-full object-cover" />
                 <span className="absolute left-1 top-1 rounded-full bg-black/70 px-2 text-[12px] font-semibold leading-5 text-white" aria-hidden>
                   {i + 1}
                 </span>
                 <button
                   type="button"
                   onClick={() => onRemove(p.id)}
-                  aria-label={`Hapus foto ${i + 1}`}
+                  aria-label={t("Hapus foto {v}", { v: i + 1 })}
                   className={cn(miniBtn, "absolute right-1 top-1")}
                 >
                   <X size={14} />
@@ -101,7 +104,7 @@ export function PhotoPool({
                     type="button"
                     onClick={() => onMove(p.id, -1)}
                     disabled={i === 0}
-                    aria-label={`Geser foto ${i + 1} ke depan`}
+                    aria-label={t("Geser foto {v} ke depan", { v: i + 1 })}
                     className={miniBtn}
                   >
                     <ChevronLeft size={15} />
@@ -110,7 +113,7 @@ export function PhotoPool({
                     type="button"
                     onClick={() => onMove(p.id, 1)}
                     disabled={i === photos.length - 1}
-                    aria-label={`Geser foto ${i + 1} ke belakang`}
+                    aria-label={t("Geser foto {v} ke belakang", { v: i + 1 })}
                     className={miniBtn}
                   >
                     <ChevronRight size={15} />
@@ -124,11 +127,11 @@ export function PhotoPool({
 
       <p className={hintCls}>
         {photos.length === 0
-          ? "Opsional. Seret foto ke sini atau pilih sekaligus banyak (PNG, JPG, WebP, GIF; total maks 10 MB). Tanpa foto pun bisa: tambahkan nanti di bagian 3. Gambar."
-          : "Foto dipasang berurutan ke sampul artikel atau foto produk setelah websitenya jadi. Urutannya sesuai nomor di pojok foto; geser dengan tombol panah untuk menukar. Gambar juga bisa diganti nanti di bagian 3. Gambar."}
+          ? t("Opsional. Seret foto ke sini atau pilih sekaligus banyak (PNG, JPG, WebP, GIF; total maks 10 MB). Tanpa foto pun bisa: tambahkan nanti di bagian 3. Gambar.")
+          : t("Foto dipasang berurutan ke sampul artikel atau foto produk setelah websitenya jadi. Urutannya sesuai nomor di pojok foto; geser dengan tombol panah untuk menukar. Gambar juga bisa diganti nanti di bagian 3. Gambar.")}
         {hasContent && usedCount !== null && photos.length > 0 && usedCount < photos.length && (
           <span className="mt-1 block font-medium text-text">
-            {photos.length - usedCount} foto belum terpakai (tempatnya sudah penuh atau gagal diproses).
+            {photos.length - usedCount}{" "}{t("foto belum terpakai (tempatnya sudah penuh atau gagal diproses).")}
           </span>
         )}
       </p>

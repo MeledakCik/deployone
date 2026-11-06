@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import { PageTitle } from "@/components/ui/primitives";
 import * as React from "react";
 import { Check, Download, ExternalLink, Heart, Loader2, QrCode, RefreshCw } from "lucide-react";
@@ -31,6 +33,7 @@ const POLL_MS = 5000;
 const rupiah = (n: number) => `Rp${n.toLocaleString("id-ID")}`;
 
 export function DonateView() {
+  const tr = useT();
   const { user } = useAuth();
   const [config, setConfig] = React.useState<Config | null>(null);
   const [configError, setConfigError] = React.useState(false);
@@ -84,11 +87,11 @@ export function DonateView() {
           setPhase("expired");
           return null;
         }
-        return "Pembayaran belum terdeteksi. Coba lagi beberapa detik setelah kamu membayar.";
+        return tr("Pembayaran belum terdeteksi. Coba lagi beberapa detik setelah kamu membayar.");
       }
-      return body?.error ?? "Status belum bisa diperiksa. Coba lagi sebentar lagi.";
+      return body?.error ?? tr("Status belum bisa diperiksa. Coba lagi sebentar lagi.");
     } catch {
-      return "Koneksi bermasalah. Coba lagi sebentar lagi.";
+      return tr("Koneksi bermasalah. Coba lagi sebentar lagi.");
     } finally {
       inFlight.current = false;
     }
@@ -123,13 +126,13 @@ export function DonateView() {
       const body = await res.json().catch(() => null);
       notifySessionExpired(body);
       if (!res.ok || !body?.ok) {
-        setError(body?.error ?? "Tidak bisa membuat QRIS sekarang.");
+        setError(body?.error ?? tr("Tidak bisa membuat QRIS sekarang."));
         return;
       }
       setDonation(body.data as Donation);
       setPhase("qr");
     } catch {
-      setError("Koneksi bermasalah. Periksa internet kamu lalu coba lagi.");
+      setError(tr("Koneksi bermasalah. Periksa internet kamu lalu coba lagi."));
     } finally {
       setBusy(false);
     }
@@ -157,32 +160,31 @@ export function DonateView() {
     <ViewFade>
       <div className="mx-auto max-w-xl space-y-6">
         <div>
-          <PageTitle title="Donasi" desc={<>Depup gratis dipakai. Kalau terbantu, kamu bisa mendukung pengembangannya lewat QRIS (Saweria).</>} />
+          <PageTitle title={tr("Donasi")} desc={<>{tr("Depup gratis dipakai. Kalau terbantu, kamu bisa mendukung pengembangannya lewat QRIS (Saweria).")}</>} />
         </div>
 
         {configError && (
           <div className="surface-solid p-5 text-[13px] text-text-muted">
-            Tidak bisa memuat pengaturan donasi. Muat ulang halaman, lalu coba lagi.
+            {tr("Tidak bisa memuat pengaturan donasi. Muat ulang halaman, lalu coba lagi.")}
           </div>
         )}
 
         {!configError && !config && (
           <div className="surface-solid flex items-center gap-2 p-5 text-[13px] text-text-muted">
-            <Loader2 size={15} className="animate-spin" /> Memuat…
+            <Loader2 size={15} className="animate-spin" />{" "}{tr("Memuat…")}
           </div>
         )}
 
         {config && !config.configured && (
           <div className="surface-solid p-5 text-[13px] leading-relaxed text-text-muted">
-            Fitur donasi belum diaktifkan oleh admin. (Admin: isi <code className="font-mono">SAWERIA_USERNAME</code> di
-            environment server.)
+            {tr("Fitur donasi belum diaktifkan oleh admin. (Admin: isi")}{" "}<code className="font-mono">SAWERIA_USERNAME</code>{" "}{tr("di environment server.)")}
           </div>
         )}
 
         {config?.configured && phase === "form" && (
           <form onSubmit={createQr} className="surface-solid space-y-5 p-5 sm:p-6">
             <fieldset>
-              <legend className="mb-2 text-[13px] font-medium text-text-muted">Nominal</legend>
+              <legend className="mb-2 text-[13px] font-medium text-text-muted">{tr("Nominal")}</legend>
               <div className="flex flex-wrap gap-2">
                 {PRESETS.map((p) => (
                   <button
@@ -199,34 +201,34 @@ export function DonateView() {
                 ))}
               </div>
               <div className="relative mt-3">
-                <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[13px] text-text-muted">Rp</span>
+                <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-[13px] text-text-muted">{tr("Rp")}</span>
                 <input
                   inputMode="numeric"
                   value={amountStr}
                   onChange={(e) => setAmountStr(e.target.value.replace(/\D/g, "").slice(0, 8))}
-                  aria-label="Nominal donasi"
+                  aria-label={tr("Nominal donasi")}
                   className="input-solid w-full py-3 pl-10 pr-3.5 text-[14px]"
                 />
               </div>
               {amountStr && !amountValid && (
                 <p className="mt-1.5 text-[12px] text-bad-fg">
-                  Minimal {rupiah(config.minAmount)}, maksimal {rupiah(config.maxAmount)}.
+                  {tr("Minimal {rupiah}, maksimal {rupiah2}.", { rupiah: rupiah(config.minAmount), rupiah2: rupiah(config.maxAmount) })}
                 </p>
               )}
             </fieldset>
 
             <div className="grid gap-4 sm:grid-cols-2">
               <label className="block">
-                <span className="mb-1.5 block text-[13px] font-medium text-text-muted">Nama (tampil di Saweria)</span>
+                <span className="mb-1.5 block text-[13px] font-medium text-text-muted">{tr("Nama (tampil di Saweria)")}</span>
                 <input
                   value={name}
                   onChange={(e) => setName(e.target.value.slice(0, 30))}
-                  placeholder="Anonim"
+                  placeholder={tr("Anonim")}
                   className="input-solid w-full px-3.5 py-3 text-[14px]"
                 />
               </label>
               <label className="block">
-                <span className="mb-1.5 block text-[13px] font-medium text-text-muted">Email (untuk bukti)</span>
+                <span className="mb-1.5 block text-[13px] font-medium text-text-muted">{tr("Email (untuk bukti)")}</span>
                 <input
                   type="email"
                   value={email}
@@ -237,12 +239,12 @@ export function DonateView() {
             </div>
 
             <label className="block">
-              <span className="mb-1.5 block text-[13px] font-medium text-text-muted">Pesan (opsional)</span>
+              <span className="mb-1.5 block text-[13px] font-medium text-text-muted">{tr("Pesan (opsional)")}</span>
               <textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value.slice(0, 150))}
                 rows={2}
-                placeholder="Semangat terus!"
+                placeholder={tr("Semangat terus!")}
                 className="input-solid w-full resize-none px-3.5 py-3 text-[14px]"
               />
               <span className="mt-1 block text-right text-[12px] text-text-muted">{message.length}/150</span>
@@ -258,14 +260,14 @@ export function DonateView() {
               className="btn-primary btn-lg flex w-full items-center justify-center gap-2 disabled:opacity-40"
             >
               {busy ? <Loader2 size={16} className="animate-spin" /> : <QrCode size={16} />}
-              {busy ? "Membuat QRIS…" : amountValid ? `Buat QRIS ${rupiah(amount)}` : "Buat QRIS"}
+              {busy ? tr("Membuat QRIS…") : amountValid ? tr("Buat QRIS {rupiah}", { rupiah: rupiah(amount) }) : tr("Buat QRIS")}
             </button>
 
             {config.pageUrl && (
               <p className="text-center text-[13px] text-text-muted">
-                Lebih suka lewat e-wallet atau metode lain?{" "}
+                {tr("Lebih suka lewat e-wallet atau metode lain?")}{" "}
                 <a href={config.pageUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-violet-500 underline underline-offset-2">
-                  Buka halaman Saweria <ExternalLink size={12} />
+                  {tr("Buka halaman Saweria")}{" "}<ExternalLink size={12} />
                 </a>
               </p>
             )}
@@ -274,11 +276,11 @@ export function DonateView() {
 
         {phase === "qr" && donation && (
           <div className="surface-solid space-y-4 p-5 text-center sm:p-6">
-            <p className="text-[13px] text-text-muted">Scan dengan aplikasi bank atau e-wallet apa saja yang mendukung QRIS</p>
+            <p className="text-[13px] text-text-muted">{tr("Scan dengan aplikasi bank atau e-wallet apa saja yang mendukung QRIS")}</p>
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={donation.qrImage}
-              alt={`Kode QRIS donasi ${rupiah(donation.amount)}`}
+              alt={tr("Kode QRIS donasi {rupiah}", { rupiah: rupiah(donation.amount) })}
               width={260}
               height={260}
               className="mx-auto aspect-square h-auto w-full max-w-[260px] rounded-[14px] bg-white p-2"
@@ -286,11 +288,11 @@ export function DonateView() {
             <div>
               <p className="text-[22px] font-semibold">{rupiah(donation.totalPaid)}</p>
               {donation.totalPaid !== donation.amount && (
-                <p className="text-[12px] text-text-muted">Donasi {rupiah(donation.amount)} + biaya layanan</p>
+                <p className="text-[12px] text-text-muted">{tr("Donasi {rupiah} + biaya layanan", { rupiah: rupiah(donation.amount) })}</p>
               )}
             </div>
             <p className="flex items-center justify-center gap-2 text-[13px] text-text-muted" aria-live="polite">
-              <Loader2 size={14} className="animate-spin" /> Menunggu pembayaran…
+              <Loader2 size={14} className="animate-spin" />{" "}{tr("Menunggu pembayaran…")}
             </p>
             {checkNote && (
               <p className="text-[13px] text-warn-fg" role="status">
@@ -299,20 +301,20 @@ export function DonateView() {
             )}
             <div className="flex flex-wrap items-center justify-center gap-2">
               <button type="button" onClick={manualCheck} disabled={checking} className="pill inline-flex items-center gap-1.5 px-3.5 py-2 text-[13px] font-medium disabled:opacity-50">
-                <RefreshCw size={13} className={checking ? "animate-spin" : ""} /> Sudah bayar? Periksa
+                <RefreshCw size={13} className={checking ? "animate-spin" : ""} />{" "}{tr("Sudah bayar? Periksa")}
               </button>
               <a
                 href={donation.qrImage}
                 download={`qris-donasi-${donation.amount}.png`}
                 className="pill inline-flex items-center gap-1.5 px-3.5 py-2 text-[13px] font-medium"
               >
-                <Download size={13} /> Simpan QR
+                <Download size={13} />{" "}{tr("Simpan QR")}
               </a>
               <a href={donation.invoiceUrl} target="_blank" rel="noopener noreferrer" className="pill inline-flex items-center gap-1.5 px-3.5 py-2 text-[13px] font-medium">
-                Buka di Saweria <ExternalLink size={12} />
+                {tr("Buka di Saweria")}{" "}<ExternalLink size={12} />
               </a>
               <button type="button" onClick={again} className="pill px-3.5 py-2 text-[13px] font-medium text-text-muted hover:text-text">
-                Ubah nominal
+                {tr("Ubah nominal")}
               </button>
             </div>
           </div>
@@ -323,27 +325,27 @@ export function DonateView() {
             <span className="mx-auto grid h-14 w-14 place-items-center rounded-full bg-tone-mint text-ok-fg">
               <Check size={28} strokeWidth={3} />
             </span>
-            <h3 className="text-[18px] font-semibold">Terima kasih banyak!</h3>
+            <h3 className="text-[18px] font-semibold">{tr("Terima kasih banyak!")}</h3>
             <p className="text-[13px] leading-relaxed text-text-muted">
-              Pembayaran terdeteksi. Dukunganmu sangat berarti untuk pengembangan Depup.
+              {tr("Pembayaran terdeteksi. Dukunganmu sangat berarti untuk pengembangan Depup.")}
             </p>
             <button type="button" onClick={again} className="pill mx-auto inline-flex items-center gap-1.5 px-4 py-2 text-[13px] font-medium">
-              <Heart size={13} /> Donasi lagi
+              <Heart size={13} />{" "}{tr("Donasi lagi")}
             </button>
           </div>
         )}
 
         {phase === "expired" && (
           <div className="surface-solid space-y-3 p-8 text-center">
-            <h3 className="text-[16px] font-semibold">QRIS sudah kedaluwarsa</h3>
-            <p className="text-[13px] text-text-muted">Kalau kamu sudah membayar, tidak perlu khawatir; periksa email bukti dari Saweria.</p>
+            <h3 className="text-[16px] font-semibold">{tr("QRIS sudah kedaluwarsa")}</h3>
+            <p className="text-[13px] text-text-muted">{tr("Kalau kamu sudah membayar, tidak perlu khawatir; periksa email bukti dari Saweria.")}</p>
             <div className="flex flex-wrap justify-center gap-2">
               <button type="button" onClick={again} className="btn-primary btn-md">
-                Buat QRIS baru
+                {tr("Buat QRIS baru")}
               </button>
               {fallbackUrl && (
                 <a href={fallbackUrl} target="_blank" rel="noopener noreferrer" className="pill btn-md inline-flex items-center gap-1.5 font-medium">
-                  Halaman Saweria <ExternalLink size={12} />
+                  {tr("Halaman Saweria")}{" "}<ExternalLink size={12} />
                 </a>
               )}
             </div>

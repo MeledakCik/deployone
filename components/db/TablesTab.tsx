@@ -1,15 +1,18 @@
 "use client";
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import type { Schema } from "./types";
 import { Btn, heading, subtle, td, th } from "./ui";
 
 export default function TablesTab({ schema, onOpen, onReload }: { schema: Schema; onOpen: (table: string, tab: "browse" | "structure") => void; onReload: () => void }) {
-  const empty = "Belum ada tabel. Buat lewat tab Structure atau jalankan CREATE TABLE di tab SQL.";
+  const tr = useT();
+  const empty = tr("Belum ada tabel. Buat lewat tab Structure atau jalankan CREATE TABLE di tab SQL.");
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-3">
-        <h2 className={heading}>{schema.tables.length} tabel/view</h2>
+        <h2 className={heading}>{tr("{length} tabel/view", { length: schema.tables.length })}</h2>
         <Btn small onClick={onReload}>
-          Refresh
+          {tr("Refresh")}
         </Btn>
       </div>
 
@@ -26,14 +29,14 @@ export default function TablesTab({ schema, onOpen, onReload }: { schema: Schema
                   <span className="shrink-0 rounded-full bg-[var(--pill-bg)] px-2 py-0.5 text-[12px] font-medium text-lav-text">{t.type}</span>
                 </div>
                 <p className={`${subtle} mt-0.5`}>
-                  {String(t.rowCount ?? "—")} baris · {t.columns.length} kolom
+                  {String(t.rowCount ?? "—")}{" "}{tr("baris · {length} kolom", { length: t.columns.length })}
                 </p>
                 <div className="mt-2 grid grid-cols-2 gap-2">
                   <Btn small onClick={() => onOpen(t.name, "browse")}>
-                    Browse
+                    {tr("Browse")}
                   </Btn>
                   <Btn small onClick={() => onOpen(t.name, "structure")}>
-                    Structure
+                    {tr("Structure")}
                   </Btn>
                 </div>
               </li>
@@ -45,10 +48,10 @@ export default function TablesTab({ schema, onOpen, onReload }: { schema: Schema
             <table className="w-full">
               <thead className="bg-[var(--pill-bg)]">
                 <tr>
-                  <th className={th}>Nama</th>
-                  <th className={th}>Tipe</th>
-                  <th className={th}>Baris</th>
-                  <th className={th}>Kolom</th>
+                  <th className={th}>{tr("Nama")}</th>
+                  <th className={th}>{tr("Tipe")}</th>
+                  <th className={th}>{tr("Baris")}</th>
+                  <th className={th}>{tr("Kolom")}</th>
                   <th className={th} />
                 </tr>
               </thead>
@@ -62,10 +65,10 @@ export default function TablesTab({ schema, onOpen, onReload }: { schema: Schema
                     <td className={`${td} text-right`}>
                       <div className="flex justify-end gap-1.5">
                         <Btn small onClick={() => onOpen(t.name, "browse")}>
-                          Browse
+                          {tr("Browse")}
                         </Btn>
                         <Btn small onClick={() => onOpen(t.name, "structure")}>
-                          Structure
+                          {tr("Structure")}
                         </Btn>
                       </div>
                     </td>
@@ -76,7 +79,7 @@ export default function TablesTab({ schema, onOpen, onReload }: { schema: Schema
           </div>
         </>
       )}
-      {schema.triggers.length > 0 && <p className={subtle}>Trigger: {schema.triggers.map((t) => t.name).join(", ")}</p>}
+      {schema.triggers.length > 0 && <p className={subtle}>{tr("Trigger:")}{" "}{schema.triggers.map((t) => t.name).join(", ")}</p>}
     </div>
   );
 }

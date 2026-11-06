@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import { PageTitle } from "@/components/ui/primitives";
 import * as React from "react";
 import { Globe2, Plus, Trash2, X, Copy, Check, RefreshCw } from "@/components/ui/icons";
@@ -12,6 +14,7 @@ import type { DomainItem } from "@/types";
 
 /** One "Type / Name / Value" row the user copies into their DNS provider's dashboard. */
 function DnsField({ label, value }: { label: string; value: string }) {
+  const t = useT();
   const [copied, setCopied] = React.useState(false);
   async function handleCopy() {
     try {
@@ -31,7 +34,7 @@ function DnsField({ label, value }: { label: string; value: string }) {
       <button
         type="button"
         onClick={handleCopy}
-        aria-label={`Salin ${label.toLowerCase()}`}
+        aria-label={t("Salin {toLowerCase}", { toLowerCase: label.toLowerCase() })}
         className="grid h-7 w-7 shrink-0 place-items-center rounded-full hover:bg-[var(--row-hover)]"
       >
         {copied ? <Check size={13} className="text-ok-fg" /> : <Copy size={13} />}
@@ -56,6 +59,7 @@ function useProjectPlatforms() {
 }
 
 function AddDomainModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useT();
   const { addDomain } = useDeploy();
   const { showToast } = useToast();
   const projectNames = useProjectNames();
@@ -71,11 +75,11 @@ function AddDomainModal({ open, onClose }: { open: boolean; onClose: () => void 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!domain.trim()) {
-      showToast("Masukkan nama domain terlebih dahulu");
+      showToast(t("Masukkan nama domain terlebih dahulu"));
       return;
     }
     if (!project) {
-      showToast("Pilih project untuk domain ini");
+      showToast(t("Pilih project untuk domain ini"));
       return;
     }
     addDomain(domain.trim(), project);
@@ -87,11 +91,11 @@ function AddDomainModal({ open, onClose }: { open: boolean; onClose: () => void 
     <div className="anim-fade fixed inset-0 z-[100] flex items-center justify-center modal-scrim px-4">
       <Surface className="anim-pop w-full max-w-sm p-6">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-[16px] font-semibold">Tambah domain</h2>
+          <h2 className="text-[16px] font-semibold">{t("Tambah domain")}</h2>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Tutup"
+            aria-label={t("Tutup")}
             className="grid h-8 w-8 place-items-center rounded-full hover:bg-[var(--row-hover)]"
           >
             <X size={16} />
@@ -100,7 +104,7 @@ function AddDomainModal({ open, onClose }: { open: boolean; onClose: () => void 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label htmlFor="newDomain" className="block text-[12px] font-medium text-text-muted mb-1.5">
-              Domain
+              {t("Domain")}
             </label>
             <input
               id="newDomain"
@@ -113,15 +117,15 @@ function AddDomainModal({ open, onClose }: { open: boolean; onClose: () => void 
             />
           </div>
           <div>
-            <label className="block text-[12px] font-medium text-text-muted mb-1.5">Project</label>
+            <label className="block text-[12px] font-medium text-text-muted mb-1.5">{t("Project")}</label>
             {projectNames.length === 0 ? (
               <p className="input-solid h-11 flex items-center px-3.5 text-[13px] text-text-faint">
-                Belum ada project
+                {t("Belum ada project")}
               </p>
             ) : (
               <Select value={project} onValueChange={setProject}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Pilih project" />
+                  <SelectValue placeholder={t("Pilih project")} />
                 </SelectTrigger>
                 <SelectContent>
                   {(Array.isArray(projectNames)? projectNames : []).map((name) => (
@@ -134,7 +138,7 @@ function AddDomainModal({ open, onClose }: { open: boolean; onClose: () => void 
             )}
           </div>
           <button type="submit" className="btn-primary btn-md w-full">
-            Tambah domain
+            {t("Tambah domain")}
           </button>
         </form>
       </Surface>
@@ -151,6 +155,7 @@ function remoteLabelFor(d: DomainItem): string | null {
 }
 
 export function DomainsView() {
+  const t = useT();
   const {
     domains,
     removeDomain,
@@ -210,20 +215,20 @@ export function DomainsView() {
           type="button"
           onClick={() => handleCheckStatus(d.id)}
           disabled={checkingId === d.id}
-          aria-label={`Periksa status ${d.domain}`}
+          aria-label={t("Periksa status {domain}", { domain: d.domain })}
           className="pill inline-flex items-center gap-1.5 px-3 py-1 text-[12px] max-md:min-h-[40px] font-medium hover:brightness-110 disabled:opacity-60"
         >
           <RefreshCw size={12} className={checkingId === d.id ? "animate-spin" : undefined} />
-          Periksa status
+          {t("Periksa status")}
         </button>
       )}
       <button
         type="button"
         onClick={() => removeDomain(d.id)}
-        aria-label={`Hapus ${d.domain}`}
+        aria-label={t("Hapus {domain}", { domain: d.domain })}
         className="pill inline-flex items-center gap-1.5 px-3 py-1 text-[12px] max-md:min-h-[40px] font-medium text-bad-fg hover:brightness-110"
       >
-        <Trash2 size={12} /> Hapus
+        <Trash2 size={12} />{" "}{t("Hapus")}
       </button>
     </div>
   );
@@ -232,32 +237,31 @@ export function DomainsView() {
     <div className="space-y-2 rounded-[14px] bg-[var(--surface-solid-2)] p-3.5">
       <p className="text-[12px] text-text-muted">
         {d.status === "Active"
-          ? "Sudah aktif. Ini record yang dipakai kalau kamu perlu periksa ulang di DNS provider:"
+          ? t("Sudah aktif. Ini record yang dipakai kalau kamu perlu periksa ulang di DNS provider:")
           : `Domain sudah ditambahkan ke ${remoteLabel ?? "platform"} — tinggal pasang record ini di DNS provider (Cloudflare, Niagahoster, Domainesia, dll):`}
       </p>
       {d.dns && (
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 md:grid-cols-1 lg:grid-cols-3">
-          <DnsField label="Type" value={d.dns.type} />
-          <DnsField label="Name" value={d.dns.name} />
-          <DnsField label="Value" value={d.dns.value} />
+          <DnsField label={t("Type")} value={d.dns.type} />
+          <DnsField label={t("Name")} value={d.dns.name} />
+          <DnsField label={t("Value")} value={d.dns.value} />
         </div>
       )}
       {d.verificationDns && (
         <>
           <p className="text-[12px] text-text-faint pt-1">
-            Railway juga butuh record TXT ini untuk verifikasi kepemilikan domain:
+            {t("Railway juga butuh record TXT ini untuk verifikasi kepemilikan domain:")}
           </p>
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-3 md:grid-cols-1 lg:grid-cols-3">
-            <DnsField label="Type" value={d.verificationDns.type} />
-            <DnsField label="Name" value={d.verificationDns.name} />
-            <DnsField label="Value" value={d.verificationDns.value} />
+            <DnsField label={t("Type")} value={d.verificationDns.type} />
+            <DnsField label={t("Name")} value={d.verificationDns.name} />
+            <DnsField label={t("Value")} value={d.verificationDns.value} />
           </div>
         </>
       )}
       {d.status !== "Active" && (
         <p className="text-[12px] text-text-faint">
-          Propagasi DNS bisa memerlukan waktu beberapa menit sampai jam. Setelah record di atas
-          terpasang di DNS provider kamu, klik &quot;Periksa status&quot; untuk verifikasi.
+          {t("Propagasi DNS bisa memerlukan waktu beberapa menit sampai jam. Setelah record di atas terpasang di DNS provider kamu, klik \"Periksa status\" untuk verifikasi.")}
         </p>
       )}
     </div>
@@ -268,7 +272,7 @@ export function DomainsView() {
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <PageTitle title="Domain" desc={<>Kelola custom domain untuk project kamu.</>} />
+            <PageTitle title={t("Domain")} desc={<>{t("Kelola custom domain untuk project kamu.")}</>} />
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {(vercelToken || savedCloudflareToken || savedRailwayToken) && (
@@ -279,7 +283,7 @@ export function DomainsView() {
                 className="pill btn-md inline-flex items-center gap-2 font-medium hover:brightness-110 disabled:opacity-50"
               >
                 <RefreshCw size={13} className={syncingDomains ? "animate-spin" : undefined} />
-                {syncingDomains ? "Sinkronisasi..." : "Sinkronkan"}
+                {syncingDomains ? t("Sinkronisasi...") : t("Sinkronkan")}
               </button>
             )}
             <button
@@ -287,7 +291,7 @@ export function DomainsView() {
               onClick={() => setModalOpen(true)}
               className="btn-primary btn-md inline-flex items-center gap-2"
             >
-              <Plus size={15} /> Add Domain
+              <Plus size={15} />{" "}{t("Add Domain")}
             </button>
           </div>
         </div>
@@ -295,9 +299,9 @@ export function DomainsView() {
         {safeDomains.length === 0 ? (
           <Surface className="flex flex-col items-center justify-center gap-3 px-6 py-24 text-center">
             <Globe2 size={52} className="text-text-faint" strokeWidth={1.5} />
-            <h2 className="text-[16px] font-semibold">Belum ada domain</h2>
+            <h2 className="text-[16px] font-semibold">{t("Belum ada domain")}</h2>
             <p className="max-w-xs text-[13px] text-text-muted">
-              Tambahkan custom domain dan arahkan DNS kamu ke project Depup.
+              {t("Tambahkan custom domain dan arahkan DNS kamu ke project Depup.")}
             </p>
           </Surface>
         ) : (
@@ -339,10 +343,10 @@ export function DomainsView() {
             <table className="w-full text-left">
               <thead>
                 <tr className="text-[12px] text-text-faint">
-                  <th className="px-6 py-3 font-medium">Domain</th>
-                  <th className="px-6 py-3 font-medium">Project</th>
-                  <th className="px-6 py-3 font-medium">Status</th>
-                  <th className="px-6 py-3 font-medium text-right">Action</th>
+                  <th className="px-6 py-3 font-medium">{t("Domain")}</th>
+                  <th className="px-6 py-3 font-medium">{t("Project")}</th>
+                  <th className="px-6 py-3 font-medium">{t("Status")}</th>
+                  <th className="px-6 py-3 font-medium text-right">{t("Action")}</th>
                 </tr>
               </thead>
               <tbody>

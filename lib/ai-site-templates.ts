@@ -11,6 +11,7 @@
  */
 import { LUCIDE, isIconName } from "@/lib/lucide-icons";
 import { SHOP_RUNTIME_JS } from "@/lib/ai-site-runtime";
+import { formatMoney, isCurrency, localizeRuntime, shortMoney, siteText, type SiteLang } from "@/lib/ai-site-i18n";
 import { contrast as lookContrast, normalizeLook, type LookElement, type LookFont, type LookFontFamily, type SiteLook } from "@/lib/site-look";
 import { ELEMENT_SLOTS, VIEWBOX, isIconStyle, resolveSvgColors, safeSvg, svgDataUri, templateIconStyle, treatIcon, type IconStyle, type SiteOrnament } from "@/lib/site-assets";
 import { pixelIcon } from "@/lib/lucide-pixel";
@@ -70,6 +71,10 @@ export interface SiteItem {
 
 export interface SiteContent {
   kind: SiteKind;
+  /** Bahasa isi website; kosong = Indonesia. */
+  lang?: SiteLang;
+  /** Mata uang harga (ISO 4217); kosong = rupiah. */
+  currency?: string;
   /** Saran AI; pengguna boleh menggantinya. */
   template: TemplateId;
   accent: string;
@@ -384,6 +389,14 @@ function parsePrice(v: unknown): number {
   return Math.round(n * (unit === "jt" || unit === "juta" ? 1_000_000 : 1000));
 }
 
+/** Harga dalam mata uang selain rupiah: 9, "9.50", "$9.50", "1,299.00". */
+function parseMoney(v: unknown): number {
+  if (typeof v === "number") return Number.isFinite(v) && v > 0 ? v : 0;
+  const m = /(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d{1,2}))?/.exec(String(v ?? ""));
+  if (!m) return 0;
+  return parseFloat(m[1].replace(/,/g, "") + (m[2] ? "." + m[2] : "")) || 0;
+}
+
 /**
  * Daftar kekurangan isi mentah dari AI (sebelum dinormalisasi), untuk diberitahukan ke AI saat percobaan ulang.
  * Kosong = tak ada masalah yang terdeteksi.
@@ -421,6 +434,9 @@ export function normalizeContent(raw: unknown, forceKind?: SiteKind): SiteConten
   const brand = str(r.brand, 40);
   const headline = str(r.headline, 90);
   const customIcons = normalizeIcons(r.icons);
+  const lang: SiteLang | undefined = r.lang === "en" ? "en" : undefined;
+  const currency = isCurrency(r.currency) && r.currency !== "IDR" ? r.currency : undefined;
+  const D = (t0: string): string => siteText(lang, t0);
 
   const features: SiteFeature[] = [];
   if (Array.isArray(r.features)) {
@@ -496,12 +512,12 @@ export function normalizeContent(raw: unknown, forceKind?: SiteKind): SiteConten
       const o = it as Record<string, unknown>;
       const name = str(o.name, 60);
       if (!name) continue;
-      const p = parsePrice(o.price);
+      const p = currency ? parseMoney(o.price) : parsePrice(o.price);
       items.push({
         id: `s${seed}${items.length}`,
         name,
         desc: str(o.desc, 140),
-        price: Number.isFinite(p) && p > 0 ? Math.min(Math.round(p), 999_999_999) : 0,
+        price: Number.isFinite(p) && p > 0 ? Math.min(currency ? Math.round(p * 100) / 100 : Math.round(p), 999_999_999) : 0,
         category: str(o.category, 24),
         icon: iconName(o.icon, "package", customIcons),
         img: "",
@@ -530,6 +546,8 @@ export function normalizeContent(raw: unknown, forceKind?: SiteKind): SiteConten
 
   return {
     kind,
+    ...(lang ? { lang } : {}),
+    ...(currency ? { currency } : {}),
     template,
     accent: isHexColor(r.accent) ? r.accent.toLowerCase() : "",
     palette: isNew ? template : "",
@@ -543,21 +561,21 @@ export function normalizeContent(raw: unknown, forceKind?: SiteKind): SiteConten
     badge: str(r.badge, 40),
     headline,
     subheadline: str(r.subheadline, 220),
-    ctaLabel: str(r.ctaLabel, 28) || (kind === "artikel" ? "Baca Artikel" : "Hubungi Kami"),
+    ctaLabel: str(r.ctaLabel, 28) || D(kind === "artikel" ? "Baca Artikel" : "Hubungi Kami"),
     features,
-    itemsTitle: str(r.itemsTitle, 40) || (kind === "umkm" ? "Produk Kami" : kind === "portofolio" ? "Karya Pilihan" : kind === "event" ? "Rangkaian Acara" : kind === "artikel" ? "Artikel Terbaru" : "Layanan"),
+    itemsTitle: str(r.itemsTitle, 40) || D(kind === "umkm" ? "Produk Kami" : kind === "portofolio" ? "Karya Pilihan" : kind === "event" ? "Rangkaian Acara" : kind === "artikel" ? "Artikel Terbaru" : "Layanan"),
     items,
     articles,
-    stepsTitle: str(r.stepsTitle, 40) || "Cara Pesan",
+    stepsTitle: str(r.stepsTitle, 40) || D("Cara Pesan"),
     steps: steps.length >= 2 ? steps : [],
-    aboutTitle: str(r.aboutTitle, 50) || "Tentang Kami",
+    aboutTitle: str(r.aboutTitle, 50) || D("Tentang Kami"),
     about: str(r.about, 600),
     whatsapp: /^\d{8,15}$/.test(wa) ? wa : "",
     email: /^[^\s@<>"']+@[^\s@<>"']+\.[^\s@<>"']+$/.test(email) ? email : "",
     address: str(r.address, 140),
     hours: str(r.hours, 60),
-    featuresTitle: str(r.featuresTitle, 50) || "Keunggulan",
-    closing: str(r.closing, 60) || "Hubungi kami",
+    featuresTitle: str(r.featuresTitle, 50) || D("Keunggulan"),
+    closing: str(r.closing, 60) || D("Hubungi kami"),
     closingText: str(r.closingText, 120),
     ...(normalizeLook(r.look) ? { look: normalizeLook(r.look) } : {}),
     ...(normSections(r.sections) ? { sections: normSections(r.sections) } : {}),
@@ -758,6 +776,55 @@ const DISPLAY = `"Arial Black",Impact,"Helvetica Neue",Arial,sans-serif`;
  *  jatuh ke Georgia di banyak perangkat karena "Roboto Slab"/"Arvo" jarang terpasang bawaan; tetap
  *  disediakan karena perangkat yang punya salah satunya akan menampilkannya. */
 export type FontRoleId = "sans" | "serif" | "slab" | "mono" | "display";
+/**
+ * Huruf Google Fonts yang boleh dipakai (daftar tetap: nama di-whitelist, jadi URL & CSS tidak bisa disusupi).
+ * w = ketebalan yang benar-benar tersedia (Google menolak permintaan ketebalan yang tidak ada).
+ */
+export const GOOGLE_FONTS: { name: string; cat: "sans" | "serif" | "display" | "mono" | "hand"; w: number[] }[] = [
+  { name: "Inter", cat: "sans", w: [400, 500, 600, 700, 800] },
+  { name: "Plus Jakarta Sans", cat: "sans", w: [400, 500, 600, 700, 800] },
+  { name: "Poppins", cat: "sans", w: [400, 500, 600, 700, 800] },
+  { name: "Sora", cat: "sans", w: [400, 500, 600, 700, 800] },
+  { name: "Space Grotesk", cat: "sans", w: [400, 500, 600, 700] },
+  { name: "DM Sans", cat: "sans", w: [400, 500, 600, 700, 800] },
+  { name: "Outfit", cat: "sans", w: [400, 500, 600, 700, 800] },
+  { name: "Manrope", cat: "sans", w: [400, 500, 600, 700, 800] },
+  { name: "Nunito", cat: "sans", w: [400, 500, 600, 700, 800] },
+  { name: "Rubik", cat: "sans", w: [400, 500, 600, 700, 800] },
+  { name: "Work Sans", cat: "sans", w: [400, 500, 600, 700, 800] },
+  { name: "Playfair Display", cat: "serif", w: [400, 500, 600, 700, 800] },
+  { name: "Lora", cat: "serif", w: [400, 500, 600, 700] },
+  { name: "Fraunces", cat: "serif", w: [400, 500, 600, 700, 800] },
+  { name: "Cormorant Garamond", cat: "serif", w: [400, 500, 600, 700] },
+  { name: "DM Serif Display", cat: "serif", w: [400] },
+  { name: "Instrument Serif", cat: "serif", w: [400] },
+  { name: "Bebas Neue", cat: "display", w: [400] },
+  { name: "Anton", cat: "display", w: [400] },
+  { name: "Archivo Black", cat: "display", w: [400] },
+  { name: "Syne", cat: "display", w: [400, 500, 600, 700, 800] },
+  { name: "Unbounded", cat: "display", w: [400, 500, 600, 700, 800] },
+  { name: "JetBrains Mono", cat: "mono", w: [400, 500, 600, 700, 800] },
+  { name: "Space Mono", cat: "mono", w: [400, 700] },
+  { name: "Caveat", cat: "hand", w: [400, 500, 600, 700] },
+];
+const GF_FALLBACK: Record<(typeof GOOGLE_FONTS)[number]["cat"], string> = {
+  sans: "system-ui,-apple-system,'Segoe UI',Roboto,Arial,sans-serif",
+  serif: "Georgia,'Times New Roman',serif",
+  display: "Impact,'Arial Black',system-ui,sans-serif",
+  mono: "ui-monospace,Menlo,Consolas,monospace",
+  hand: "'Segoe Print','Comic Sans MS',cursive",
+};
+export const isGoogleFont = (v: unknown): v is string => typeof v === "string" && GOOGLE_FONTS.some((f) => f.name === v);
+/** URL stylesheet Google Fonts untuk beberapa keluarga (nama sudah di-whitelist). */
+export function googleFontsHref(names: string[]): string {
+  const fams = [...new Set(names)].map((n) => GOOGLE_FONTS.find((f) => f.name === n)).filter((f): f is (typeof GOOGLE_FONTS)[number] => !!f);
+  return `https://fonts.googleapis.com/css2?${fams.map((f) => `family=${f.name.replace(/ /g, "+")}${f.w.length > 1 ? `:wght@${f.w.join(";")}` : ""}`).join("&")}&display=swap`;
+}
+const gfStack = (name: string): string => {
+  const f = GOOGLE_FONTS.find((x) => x.name === name)!;
+  return `'${f.name}',${GF_FALLBACK[f.cat]}`;
+};
+
 export const FONT_ROLES: { id: FontRoleId; name: string; desc: string; stack: string }[] = [
   { id: "sans", name: "Sans-serif", desc: "Tanpa serif, bersih — Inter/Helvetica.", stack: SANS },
   { id: "serif", name: "Serif", desc: "Berkait klasik — Georgia.", stack: SERIF },
@@ -1578,6 +1645,12 @@ export interface RenderOpts {
    * bisa diklik untuk mengubah. Jangan dipakai untuk publish/ekspor.
    */
   editable?: boolean;
+  /** Sudut kartu, gambar, & kotak (px, 0–40). Kosong = ikut Template/gaya. */
+  radius?: number;
+  /** Sudut tombol & label (px, 0–40; 999 = kapsul). Kosong = ikut Template/gaya. */
+  pill?: number;
+  /** Huruf Google Fonts untuk judul & isi (nama dari GOOGLE_FONTS). Kosong = huruf sistem bawaan. */
+  gfonts?: { title?: string; body?: string };
   /** "inline" (default) = data URL tertanam di HTML; "files" = berkas terpisah di assets/img (untuk ZIP). */
   imageMode?: "inline" | "files";
 }
@@ -1606,7 +1679,10 @@ const SHOP_ICONS = [
 ];
 const RUNTIME_UI_ICONS = ["plus", "minus", "pencil", "trash-2", "x", "check", "download", "upload", "save", "rotate-ccw"];
 
-const fmtRp = (n: number): string => "Rp " + String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+/** Bahasa & mata uang website yang sedang dirender (buildSite sinkron, jadi aman disimpan di modul). */
+let RL: { lang?: SiteLang; currency?: string } = {};
+const L = (t: string): string => siteText(RL.lang, t);
+const fmtRp = (n: number): string => formatMoney(n, RL.currency);
 
 function buildCss(t: Theme, a: string, hero: HeroLayout, shop: boolean, hover: HoverEffect, extra: string[], article: boolean, look?: SiteLook, poster = false, swatches: string[] = []): string {
   const A = rgb(a);
@@ -2014,6 +2090,41 @@ function decodeDataUrl(u: string): { ext: string; data: Uint8Array } | null {
   return { ext: m[1] === "jpeg" ? "jpg" : m[1], data: out };
 }
 
+/**
+ * Data terstruktur schema.org (JSON-LD) supaya mesin pencari di mana pun memahami jenis usaha, kontak, jam buka,
+ * produk & harga (IDR), atau daftar artikel. Hanya memakai isi website sendiri, tanpa klaim tambahan.
+ */
+function structuredData(c: SiteContent, items: SiteItem[], arts: SiteArticle[]): Record<string, unknown> {
+  const contact = {
+    ...(c.whatsapp ? { telephone: `+${c.whatsapp}` } : {}),
+    ...(c.email ? { email: c.email } : {}),
+    ...(c.address ? { address: { "@type": "PostalAddress", streetAddress: c.address, ...(c.lang === "en" ? {} : { addressCountry: "ID" }) } } : {}),
+  };
+  const base = { "@context": "https://schema.org", name: c.brand, description: c.subheadline || c.headline, inLanguage: c.lang === "en" ? "en" : "id-ID", ...(c.slogan ? { slogan: c.slogan } : {}) };
+  if (c.kind === "artikel" && arts.length)
+    return { ...base, "@type": "Blog", blogPost: arts.slice(0, 20).map((x) => ({ "@type": "BlogPosting", headline: x.title, description: x.excerpt, ...(x.author ? { author: { "@type": "Person", name: x.author } } : {}), inLanguage: c.lang === "en" ? "en" : "id-ID" })) };
+  if (c.kind === "portofolio") return { ...base, "@type": "ProfilePage", mainEntity: { "@type": "Person", name: c.brand, ...contact } };
+  if (c.kind === "profil" || c.kind === "event") return { ...base, "@type": "Organization", ...contact };
+  const prices = items.map((i) => i.price).filter((x) => x > 0);
+  const rp = (n: number) => formatMoney(n, c.currency);
+  return {
+    ...base,
+    "@type": c.kind === "jasa" ? "ProfessionalService" : "LocalBusiness",
+    ...contact,
+    ...(c.hours ? { openingHours: c.hours } : {}),
+    ...(prices.length ? { priceRange: Math.min(...prices) === Math.max(...prices) ? rp(prices[0]) : `${rp(Math.min(...prices))}–${rp(Math.max(...prices))}` } : {}),
+    ...(items.length
+      ? {
+          makesOffer: items.slice(0, 30).map((i) => ({
+            "@type": "Offer",
+            itemOffered: { "@type": c.kind === "jasa" ? "Service" : "Product", name: i.name, ...(i.desc ? { description: i.desc } : {}) },
+            ...(i.price > 0 ? { price: i.price, priceCurrency: "IDR" } : {}),
+          })),
+        }
+      : {}),
+  };
+}
+
 /** Urutan/sembunyi bagian dari data yang tidak dipercaya: hanya id dikenal, tanpa duplikat. */
 function normSections(v: unknown): SiteContent["sections"] | undefined {
   if (!v || typeof v !== "object") return undefined;
@@ -2026,10 +2137,15 @@ function normSections(v: unknown): SiteContent["sections"] | undefined {
 }
 
 export function buildSite(content: SiteContent, template: TemplateId, accent?: string, opts: RenderOpts = {}): SiteBundle {
+  RL = { lang: content.lang, currency: content.currency };
   const base = THEMES[template];
   const custom = (opts.palette ?? []).filter(isHexColor).map((x) => x.toLowerCase()).slice(0, MAX_PALETTE);
   // Gaya hasil latihan: dipakai kecuali dimatikan (pengguna memilih Template/warna/gaya sendiri).
-  const look = opts.look === false ? undefined : content.look;
+  const lookBase = opts.look === false ? undefined : content.look;
+  const rad = typeof opts.radius === "number" && Number.isFinite(opts.radius) ? Math.round(Math.min(40, Math.max(0, opts.radius))) : undefined;
+  const pil = typeof opts.pill === "number" && Number.isFinite(opts.pill) ? (opts.pill >= 999 ? 999 : Math.round(Math.min(40, Math.max(0, opts.pill)))) : undefined;
+  // Sudut pilihan pengguna juga menimpa bentuk gaya hasil latihan (CSS gaya membaca look.shape langsung).
+  const look = lookBase && (rad !== undefined || pil !== undefined) ? { ...lookBase, shape: { ...lookBase.shape, ...(rad !== undefined ? { radius: rad } : {}), ...(pil !== undefined ? { pill: pil } : {}) } } : lookBase;
   // Gaya ikon: pilihan manual > pilihan mesin (selama Template/gaya yang dipilih mesin masih dipakai) > ciri khas
   // Template. Isi lama tanpa iconStyle tetap "garis" supaya website yang sudah terbit tidak berubah sendiri.
   const iconStyle: IconStyle =
@@ -2085,6 +2201,13 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
   const subWeight = opts.fonts?.sub?.weight ?? titleWeight;
   const bodyWeight = opts.fonts?.body?.weight ?? t.bodyWeight ?? 400;
   if (opts.fonts) t = { ...t, display: titleFamily, sub: subFamily, body: bodyFamily, headWeight: titleWeight, subWeight, bodyWeight };
+  if (rad !== undefined) t = { ...t, radius: `${rad}px` };
+  if (pil !== undefined) t = { ...t, pill: `${pil}px` };
+  // Google Fonts: judul & isi (nama di-whitelist). Ditimpa paling akhir di CSS supaya berlaku di semua gaya.
+  const gfT = isGoogleFont(opts.gfonts?.title) ? opts.gfonts!.title! : undefined;
+  const gfB = isGoogleFont(opts.gfonts?.body) ? opts.gfonts!.body! : undefined;
+  if (gfT) t = { ...t, display: gfStack(gfT), sub: gfStack(gfT) };
+  if (gfB) t = { ...t, body: gfStack(gfB) };
   const extra = custom.slice(2);
   const swatches = siteSwatches(t, a, look, custom);
   const cyc = custom.length >= 3 ? custom.slice(1) : [];
@@ -2148,12 +2271,12 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
 
   const nav = [
     isArticle && !hiddenSec.has("artikel") ? `<a href="#artikel">${esc(c.itemsTitle)}</a>` : "",
-    hasItems && shop && !hiddenSec.has("katalog") ? `<a href="#katalog">Katalog</a>` : "",
-    hasFeatures && !hiddenSec.has("fitur") ? `<a href="#fitur">Keunggulan</a>` : "",
+    hasItems && shop && !hiddenSec.has("katalog") ? `<a href="#katalog">${L("Katalog")}</a>` : "",
+    hasFeatures && !hiddenSec.has("fitur") ? `<a href="#fitur">${L("Keunggulan")}</a>` : "",
     hasItems && !shop && !isArticle && !hiddenSec.has("katalog") ? `<a href="#layanan">${esc(c.itemsTitle)}</a>` : "",
     c.steps.length && !hiddenSec.has("cara") ? `<a href="#cara">${esc(c.stepsTitle)}</a>` : "",
     c.about && !hiddenSec.has("tentang") ? `<a href="#tentang">${esc(c.aboutTitle)}</a>` : "",
-    (wa || mail) && !hiddenSec.has("kontak") ? `<a href="#kontak">Kontak</a>` : c.address && !hiddenSec.has("tentang") ? `<a href="#tentang">Kontak</a>` : "",
+    (wa || mail) && !hiddenSec.has("kontak") ? `<a href="#kontak">${L("Kontak")}</a>` : c.address && !hiddenSec.has("tentang") ? `<a href="#tentang">${L("Kontak")}</a>` : "",
   ]
     .filter(Boolean)
     .slice(0, 5)
@@ -2161,7 +2284,7 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
 
   /* ----- hero ----- */
   const heroRows = isArticle
-    ? arts.slice(0, 3).map((x) => ({ icon: "book-open", title: x.title, text: x.excerpt, tail: `${x.readMin} mnt` }))
+    ? arts.slice(0, 3).map((x) => ({ icon: "book-open", title: x.title, text: x.excerpt, tail: `${x.readMin} ${L("mnt")}` }))
     : shop || (hasItems && items.some((i) => i.price > 0))
       ? items.slice(0, 3).map((i) => ({ icon: i.icon, title: i.name, text: i.desc, tail: i.price > 0 ? fmtRp(i.price) : "" }))
       : c.features.slice(0, 3).map((f) => ({ icon: f.icon, title: f.title, text: f.text, tail: "" }));
@@ -2174,14 +2297,14 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
 
   const ghost = isArticle
     ? c.about || hasContact
-      ? { label: "Tentang kami", href: "#tentang" }
+      ? { label: L("Tentang kami"), href: "#tentang" }
       : null
     : firstSec && firstSec !== "kontak"
-      ? { label: firstSec === "katalog" ? (shop ? "Lihat katalog" : `Lihat ${c.itemsTitle.toLowerCase()}`.slice(0, 32)) : firstSec === "fitur" ? "Lihat keunggulan" : "Lihat selengkapnya", href: `#${firstId}` }
+      ? { label: firstSec === "katalog" ? (shop ? L("Lihat katalog") : `${L("Lihat")} ${c.itemsTitle.toLowerCase()}`.slice(0, 32)) : firstSec === "fitur" ? L("Lihat keunggulan") : L("Lihat selengkapnya"), href: `#${firstId}` }
       : null;
   const badgeHtml = c.badge ? `<div class="badge">${esc(c.badge)}</div>` : "<div></div>";
   const subHtml = c.subheadline ? `<p class="sub">${esc(c.subheadline)}</p>` : "<div></div>";
-  const ctaRow = `<div class="row"><a class="btn" href="${ctaHref}">${esc(c.ctaLabel)}</a>${ghost ? `<a class="btn ghost" href="${ghost.href}">${ghost.label}</a>` : ""}</div>`;
+  const ctaRow = `<div class="row"><a class="btn" href="${ctaHref}"${ef("ctaLabel")}>${esc(c.ctaLabel)}</a>${ghost ? `<a class="btn ghost" href="${ghost.href}">${ghost.label}</a>` : ""}</div>`;
   const heroText = `${badgeHtml}<h1>${esc(c.headline)}</h1>${subHtml}${ctaRow}`;
 
   /* Poster: baris meta, nama raksasa (dua nada bila "bands"), lalu grid sel bergaris: teks terbalik | blok aksen + judul + tombol | elemen. */
@@ -2205,13 +2328,13 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
     const out: { v: string; k: string }[] = [];
     if (prices.length) {
       const m = Math.min(...prices);
-      out.push({ v: m >= 1_000_000 ? `${(m / 1_000_000).toFixed(m % 1_000_000 ? 1 : 0)}jt` : m >= 1000 ? `${Math.round(m / 1000)}rb` : String(m), k: "Harga mulai" });
+      out.push({ v: shortMoney(m, RL.currency), k: L("Harga mulai") });
     }
     if (items.length) out.push({ v: String(items.length).padStart(2, "0"), k: clip(c.itemsTitle, 22) });
-    if (arts.length) out.push({ v: String(arts.length).padStart(2, "0"), k: "Artikel" });
+    if (arts.length) out.push({ v: String(arts.length).padStart(2, "0"), k: L("Artikel") });
     if (c.features.length) out.push({ v: String(c.features.length).padStart(2, "0"), k: clip(c.featuresTitle, 22) });
     if (c.steps.length && out.length < 3) out.push({ v: String(c.steps.length).padStart(2, "0"), k: clip(c.stepsTitle, 22) });
-    out.push({ v: year, k: "Edisi" });
+    out.push({ v: year, k: L("Edisi") });
     return out.slice(0, 3);
   };
   const statsHtml = (): string =>
@@ -2266,14 +2389,14 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
   const labelHero = (): string => {
     const h = hash(c.brand);
     const initial = Array.from(c.brand.trim())[0] ?? "A";
-    const kindName: Record<SiteKind, string> = { umkm: "Toko", jasa: "Jasa", portofolio: "Portofolio", event: "Acara", profil: "Profil", artikel: "Artikel" };
+    const kindName: Record<SiteKind, string> = { umkm: L("Toko"), jasa: L("Jasa"), portofolio: L("Portofolio"), event: L("Acara"), profil: L("Profil"), artikel: L("Artikel") };
     const rows: [string, string][] = [
-      ["Subjek", c.brand],
-      ["Edisi", year],
-      ["Jenis", kindName[c.kind]],
+      [L("Subjek"), c.brand],
+      [L("Edisi"), year],
+      [L("Jenis"), kindName[c.kind]],
       ["No.", `#${String(h % 1000).padStart(3, "0")}`],
     ];
-    if (c.address || look?.meta.find((m) => !/\d{4}/.test(m))) rows.splice(3, 0, ["Asal", clip(c.address || look!.meta.find((m) => !/\d{4}/.test(m))!, 24)]);
+    if (c.address || look?.meta.find((m) => !/\d{4}/.test(m))) rows.splice(3, 0, [L("Asal"), clip(c.address || look!.meta.find((m) => !/\d{4}/.test(m))!, 24)]);
     const x = heroImg ? `<img src="${esc(heroImg)}" alt="" style="width:100%;height:100%;object-fit:cover">` : art(["globe", "crosshair", "sparkle", "asterisk"], "globe");
     return `<div class="lbl"><div class="lbl-a" aria-hidden="true">${esc(initial)}</div><div class="lbl-f"><dl>${rows.map(([k, v]) => `<dt>${esc(k)}:</dt><dd>${esc(v)}</dd>`).join("")}</dl><div class="lbl-bc" aria-hidden="true">${lookSvg("barcode", h % 1e12)}</div></div><div class="lbl-h"><p class="lbl-k">${esc(look?.kicker || c.slogan || c.badge || "")}</p><div><h1>${esc(c.headline)}</h1></div>${c.subheadline ? `<p class="sub">${esc(c.subheadline)}</p>` : ""}${ctaRow}</div><div class="lbl-x${els.has("brackets") ? " brkt" : ""}" aria-hidden="true">${x}</div><div class="lbl-z" aria-hidden="true"><div class="${els.has("checker") ? "ck" : "hz"}" style="height:100%;border:0"></div></div></div>`;
   };
@@ -2337,10 +2460,10 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
     if (!neoEls.has("stickers")) return { burst: "", pill: "", smile: "", spark: "" };
     const st = look?.stickers ?? [];
     const first = statList()[0];
-    const price = first && first.k === "Harga mulai" ? first.v : "";
+    const price = first && first.k === L("Harga mulai") ? first.v : "";
     const h = hash(c.brand);
     return {
-      burst: price ? burstSticker(price, "mulai") : st[0] ? burstSticker(st[0]) : "",
+      burst: price ? burstSticker(price, L("mulai")) : st[0] ? burstSticker(st[0]) : "",
       pill: st[price ? 0 : 1] ? `<span class="nst nst-l" aria-hidden="true" style="--rt:${h % 2 ? -6 : 5}deg">${esc(st[price ? 0 : 1])}</span>` : "",
       smile: h % 3 !== 2 ? SMILEY_STICKER : "",
       spark: SPARK_STICKER,
@@ -2441,13 +2564,13 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
   const hero = `<div class="hero h-${heroL}"${opts.editable ? ' data-sec="hero"' : ""}><div class="glow"></div>${ornamentMarkup(t.deco)}${shapes}${corner}${bignum}<div class="wrap">${heroInner}</div></div>${hazard}${ticker}${divider}`;
 
   /* ----- katalog / layanan ----- */
-  const priceLabel = (i: SiteItem) => (i.price > 0 ? fmtRp(i.price) : "Tanya harga");
+  const priceLabel = (i: SiteItem) => (i.price > 0 ? fmtRp(i.price) : L("Tanya harga"));
   const itemCard = (i: SiteItem, n: number): string =>
     `<article class="card prod${i.size === "large" ? " large" : ""}"${toneStyle(n)}>${
       i.img ? `<div class="pimg"${efImg(`item:${i.id}`)}><img src="${esc(i.img)}" alt="${esc(i.name)}" loading="lazy"></div>` : `<div class="pico"${efImg(`item:${i.id}`)}>${ico(i.icon, 20)}</div>`
     }<div class="pbody">${i.tag || i.category ? `<div class="ptags">${i.tag ? `<span class="ptag hot">${esc(i.tag)}</span>` : ""}${i.category ? `<span class="ptag">${esc(i.category)}</span>` : ""}</div>` : ""}<h3${shop ? "" : ef(`items.${n}.name`)}>${esc(i.name)}</h3>${i.desc ? `<p${shop ? "" : ef(`items.${n}.desc`)}>${esc(i.desc)}</p>` : ""}</div>${
       shop
-        ? `<div class="pfoot"><strong class="pprice">${esc(priceLabel(i))}</strong><button type="button" class="btn sm add">${ico("plus", 16)}Tambah</button></div>`
+        ? `<div class="pfoot"><strong class="pprice">${esc(priceLabel(i))}</strong><button type="button" class="btn sm add">${ico("plus", 16)}${L("Tambah")}</button></div>`
         : i.price > 0
           ? `<div class="pfoot"><strong class="pprice">${esc(fmtRp(i.price))}</strong></div>`
           : ""
@@ -2456,11 +2579,11 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
   const catalog = !hasItems
     ? ""
     : shop
-      ? `<section id="katalog"><div class="wrap"><h2${ef("itemsTitle")}>${esc(c.itemsTitle)}</h2><div class="shop-tools"><label class="search">${ico("search", 18)}<input id="wb-q" type="search" placeholder="Cari produk…" aria-label="Cari produk" autocomplete="off"></label><div id="wb-cats" data-wb-dyn></div></div><div id="wb-grid" class="items" data-wb-dyn>${items.map(itemCard).join("")}</div></div></section>`
+      ? `<section id="katalog"><div class="wrap"><h2${ef("itemsTitle")}>${esc(c.itemsTitle)}</h2><div class="shop-tools"><label class="search">${ico("search", 18)}<input id="wb-q" type="search" placeholder="${L("Cari produk…")}" aria-label="${L("Cari produk")}" autocomplete="off"></label><div id="wb-cats" data-wb-dyn></div></div><div id="wb-grid" class="items" data-wb-dyn>${items.map(itemCard).join("")}</div></div></section>`
       : `<section id="layanan"><div class="wrap"><h2${ef("itemsTitle")}>${esc(c.itemsTitle)}</h2><div class="items">${items.map(itemCard).join("")}</div></div></section>`;
 
   /* ----- artikel: daftar + halaman baca (murni CSS :target, tanpa skrip) ----- */
-  const artMeta = (x: SiteArticle): string => [x.author, `${x.readMin} mnt baca`].filter(Boolean).map(esc).join(" · ");
+  const artMeta = (x: SiteArticle): string => [x.author, `${x.readMin} ${L("mnt baca")}`].filter(Boolean).map(esc).join(" · ");
   const artCover = (x: SiteArticle): string => {
     const s0 = imgSrc(`article:${x.id}`);
     return s0 ? `<div class="acov"><img src="${esc(s0)}" alt="" loading="lazy"></div>` : `<div class="acov ph" aria-hidden="true"><i>${ico("book-open", 26)}</i></div>`;
@@ -2473,7 +2596,7 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
     return "";
   };
   const postCard = (x: SiteArticle, i: number): string =>
-    `<article class="card post${i === 0 ? " top" : tailSpan(i)}">${artCover(x)}<div class="pcont">${x.category ? `<div class="ptags"><span class="ptag hot">${esc(x.category)}</span></div>` : ""}<h3><a href="#a-${x.id}">${esc(x.title)}</a></h3><p>${esc(x.excerpt)}</p><div class="pmeta"><span>${artMeta(x)}</span><span class="more">Baca${ico("arrow-right", 16)}</span></div></div></article>`;
+    `<article class="card post${i === 0 ? " top" : tailSpan(i)}">${artCover(x)}<div class="pcont">${x.category ? `<div class="ptags"><span class="ptag hot">${esc(x.category)}</span></div>` : ""}<h3><a href="#a-${x.id}">${esc(x.title)}</a></h3><p>${esc(x.excerpt)}</p><div class="pmeta"><span>${artMeta(x)}</span><span class="more">${L("Baca")}${ico("arrow-right", 16)}</span></div></div></article>`;
   const articlesSec = isArticle ? `<section id="artikel"><div class="wrap"><h2${ef("itemsTitle")}>${esc(c.itemsTitle)}</h2><div class="posts">${arts.map(postCard).join("")}</div></div></section>` : "";
   const readers = isArticle
     ? arts
@@ -2482,7 +2605,7 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
           const next = arts[i + 1];
           const cov = imgSrc(`article:${x.id}`);
           const body = x.body.map((p) => (p.startsWith("## ") ? `<h3>${esc(p.slice(3))}</h3>` : `<p>${esc(p)}</p>`)).join("");
-          return `<article id="a-${x.id}" class="reader" aria-label="${esc(x.title)}"><div class="rbar"><div class="wrap rw"><a class="btn ghost sm" href="#artikel">${ico("arrow-left", 16)}Semua artikel</a><span class="rbrand">${esc(c.brand)}</span></div></div><div class="rbody"><header class="rhead">${x.category ? `<span class="ptag hot">${esc(x.category)}</span>` : ""}<h1>${esc(x.title)}</h1><p class="rmeta">${artMeta(x)}</p></header>${cov ? `<div class="acov rcov"><img src="${esc(cov)}" alt=""></div>` : ""}<div class="prose">${body}</div><nav class="rnav" aria-label="Artikel lainnya">${prev ? `<a class="card" href="#a-${prev.id}"><small>Sebelumnya</small><b>${esc(prev.title)}</b></a>` : "<span></span>"}${next ? `<a class="card" href="#a-${next.id}"><small>Berikutnya</small><b>${esc(next.title)}</b></a>` : "<span></span>"}</nav></div></article>`;
+          return `<article id="a-${x.id}" class="reader" aria-label="${esc(x.title)}"><div class="rbar"><div class="wrap rw"><a class="btn ghost sm" href="#artikel">${ico("arrow-left", 16)}${L("Semua artikel")}</a><span class="rbrand">${esc(c.brand)}</span></div></div><div class="rbody"><header class="rhead">${x.category ? `<span class="ptag hot">${esc(x.category)}</span>` : ""}<h1>${esc(x.title)}</h1><p class="rmeta">${artMeta(x)}</p></header>${cov ? `<div class="acov rcov"><img src="${esc(cov)}" alt=""></div>` : ""}<div class="prose">${body}</div><nav class="rnav" aria-label="${L("Artikel lainnya")}">${prev ? `<a class="card" href="#a-${prev.id}"><small>${L("Sebelumnya")}</small><b>${esc(prev.title)}</b></a>` : "<span></span>"}${next ? `<a class="card" href="#a-${next.id}"><small>${L("Berikutnya")}</small><b>${esc(next.title)}</b></a>` : "<span></span>"}</nav></div></article>`;
         })
         .join("\n")
     : "";
@@ -2513,12 +2636,12 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
 
   const quoteIcon = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z"/><path d="M5 3a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2 1 1 0 0 1 1 1v1a2 2 0 0 1-2 2 1 1 0 0 0-1 1v2a1 1 0 0 0 1 1 6 6 0 0 0 6-6V5a2 2 0 0 0-2-2z"/></svg>`;
   const testi = c.testimonial?.text
-    ? `<section id="testimoni"><div class="wrap"><div class="tq"><div class="tqh"><div class="ico">${quoteIcon}</div><small>Kata pelanggan</small></div><blockquote><p${ef("testimonial.text")}>${esc(c.testimonial.text)}</p>${c.testimonial.name ? `<cite${ef("testimonial.name")}>${esc(c.testimonial.name)}</cite>` : ""}</blockquote></div></div></section>`
+    ? `<section id="testimoni"><div class="wrap"><div class="tq"><div class="tqh"><div class="ico">${quoteIcon}</div><small>${L("Kata pelanggan")}</small></div><blockquote><p${ef("testimonial.text")}>${esc(c.testimonial.text)}</p>${c.testimonial.name ? `<cite${ef("testimonial.name")}>${esc(c.testimonial.name)}</cite>` : ""}</blockquote></div></div></section>`
     : "";
 
   const contactItems = [
-    c.address ? `<div class="ci"><i>${ico("map-pin", 20)}</i><div><small>Alamat</small><span>${esc(c.address)}</span></div></div>` : "",
-    c.hours ? `<div class="ci"><i>${ico("clock", 20)}</i><div><small>Jam buka</small><span>${esc(c.hours)}</span></div></div>` : "",
+    c.address ? `<div class="ci"><i>${ico("map-pin", 20)}</i><div><small>${L("Alamat")}</small><span>${esc(c.address)}</span></div></div>` : "",
+    c.hours ? `<div class="ci"><i>${ico("clock", 20)}</i><div><small>${L("Jam buka")}</small><span>${esc(c.hours)}</span></div></div>` : "",
     c.whatsapp ? `<div class="ci"><i>${ico("message-circle", 20)}</i><div><small>WhatsApp</small><span>+${esc(c.whatsapp)}</span></div></div>` : "",
     c.email ? `<div class="ci"><i>${ico("mail", 20)}</i><div><small>Email</small><span>${esc(c.email)}</span></div></div>` : "",
   ].join("");
@@ -2532,8 +2655,8 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
       : "";
 
   const buttons = [
-    wa ? `<a class="btn" href="${wa}" rel="noopener">${ico("message-circle", 18)}${esc(/wa|whatsapp/i.test(c.ctaLabel) ? c.ctaLabel : `${c.ctaLabel} via WhatsApp`)}</a>` : "",
-    mail ? `<a class="btn ${wa ? "ghost" : ""}" href="${mail}">${ico("mail", 18)}${wa || isArticle ? "Kirim Email" : esc(c.ctaLabel)}</a>` : "",
+    wa ? `<a class="btn" href="${wa}" rel="noopener">${ico("message-circle", 18)}${esc(/wa|whatsapp/i.test(c.ctaLabel) ? c.ctaLabel : `${c.ctaLabel} ${L("via WhatsApp")}`)}</a>` : "",
+    mail ? `<a class="btn ${wa ? "ghost" : ""}" href="${mail}">${ico("mail", 18)}${wa || isArticle ? L("Kirim Email") : esc(c.ctaLabel)}</a>` : "",
   ].join("");
 
   // Ornamen "pattern": motif tipis di latar blok ajakan, warnanya ikut warna teks blok.
@@ -2553,10 +2676,10 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
     .map((id) => (opts.editable ? secHtml[id].replace(/^<section /, `<section data-sec="${id}" `) : secHtml[id]));
 
   /* ----- keranjang + data untuk skrip ----- */
-  const cartBtn = shop ? `<button type="button" id="wb-cartbtn" class="btn ghost cartbtn" aria-label="Buka keranjang">${ico("shopping-cart", 18)}<b id="wb-count" style="display:none">0</b></button>` : "";
+  const cartBtn = shop ? `<button type="button" id="wb-cartbtn" class="btn ghost cartbtn" aria-label="${L("Buka keranjang")}">${ico("shopping-cart", 18)}<b id="wb-count" style="display:none">0</b></button>` : "";
   const cartUi = shop
     ? `<div id="wb-adminbar" class="adminbar"></div>
-<aside id="wb-cart" class="cdrawer" aria-hidden="true" aria-label="Keranjang"><div class="chead"><h3>Keranjang</h3><button type="button" id="wb-cartclose" class="ib" aria-label="Tutup keranjang">${ico("x", 16)}</button></div><div id="wb-lines" class="clines" data-wb-dyn></div><div class="cfoot"><div class="csum"><span>Total</span><b id="wb-sum">-</b></div><button type="button" id="wb-order" class="btn" disabled>${ico(wa ? "message-circle" : "save", 18)}${wa ? "Pesan via WhatsApp" : "Salin pesanan"}</button><button type="button" id="wb-clear" class="btn ghost sm">Kosongkan keranjang</button></div></aside><div id="wb-cartback" class="cback"></div>
+<aside id="wb-cart" class="cdrawer" aria-hidden="true" aria-label="${L("Keranjang")}"><div class="chead"><h3>${L("Keranjang")}</h3><button type="button" id="wb-cartclose" class="ib" aria-label="${L("Tutup keranjang")}">${ico("x", 16)}</button></div><div id="wb-lines" class="clines" data-wb-dyn></div><div class="cfoot"><div class="csum"><span>${L("Total")}</span><b id="wb-sum">-</b></div><button type="button" id="wb-order" class="btn" disabled>${ico(wa ? "message-circle" : "save", 18)}${wa ? L("Pesan via WhatsApp") : L("Salin pesanan")}</button><button type="button" id="wb-clear" class="btn ghost sm">${L("Kosongkan keranjang")}</button></div></aside><div id="wb-cartback" class="cback"></div>
 <div id="wb-toast" class="toast" role="status" aria-live="polite"></div>`
     : "";
 
@@ -2577,8 +2700,13 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
     })}</script>`;
   }
 
-  const css = buildCss(t, a, heroL, shop, c.hover ?? "lift", extra, isArticle, look, ["poster", "breaker", "terminal", "dashboard", "label"].includes(heroL) || featL === "index" || !!ticker || !!hazard || (neoL && els.has("stats")), swatches);
-  const js = shop ? SHOP_RUNTIME_JS : "";
+  const gfCss =
+    (gfT ? `\nh1,h2,h3,.brand,.brand span,.pprice,.stat b,.steps b,blockquote p,.ncc b,.idx-n,.lbl-a,.pm-k,.fn{font-family:${gfStack(gfT)}!important}` : "") +
+    (gfB ? `\nbody,p,li,.sub,.lead,input,textarea,select,small{font-family:${gfStack(gfB)}}` : "");
+  const css =
+    buildCss(t, a, heroL, shop, c.hover ?? "lift", extra, isArticle, look, ["poster", "breaker", "terminal", "dashboard", "label"].includes(heroL) || featL === "index" || !!ticker || !!hazard || (neoL && els.has("stats")), swatches) +
+    gfCss;
+  const js = shop ? localizeRuntime(SHOP_RUNTIME_JS, c.lang, c.currency) : "";
 
   const bodyCls = look
     ? ` class="lk lk-${esc(look.style)}${heroL === "terminal" ? " lk-s1" : ""}${look.shape.gap === 0 ? " lk-g0" : ""}${look.elements.includes("index") ? " lk-idx" : ""}${look.elements.includes("blocks") ? " lk-blk" : ""}${look.elements.includes("numbers") ? " lk-num" : ""}${look.base === "neo" ? " lkn" : ""}${NEO_BODY_CLS.filter(([e]) => look.elements.includes(e)).map(([, k]) => ` ${k}`).join("")}"`
@@ -2595,9 +2723,16 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
 <meta property="og:type" content="website">
 <meta property="og:title" content="${esc(c.brand)}">
 <meta property="og:description" content="${esc(metaDesc)}">
-<meta property="og:locale" content="id_ID">
+<meta property="og:locale" content="${c.lang === "en" ? "en_US" : "id_ID"}">
 <meta name="twitter:card" content="summary">
-<link rel="icon" href="${favicon}">`;
+<link rel="icon" href="${favicon}">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' data: https://fonts.gstatic.com; img-src 'self' data: blob: https:; connect-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">${
+    gfT || gfB
+      ? `\n<link rel="preconnect" href="https://fonts.googleapis.com">\n<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>\n<link rel="stylesheet" href="${googleFontsHref([gfT, gfB].filter((x): x is string => !!x))}">`
+      : ""
+  }
+<script type="application/ld+json">${jsonForScript(structuredData(c, items, arts))}</script>`;
 
   const topbar =
     look && els.has("topbar")
@@ -2605,21 +2740,21 @@ export function buildSite(content: SiteContent, template: TemplateId, accent?: s
       : "";
   // Menu HP: tautan bagian + tombol utama di panel lipat (tanpa skrip; satu baris skrip menutupnya setelah diklik).
   const burger = `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg>`;
-  const mnav = nav ? `<details class="mnav"><summary aria-label="Buka menu">${burger}</summary><nav class="mlinks" aria-label="Menu">${nav}<a class="btn" href="${ctaHref}">${esc(c.ctaLabel)}</a></nav></details>` : "";
+  const mnav = nav ? `<details class="mnav"><summary aria-label="${L("Buka menu")}">${burger}</summary><nav class="mlinks" aria-label="${L("Menu")}">${nav}<a class="btn" href="${ctaHref}"${ef("ctaLabel")}>${esc(c.ctaLabel)}</a></nav></details>` : "";
   const mnavJs = nav ? `<script>document.addEventListener("click",function(e){var t=e.target,d=document.querySelector(".mnav[open]");if(!d)return;if(!t.closest||!t.closest(".mnav")||t.closest(".mlinks a"))d.open=false;});</script>` : "";
-  const body = `<a class="skip" href="#main">Lewati ke konten</a>\n${topbar}<header class="nav"><div class="wrap"><a class="brand" href="#"><i${logo ? ' class="logo"' : ""}${efImg("logo")}>${brandMark}</i><span${ef("brand")}>${esc(c.brand)}</span></a><nav class="links" aria-label="Menu utama">${nav}</nav>${cartBtn}<a class="btn" href="${ctaHref}">${esc(c.ctaLabel)}</a>${mnav}</div></header>
+  const body = `<a class="skip" href="#main">${L("Lewati ke konten")}</a>\n${topbar}<header class="nav"><div class="wrap"><a class="brand" href="#"><i${logo ? ' class="logo"' : ""}${efImg("logo")}>${brandMark}</i><span${ef("brand")}>${esc(c.brand)}</span></a><nav class="links" aria-label="${L("Menu utama")}">${nav}</nav>${cartBtn}<a class="btn" href="${ctaHref}"${ef("ctaLabel")}>${esc(c.ctaLabel)}</a>${mnav}</div></header>
 <main id="main" tabindex="-1">
 ${hero}
 ${sections.join("\n")}
 </main>
-${look && els.has("checker") ? `<div class="ck" aria-hidden="true"></div>` : ""}<footer><div class="wrap"><span>© ${esc(c.brand)}${c.slogan ? ` · ${esc(c.slogan)}` : ""}</span><span>Dibuat dengan Depup AI Web Builder</span></div></footer>
+${look && els.has("checker") ? `<div class="ck" aria-hidden="true"></div>` : ""}<footer><div class="wrap"><span>© ${esc(c.brand)}${c.slogan ? ` · ${esc(c.slogan)}` : ""}</span><span>${L("Dibuat dengan Depup AI Web Builder")}</span></div></footer>
 ${readers}
 ${cartUi}
 ${dataScript}
 ${mnavJs}`;
 
   const single = `<!doctype html>
-<html lang="id">
+<html lang="${RL.lang === "en" ? "en" : "id"}">
 <head>
 ${head}
 <style>
@@ -2633,7 +2768,7 @@ ${js ? `<script>\n${js}\n</script>` : ""}
 </html>`;
 
   const index = `<!doctype html>
-<html lang="id">
+<html lang="${RL.lang === "en" ? "en" : "id"}">
 <head>
 ${head}
 <link rel="stylesheet" href="assets/style.css">

@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import { useDialogA11y } from "@/components/ui/useDialogA11y";
 import { Icon } from "@/components/ui/Icon";
 import { CloudflareIcon, RailwayIcon, VercelIcon } from "@/components/ui/PlatformIcon";
@@ -142,6 +144,7 @@ function getStepsForPlatform(p: Platform): StepDef[] {
 /* ---------------- Small building blocks ---------------- */
 
 function TokenHelpLink({ topic }: { topic: string }) {
+  const t = useT();
   const { setView } = useDeploy();
   return (
     <button
@@ -149,7 +152,7 @@ function TokenHelpLink({ topic }: { topic: string }) {
       onClick={() => setView("docs")}
       className="inline-flex items-center gap-1 sm:gap-1.5 text-[12px] sm:text-[12px] font-medium text-lav-text hover:text-[var(--dc-text)] transition-colors shrink-0"
     >
-      <HelpCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5" /> Cara mendapatkan {topic}
+      <HelpCircle className="w-3 h-3 sm:w-3.5 sm:h-3.5" />{" "}{t("Cara mendapatkan {topic}", { topic })}
     </button>
   );
 }
@@ -167,13 +170,14 @@ function FieldLabel({
   help?: string;
   children: React.ReactNode;
 }) {
+  const t = useT();
   return (
     <div className="mb-2 flex items-center justify-between gap-2 flex-wrap">
       <label htmlFor={htmlFor} className={labelCls}>
         {children} {required && <span className="text-bad-fg">*</span>}
         {optional && (
           <span className="text-[var(--dc-text-faint)] lowercase normal-case ml-1">
-            (opsional)
+            {t("(opsional)")}
           </span>
         )}
       </label>
@@ -185,6 +189,7 @@ function FieldLabel({
 /* ---------------- Token fields ---------------- */
 
 function VercelTokenField() {
+  const t = useT();
   const { form, setFormField, savedVercelToken, savedVercelTokenStatus } =
     useDeploy();
   const [manualOverride, setManualOverride] = React.useState(false);
@@ -200,7 +205,7 @@ function VercelTokenField() {
   if (savedVercelTokenStatus === "checking") {
     return (
       <p className="inline-flex items-center gap-2 text-[12px] sm:text-xs text-[var(--dc-text-muted)]">
-        <Loader2 size={13} className="animate-spin" /> Memeriksa token...
+        <Loader2 size={13} className="animate-spin" />{" "}{t("Memeriksa token...")}
       </p>
     );
   }
@@ -209,7 +214,7 @@ function VercelTokenField() {
     return (
       <div>
         <FieldLabel htmlFor="platformToken" required>
-          Vercel Token
+          {t("Vercel Token")}
         </FieldLabel>
         <div className="rounded-[14px] sm:rounded-[14px] bg-[var(--dc-green-bg)] p-3.5 sm:p-4">
           <div className="flex items-center gap-3">
@@ -225,10 +230,10 @@ function VercelTokenField() {
             </div>
             <div className="flex-1 min-w-0">
               <div className="text-[12px] sm:text-[13px] font-medium text-[var(--dc-green-fg)] truncate">
-                Terhubung sebagai @{savedVercelToken.username}
+                {t("Terhubung sebagai @{username}", { username: savedVercelToken.username })}
               </div>
               <div className="text-[12px] sm:text-[12px] text-[var(--dc-green-fg-muted)] mt-0.5">
-                Token dari Pengaturan • aman
+                {t("Token dari Pengaturan • aman")}
               </div>
             </div>
           </div>
@@ -238,14 +243,14 @@ function VercelTokenField() {
               onClick={() => setManualOverride(false)}
               className="h-9 rounded-full bg-ok-fg text-white dark:text-midnight text-[12px] sm:text-[13px] font-medium hover:opacity-90 transition-opacity"
             >
-              Pakai token ini
+              {t("Pakai token ini")}
             </button>
             <button
               type="button"
               onClick={() => setManualOverride(true)}
               className="h-9 rounded-full bg-[var(--dc-pill)] text-[var(--dc-text-muted)] text-[12px] sm:text-[13px] font-medium hover:bg-[var(--dc-hover)] transition-colors"
             >
-              Ganti token
+              {t("Ganti token")}
             </button>
           </div>
         </div>
@@ -255,14 +260,14 @@ function VercelTokenField() {
 
   return (
     <div>
-      <FieldLabel htmlFor="platformToken" required help="Vercel Token">
-        Vercel Token
+      <FieldLabel htmlFor="platformToken" required help={t("Vercel Token")}>
+        {t("Vercel Token")}
       </FieldLabel>
       <div className="relative">
         <input
           id="platformToken"
           type="password"
-          placeholder="Tempel token di sini"
+          placeholder={t("Tempel token di sini")}
           value={form.platformToken}
           onChange={(e) => setFormField("platformToken", e.target.value)}
           className={cn(inputCls, "pr-10 font-mono text-[13px] sm:text-[13px]")}
@@ -275,7 +280,7 @@ function VercelTokenField() {
           onClick={() => setManualOverride(false)}
           className="mt-2 sm:mt-2.5 text-[12px] sm:text-[12px] text-[var(--dc-text-muted)] hover:text-[var(--dc-text)] underline underline-offset-4"
         >
-          Pakai token tersimpan lagi
+          {t("Pakai token tersimpan lagi")}
         </button>
       )}
     </div>
@@ -283,6 +288,7 @@ function VercelTokenField() {
 }
 
 function CloudflareTokenField() {
+  const t = useT();
   const {
     form,
     setFormField,
@@ -305,7 +311,7 @@ function CloudflareTokenField() {
   if (savedCloudflareTokenStatus === "checking") {
     return (
       <p className="inline-flex items-center gap-2 text-[12px] sm:text-xs text-[var(--dc-text-muted)]">
-        <Loader2 size={13} className="animate-spin" /> Memeriksa token...
+        <Loader2 size={13} className="animate-spin" />{" "}{t("Memeriksa token...")}
       </p>
     );
   }
@@ -314,7 +320,7 @@ function CloudflareTokenField() {
     return (
       <div>
         <FieldLabel htmlFor="platformToken" required>
-          Cloudflare Token
+          {t("Cloudflare Token")}
         </FieldLabel>
         <div className="rounded-[14px] sm:rounded-[14px] bg-[var(--dc-green-bg)] p-3.5 sm:p-4">
           <div className="flex items-center gap-3">
@@ -333,7 +339,7 @@ function CloudflareTokenField() {
                 {savedCloudflareToken.accountName}
               </div>
               <div className="text-[12px] sm:text-[12px] text-[var(--dc-green-fg-muted)] mt-0.5">
-                Token dari Pengaturan
+                {t("Token dari Pengaturan")}
               </div>
             </div>
           </div>
@@ -343,14 +349,14 @@ function CloudflareTokenField() {
               onClick={() => setManualOverride(false)}
               className="h-9 rounded-full bg-ok-fg text-white dark:text-midnight text-[12px] sm:text-[13px] font-medium hover:opacity-90 transition-opacity"
             >
-              Pakai token ini
+              {t("Pakai token ini")}
             </button>
             <button
               type="button"
               onClick={() => setManualOverride(true)}
               className="h-9 rounded-full bg-[var(--dc-pill)] text-[var(--dc-text-muted)] text-[12px] sm:text-[13px] font-medium hover:bg-[var(--dc-hover)] transition-colors"
             >
-              Ganti token
+              {t("Ganti token")}
             </button>
           </div>
         </div>
@@ -360,14 +366,14 @@ function CloudflareTokenField() {
 
   return (
     <div>
-      <FieldLabel htmlFor="platformToken" required help="Cloudflare Token">
-        Cloudflare Token
+      <FieldLabel htmlFor="platformToken" required help={t("Cloudflare Token")}>
+        {t("Cloudflare Token")}
       </FieldLabel>
       <div className="relative">
         <input
           id="platformToken"
           type="password"
-          placeholder="Tempel token di sini"
+          placeholder={t("Tempel token di sini")}
           value={form.platformToken}
           onChange={(e) => setFormField("platformToken", e.target.value)}
           className={cn(inputCls, "pr-10 font-mono text-[13px] sm:text-[13px]")}
@@ -380,7 +386,7 @@ function CloudflareTokenField() {
           onClick={() => setManualOverride(false)}
           className="mt-2 sm:mt-2.5 text-[12px] sm:text-[12px] text-[var(--dc-text-muted)] hover:text-[var(--dc-text)] underline underline-offset-4"
         >
-          Pakai token tersimpan lagi
+          {t("Pakai token tersimpan lagi")}
         </button>
       )}
     </div>
@@ -388,6 +394,7 @@ function CloudflareTokenField() {
 }
 
 function RailwayTokenField() {
+  const t = useT();
   const { form, setFormField, savedRailwayToken, savedRailwayTokenStatus } =
     useDeploy();
   const [manualOverride, setManualOverride] = React.useState(false);
@@ -403,7 +410,7 @@ function RailwayTokenField() {
   if (savedRailwayTokenStatus === "checking") {
     return (
       <p className="inline-flex items-center gap-2 text-[12px] sm:text-xs text-[var(--dc-text-muted)]">
-        <Loader2 size={13} className="animate-spin" /> Memeriksa token...
+        <Loader2 size={13} className="animate-spin" />{" "}{t("Memeriksa token...")}
       </p>
     );
   }
@@ -412,7 +419,7 @@ function RailwayTokenField() {
     return (
       <div>
         <FieldLabel htmlFor="platformToken" required>
-          Railway Token
+          {t("Railway Token")}
         </FieldLabel>
         <div className="rounded-[14px] sm:rounded-[14px] bg-[var(--dc-green-bg)] p-3.5 sm:p-4">
           <div className="flex items-center gap-3">
@@ -431,7 +438,7 @@ function RailwayTokenField() {
                 {savedRailwayToken.name}
               </div>
               <div className="text-[12px] sm:text-[12px] text-[var(--dc-green-fg-muted)] mt-0.5">
-                Token dari Pengaturan
+                {t("Token dari Pengaturan")}
               </div>
             </div>
           </div>
@@ -441,14 +448,14 @@ function RailwayTokenField() {
               onClick={() => setManualOverride(false)}
               className="h-9 rounded-full bg-ok-fg text-white dark:text-midnight text-[12px] sm:text-[13px] font-medium hover:opacity-90 transition-opacity"
             >
-              Pakai token ini
+              {t("Pakai token ini")}
             </button>
             <button
               type="button"
               onClick={() => setManualOverride(true)}
               className="h-9 rounded-full bg-[var(--dc-pill)] text-[var(--dc-text-muted)] text-[12px] sm:text-[13px] font-medium hover:bg-[var(--dc-hover)] transition-colors"
             >
-              Ganti token
+              {t("Ganti token")}
             </button>
           </div>
         </div>
@@ -458,14 +465,14 @@ function RailwayTokenField() {
 
   return (
     <div>
-      <FieldLabel htmlFor="platformToken" required help="Railway Token">
-        Railway Token
+      <FieldLabel htmlFor="platformToken" required help={t("Railway Token")}>
+        {t("Railway Token")}
       </FieldLabel>
       <div className="relative">
         <input
           id="platformToken"
           type="password"
-          placeholder="Tempel token di sini"
+          placeholder={t("Tempel token di sini")}
           value={form.platformToken}
           onChange={(e) => setFormField("platformToken", e.target.value)}
           className={cn(inputCls, "pr-10 font-mono text-[13px] sm:text-[13px]")}
@@ -478,7 +485,7 @@ function RailwayTokenField() {
           onClick={() => setManualOverride(false)}
           className="mt-2 sm:mt-2.5 text-[12px] sm:text-[12px] text-[var(--dc-text-muted)] hover:text-[var(--dc-text)] underline underline-offset-4"
         >
-          Pakai token tersimpan lagi
+          {t("Pakai token tersimpan lagi")}
         </button>
       )}
     </div>
@@ -507,6 +514,7 @@ function StepHeading({ n, id, done, children }: { n: number; id: string; done: b
 /* ================================================================ */
 
 export function DeployFormView() {
+  const t = useT();
   const {
     form,
     setFormField,
@@ -690,8 +698,8 @@ export function DeployFormView() {
           {/* ---------- HEADER ---------- */}
           <div className="mb-6">
             <PageTitle
-              title="Deploy dari GitHub"
-              desc="Tempel link repo. Depup memeriksa isinya, lalu menyarankan platform yang cocok sebelum deploy dimulai."
+              title={t("Deploy dari GitHub")}
+              desc={t("Tempel link repo. Depup memeriksa isinya, lalu menyarankan platform yang cocok sebelum deploy dimulai.")}
             />
           </div>
 
@@ -699,10 +707,10 @@ export function DeployFormView() {
             {/* ---------- 1. REPO ---------- */}
             <section aria-labelledby="deploy-step-repo" className="surface-solid p-5 sm:p-6">
               <StepHeading n={1} id="deploy-step-repo" done={repoEnvCheck.status === "ok"}>
-                Tempel link repo
+                {t("Tempel link repo")}
               </StepHeading>
               <label htmlFor="githubUrl" className="mt-4 block text-[14px] font-medium text-[var(--dc-text)]">
-                Link repo GitHub
+                {t("Link repo GitHub")}
               </label>
               <input
                 id="githubUrl"
@@ -717,15 +725,15 @@ export function DeployFormView() {
                 className={cn(inputCls, "mt-2 font-mono")}
               />
               <p id="githubUrl-hint" className="mt-2 text-[13px] text-[var(--dc-text-muted)]">
-                Repo private? Isi{" "}
+                {t("Repo private? Isi")}{" "}
                 <button type="button" onClick={() => setView("settings")} className="font-medium text-lav-text underline underline-offset-4">
-                  token GitHub di Pengaturan
+                  {t("token GitHub di Pengaturan")}
                 </button>{" "}
-                dulu.
+                {t("dulu.")}
               </p>
               {form.githubUrl && !form.githubUrl.includes("github.com") && (
                 <p className="mt-2 text-[13px] text-warn-fg flex items-center gap-1.5" role="alert">
-                  <CircleAlert className="w-3.5 h-3.5 shrink-0" /> Link harus dari github.com
+                  <CircleAlert className="w-3.5 h-3.5 shrink-0" />{" "}{t("Link harus dari github.com")}
                 </p>
               )}
               <div aria-live="polite">
@@ -735,8 +743,8 @@ export function DeployFormView() {
                 <p className="mt-2 text-[13px] text-lav-text flex items-start gap-1.5">
                   <CircleAlert className="w-3.5 h-3.5 shrink-0 mt-0.5" />
                   <span>
-                    Repo ini butuh variabel:{" "}
-                    <span className="font-mono">{repoEnvCheck.detectedEnvVars.join(", ")}</span>. Nanti tinggal isi nilainya.
+                    {t("Repo ini butuh variabel:")}{" "}
+                    <span className="font-mono">{repoEnvCheck.detectedEnvVars.join(", ")}</span>{t(". Nanti tinggal isi nilainya.")}
                   </span>
                 </p>
               )}
@@ -752,12 +760,12 @@ export function DeployFormView() {
             {/* ---------- 2. PLATFORM ---------- */}
             <section aria-labelledby="deploy-step-platform" className="surface-solid p-5 sm:p-6">
               <StepHeading n={2} id="deploy-step-platform" done={false}>
-                Pilih platform
+                {t("Pilih platform")}
               </StepHeading>
               <p className="mt-1 text-[13px] text-[var(--dc-text-muted)]">
                 {validation
-                  ? "Platform yang paling cocok sudah dipilihkan. Kamu tetap bisa menggantinya."
-                  : "Kecocokan tiap platform muncul setelah repo diperiksa."}
+                  ? t("Platform yang paling cocok sudah dipilihkan. Kamu tetap bisa menggantinya.")
+                  : t("Kecocokan tiap platform muncul setelah repo diperiksa.")}
               </p>
 
               <div className="mt-4 flex flex-col gap-2.5" role="radiogroup" aria-labelledby="deploy-step-platform">
@@ -785,7 +793,7 @@ export function DeployFormView() {
                       </span>
                       <span className="min-w-0 flex-1">
                         <span className="block text-[16px] font-semibold tracking-[-0.01em] text-[var(--dc-text)]">{p.label}</span>
-                        <span className="mt-0.5 block text-[13px] leading-snug text-[var(--dc-text-muted)]">{p.desc}</span>
+                        <span className="mt-0.5 block text-[13px] leading-snug text-[var(--dc-text-muted)]">{t(p.desc)}</span>
                         <span id={`plat-${p.id}-status`} className="mt-2 flex flex-wrap gap-1.5">
                           {compat && (
                             <span
@@ -796,7 +804,7 @@ export function DeployFormView() {
                                 blocked && "bg-bad-bg text-bad-fg",
                               )}
                             >
-                              {compat.level === "ok" ? "Cocok" : compat.level === "warn" ? "Dengan catatan" : "Tidak cocok"}
+                              {compat.level === "ok" ? t("Cocok") : compat.level === "warn" ? t("Dengan catatan") : t("Tidak cocok")}
                             </span>
                           )}
                           <span
@@ -805,7 +813,7 @@ export function DeployFormView() {
                               hasToken[p.id] ? "bg-ok-bg text-ok-fg" : "bg-[var(--dc-pill)] text-[var(--dc-text-muted)]",
                             )}
                           >
-                            {hasToken[p.id] ? "Token tersimpan" : "Belum ada token"}
+                            {hasToken[p.id] ? t("Token tersimpan") : t("Belum ada token")}
                           </span>
                         </span>
                       </span>
@@ -836,23 +844,23 @@ export function DeployFormView() {
                 )}
               >
                 <Rocket className="w-4 h-4" />
-                Lanjut deploy ke {activePlatformInfo?.label}
+                {t("Lanjut deploy ke {label}", { label: activePlatformInfo?.label })}
                 <ArrowRight className="w-4 h-4" />
               </button>
               <p id="deploy-start-hint" className="mt-2 text-center text-[13px] text-[var(--dc-text-muted)]">
                 {!form.githubUrl?.trim()
-                  ? "Tempel link repo dulu."
+                  ? t("Tempel link repo dulu.")
                   : repoEnvCheck.status === "checking"
-                    ? "Sedang memeriksa repo…"
+                    ? t("Sedang memeriksa repo…")
                     : repoEnvCheck.status === "error"
-                      ? "Repo belum bisa diperiksa. Lihat penjelasannya di langkah 1."
+                      ? t("Repo belum bisa diperiksa. Lihat penjelasannya di langkah 1.")
                       : repoEnvCheck.status !== "ok"
-                      ? "Tunggu sampai repo selesai diperiksa."
+                      ? t("Tunggu sampai repo selesai diperiksa.")
                       : compatOf(platform)?.level === "blocked"
-                        ? `Repo ini tidak cocok untuk ${activePlatformInfo?.label}. Pilih platform lain.`
+                        ? t("Repo ini tidak cocok untuk {label}. Pilih platform lain.", { label: activePlatformInfo?.label })
                         : !hasToken[platform]
-                          ? `Token ${activePlatformInfo?.label} bisa diisi di langkah berikutnya.`
-                          : "Siap. Tinggal beri nama project."}
+                          ? t("Token {label} bisa diisi di langkah berikutnya.", { label: activePlatformInfo?.label })
+                          : t("Siap. Tinggal beri nama project.")}
               </p>
             </section>
           </div>
@@ -903,10 +911,10 @@ export function DeployFormView() {
                   </div>
                   <div className="min-w-0">
                     <div className="text-[13px] sm:text-[13px] font-semibold leading-tight truncate text-[var(--dc-text)]">
-                      Deploy ke {activePlatformInfo?.label}
+                      {t("Deploy ke {label}", { label: activePlatformInfo?.label })}
                     </div>
                     <div className="text-[12px] sm:text-[12px] text-[var(--dc-text-muted)] mt-0.5 truncate">
-                      Langkah {currentStep + 1} dari {steps.length} •{" "}
+                      {t("Langkah")}{" "}{currentStep + 1}{" "}{t("dari {length} •", { length: steps.length })}{" "}
                       {step?.title}
                     </div>
                   </div>
@@ -914,7 +922,7 @@ export function DeployFormView() {
                 <button
                   onClick={closeModal}
                   className="w-8 h-8 rounded-full bg-[var(--dc-pill)] flex items-center justify-center hover:bg-[var(--dc-hover)] transition-colors shrink-0"
-                  aria-label="Tutup"
+                  aria-label={t("Tutup")}
                 >
                   <X className="w-4 h-4 text-[var(--dc-text-muted)]" />
                 </button>
@@ -985,15 +993,15 @@ export function DeployFormView() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <h3 className="text-[16px] sm:text-[18px] font-semibold tracking-tight leading-tight flex items-center gap-2 flex-wrap text-[var(--dc-text)]">
-                          {step.title}
+                          {t(step.title)}
                           {step.optional && (
                             <span className="text-[12px] px-1.5 sm:px-2 py-0.5 rounded-full bg-[var(--dc-pill)] text-[var(--dc-text-faint)] font-medium">
-                              Opsional
+                              {t("Opsional")}
                             </span>
                           )}
                         </h3>
                         <p className="mt-1 sm:mt-1.5 text-[13px] sm:text-[14px] leading-[1.5] text-[var(--dc-text-muted)]">
-                          {step.desc}
+                          {t(step.desc)}
                         </p>
                       </div>
                     </div>
@@ -1006,7 +1014,7 @@ export function DeployFormView() {
                       {step.id === "projectName" && (
                         <div>
                           <FieldLabel htmlFor="projectName" required>
-                            Nama project
+                            {t("Nama project")}
                           </FieldLabel>
                           <div className="relative">
                             <input
@@ -1030,7 +1038,7 @@ export function DeployFormView() {
                           <div className="mt-2.5 sm:mt-3 rounded-[14px] sm:rounded-[10px] bg-[var(--dc-surface-2)] px-3 py-2 sm:py-2.5 flex items-center gap-2 text-[12px] sm:text-[12px] text-[var(--dc-text-faint)]">
                             <Globe className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0" />
                             <span className="truncate">
-                              Preview:{" "}
+                              {t("Preview:")}{" "}
                               <span className="text-[var(--dc-text-muted)]">
                                 {previewDomain}
                               </span>
@@ -1050,7 +1058,7 @@ export function DeployFormView() {
                       {step.id === "accountId" && (
                         <div>
                           <FieldLabel htmlFor="accountId" required>
-                            ID akun Cloudflare
+                            {t("ID akun Cloudflare")}
                           </FieldLabel>
                           <input
                             id="accountId"
@@ -1073,13 +1081,13 @@ export function DeployFormView() {
                         <div className="grid gap-3 sm:gap-4 sm:grid-cols-2">
                           <div>
                             <FieldLabel htmlFor="buildCommand" optional>
-                              Perintah build
+                              {t("Perintah build")}
                             </FieldLabel>
                             <input
                               id="buildCommand"
                               type="text"
                               autoFocus
-                              placeholder="npm run build"
+                              placeholder={t("npm run build")}
                               value={form.buildCommand}
                               onChange={(e) =>
                                 setFormField("buildCommand", e.target.value)
@@ -1092,7 +1100,7 @@ export function DeployFormView() {
                           </div>
                           <div>
                             <FieldLabel htmlFor="outputDir" optional>
-                              Folder output
+                              {t("Folder output")}
                             </FieldLabel>
                             <input
                               id="outputDir"
@@ -1116,16 +1124,16 @@ export function DeployFormView() {
                           <FieldLabel
                             htmlFor="githubPat"
                             optional
-                            help="GitHub Token"
+                            help={t("GitHub Token")}
                           >
-                            Token GitHub
+                            {t("Token GitHub")}
                           </FieldLabel>
                           <div className="relative">
                             <input
                               id="githubPat"
                               type="password"
                               autoFocus
-                              placeholder="ghp_… (khusus repo private)"
+                              placeholder={t("ghp_… (khusus repo private)")}
                               value={form.githubPat}
                               onChange={(e) =>
                                 setFormField("githubPat", e.target.value)
@@ -1139,7 +1147,7 @@ export function DeployFormView() {
                           </div>
                           <div className="mt-2 sm:mt-2.5 flex items-center gap-1.5 text-[12px] sm:text-[12px] text-[var(--dc-text-faint)]">
                             <ExternalLink className="w-3 h-3 shrink-0" />
-                            Token hanya dipakai untuk deploy ini dan tidak disimpan
+                            {t("Token hanya dipakai untuk deploy ini dan tidak disimpan")}
                           </div>
                         </div>
                       )}
@@ -1147,18 +1155,18 @@ export function DeployFormView() {
                       {step.id === "env" && (
                         <div>
                           <FieldLabel htmlFor="envText" optional>
-                            Variabel environment
+                            {t("Variabel environment")}
                           </FieldLabel>
                           {repoEnvCheck.status === "ok" &&
                             repoEnvCheck.detectedEnvVars.length > 0 && (
                               <div className="mb-2 text-[12px] sm:text-[12px] text-lav-text flex items-start gap-1.5">
                                 <CircleAlert className="w-3 h-3 shrink-0 mt-0.5" />
                                 <span>
-                                  Terdeteksi dari repo:{" "}
+                                  {t("Terdeteksi dari repo:")}{" "}
                                   <span className="font-mono">
                                     {repoEnvCheck.detectedEnvVars.join(", ")}
                                   </span>
-                                  . Isi value-nya di bawah sebelum deploy.
+                                  {t(". Isi value-nya di bawah sebelum deploy.")}
                                 </span>
                               </div>
                             )}
@@ -1166,7 +1174,7 @@ export function DeployFormView() {
                             id="envText"
                             rows={4}
                             autoFocus
-                            placeholder={"KEY=value\nANOTHER_KEY=value"}
+                            placeholder={t("KEY=value\nANOTHER_KEY=value")}
                             value={form.envText}
                             onChange={(e) =>
                               setFormField("envText", e.target.value)
@@ -1199,7 +1207,7 @@ export function DeployFormView() {
                   )}
                 >
                   <ArrowLeft className="w-3.5 h-3.5" />
-                  <span className="hidden xs:inline">Kembali</span>
+                  <span className="hidden xs:inline">{t("Kembali")}</span>
                 </button>
 
                 <div className="flex items-center gap-2 min-w-0">
@@ -1209,7 +1217,7 @@ export function DeployFormView() {
                       onClick={skip}
                       className="h-10 sm:h-9 px-3 sm:px-4 rounded-full text-[13px] sm:text-[13px] font-medium text-[var(--dc-text-faint)] hover:text-[var(--dc-text-muted)] transition-colors shrink-0"
                     >
-                      Lewati
+                      {t("Lewati")}
                     </button>
                   )}
 
@@ -1219,7 +1227,7 @@ export function DeployFormView() {
                       form="deployForm"
                       className="h-10 sm:h-9 px-5 rounded-full text-[13px] sm:text-[13px] font-medium flex items-center gap-1.5 transition-all bg-[var(--dc-btn-bg)] text-[var(--dc-btn-fg)] hover:opacity-90 shadow-[var(--dc-shadow-btn)] active:scale-[0.97] shrink-0"
                     >
-                      <span className="whitespace-nowrap">Deploy sekarang</span>
+                      <span className="whitespace-nowrap">{t("Deploy sekarang")}</span>
                       <Rocket className="w-3.5 h-3.5" />
                     </button>
                   ) : (
@@ -1234,7 +1242,7 @@ export function DeployFormView() {
                           : "bg-[var(--dc-pill)] text-[var(--dc-text-faint)] cursor-not-allowed",
                       )}
                     >
-                      Lanjut <ArrowRight className="w-3.5 h-3.5" />
+                      {t("Lanjut")}{" "}<ArrowRight className="w-3.5 h-3.5" />
                     </button>
                   )}
                 </div>

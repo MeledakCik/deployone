@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import * as React from "react";
 import { Check } from "lucide-react";
 import { SELECTED_FILL } from "./shared";
@@ -9,6 +11,7 @@ import { ScaledFrame } from "./ScaledFrame";
 
 /** Miniatur tampilan nyata. Iframe baru dibuat saat kartunya terlihat, tanpa skrip, tidak bisa difokus. */
 export function TemplateThumb({ build, swatch, name }: { build: () => string; swatch: [string, string]; name: string }) {
+  const tr = useT();
   const ref = React.useRef<HTMLDivElement>(null);
   const [seen, setSeen] = React.useState(false);
 
@@ -37,7 +40,7 @@ export function TemplateThumb({ build, swatch, name }: { build: () => string; sw
   return (
     <div ref={ref} className="h-[86px] w-full overflow-hidden rounded-lg" aria-hidden>
       {html ? (
-        <ScaledFrame html={html} title={`Contoh tampilan ${name}`} vw={1100} fitHeight={86} sandbox="" interactive={false} />
+        <ScaledFrame html={html} title={tr("Contoh tampilan {name}", { name })} vw={1100} fitHeight={86} sandbox="" interactive={false} />
       ) : (
         <span className="flex h-full w-full">
           <span className="flex-1" style={{ background: swatch[0] }} />
@@ -64,8 +67,9 @@ export function TemplatePicker({
   palette: string[] | null;
   onPick: (id: TemplateId) => void;
 }) {
+  const tr = useT();
   return (
-    <div role="group" aria-label="Pilih template" className="grid grid-cols-2 gap-2.5 min-[420px]:grid-cols-3">
+    <div role="group" aria-label={tr("Pilih template")} className="grid grid-cols-2 gap-2.5 min-[420px]:grid-cols-3">
       {TEMPLATES.map((t) => (
         <TemplateCard key={t.id} t={t} selected={value === t.id} suggested={suggestedId === t.id} preview={preview} palette={palette} onPick={onPick} />
       ))}
@@ -88,6 +92,7 @@ function TemplateCard({
   palette: string[] | null;
   onPick: (id: TemplateId) => void;
 }) {
+  const tr = useT();
   const build = React.useCallback(() => {
     const colors = palette ?? defaultPalette(t.id);
     const opts: RenderOpts = { palette: palette ?? undefined, shop: false, images: {}, look: false };
@@ -101,13 +106,13 @@ function TemplateCard({
         selected ? SELECTED_FILL : "bg-[var(--tile-fill,var(--pill-bg))] hover:bg-[var(--card-hover)]",
       )}
     >
-      <TemplateThumb build={build} swatch={t.swatch} name={t.name} />
+      <TemplateThumb build={build} swatch={t.swatch} name={tr(t.name)} />
       <span className="flex min-w-0 items-center gap-1.5">
         {selected && <Check size={14} className="shrink-0" aria-hidden />}
-        <span className="block min-w-0 truncate text-[13px] font-semibold">{t.name}</span>
+        <span className="block min-w-0 truncate text-[13px] font-semibold">{tr(t.name)}</span>
       </span>
       {suggested ? (
-        <span className={cn("block truncate text-[12px] font-medium", selected ? "opacity-90" : "text-lav-text")}>Saran AI</span>
+        <span className={cn("block truncate text-[12px] font-medium", selected ? "opacity-90" : "text-lav-text")}>{tr("Saran AI")}</span>
       ) : (
         <span aria-hidden className="block h-[16px]" />
       )}
@@ -115,7 +120,7 @@ function TemplateCard({
         type="button"
         onClick={() => onPick(t.id)}
         aria-pressed={selected}
-        aria-label={`${t.name}${suggested ? ", saran AI" : ""}. ${t.desc}`}
+        aria-label={`${tr(t.name)}${suggested ? tr(", saran AI") : ""}. ${tr(t.desc)}`}
         className="absolute inset-0 rounded-[14px]"
       />
     </div>

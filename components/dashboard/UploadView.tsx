@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import { PageTitle } from "@/components/ui/primitives";
 import * as React from "react";
 import { UploadCloud, FileArchive, FolderUp, Loader2, Check, CircleAlert, ExternalLink, Rocket, Lock, X } from "@/components/ui/icons";
@@ -49,6 +51,7 @@ function guessRepoName(result: CollectResult, sourceName: string): string {
 type Stage = "idle" | "reading" | "ready" | "uploading" | "done";
 
 export function UploadView() {
+  const t = useT();
   const { showToast } = useToast();
   const {
     setView,
@@ -84,7 +87,7 @@ export function UploadView() {
   const platforms = React.useMemo(() => {
     const list: { id: Platform; label: string }[] = [];
     if (savedVercelToken) list.push({ id: "vercel", label: "Vercel" });
-    if (savedCloudflareToken) list.push({ id: "cloudflare", label: "Cloudflare Pages" });
+    if (savedCloudflareToken) list.push({ id: "cloudflare", label: t("Cloudflare Pages") });
     if (savedRailwayToken) list.push({ id: "railway", label: "Railway" });
     return list;
   }, [savedVercelToken, savedCloudflareToken, savedRailwayToken]);
@@ -112,7 +115,7 @@ export function UploadView() {
     } catch (e) {
       setCollected(null);
       setStage("idle");
-      setError(e instanceof UploadError ? e.message : "Gagal membaca file. Coba lagi atau pakai zip lain.");
+      setError(e instanceof UploadError ? e.message : t("Gagal membaca file. Coba lagi atau pakai zip lain."));
     }
   }
 
@@ -121,7 +124,7 @@ export function UploadView() {
     e.target.value = "";
     if (!file) return;
     if (!/\.zip$/i.test(file.name)) {
-      setError("File harus berformat .zip");
+      setError(t("File harus berformat .zip"));
       return;
     }
     void handleCollect(() => collectFromZip(file), file.name.replace(/\.zip$/i, ""));
@@ -149,16 +152,16 @@ export function UploadView() {
   async function startUpload() {
     if (!collected) return;
     if (!githubPat.trim()) {
-      setError('GitHub Token belum diisi. Buka menu Pengaturan, isi "Token GitHub" (izin repo), lalu kembali ke sini.');
+      setError(t("GitHub Token belum diisi. Buka menu Pengaturan, isi \"Token GitHub\" (izin repo), lalu kembali ke sini."));
       return;
     }
     const name = sanitizeRepoName(repoName);
     if (!name) {
-      setError("Nama repo belum valid. Pakai huruf, angka, titik, strip, atau underscore.");
+      setError(t("Nama repo belum valid. Pakai huruf, angka, titik, strip, atau underscore."));
       return;
     }
     if (deployNow && !platform) {
-      setError("Pilih platform tujuan deploy, atau matikan opsi deploy langsung.");
+      setError(t("Pilih platform tujuan deploy, atau matikan opsi deploy langsung."));
       return;
     }
 
@@ -174,17 +177,17 @@ export function UploadView() {
         repoName: name,
         isPrivate,
         allowExisting,
-        description: "Diunggah lewat Depup",
+        description: t("Diunggah lewat Depup"),
         onProgress: setProgress,
         signal: controller.signal,
       });
       setResult(res);
       setStage("done");
-      showToast(`Berhasil diunggah ke ${res.owner}/${res.repo}`);
+      showToast(t("Berhasil diunggah ke {owner}/{repo}", { owner: res.owner, repo: res.repo }));
       if (deployNow && platform) startDeploy(res, platform);
     } catch (e) {
       setStage("ready");
-      setError(e instanceof UploadError ? e.message : "Upload gagal karena kesalahan tak terduga. Coba lagi.");
+      setError(e instanceof UploadError ? e.message : t("Upload gagal karena kesalahan tak terduga. Coba lagi."));
     } finally {
       abortRef.current = null;
     }
@@ -216,7 +219,7 @@ export function UploadView() {
   function startDeploy(res: UploadResult, target: Platform) {
     const values = buildDeployValues(res, target);
     if (!values) {
-      showToast("Token platform belum tersimpan — lanjutkan dari menu Deploy.");
+      showToast(t("Token platform belum tersimpan — lanjutkan dari menu Deploy."));
       return;
     }
     deployFromValues(values);
@@ -251,17 +254,16 @@ export function UploadView() {
   return (
     <ViewFade>
       <div className="mb-6">
-        <PageTitle title="Unggah project" desc={<>Upload zip atau folder project — otomatis diekstrak, dikirim ke repo GitHub baru, dan (kalau mau) langsung
-          dideploy.</>} />
+        <PageTitle title={t("Unggah project")} desc={<>{t("Upload zip atau folder project — otomatis diekstrak, dikirim ke repo GitHub baru, dan (kalau mau) langsung dideploy.")}</>} />
       </div>
 
       {!githubPat.trim() && (
         <div className="mb-4 flex items-start gap-2.5 rounded-[14px] bg-[var(--warn-bg)] px-4 py-3 text-[13px] text-warn-fg">
           <CircleAlert size={16} className="mt-0.5 shrink-0" />
           <span>
-            Fitur ini butuh <b>GitHub Token</b> (izin <code>repo</code>) untuk membuat repo atas nama kamu.{" "}
+            {t("Fitur ini butuh")}{" "}<b>{t("GitHub Token")}</b>{" "}{t("(izin")}{" "}<code>repo</code>{t(") untuk membuat repo atas nama kamu.")}{" "}
             <button type="button" onClick={() => setView("settings")} className="underline underline-offset-4">
-              Isi di Pengaturan
+              {t("Isi di Pengaturan")}
             </button>
             .
           </span>
@@ -275,7 +277,7 @@ export function UploadView() {
         >
           <CircleAlert size={16} className="mt-0.5 shrink-0" />
           <span className="min-w-0 flex-1 break-words">{error}</span>
-          <button type="button" onClick={() => setError(null)} aria-label="Tutup pesan" className="shrink-0">
+          <button type="button" onClick={() => setError(null)} aria-label={t("Tutup pesan")} className="shrink-0">
             <X size={14} />
           </button>
         </div>
@@ -298,15 +300,15 @@ export function UploadView() {
           {stage === "reading" ? (
             <>
               <Loader2 size={34} className="animate-spin text-text-muted" />
-              <p className="mt-4 text-[14px] font-medium">Membaca & mengekstrak file…</p>
-              <p className="mt-1 text-[12px] text-text-muted">Project besar bisa butuh beberapa detik.</p>
+              <p className="mt-4 text-[14px] font-medium">{t("Membaca & mengekstrak file…")}</p>
+              <p className="mt-1 text-[12px] text-text-muted">{t("Project besar bisa butuh beberapa detik.")}</p>
             </>
           ) : (
             <>
               <UploadCloud size={38} className="text-text-muted" />
-              <p className="mt-4 text-[16px] font-medium">Tarik &amp; lepas file .zip atau folder project ke sini</p>
+              <p className="mt-4 text-[16px] font-medium">{t("Tarik & lepas file .zip atau folder project ke sini")}</p>
               <p className="mt-1 text-[12px] text-text-muted">
-                node_modules, .git, dan hasil build otomatis dilewati. File .env tidak ikut diunggah.
+                {t("node_modules, .git, dan hasil build otomatis dilewati. File .env tidak ikut diunggah.")}
               </p>
               <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
                 <button
@@ -314,14 +316,14 @@ export function UploadView() {
                   onClick={() => zipInputRef.current?.click()}
                   className="btn-primary btn-md inline-flex items-center gap-2"
                 >
-                  <FileArchive size={15} /> Pilih file ZIP
+                  <FileArchive size={15} />{" "}{t("Pilih file ZIP")}
                 </button>
                 <button
                   type="button"
                   onClick={() => folderInputRef.current?.click()}
                   className="pill btn-md inline-flex items-center gap-2 font-medium hover:bg-[var(--card-hover)]"
                 >
-                  <FolderUp size={15} /> Pilih folder
+                  <FolderUp size={15} />{" "}{t("Pilih folder")}
                 </button>
               </div>
             </>
@@ -346,32 +348,32 @@ export function UploadView() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-[14px] font-semibold">
-                {collected.files.length} file siap diunggah{" "}
+                {t("{length} file siap diunggah", { length: collected.files.length })}{" "}
                 <span className="font-normal text-text-muted">· {formatBytes(collected.totalBytes)}</span>
               </p>
               {collected.strippedRoot && (
                 <p className="mt-0.5 text-[12px] text-text-muted">
-                  Folder pembungkus <code>{collected.strippedRoot}/</code> dibuang, isinya jadi root repo.
+                  {t("Folder pembungkus")}{" "}<code>{collected.strippedRoot}/</code>{" "}{t("dibuang, isinya jadi root repo.")}
                 </p>
               )}
             </div>
             {!busy && (
               <button type="button" onClick={reset} className="text-[12px] text-text-muted underline underline-offset-4">
-                Ganti file
+                {t("Ganti file")}
               </button>
             )}
           </div>
 
           {collected.skipped.length > 0 && (
             <details className="mt-3 text-[12px] text-text-muted">
-              <summary className="cursor-pointer select-none">{collected.skipped.length} file dilewati</summary>
+              <summary className="cursor-pointer select-none">{t("{length} file dilewati", { length: collected.skipped.length })}</summary>
               <ul className="mt-2 max-h-36 space-y-0.5 overflow-y-auto pl-4">
                 {collected.skipped.slice(0, 100).map((s) => (
                   <li key={s.path} className="list-disc break-all">
                     <code>{s.path}</code> — {s.reason}
                   </li>
                 ))}
-                {collected.skipped.length > 100 && <li className="list-none">…dan {collected.skipped.length - 100} lainnya</li>}
+                {collected.skipped.length > 100 && <li className="list-none">{t("…dan")}{" "}{collected.skipped.length - 100} lainnya</li>}
               </ul>
             </details>
           )}
@@ -379,7 +381,7 @@ export function UploadView() {
           <div className="mt-5 grid gap-5 sm:grid-cols-2">
             <div>
               <label htmlFor="upload-repo" className="mb-1.5 block text-[12px] font-medium">
-                Nama repo GitHub
+                {t("Nama repo GitHub")}
               </label>
               <input
                 id="upload-repo"
@@ -387,7 +389,7 @@ export function UploadView() {
                 disabled={busy}
                 onChange={(e) => setRepoName(e.target.value)}
                 onBlur={() => setRepoName((v) => sanitizeRepoName(v))}
-                placeholder="nama-project"
+                placeholder={t("nama-project")}
                 className={inputCls}
                 autoComplete="off"
                 spellCheck={false}
@@ -395,7 +397,7 @@ export function UploadView() {
             </div>
 
             <fieldset disabled={busy}>
-              <legend className="mb-1.5 block text-[12px] font-medium">Visibilitas</legend>
+              <legend className="mb-1.5 block text-[12px] font-medium">{t("Visibilitas")}</legend>
               <div className="flex gap-2">
                 {[
                   { v: true, label: "Private", icon: <Lock size={13} /> },
@@ -429,18 +431,18 @@ export function UploadView() {
               className="mt-0.5"
             />
             <span>
-              Timpa repo yang sudah ada kalau namanya sama{" "}
-              <span className="text-text-faint">(isi branch utama diganti dengan upload ini lewat commit baru)</span>
+              {t("Timpa repo yang sudah ada kalau namanya sama")}{" "}
+              <span className="text-text-faint">{t("(isi branch utama diganti dengan upload ini lewat commit baru)")}</span>
             </span>
           </label>
 
           {/* Pilihan deploy */}
           <div className="mt-5 rounded-[14px] bg-[var(--surface-solid-2)] p-4">
-            <p className="text-[12px] font-medium">Setelah upload…</p>
+            <p className="text-[12px] font-medium">{t("Setelah upload…")}</p>
             <div className="mt-2.5 grid gap-2 sm:grid-cols-2">
               {[
-                { v: false, title: "Upload saja", desc: "Hanya kirim ke GitHub. Deploy nanti dari menu Deploy." },
-                { v: true, title: "Langsung deploy", desc: "Otomatis deploy repo ini begitu upload selesai." },
+                { v: false, title: t("Upload saja"), desc: t("Hanya kirim ke GitHub. Deploy nanti dari menu Deploy.") },
+                { v: true, title: t("Langsung deploy"), desc: t("Otomatis deploy repo ini begitu upload selesai.") },
               ].map((o) => (
                 <button
                   key={o.title}
@@ -463,16 +465,16 @@ export function UploadView() {
               <div className="mt-3">
                 {platforms.length === 0 ? (
                   <p className="text-[12px] text-warn-fg">
-                    Belum ada token platform yang tersimpan.{" "}
+                    {t("Belum ada token platform yang tersimpan.")}{" "}
                     <button type="button" onClick={() => setView("settings")} className="underline underline-offset-4">
-                      Isi token Vercel/Cloudflare/Railway di Pengaturan
+                      {t("Isi token Vercel/Cloudflare/Railway di Pengaturan")}
                     </button>{" "}
-                    dulu, atau pilih &ldquo;Upload saja&rdquo;.
+                    {t("dulu, atau pilih “Upload saja”.")}
                   </p>
                 ) : (
                   <>
                     <label htmlFor="upload-platform" className="mb-1.5 block text-[12px] font-medium">
-                      Deploy ke
+                      {t("Deploy ke")}
                     </label>
                     <select
                       id="upload-platform"
@@ -494,7 +496,7 @@ export function UploadView() {
 
             <div className="mt-4">
               <label htmlFor="upload-env" className="mb-1.5 block text-[12px] font-medium">
-                Environment variables <span className="font-normal text-text-muted">(opsional, satu per baris: KEY=value)</span>
+                {t("Environment variables")}{" "}<span className="font-normal text-text-muted">{t("(opsional, satu per baris: KEY=value)")}</span>
               </label>
               <textarea
                 id="upload-env"
@@ -507,16 +509,16 @@ export function UploadView() {
                 rows={5}
                 spellCheck={false}
                 autoComplete="off"
-                placeholder={"DATABASE_URL=postgres://...\nNEXT_PUBLIC_API_URL=https://..."}
+                placeholder={t("DATABASE_URL=postgres://...\nNEXT_PUBLIC_API_URL=https://...")}
                 className={cn(inputCls, "resize-y font-mono text-[12px]")}
               />
               <p className="mt-1.5 text-[12px] text-text-muted">
                 {envFromLocal
-                  ? "Terisi otomatis dari file .env di project-mu. File .env-nya sendiri tidak diunggah ke GitHub. "
+                  ? t("Terisi otomatis dari file .env di project-mu. File .env-nya sendiri tidak diunggah ke GitHub. ")
                   : ""}
                 {deployNow
-                  ? "Saat deploy, env ini dipasang ke platform sebelum build pertama dan otomatis muncul di menu Environment untuk project ini."
-                  : "Dipakai kalau kamu lanjut deploy dari tombol “Deploy repo ini” setelah upload."}
+                  ? t("Saat deploy, env ini dipasang ke platform sebelum build pertama dan otomatis muncul di menu Environment untuk project ini.")
+                  : t("Dipakai kalau kamu lanjut deploy dari tombol “Deploy repo ini” setelah upload.")}
               </p>
             </div>
           </div>
@@ -545,15 +547,15 @@ export function UploadView() {
             >
               {stage === "uploading" ? (
                 <>
-                  <Loader2 size={15} className="animate-spin" /> Meng-upload…
+                  <Loader2 size={15} className="animate-spin" />{" "}{t("Meng-upload…")}
                 </>
               ) : deployNow ? (
                 <>
-                  <Rocket size={15} /> Upload &amp; Deploy
+                  <Rocket size={15} />{" "}{t("Upload & Deploy")}
                 </>
               ) : (
                 <>
-                  <UploadCloud size={15} /> Upload ke GitHub
+                  <UploadCloud size={15} />{" "}{t("Upload ke GitHub")}
                 </>
               )}
             </button>
@@ -563,7 +565,7 @@ export function UploadView() {
                 onClick={() => abortRef.current?.abort()}
                 className="text-[12px] text-text-muted underline underline-offset-4"
               >
-                Batalkan
+                {t("Batalkan")}
               </button>
             )}
           </div>
@@ -576,16 +578,16 @@ export function UploadView() {
           <span className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-[var(--ok-bg)] text-ok-fg">
             <Check size={24} />
           </span>
-          <h3 className="mt-4 text-[18px] font-semibold">Upload berhasil</h3>
+          <h3 className="mt-4 text-[18px] font-semibold">{t("Upload berhasil")}</h3>
           <p className="mt-1 text-[13px] text-text-muted">
-            {result.fileCount} file masuk ke{" "}
+            {t("{fileCount} file masuk ke", { fileCount: result.fileCount })}{" "}
             <a href={result.url} target="_blank" rel="noopener noreferrer" className="underline underline-offset-4">
               {result.owner}/{result.repo}
             </a>{" "}
-            ({result.isPrivate ? "private" : "public"}, branch {result.branch}).
+            ({result.isPrivate ? "private" : "public"}{t(", branch {branch}).", { branch: result.branch })}
           </p>
           {deployNow && platform && (
-            <p className="mt-2 text-[13px] text-text-muted">Proses deploy sudah dimulai — ikuti progresnya di jendela yang muncul.</p>
+            <p className="mt-2 text-[13px] text-text-muted">{t("Proses deploy sudah dimulai — ikuti progresnya di jendela yang muncul.")}</p>
           )}
           <div className="mt-6 flex flex-wrap justify-center gap-3">
             {!deployNow && (
@@ -594,7 +596,7 @@ export function UploadView() {
                 onClick={continueInDeployWizard}
                 className="btn-primary btn-md inline-flex items-center gap-2"
               >
-                <Rocket size={15} /> Deploy repo ini
+                <Rocket size={15} />{" "}{t("Deploy repo ini")}
               </button>
             )}
             <a
@@ -603,14 +605,14 @@ export function UploadView() {
               rel="noopener noreferrer"
               className="pill btn-md inline-flex items-center gap-2 font-medium hover:bg-[var(--card-hover)]"
             >
-              <ExternalLink size={15} /> Buka di GitHub
+              <ExternalLink size={15} />{" "}{t("Buka di GitHub")}
             </a>
             <button
               type="button"
               onClick={reset}
               className="pill btn-md inline-flex items-center gap-2 font-medium hover:bg-[var(--card-hover)]"
             >
-              Upload lagi
+              {t("Upload lagi")}
             </button>
           </div>
         </div>

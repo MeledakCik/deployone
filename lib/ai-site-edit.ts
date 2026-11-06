@@ -104,6 +104,7 @@ const FIELD_RULES: { re: RegExp; max: number; optional?: boolean }[] = [
   { re: /^headline$/, max: 140 },
   { re: /^subheadline$/, max: 260, optional: true },
   { re: /^badge$/, max: 40, optional: true },
+  { re: /^ctaLabel$/, max: 40 },
   { re: /^(featuresTitle|itemsTitle|stepsTitle|aboutTitle)$/, max: 70 },
   { re: /^about$/, max: 700, optional: true },
   { re: /^closing$/, max: 80 },

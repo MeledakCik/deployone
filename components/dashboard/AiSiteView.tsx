@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import * as React from "react";
 import {
   Sparkles, ExternalLink, Copy, Trash2, CircleAlert, Check, RefreshCw, Download, FileCode2,
@@ -40,6 +42,9 @@ import {
   type FontRoleId,
   type FontWeightId,
   FONT_WEIGHTS,
+  GOOGLE_FONTS,
+  googleFontsHref,
+  isGoogleFont,
   type RenderOpts,
 } from "@/lib/ai-site-templates";
 import { downloadZip, downloadHtml, downloadJson, copyHtml } from "@/lib/ai-site-export";
@@ -69,6 +74,7 @@ import { FontRolePicker } from "./ai-site/FontRolePicker";
 import { CanvasFrame, type CanvasHandle, type CanvasMsg } from "./ai-site/CanvasFrame";
 import { HeroLayoutPicker, FeatLayoutPicker } from "./ai-site/LayoutPicker";
 import { SectionsPanel } from "./ai-site/SectionsPanel";
+import { GoogleFontPicker } from "./ai-site/GoogleFontPicker";
 
 interface KeyStatus {
   hasKey: boolean;
@@ -182,6 +188,8 @@ interface Draft {
   /** Ditambahkan belakangan: draf lama tidak punya (tetap v: 1). */
   iconOpt?: unknown;
   ornOff?: unknown;
+  shapeOpt?: unknown;
+  gfOpt?: unknown;
 }
 
 function readDraft(): Draft | null {
@@ -227,6 +235,20 @@ const validFonts = (v: unknown): v is FontRoles =>
   !!v &&
   typeof v === "object" &&
   (["title", "sub", "body"] as const).every((k) => validRoleSetting((v as FontRoles)[k]));
+interface ShapeOpt {
+  radius: number | null;
+  pill: number | null;
+}
+interface GfOpt {
+  title: string | null;
+  body: string | null;
+}
+const EMPTY_SHAPE: ShapeOpt = { radius: null, pill: null };
+const EMPTY_GF: GfOpt = { title: null, body: null };
+const numOrNull = (v: unknown) => v === null || (typeof v === "number" && v >= 0 && (v <= 40 || v === 999));
+const validShape = (v: unknown): v is ShapeOpt => !!v && typeof v === "object" && numOrNull((v as ShapeOpt).radius) && numOrNull((v as ShapeOpt).pill);
+const validGf = (v: unknown): v is GfOpt =>
+  !!v && typeof v === "object" && ((v as GfOpt).title === null || isGoogleFont((v as GfOpt).title)) && ((v as GfOpt).body === null || isGoogleFont((v as GfOpt).body));
 const validPalette = (v: unknown): v is string[] =>
   Array.isArray(v) && v.length >= 2 && v.length <= MAX_PALETTE && v.every((x) => typeof x === "string" && isHex(x));
 
@@ -244,6 +266,8 @@ interface Snapshot {
   fontsOpt: FontRoles;
   iconOpt: IconStyle | null;
   ornOff: boolean;
+  shapeOpt: ShapeOpt;
+  gfOpt: GfOpt;
   variant: number;
   shopOn: boolean;
 }
@@ -264,6 +288,7 @@ function ImageRow({
   onPick: () => void;
   onRemove: () => void;
 }) {
+  const tr = useT();
   return (
     <li className="flex items-center gap-3">
       <span className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-[14px] bg-[var(--pill-bg)] text-text-faint">
@@ -275,17 +300,17 @@ function ImageRow({
         )}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[14px] font-medium">{def.label}</p>
+        <p className="truncate text-[14px] font-medium">{tr(def.label)}</p>
         <p className={`truncate ${hintCls}`}>{src ? formatBytes(dataUrlBytes(src)) : def.hint}</p>
       </div>
-      <Btn busy={busy} onClick={onPick} aria-label={`${src ? "Ganti" : "Unggah"} gambar ${def.label}`}>
-        <ImagePlus size={13} /> {src ? "Ganti" : "Unggah"}
+      <Btn busy={busy} onClick={onPick} aria-label={tr(src ? "Ganti gambar {label}" : "Unggah gambar {label}", { label: tr(def.label) })}>
+        <ImagePlus size={13} /> {src ? tr("Ganti") : tr("Unggah")}
       </Btn>
       {src && (
         <button
           type="button"
           onClick={onRemove}
-          aria-label={`Hapus gambar ${def.label}`}
+          aria-label={tr("Hapus gambar {label}", { label: tr(def.label) })}
           className="pill grid h-10 w-10 shrink-0 place-items-center hover:!bg-bad-bg hover:text-bad-fg"
         >
           <X size={15} />
@@ -296,6 +321,7 @@ function ImageRow({
 }
 
 export function AiSiteView() {
+  const tr = useT();
   const { showToast } = useToast();
   const confirm = useConfirm();
   const reduced = useReducedMotion();
@@ -333,6 +359,9 @@ export function AiSiteView() {
   const [iconOpt, setIconOpt] = React.useState<IconStyle | null>(null);
   // true = sembunyikan ornamen dari paket elemen (content.ornaments)
   const [ornOff, setOrnOff] = React.useState(false);
+  // Sudut kartu & tombol (null = ikut Template/gaya), dan huruf Google Fonts untuk judul & isi (null = huruf bawaan).
+  const [shapeOpt, setShapeOpt] = React.useState<ShapeOpt>(EMPTY_SHAPE);
+  const [gfOpt, setGfOpt] = React.useState<GfOpt>(EMPTY_GF);
   // null per peran = ikut Gaya desain/Template (Sub-judul: ikut Judul lebih dulu, lihat lib/ai-site-templates.ts)
   const [fontsOpt, setFontsOpt] = React.useState<FontRoles>(EMPTY_FONTS);
   // Cara menampilkan kartu "2. Tampilan": "ai" = ringkas (Template + Warna, tata letak disembunyikan),
@@ -428,12 +457,14 @@ export function AiSiteView() {
             if (validFonts(d.fontsOpt)) setFontsOpt(d.fontsOpt);
             if (isIconStyle(d.iconOpt)) setIconOpt(d.iconOpt);
             if (d.ornOff === true) setOrnOff(true);
+            if (validShape(d.shapeOpt)) setShapeOpt(d.shapeOpt);
+            if (validGf(d.gfOpt)) setGfOpt(d.gfOpt);
             if (d.tampilanMode === "ai" || d.tampilanMode === "manual") setTampilanMode(d.tampilanMode);
             if (typeof d.shopOn === "boolean") setShopOn(d.shopOn);
             if (typeof d.variant === "number") setVariant(d.variant);
-            showToast(d.hadImages ? "Draf terakhir dipulihkan. Gambar perlu diunggah lagi." : "Draf terakhir dipulihkan.");
+            showToast(d.hadImages ? tr("Draf terakhir dipulihkan. Gambar perlu diunggah lagi.") : tr("Draf terakhir dipulihkan."));
           } else if (d.prompt) {
-            showToast("Deskripsi terakhir dipulihkan.");
+            showToast(tr("Deskripsi terakhir dipulihkan."));
           }
         }
         setHydrated(true);
@@ -499,8 +530,10 @@ export function AiSiteView() {
       hero: heroEff, feat: featEff, shop: shopOn, palette: palette ?? undefined,
       style: styleOpt ?? undefined, decor: decorOpt ?? undefined, bg: bgOpt ?? undefined, fonts: fontsEff, images, look: lookOn,
       iconStyle: iconOpt ?? undefined, ornaments: !ornOff,
+      radius: shapeOpt.radius ?? undefined, pill: shapeOpt.pill ?? undefined,
+      gfonts: gfOpt.title || gfOpt.body ? { title: gfOpt.title ?? undefined, body: gfOpt.body ?? undefined } : undefined,
     }),
-    [heroEff, featEff, shopOn, palette, styleOpt, decorOpt, bgOpt, fontsEff, images, lookOn, iconOpt, ornOff],
+    [heroEff, featEff, shopOn, palette, styleOpt, decorOpt, bgOpt, fontsEff, images, lookOn, iconOpt, ornOff, shapeOpt, gfOpt],
   );
   const html = React.useMemo(
     () => renderSite(previewContent, tplId, accentEff, renderOpts),
@@ -531,6 +564,10 @@ export function AiSiteView() {
       bgOpt !== null ||
       iconOpt !== null ||
       ornOff ||
+      shapeOpt.radius !== null ||
+      shapeOpt.pill !== null ||
+      !!gfOpt.title ||
+      !!gfOpt.body ||
       fontsOpt.title.family !== null ||
       fontsOpt.title.weight !== null ||
       fontsOpt.sub.family !== null ||
@@ -540,17 +577,17 @@ export function AiSiteView() {
   const dirtyMedia = !!content && html !== savedHtml && (Object.keys(images).length > 0 || photos.length > 0);
 
   const noAiMsg = "";
-  const genHint = !canUseAi ? noAiMsg : !promptReady ? "Tulis minimal 10 karakter di kolom Deskripsi untuk mulai." : "";
-  const editHint = !canUseAi ? noAiMsg : !editReady ? "Tulis perintahnya minimal 4 karakter." : "";
+  const genHint = !canUseAi ? noAiMsg : !promptReady ? tr("Tulis minimal 10 karakter di kolom Deskripsi untuk mulai.") : "";
+  const editHint = !canUseAi ? noAiMsg : !editReady ? tr("Tulis perintahnya minimal 4 karakter.") : "";
 
   const imageSlots = React.useMemo<ImageSlotDef[]>(() => {
     const out: ImageSlotDef[] = [
-      { key: "logo", slot: "logo", label: "Logo", hint: "Pojok kiri atas. PNG transparan paling rapi" },
-      { key: "hero", slot: "hero", label: "Gambar utama", hint: "Tampil di bagian atas halaman" },
+      { key: "logo", slot: "logo", label: "Logo", hint: tr("Pojok kiri atas. PNG transparan paling rapi") },
+      { key: "hero", slot: "hero", label: tr("Gambar utama"), hint: tr("Tampil di bagian atas halaman") },
     ];
     if (content) {
-      content.items.forEach((i) => out.push({ key: `item:${i.id}`, slot: "item", label: i.name, hint: "Foto produk" }));
-      (content.articles ?? []).forEach((a) => out.push({ key: `article:${a.id}`, slot: "article", label: a.title, hint: "Sampul artikel" }));
+      content.items.forEach((i) => out.push({ key: `item:${i.id}`, slot: "item", label: i.name, hint: tr("Foto produk") }));
+      (content.articles ?? []).forEach((a) => out.push({ key: `article:${a.id}`, slot: "article", label: a.title, hint: tr("Sampul artikel") }));
     }
     return out;
   }, [content]);
@@ -569,7 +606,7 @@ export function AiSiteView() {
         }
         const d: Draft = {
           v: 1, prompt, kindPick, content, template, palette, heroOpt, featOpt, styleOpt, decorOpt, bgOpt, fontsOpt, tampilanMode, shopOn, variant,
-          hadImages: Object.keys(images).length > 0, iconOpt, ornOff,
+          hadImages: Object.keys(images).length > 0, iconOpt, ornOff, shapeOpt, gfOpt,
         };
         localStorage.setItem(DRAFT_KEY, JSON.stringify(d));
       } catch {
@@ -577,7 +614,7 @@ export function AiSiteView() {
       }
     }, 600);
     return () => window.clearTimeout(t);
-  }, [hydrated, prompt, kindPick, content, template, palette, heroOpt, featOpt, styleOpt, decorOpt, bgOpt, fontsOpt, tampilanMode, shopOn, variant, images, iconOpt, ornOff]);
+  }, [hydrated, prompt, kindPick, content, template, palette, heroOpt, featOpt, styleOpt, decorOpt, bgOpt, fontsOpt, tampilanMode, shopOn, variant, images, iconOpt, ornOff, shapeOpt, gfOpt]);
 
   // Peringatkan sebelum menutup halaman bila ada gambar/foto yang belum disimpan (tidak ikut draf).
   React.useEffect(() => {
@@ -592,9 +629,9 @@ export function AiSiteView() {
 
   // Umumkan proses AI untuk pembaca layar (tombol tetap bisa difokus, jadi teksnya tidak otomatis dibacakan).
   React.useEffect(() => {
-    if (busy === "ai") say("AI sedang merancang websitemu. Mohon tunggu.");
-    else if (busy === "edit") say("AI sedang menerapkan perubahan. Mohon tunggu.");
-    else if (busy === "publish") say("Sedang mempublikasikan website.");
+    if (busy === "ai") say(tr("AI sedang merancang websitemu. Mohon tunggu."));
+    else if (busy === "edit") say(tr("AI sedang menerapkan perubahan. Mohon tunggu."));
+    else if (busy === "publish") say(tr("Sedang mempublikasikan website."));
   }, [busy, say]);
 
   // Setelah generate: kembali ke atas supaya editor terlihat penuh.
@@ -607,7 +644,7 @@ export function AiSiteView() {
   /* ---------- riwayat / urungkan ---------- */
 
   function snapshot(): Snapshot | null {
-    return content ? { content, images, template, palette, heroOpt, featOpt, styleOpt, decorOpt, bgOpt, fontsOpt, iconOpt, ornOff, variant, shopOn } : null;
+    return content ? { content, images, template, palette, heroOpt, featOpt, styleOpt, decorOpt, bgOpt, fontsOpt, iconOpt, ornOff, shapeOpt, gfOpt, variant, shopOn } : null;
   }
 
   function pushHistory() {
@@ -640,6 +677,8 @@ export function AiSiteView() {
     setFontsOpt(s.fontsOpt);
     setIconOpt(s.iconOpt);
     setOrnOff(s.ornOff);
+    setShapeOpt(s.shapeOpt);
+    setGfOpt(s.gfOpt);
     setVariant(s.variant);
     setShopOn(s.shopOn);
   }
@@ -652,7 +691,7 @@ export function AiSiteView() {
     setHistory((h) => [...h.slice(-29), cur]);
     restore(next);
     setPublished(null);
-    showToast("Perubahan diulang.");
+    showToast(tr("Perubahan diulang."));
   }
 
   function undo() {
@@ -673,11 +712,13 @@ export function AiSiteView() {
     setFontsOpt(last.fontsOpt);
     setIconOpt(last.iconOpt);
     setOrnOff(last.ornOff);
+    setShapeOpt(last.shapeOpt);
+    setGfOpt(last.gfOpt);
     setVariant(last.variant);
     setShopOn(last.shopOn);
     setPublished(null);
     setEditError(null);
-    showToast("Perubahan terakhir dibatalkan.");
+    showToast(tr("Perubahan terakhir dibatalkan."));
   }
 
   /* ---------- gambar & foto ---------- */
@@ -698,7 +739,7 @@ export function AiSiteView() {
       const url = await fileToDataUrl(file, def.slot);
       const others = totalImageBytes(images) - (images[def.key] ? dataUrlBytes(images[def.key]) : 0);
       if (others + dataUrlBytes(url) > IMAGE_BUDGET_BYTES) {
-        showToast(`Total gambar melebihi ${formatBytes(IMAGE_BUDGET_BYTES)}. Hapus gambar lain dulu.`);
+        showToast(tr("Total gambar melebihi {formatBytes}. Hapus gambar lain dulu.", { formatBytes: formatBytes(IMAGE_BUDGET_BYTES) }));
         return;
       }
       setImages((m) => ({ ...m, [def.key]: url }));
@@ -725,8 +766,8 @@ export function AiSiteView() {
         next.push({ id: `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`, file: f, preview: URL.createObjectURL(f) });
       }
       if (next.length) setPhotos((cur) => [...cur, ...next]);
-      if (tooBig) showToast(`${tooBig} foto tidak ditambahkan: total melebihi ${formatBytes(MAX_PRELOAD_BYTES)}.`);
-      else if (badType) showToast(`${badType} file dilewati. Pakai PNG, JPG, WebP, atau GIF.`);
+      if (tooBig) showToast(tr("{tooBig} foto tidak ditambahkan: total melebihi {formatBytes}.", { tooBig, formatBytes: formatBytes(MAX_PRELOAD_BYTES) }));
+      else if (badType) showToast(tr("{badType} file dilewati. Pakai PNG, JPG, WebP, atau GIF.", { badType }));
     } finally {
       setPhotosAdding(false);
     }
@@ -771,18 +812,18 @@ export function AiSiteView() {
     if (!cfg) return;
     const size = new TextEncoder().encode(h).length;
     if (size > cfg.maxBytes) {
-      setError(`Halaman terlalu besar (${formatBytes(size)}, batas ${formatBytes(cfg.maxBytes)}). Hapus atau ganti beberapa gambar dengan yang lebih kecil.`);
+      setError(tr("Halaman terlalu besar ({formatBytes}, batas {formatBytes2}). Hapus atau ganti beberapa gambar dengan yang lebih kecil.", { formatBytes: formatBytes(size), formatBytes2: formatBytes(cfg.maxBytes) }));
       return;
     }
     const prev = replacePrev ? lastPubId : null;
     const full = siteCount >= cfg.maxSites;
     if (full && !prev) {
-      setError(`Kuota link aktif penuh (${siteCount} dari ${cfg.maxSites}). Hapus satu link di menu Link Instan dulu, lalu coba lagi.`);
+      setError(tr("Kuota link aktif penuh ({siteCount} dari {maxSites}). Hapus satu link di menu Link Instan dulu, lalu coba lagi.", { siteCount, maxSites: cfg.maxSites }));
       return;
     }
     setError(null);
     setBusy("publish");
-    setProgress("Menyiapkan link…");
+    setProgress(tr("Menyiapkan link…"));
     let freedFirst = false;
     try {
       // Kuota penuh: link lama harus dimatikan dulu agar ada slot untuk yang baru.
@@ -810,7 +851,7 @@ export function AiSiteView() {
           setSiteCount((n) => Math.max(0, n - 1));
           replaced = true;
         } catch {
-          showToast("Website online, tapi link lama gagal dimatikan. Hapus manual di menu Link Instan.");
+          showToast(tr("Website online, tapi link lama gagal dimatikan. Hapus manual di menu Link Instan."));
         }
       }
       // Contoh latih untuk mesin Depup: hanya bila pengguna mengizinkan. Gagal = diam, tidak mengganggu publish.
@@ -821,12 +862,12 @@ export function AiSiteView() {
           body: JSON.stringify({ prompt: prompt.trim(), content: c }),
         }).catch(() => undefined);
       }
-      if (prev && replaced) showToast("Website online di link baru. Link sebelumnya sudah dimatikan.");
-      else if (!prev) showToast("Website sudah online!");
-      say("Website sudah online. Link tersedia di kartu pratinjau.");
+      if (prev && replaced) showToast(tr("Website online di link baru. Link sebelumnya sudah dimatikan."));
+      else if (!prev) showToast(tr("Website sudah online!"));
+      say(tr("Website sudah online. Link tersedia di kartu pratinjau."));
     } catch (e) {
       const msg = (e as Error).message;
-      setError(freedFirst ? `Link lama sudah dimatikan, tetapi link baru gagal dibuat: ${msg} Coba publish lagi.` : msg);
+      setError(freedFirst ? tr("Link lama sudah dimatikan, tetapi link baru gagal dibuat: {msg} Coba publish lagi.", { msg }) : msg);
     } finally {
       setBusy(null);
       setProgress("");
@@ -849,12 +890,12 @@ export function AiSiteView() {
       let nextImages = pruneImages(images, r.content);
       if (photos.length > 0) {
         // Foto yang disiapkan lebih dulu dipasang otomatis; logo buatan sendiri tetap dipertahankan.
-        setProgress("Memasang foto…");
+        setProgress(tr("Memasang foto…"));
         const keep: SiteImages = images.logo ? { logo: images.logo } : {};
         const placed = await assignPhotos(r.content, photos, keep);
         nextImages = placed.images;
         setPhotosUsed(placed.used);
-        if (placed.failed > 0) showToast(`${placed.failed} foto gagal dipasang (format rusak atau melebihi batas ukuran gambar).`);
+        if (placed.failed > 0) showToast(tr("{failed} foto gagal dipasang (format rusak atau melebihi batas ukuran gambar).", { failed: placed.failed }));
       }
       pushHistory();
       setVariant(v);
@@ -878,9 +919,9 @@ export function AiSiteView() {
       }
       // Hasil baru membawa ornamen baru: tampilkan lagi.
       setOrnOff(false);
-      if (r.content.look && hadManual && !again) showToast(`Gaya ${r.content.look.name} dipakai. Pilihan tampilan manual sebelumnya dilepas.`);
+      if (r.content.look && hadManual && !again) showToast(tr("Gaya {name} dipakai. Pilihan tampilan manual sebelumnya dilepas.", { name: r.content.look.name }));
       pendingFocusRef.current = true;
-      say("Website selesai dibuat. Pratinjau sudah diperbarui.");
+      say(tr("Website selesai dibuat. Pratinjau sudah diperbarui."));
       if (autoPublish && cfg?.enabled) {
         const t0: TemplateId = (again ? null : template) ?? r.content.template;
         const pal = again ? null : palette;
@@ -906,6 +947,9 @@ export function AiSiteView() {
                   body: { family: fontsOpt.body.family ?? undefined, weight: fontsOpt.body.weight ?? undefined },
                 },
             images: nextImages,
+            radius: shapeOpt.radius ?? undefined,
+            pill: shapeOpt.pill ?? undefined,
+            gfonts: gfOpt.title || gfOpt.body ? { title: gfOpt.title ?? undefined, body: gfOpt.body ?? undefined } : undefined,
           }),
         );
       }
@@ -930,10 +974,10 @@ export function AiSiteView() {
     }
     if (hasWork) {
       const { ok } = await confirm({
-        title: again ? "Coba gaya lain?" : "Buat ulang dari deskripsi?",
+        title: again ? tr("Coba gaya lain?") : tr("Buat ulang dari deskripsi?"),
         description:
-          "Hasil dan pengaturan yang sekarang akan diganti dengan hasil baru. Kalau tidak cocok, tombol Urungkan di kartu Pratinjau mengembalikannya.",
-        confirmLabel: "Ya, buat ulang",
+          tr("Hasil dan pengaturan yang sekarang akan diganti dengan hasil baru. Kalau tidak cocok, tombol Urungkan di kartu Pratinjau mengembalikannya."),
+        confirmLabel: tr("Ya, buat ulang"),
       });
       if (!ok) return;
     }
@@ -957,8 +1001,8 @@ export function AiSiteView() {
         body: JSON.stringify({ instruction, current: content }),
       });
       if (r.changed.length === 0) {
-        if (command) showToast(r.note || "Belum bisa diterapkan.");
-        else setEditError(r.note || "Tidak ada yang berubah. Coba kalimat yang lebih spesifik.");
+        if (command) showToast(r.note || tr("Belum bisa diterapkan."));
+        else setEditError(r.note || tr("Tidak ada yang berubah. Coba kalimat yang lebih spesifik."));
         return;
       }
       pushHistory();
@@ -987,7 +1031,7 @@ export function AiSiteView() {
       if (r.changed.includes("ornaments")) setOrnOff(false);
       setPublished(null);
       if (!command) setEditText("");
-      showToast(r.note || "Perubahan diterapkan.");
+      showToast(r.note || tr("Perubahan diterapkan."));
     } catch (e) {
       setEditError((e as Error).message);
     } finally {
@@ -1020,10 +1064,10 @@ export function AiSiteView() {
         pushHistory();
         setContent(next);
         setPublished(null);
-        say("Teks diperbarui.");
+        say(tr("Teks diperbarui."));
       } else {
         // Teks wajib dikosongkan / bidang tak dikenal: kembalikan kanvas ke isi semula.
-        if (!m.v.trim()) showToast("Teks ini wajib diisi, jadi dikembalikan.");
+        if (!m.v.trim()) showToast(tr("Teks ini wajib diisi, jadi dikembalikan."));
         setCanvasNonce((n) => n + 1);
       }
     } else if (m.dp === "img") {
@@ -1056,10 +1100,10 @@ export function AiSiteView() {
 
   async function resetAll() {
     const { ok } = await confirm({
-      title: "Mulai dari kosong?",
+      title: tr("Mulai dari kosong?"),
       description:
-        "Deskripsi, hasil AI, foto, gambar, dan pengaturan tampilan di halaman ini akan dihapus. Link yang sudah dipublish tidak terpengaruh.",
-      confirmLabel: "Ya, mulai baru",
+        tr("Deskripsi, hasil AI, foto, gambar, dan pengaturan tampilan di halaman ini akan dihapus. Link yang sudah dipublish tidak terpengaruh."),
+      confirmLabel: tr("Ya, mulai baru"),
       tone: "danger",
     });
     if (!ok) return;
@@ -1078,6 +1122,8 @@ export function AiSiteView() {
     setFontsOpt(EMPTY_FONTS);
     setIconOpt(null);
     setOrnOff(false);
+    setShapeOpt(EMPTY_SHAPE);
+    setGfOpt(EMPTY_GF);
     setTampilanMode("ai");
     setShopOn(true);
     setVariant(0);
@@ -1094,7 +1140,7 @@ export function AiSiteView() {
     } catch {
       /* abaikan */
     }
-    say("Halaman dikosongkan.");
+    say(tr("Halaman dikosongkan."));
     promptRef.current?.focus();
   }
 
@@ -1107,7 +1153,7 @@ export function AiSiteView() {
       setSavedHtml(html);
       showToast(okMsg);
     } catch {
-      showToast("Gagal membuat file. Coba lagi.");
+      showToast(tr("Gagal membuat file. Coba lagi."));
     } finally {
       setExporting(null);
     }
@@ -1118,7 +1164,7 @@ export function AiSiteView() {
       await navigator.clipboard.writeText(text);
       showToast(okMsg);
     } catch {
-      showToast("Tidak bisa menyalin otomatis. Salin manual dari kotak link.");
+      showToast(tr("Tidak bisa menyalin otomatis. Salin manual dari kotak link."));
     }
   }
 
@@ -1127,17 +1173,17 @@ export function AiSiteView() {
   if (loadErr) {
     return (
       <ViewFade>
-        <PageHead title="AI Web Builder" desc="Ceritakan usaha atau topik blogmu; AI menyusun situsnya, lalu kamu publish ke Link Instan atau ekspor file." />
+        <PageHead title={tr("AI Web Builder")} desc={tr("Ceritakan usaha atau topik blogmu; AI menyusun situsnya, lalu kamu publish ke Link Instan atau ekspor file.")} />
         <div className="notice notice-bad mt-6" role="alert">
           <CircleAlert size={16} className="mt-0.5 shrink-0" aria-hidden />
           <span className="min-w-0">
-            <span className="block font-semibold">AI Web Builder belum bisa dimuat.</span>
-            <span className="block">{loadErr} Kalau masih gagal setelah dicoba lagi, tanyakan lewat tombol Bantuan di pojok kanan bawah.</span>
+            <span className="block font-semibold">{tr("AI Web Builder belum bisa dimuat.")}</span>
+            <span className="block">{tr("{loadErr} Kalau masih gagal setelah dicoba lagi, tanyakan lewat tombol Bantuan di pojok kanan bawah.", { loadErr })}</span>
           </span>
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
           <Btn onClick={() => { setKeyStatus(null); setCfg(null); setReloadTick((n) => n + 1); }}>
-            <RefreshCw size={13} /> Coba lagi
+            <RefreshCw size={13} />{" "}{tr("Coba lagi")}
           </Btn>
         </div>
       </ViewFade>
@@ -1146,7 +1192,7 @@ export function AiSiteView() {
   if (!keyStatus || !cfg) {
     return (
       <ViewFade>
-        <PageHead title="AI Web Builder" />
+        <PageHead title={tr("AI Web Builder")} />
         <div className="mt-6">
           <Loading />
         </div>
@@ -1157,8 +1203,8 @@ export function AiSiteView() {
   /* ---------- potongan tampilan ---------- */
 
   const busyLabel =
-    busy === "edit" ? "Mesin sedang mengubah…" : busy === "ai" ? progress || "Mesin sedang menyusun…" : busy === "publish" ? progress || "Mempublikasikan…" : null;
-  const kindName = content ? KIND_OPTIONS.find((k) => k.id === content.kind)?.name ?? content.kind : "";
+    busy === "edit" ? tr("Mesin sedang mengubah…") : busy === "ai" ? progress || tr("Mesin sedang menyusun…") : busy === "publish" ? progress || "Mempublikasikan…" : null;
+  const kindName = content ? tr(KIND_OPTIONS.find((k) => k.id === content.kind)?.name ?? content.kind) : "";
 
   // Izin memakai website ini sebagai contoh latih mesin Depup (default mati, diingat per perangkat).
   const trainConsentBox = (
@@ -1177,14 +1223,13 @@ export function AiSiteView() {
         }}
       />
       <span>
-        Izinkan website ini dipakai sebagai contoh untuk melatih mesin Depup. Yang dikirim hanya deskripsi dan teks website, tanpa
-        gambar, nomor WhatsApp, email, dan alamat.
+        {tr("Izinkan website ini dipakai sebagai contoh untuk melatih mesin Depup. Yang dikirim hanya deskripsi dan teks website, tanpa gambar, nomor WhatsApp, email, dan alamat.")}
       </span>
     </label>
   );
 
   const ttlField = (
-    <Field label="Masa aktif link" htmlFor="ai-ttl">
+    <Field label={tr("Masa aktif link")} htmlFor="ai-ttl">
       <Select value={String(ttlHours)} onValueChange={(v) => setTtlHours(Number(v))}>
         <SelectTrigger id="ai-ttl">
           <SelectValue />
@@ -1215,7 +1260,7 @@ export function AiSiteView() {
       setDecorOpt(p.decor ?? null);
       setFontsOpt(EMPTY_FONTS);
     });
-    say(`Template ${p.name} dipakai.`);
+    say(tr("Template {name} dipakai.", { name: p.name }));
   }
   function resetToAi() {
     setTemplate(null);
@@ -1233,15 +1278,15 @@ export function AiSiteView() {
         <section className="mx-auto mt-2 max-w-3xl">
           <div className="rounded-[28px] bg-[var(--surface-solid)] px-5 py-8 [box-shadow:var(--surface-shadow)] sm:px-10 sm:py-12">
             <p className="flex items-center justify-center gap-1.5 text-[13px] font-medium text-text-muted">
-              <Sparkles size={14} aria-hidden /> AI Web Builder · mesin Depup, tanpa AI luar
+              <Sparkles size={14} aria-hidden />{" "}{tr("AI Web Builder · mesin Depup, tanpa AI luar")}
             </p>
-            <h1 className="mt-3 text-center text-[clamp(26px,4vw,40px)] font-bold leading-tight tracking-[-0.02em]">Mau bikin website apa hari ini?</h1>
+            <h1 className="mt-3 text-center text-[clamp(26px,4vw,40px)] font-bold leading-tight tracking-[-0.02em]">{tr("Mau bikin website apa hari ini?")}</h1>
             <p className="mx-auto mt-2 max-w-xl text-center text-[15px] leading-relaxed text-text-muted">
-              Ceritakan usahamu dalam satu-dua kalimat. Setelah jadi, semua bisa kamu ubah langsung di kanvas: klik teks untuk mengetik, pilih gaya, warna, dan susunan dari panel samping.
+              {tr("Ceritakan usahamu dalam satu-dua kalimat. Setelah jadi, semua bisa kamu ubah langsung di kanvas: klik teks untuk mengetik, pilih gaya, warna, dan susunan dari panel samping.")}
             </p>
 
             <div className="mt-7">
-              <label htmlFor="ai-prompt" className="sr-only">Deskripsi website</label>
+              <label htmlFor="ai-prompt" className="sr-only">{tr("Deskripsi website")}</label>
               <div className="rounded-[20px] bg-[var(--pill-bg)] p-2 focus-within:ring-2 focus-within:ring-[var(--ring)]">
                 <textarea
                   ref={promptRef}
@@ -1257,7 +1302,7 @@ export function AiSiteView() {
                     }
                   }}
                   aria-describedby="ai-prompt-hint gen-hint"
-                  placeholder="Contoh: Warung bakso Pak Slamet di Banjar, buka 10–21. Menu: bakso urat 15rb, es teler 12rb. Pesan via WA 0812…"
+                  placeholder={tr("Contoh: Warung bakso Pak Slamet di Banjar, buka 10–21. Menu: bakso urat 15rb, es teler 12rb. Pesan via WA 0812…")}
                   className="w-full resize-none bg-transparent px-3 py-2.5 text-[16px] leading-relaxed outline-none placeholder:text-text-faint"
                 />
                 <div className="flex flex-wrap items-center justify-between gap-2 px-2 pb-1">
@@ -1272,18 +1317,18 @@ export function AiSiteView() {
                     onDisabledClick={explainGenerate}
                     onClick={() => void requestGenerate(false)}
                   >
-                    <Sparkles size={15} /> {busyLabel ?? "Buat website"}
+                    <Sparkles size={15} /> {busyLabel ?? tr("Buat website")}
                   </Btn>
                 </div>
               </div>
               <p id="gen-hint" className={cn(hintCls, "mt-2 min-h-[1.1rem]")}>{genHint}</p>
               <p id="ai-prompt-hint" className={`mt-1 ${hintCls}`}>
-                Sebutkan nama, produk atau topik, harga, jam buka, dan kontak. Mau gaya tertentu? Tulis saja, mis. &ldquo;gaya neo brutalism pastel&rdquo;.
+                {tr("Sebutkan nama, produk atau topik, harga, jam buka, dan kontak. Mau gaya tertentu? Tulis saja, mis. “gaya neo brutalism pastel”.")}
               </p>
               <div className="mt-3 flex flex-wrap justify-center gap-1.5">
                 {EXAMPLES.map((ex) => (
-                  <button key={ex.label} type="button" onClick={() => { setPrompt(ex.text); promptRef.current?.focus(); }} className={chipCls(false)}>
-                    {ex.label}
+                  <button key={ex.label} type="button" onClick={() => { setPrompt(tr(ex.text)); promptRef.current?.focus(); }} className={chipCls(false)}>
+                    {tr(ex.label)}
                   </button>
                 ))}
               </div>
@@ -1294,7 +1339,7 @@ export function AiSiteView() {
             <div className="mt-8 grid gap-3">
               <details className={cn("group rounded-[18px] bg-[var(--pill-bg)]", ON_MIST)}>
                 <summary className="flex min-h-[48px] cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-[14px] font-medium [&::-webkit-details-marker]:hidden">
-                  <span className="flex items-center gap-2"><ImagePlus size={15} aria-hidden /> Foto (opsional){photos.length ? ` · ${photos.length}` : ""}</span>
+                  <span className="flex items-center gap-2"><ImagePlus size={15} aria-hidden />{" "}{tr("Foto (opsional)")}{photos.length ? ` · ${photos.length}` : ""}</span>
                   <ChevronDown size={16} className="shrink-0 transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden />
                 </summary>
                 <div className="px-4 pb-4">
@@ -1303,33 +1348,33 @@ export function AiSiteView() {
               </details>
               <details className={cn("group rounded-[18px] bg-[var(--pill-bg)]", ON_MIST)}>
                 <summary className="flex min-h-[48px] cursor-pointer list-none items-center justify-between gap-3 px-4 py-3 text-[14px] font-medium [&::-webkit-details-marker]:hidden">
-                  <span className="flex items-center gap-2"><SlidersHorizontal size={15} aria-hidden /> Pengaturan lain</span>
+                  <span className="flex items-center gap-2"><SlidersHorizontal size={15} aria-hidden />{" "}{tr("Pengaturan lain")}</span>
                   <ChevronDown size={16} className="shrink-0 transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden />
                 </summary>
                 <div className="grid gap-4 px-4 pb-4">
-                  <Field label="Jenis situs" htmlFor="ai-kind" hint={kindPick === "auto" ? "Mesin memilih sendiri dari deskripsimu." : KIND_LABEL[kindPick]}>
+                  <Field label={tr("Jenis situs")} htmlFor="ai-kind" hint={kindPick === "auto" ? tr("Mesin memilih sendiri dari deskripsimu.") : tr(KIND_LABEL[kindPick])}>
                     <Select value={kindPick} onValueChange={(v) => setKindPick(v as SiteKind | "auto")}>
-                      <SelectTrigger id="ai-kind" aria-label="Jenis situs">
+                      <SelectTrigger id="ai-kind" aria-label={tr("Jenis situs")}>
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="auto">Otomatis (saran AI)</SelectItem>
+                        <SelectItem value="auto">{tr("Otomatis (saran AI)")}</SelectItem>
                         {KIND_OPTIONS.map((k) => (
-                          <SelectItem key={k.id} value={k.id}>{k.name}</SelectItem>
+                          <SelectItem key={k.id} value={k.id}>{tr(k.name)}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
                   </Field>
                   <div>
-                    <div className={`mb-2 ${labelCls}`}>Mulai dari Template (opsional)</div>
-                    <PresetPicker preview={previewContent} selectedId={presetSel?.id ?? null} aiSelected={aiPicked} aiLabel="Mesin memilih sendiri" onPick={applyPreset} onAi={resetToAi} />
+                    <div className={`mb-2 ${labelCls}`}>{tr("Mulai dari Template (opsional)")}</div>
+                    <PresetPicker preview={previewContent} selectedId={presetSel?.id ?? null} aiSelected={aiPicked} aiLabel={tr("Mesin memilih sendiri")} onPick={applyPreset} onAi={resetToAi} />
                   </div>
                   <label className="flex min-h-[44px] items-start gap-2.5 text-[14px]">
                     <input type="checkbox" checked={autoPublish && cfg.enabled} disabled={!cfg.enabled} onChange={(e) => setAutoPublish(e.target.checked)} className={checkCls} />
                     <span className="min-w-0">
-                      Langsung publish setelah dibuat
+                      {tr("Langsung publish setelah dibuat")}
                       <span className={`block ${hintCls}`}>
-                        {cfg.enabled ? `Memakai 1 dari ${cfg.maxSites} slot link aktif.` : "Link Instan sedang tidak aktif di server ini, jadi hanya pratinjau."}
+                        {cfg.enabled ? tr("Memakai 1 dari {maxSites} slot link aktif.", { maxSites: cfg.maxSites }) : tr("Link Instan sedang tidak aktif di server ini, jadi hanya pratinjau.")}
                       </span>
                     </span>
                   </label>
@@ -1350,18 +1395,18 @@ export function AiSiteView() {
     <div className={`flex flex-wrap items-center justify-between gap-2 rounded-[14px] bg-[var(--pill-bg)] px-3.5 py-2.5 leading-relaxed ${hintCls}`}>
       <span className="min-w-0">
         {lookOn ? (
-          <>Memakai gaya <b className="font-semibold text-text">{content.look.name}</b>. Warna bisa diubah tanpa melepas gaya; memilih Template, gaya desain, atau warna latar lain akan menggantikannya.</>
+          <>{tr("Memakai gaya")}{" "}<b className="font-semibold text-text">{content.look.name}</b>{tr(". Warna bisa diubah tanpa melepas gaya; memilih Template, gaya desain, atau warna latar lain akan menggantikannya.")}</>
         ) : (
-          <>Gaya <b className="font-semibold text-text">{content.look.name}</b> sedang tidak dipakai.</>
+          <>{tr("Gaya")}{" "}<b className="font-semibold text-text">{content.look.name}</b>{" "}{tr("sedang tidak dipakai.")}</>
         )}
       </span>
       {lookOn ? (
         <button type="button" onClick={() => change(() => setContent((c) => (c ? { ...c, look: undefined } : c)))} className="text-[13px] text-text-muted underline max-md:min-h-[40px]">
-          Lepas gaya
+          {tr("Lepas gaya")}
         </button>
       ) : (
         <button type="button" onClick={() => change(() => { setTemplate(null); setPalette(null); setStyleOpt(null); setBgOpt(null); })} className="text-[13px] text-text-muted underline max-md:min-h-[40px]">
-          Pakai lagi
+          {tr("Pakai lagi")}
         </button>
       )}
     </div>
@@ -1384,12 +1429,12 @@ export function AiSiteView() {
   const panelBody: Record<PanelId, React.ReactNode> = {
     template: (
       <div className="space-y-3">
-        <p className={`leading-relaxed ${hintCls}`}>Tiap template = warna + gaya desain + hiasan yang sudah serasi. Setelah memilih, semuanya tetap bisa diubah di Desain dan Warna.</p>
+        <p className={`leading-relaxed ${hintCls}`}>{tr("Tiap template = warna + gaya desain + hiasan yang sudah serasi. Setelah memilih, semuanya tetap bisa diubah di Desain dan Warna.")}</p>
         <PresetPicker
           preview={previewContent}
           selectedId={presetSel?.id ?? null}
           aiSelected={aiPicked}
-          aiLabel={content.look && lookOn ? `Gaya ${content.look.name}` : `Template ${TEMPLATES.find((t) => t.id === content.template)?.name ?? ""}`}
+          aiLabel={content.look && lookOn ? tr("Gaya {name}", { name: content.look.name }) : `Template ${tr(TEMPLATES.find((t) => t.id === content.template)?.name ?? "")}`}
           onPick={applyPreset}
           onAi={() => change(resetToAi)}
         />
@@ -1399,28 +1444,67 @@ export function AiSiteView() {
       <div className="space-y-6">
         {lookBox}
         <div>
-          {subhead("Gaya siap pakai")}
+          {subhead(tr("Gaya siap pakai"))}
           <div className="flex flex-wrap gap-1.5">
             {QUICK_STYLES.map((q) => (
               <button key={q.cmd} type="button" disabled={busy !== null} onClick={() => void runCommand(q.cmd)} className={cn(chipCls(content.look?.name === q.name), "disabled:opacity-50")}>
-                <ChipLabel selected={content.look?.name === q.name}>{q.label}</ChipLabel>
+                <ChipLabel selected={content.look?.name === q.name}>{tr(q.label)}</ChipLabel>
               </button>
             ))}
           </div>
           <Btn className="mt-3 w-full" busy={busy === "ai"} disabled={busy !== null || !canGenerate} softDisabled onDisabledClick={explainGenerate} onClick={() => void requestGenerate(true)}>
-            <RefreshCw size={13} /> Acak gaya lain
+            <RefreshCw size={13} />{" "}{tr("Acak gaya lain")}
           </Btn>
         </div>
         <div>
-          {subhead("Gaya desain", resetLink(!!styleOpt, "Ikuti Template", () => setStyleOpt(null)))}
+          {subhead(tr("Gaya desain"), resetLink(!!styleOpt, tr("Ikuti Template"), () => setStyleOpt(null)))}
           <StylePicker value={styleOpt} template={tplId} accent={accentEff} palette={palette} fonts={fontsEff} preview={previewContent} onPick={(v) => change(() => setStyleOpt(v))} />
         </div>
         <div>
-          {subhead("Hiasan latar", resetLink(!!decorOpt, "Ikuti Gaya desain", () => setDecorOpt(null)))}
-          <div role="radiogroup" aria-label="Pilih hiasan" className="flex flex-wrap gap-1.5">
+          {subhead(tr("Sudut"), resetLink(shapeOpt.radius !== null || shapeOpt.pill !== null, tr("Ikuti gaya"), () => setShapeOpt(EMPTY_SHAPE)))}
+          {(
+            [
+              { key: "radius", label: tr("Kartu, gambar & kotak"), presets: [["Lancip", 0], ["Halus", 8], [tr("Bulat"), 18], [tr("Sangat bulat"), 32]] },
+              { key: "pill", label: tr("Tombol & label"), presets: [["Lancip", 0], ["Halus", 8], [tr("Bulat"), 16], ["Kapsul", 999]] },
+            ] as const
+          ).map((row) => {
+            const v = shapeOpt[row.key];
+            return (
+              <div key={row.key} className="mb-4">
+                <div className="mb-1.5 flex items-center justify-between text-[13px]">
+                  <label htmlFor={`ai-${row.key}`} className="font-medium text-text-muted">{tr(row.label)}</label>
+                  <span className="tabular-nums text-text-muted">{v === null ? tr("ikut gaya") : v === 999 ? "kapsul" : `${v}px`}</span>
+                </div>
+                <input
+                  id={`ai-${row.key}`}
+                  type="range"
+                  min={0}
+                  max={40}
+                  step={1}
+                  value={v === null ? 12 : Math.min(40, v)}
+                  onChange={(e) => {
+                    const n = Number(e.target.value);
+                    change(() => setShapeOpt((o) => ({ ...o, [row.key]: n })), true);
+                  }}
+                  className="w-full accent-[var(--accent)]"
+                />
+                <div className="mt-1.5 flex flex-wrap gap-1.5">
+                  {row.presets.map(([name, n]) => (
+                    <button key={name} type="button" onClick={() => change(() => setShapeOpt((o) => ({ ...o, [row.key]: n })))} className={chipCls(v === n, true)}>
+                      <ChipLabel selected={v === n}>{name}</ChipLabel>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+        <div>
+          {subhead(tr("Hiasan latar"), resetLink(!!decorOpt, tr("Ikuti Gaya desain"), () => setDecorOpt(null)))}
+          <div role="radiogroup" aria-label={tr("Pilih hiasan")} className="flex flex-wrap gap-1.5">
             {DECOR_OPTIONS.map((d) => (
-              <button key={d.id} type="button" role="radio" aria-checked={decorOpt === d.id} onClick={() => change(() => setDecorOpt(d.id))} title={d.desc} className={chipCls(decorOpt === d.id, true)}>
-                <ChipLabel selected={decorOpt === d.id}>{d.name}</ChipLabel>
+              <button key={d.id} type="button" role="radio" aria-checked={decorOpt === d.id} onClick={() => change(() => setDecorOpt(d.id))} title={tr(d.desc)} className={chipCls(decorOpt === d.id, true)}>
+                <ChipLabel selected={decorOpt === d.id}>{tr(d.name)}</ChipLabel>
               </button>
             ))}
           </div>
@@ -1430,19 +1514,19 @@ export function AiSiteView() {
     tata: (
       <div className="space-y-6">
         <div>
-          {subhead("Bagian paling atas", resetLink(!!heroOpt, "Saran AI", () => setHeroOpt(null)))}
+          {subhead(tr("Bagian paling atas"), resetLink(!!heroOpt, tr("Saran AI"), () => setHeroOpt(null)))}
           <HeroLayoutPicker value={heroEff} suggested={content.hero} onPick={(v) => change(() => setHeroOpt(v))} />
         </div>
         <div>
-          {subhead("Keunggulan", resetLink(!!featOpt, "Saran AI", () => setFeatOpt(null)))}
+          {subhead(tr("Keunggulan"), resetLink(!!featOpt, tr("Saran AI"), () => setFeatOpt(null)))}
           <FeatLayoutPicker value={featEff} onPick={(v) => change(() => setFeatOpt(v))} />
         </div>
         {hasShop(content) && (
           <label className="flex min-h-[44px] items-start gap-2.5 rounded-[14px] bg-[var(--pill-bg)] p-3.5 text-[14px]">
             <input type="checkbox" checked={shopOn} onChange={(e) => { const v = e.target.checked; change(() => setShopOn(v)); }} className={checkCls} />
             <span className="min-w-0">
-              <span className="flex items-center gap-1.5 font-medium"><Store size={14} className="shrink-0" aria-hidden /> Katalog, keranjang, dan mode kelola</span>
-              <span className={`mt-0.5 block leading-snug ${hintCls}`}>Pengunjung bisa cari produk, mengisi keranjang, lalu memesan lewat WhatsApp.</span>
+              <span className="flex items-center gap-1.5 font-medium"><Store size={14} className="shrink-0" aria-hidden />{" "}{tr("Katalog, keranjang, dan mode kelola")}</span>
+              <span className={`mt-0.5 block leading-snug ${hintCls}`}>{tr("Pengunjung bisa cari produk, mengisi keranjang, lalu memesan lewat WhatsApp.")}</span>
             </span>
           </label>
         )}
@@ -1455,23 +1539,35 @@ export function AiSiteView() {
           <PaletteEditor colors={colors} custom={palette !== null} pageBg={bgEff} onChange={(p) => change(() => setPalette(p), true)} onReset={() => change(() => setPalette(null))} />
         </div>
         <div>
-          {subhead("Warna latar", resetLink(!!bgOpt, "Bawaan", () => setBgOpt(null)))}
-          <div role="radiogroup" aria-label="Pilih warna latar" className="flex flex-wrap items-center gap-2">
+          {subhead(tr("Warna latar"), resetLink(!!bgOpt, "Bawaan", () => setBgOpt(null)))}
+          <div role="radiogroup" aria-label={tr("Pilih warna latar")} className="flex flex-wrap items-center gap-2">
             {BG_PRESETS.map((p) => (
-              <button key={p.hex} type="button" role="radio" aria-checked={bgEff.toLowerCase() === p.hex} aria-label={p.name} title={p.name} onClick={() => change(() => setBgOpt(p.hex))} className={swatchTileCls(bgEff.toLowerCase() === p.hex)}>
+              <button key={p.hex} type="button" role="radio" aria-checked={bgEff.toLowerCase() === p.hex} aria-label={tr(p.name)} title={tr(p.name)} onClick={() => change(() => setBgOpt(p.hex))} className={swatchTileCls(bgEff.toLowerCase() === p.hex)}>
                 <span aria-hidden className="h-7 w-7 rounded-[10px]" style={{ background: p.hex }} />
               </button>
             ))}
-            <label className={swatchTileCls(false)} title="Warna lain">
+            <label className={swatchTileCls(false)} title={tr("Warna lain")}>
               <span aria-hidden className="h-7 w-7 rounded-[10px]" style={{ background: bgEff }} />
-              <input type="color" value={bgEff} aria-label="Pilih warna latar lain" onChange={(e) => { const v = e.target.value.toLowerCase(); change(() => setBgOpt(v), true); }} className="absolute inset-0 h-full w-full cursor-pointer rounded-[14px] opacity-0" />
+              <input type="color" value={bgEff} aria-label={tr("Pilih warna latar lain")} onChange={(e) => { const v = e.target.value.toLowerCase(); change(() => setBgOpt(v), true); }} className="absolute inset-0 h-full w-full cursor-pointer rounded-[14px] opacity-0" />
             </label>
           </div>
-          <p className={`mt-2.5 leading-relaxed ${hintCls}`}>Teks, kartu, dan garis otomatis disesuaikan supaya tetap terbaca.</p>
+          <p className={`mt-2.5 leading-relaxed ${hintCls}`}>{tr("Teks, kartu, dan garis otomatis disesuaikan supaya tetap terbaca.")}</p>
         </div>
       </div>
     ),
     huruf: (
+      <div className="space-y-6">
+        <div className="space-y-4">
+          {subhead(tr("Google Fonts"), resetLink(!!(gfOpt.title || gfOpt.body), "Bawaan", () => setGfOpt(EMPTY_GF)))}
+          <GoogleFontPicker label={tr("Judul")} value={gfOpt.title} onPick={(v) => change(() => setGfOpt((g) => ({ ...g, title: v })))} />
+          <GoogleFontPicker label={tr("Isi teks")} value={gfOpt.body} onPick={(v) => change(() => setGfOpt((g) => ({ ...g, body: v })))} />
+          <p className={`leading-relaxed ${hintCls}`}>{tr("Huruf Google Fonts dimuat dari server Google saat website dibuka. Bila tidak terjangkau, huruf sistem yang mirip dipakai.")}</p>
+        </div>
+        <details className="group rounded-[14px] bg-[var(--pill-bg)]">
+          <summary className="flex min-h-[48px] cursor-pointer list-none items-center justify-between gap-3 px-3.5 text-[14px] font-medium [&::-webkit-details-marker]:hidden">
+            {tr("Huruf sistem & ketebalan")}{" "}<ChevronDown size={16} className="transition-transform group-open:rotate-180 motion-reduce:transition-none" aria-hidden />
+          </summary>
+          <div className="px-3.5 pb-3.5">
       <FontRolePicker
         title={fontsOpt.title}
         sub={fontsOpt.sub}
@@ -1487,16 +1583,19 @@ export function AiSiteView() {
         onBodyWeight={(w) => change(() => setFontsOpt((f) => ({ ...f, body: { ...f.body, weight: w } })))}
         onBodyWeightFollow={() => change(() => setFontsOpt((f) => ({ ...f, body: { ...f.body, weight: null } })))}
       />
+          </div>
+        </details>
+      </div>
     ),
     elemen: (
       <div className="space-y-6">
         <div>
-          {subhead("Gaya ikon", resetLink(!!iconOpt, "Saran AI", () => setIconOpt(null)))}
-          <div role="radiogroup" aria-label="Pilih gaya ikon" className="grid grid-cols-2 gap-2">
+          {subhead(tr("Gaya ikon"), resetLink(!!iconOpt, tr("Saran AI"), () => setIconOpt(null)))}
+          <div role="radiogroup" aria-label={tr("Pilih gaya ikon")} className="grid grid-cols-2 gap-2">
             {ICON_STYLES.map((st) => (
-              <button key={st.id} type="button" role="radio" aria-checked={iconEff === st.id} onClick={() => change(() => setIconOpt(st.id))} title={st.desc} className={cn(chipCls(iconEff === st.id, true), "inline-flex items-center justify-start gap-2 !rounded-[14px] !py-2.5")}>
+              <button key={st.id} type="button" role="radio" aria-checked={iconEff === st.id} onClick={() => change(() => setIconOpt(st.id))} title={tr(st.desc)} className={cn(chipCls(iconEff === st.id, true), "inline-flex items-center justify-start gap-2 !rounded-[14px] !py-2.5")}>
                 <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden className="shrink-0" dangerouslySetInnerHTML={{ __html: iconGlyph(st.id) }} />
-                <ChipLabel selected={iconEff === st.id}>{st.name}</ChipLabel>
+                <ChipLabel selected={iconEff === st.id}>{tr(st.name)}</ChipLabel>
               </button>
             ))}
           </div>
@@ -1504,8 +1603,8 @@ export function AiSiteView() {
         <div>
           {subhead("Ornamen")}
           {!!content.ornaments?.length && (
-            <div role="radiogroup" aria-label="Tampilkan ornamen" className="mb-3 flex flex-wrap gap-1.5">
-              {[{ on: true, label: "Tampilkan" }, { on: false, label: "Sembunyikan" }].map((o) => (
+            <div role="radiogroup" aria-label={tr("Tampilkan ornamen")} className="mb-3 flex flex-wrap gap-1.5">
+              {[{ on: true, label: tr("Tampilkan") }, { on: false, label: tr("Sembunyikan") }].map((o) => (
                 <button key={o.label} type="button" role="radio" aria-checked={!ornOff === o.on} onClick={() => change(() => setOrnOff(!o.on))} className={chipCls(!ornOff === o.on, true)}>
                   <ChipLabel selected={!ornOff === o.on}>{o.label}</ChipLabel>
                 </button>
@@ -1515,15 +1614,15 @@ export function AiSiteView() {
           <div className="flex flex-wrap gap-1.5">
             {ORN_FAMILIES.map((f) => (
               <button key={f.id} type="button" disabled={busy !== null} onClick={() => void runCommand(`hiasan ${f.id}`)} className={cn(chipCls(content.ornFamily === f.id), "disabled:opacity-50")}>
-                <ChipLabel selected={content.ornFamily === f.id}>{f.label}</ChipLabel>
+                <ChipLabel selected={content.ornFamily === f.id}>{tr(f.label)}</ChipLabel>
               </button>
             ))}
           </div>
           <Btn className="mt-3 w-full" disabled={busy !== null} onClick={() => void runCommand("ganti hiasan lain")}>
-            <Shapes size={13} /> Acak hiasan lain
+            <Shapes size={13} />{" "}{tr("Acak hiasan lain")}
           </Btn>
           <p className={`mt-2.5 leading-relaxed ${hintCls}`}>
-            {content.ornaments?.length ? `${content.ornaments.length} ornamen dari keluarga ${content.ornFamily ?? "-"}.` : "Belum ada ornamen."} Ornamen hanya muncul bila paket elemennya sudah diimpor di Panel Admin.
+            {content.ornaments?.length ? `${content.ornaments.length} ornamen dari keluarga ${content.ornFamily ?? "-"}.` : tr("Belum ada ornamen.")}{" "}{tr("Ornamen hanya muncul bila paket elemennya sudah diimpor di Panel Admin.")}
           </p>
         </div>
       </div>
@@ -1531,15 +1630,15 @@ export function AiSiteView() {
     bagian: (
       <div className="space-y-3">
         <SectionsPanel content={content} shop={shopActive} selected={selSec} onChange={setSections} onSelect={selectSection} />
-        <p className={`leading-relaxed ${hintCls}`}>Seret untuk mengubah urutan, atau pakai panah. Ikon mata menyembunyikan bagian tanpa menghapus isinya.</p>
+        <p className={`leading-relaxed ${hintCls}`}>{tr("Seret untuk mengubah urutan, atau pakai panah. Ikon mata menyembunyikan bagian tanpa menghapus isinya.")}</p>
       </div>
     ),
     foto: (
       <div className="space-y-4">
-        <div className="h-1.5 overflow-hidden rounded-full bg-[var(--pill-bg)]" role="progressbar" aria-label="Ukuran gambar terpakai" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100, Math.round((imgBytes / IMAGE_BUDGET_BYTES) * 100))}>
+        <div className="h-1.5 overflow-hidden rounded-full bg-[var(--pill-bg)]" role="progressbar" aria-label={tr("Ukuran gambar terpakai")} aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.min(100, Math.round((imgBytes / IMAGE_BUDGET_BYTES) * 100))}>
           <div className="h-full rounded-full bg-[var(--accent)] transition-[width] motion-reduce:transition-none" style={{ width: `${Math.min(100, (imgBytes / IMAGE_BUDGET_BYTES) * 100)}%` }} />
         </div>
-        <p className={`tabular-nums ${hintCls}`}>{formatBytes(imgBytes)} dari {formatBytes(IMAGE_BUDGET_BYTES)}</p>
+        <p className={`tabular-nums ${hintCls}`}>{tr("{formatBytes} dari {formatBytes2}", { formatBytes: formatBytes(imgBytes), formatBytes2: formatBytes(IMAGE_BUDGET_BYTES) })}</p>
         <ul className="space-y-3">
           {visibleSlots.map((d) => (
             <ImageRow key={d.key} def={d} src={images[d.key]} busy={imgBusy === d.key} onPick={() => pickImage(d)} onRemove={() => change(() => removeImage(d.key))} />
@@ -1547,16 +1646,16 @@ export function AiSiteView() {
         </ul>
         {imageSlots.length > 6 && (
           <button type="button" onClick={() => setShowAllImgs((v) => !v)} aria-expanded={showAllImgs} className="text-[13px] text-text-muted underline max-md:min-h-[40px]">
-            {showAllImgs ? "Tampilkan lebih sedikit" : `Tampilkan semua (${imageSlots.length})`}
+            {showAllImgs ? tr("Tampilkan lebih sedikit") : tr("Tampilkan semua ({length})", { length: imageSlots.length })}
           </button>
         )}
-        <p className={`leading-snug ${hintCls}`}>Tips: klik logo, foto utama, atau ikon produk di kanvas untuk langsung mengganti gambarnya. Gambar tidak ikut draf otomatis, jadi publish atau unduh ZIP sebelum menutup halaman.</p>
+        <p className={`leading-snug ${hintCls}`}>{tr("Tips: klik logo, foto utama, atau ikon produk di kanvas untuk langsung mengganti gambarnya. Gambar tidak ikut draf otomatis, jadi publish atau unduh ZIP sebelum menutup halaman.")}</p>
       </div>
     ),
     isi: (
       <div className="space-y-4">
         <div>
-          <label htmlFor="ai-prompt" className={labelCls}>Deskripsi</label>
+          <label htmlFor="ai-prompt" className={labelCls}>{tr("Deskripsi")}</label>
           <textarea
             ref={promptRef}
             id="ai-prompt"
@@ -1570,25 +1669,25 @@ export function AiSiteView() {
           <p id="gen-hint" className={cn(hintCls, "mt-1 min-h-[1.1rem]")}>{genHint}</p>
         </div>
         <Btn variant="primary" className="w-full !py-2.5" busy={busy === "ai"} disabled={busy !== null || !canGenerate} softDisabled onDisabledClick={explainGenerate} onClick={() => void requestGenerate(false)}>
-          <Sparkles size={14} /> Buat ulang dari deskripsi
+          <Sparkles size={14} />{" "}{tr("Buat ulang dari deskripsi")}
         </Btn>
-        <Field label="Jenis situs" htmlFor="ai-kind" hint={kindPick === "auto" ? `Sekarang: ${kindName}.` : KIND_LABEL[kindPick]}>
+        <Field label={tr("Jenis situs")} htmlFor="ai-kind" hint={kindPick === "auto" ? tr("Sekarang: {kindName}.", { kindName }) : tr(KIND_LABEL[kindPick])}>
           <Select value={kindPick} onValueChange={(v) => setKindPick(v as SiteKind | "auto")}>
-            <SelectTrigger id="ai-kind" aria-label="Jenis situs">
+            <SelectTrigger id="ai-kind" aria-label={tr("Jenis situs")}>
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="auto">Otomatis (saran AI)</SelectItem>
+              <SelectItem value="auto">{tr("Otomatis (saran AI)")}</SelectItem>
               {KIND_OPTIONS.map((k) => (
-                <SelectItem key={k.id} value={k.id}>{k.name}</SelectItem>
+                <SelectItem key={k.id} value={k.id}>{tr(k.name)}</SelectItem>
               ))}
             </SelectContent>
           </Select>
         </Field>
         {errorBox}
-        <p className={`leading-relaxed ${hintCls}`}>Buat ulang mengganti isi dan gaya dengan hasil baru. Bisa dibatalkan dengan Urungkan.</p>
+        <p className={`leading-relaxed ${hintCls}`}>{tr("Buat ulang mengganti isi dan gaya dengan hasil baru. Bisa dibatalkan dengan Urungkan.")}</p>
         <Btn className="w-full" onClick={() => void resetAll()}>
-          <Trash2 size={13} /> Mulai dari kosong
+          <Trash2 size={13} />{" "}{tr("Mulai dari kosong")}
         </Btn>
         {trainConsentBox}
       </div>
@@ -1599,20 +1698,20 @@ export function AiSiteView() {
           <div className="notice notice-ok !block space-y-2.5 !p-4">
             <div className="flex items-start gap-1.5 font-semibold">
               <Check size={15} className="mt-0.5 shrink-0" aria-hidden />
-              <span className="min-w-0">Online sampai {new Date(published.expiresAt).toLocaleString("id-ID")} ({timeLeftLabel(published.expiresAt)})</span>
+              <span className="min-w-0">{tr("Online sampai")}{" "}{new Date(published.expiresAt).toLocaleString("id-ID")} ({timeLeftLabel(published.expiresAt)})</span>
             </div>
-            <input readOnly aria-label="Link website" value={published.url} onFocus={(e) => e.currentTarget.select()} className="input-solid mono h-11 w-full px-3.5 text-[13px] text-text" />
+            <input readOnly aria-label={tr("Link website")} value={published.url} onFocus={(e) => e.currentTarget.select()} className="input-solid mono h-11 w-full px-3.5 text-[13px] text-text" />
             <div className="flex flex-wrap gap-2">
               <BtnLink variant="primary" href={published.url} target="_blank" rel="noopener noreferrer">
-                <ExternalLink size={13} aria-hidden /> Buka<span className="sr-only"> website (tab baru)</span>
+                <ExternalLink size={13} aria-hidden />{" "}{tr("Buka")}<span className="sr-only">{" "}{tr("website (tab baru)")}</span>
               </BtnLink>
               {shopActive && (
                 <BtnLink href={`${published.url}#kelola`} target="_blank" rel="noopener noreferrer">
-                  <Pencil size={13} aria-hidden /> Mode kelola<span className="sr-only"> (tab baru)</span>
+                  <Pencil size={13} aria-hidden />{" "}{tr("Mode kelola")}<span className="sr-only">{" "}{tr("(tab baru)")}</span>
                 </BtnLink>
               )}
-              <Btn onClick={() => void copyText(published.url, "Link disalin.")}>
-                <Copy size={13} /> Salin link
+              <Btn onClick={() => void copyText(published.url, tr("Link disalin."))}>
+                <Copy size={13} />{" "}{tr("Salin link")}
               </Btn>
             </div>
           </div>
@@ -1620,21 +1719,21 @@ export function AiSiteView() {
         {!cfg.enabled ? (
           <div className="notice notice-warn flex items-start gap-2 !p-3 text-[13px]">
             <Info size={15} className="mt-0.5 shrink-0" aria-hidden />
-            <span className="min-w-0">Link Instan sedang tidak aktif di server ini. Websitenya bisa diunduh sebagai file di bawah.</span>
+            <span className="min-w-0">{tr("Link Instan sedang tidak aktif di server ini. Websitenya bisa diunduh sebagai file di bawah.")}</span>
           </div>
         ) : (
           <div className="space-y-3">
             {ttlField}
             <Btn variant={published ? "ghost" : "primary"} className="w-full !py-2.5" busy={busy === "publish"} disabled={busy !== null} softDisabled onClick={() => void publish(content, html)}>
-              <Globe size={14} /> {busy === "publish" ? progress || "Mempublikasikan…" : published ? "Publish sebagai link baru" : lastPubId ? "Publish versi terbaru" : "Publish ke Link Instan"}
+              <Globe size={14} /> {busy === "publish" ? progress || tr("Mempublikasikan…") : published ? tr("Publish sebagai link baru") : lastPubId ? tr("Publish versi terbaru") : tr("Publish ke Link Instan")}
             </Btn>
-            <p className={`tabular-nums ${hintCls}`}>Link aktif: {siteCount} dari {cfg.maxSites}. Setiap publish membuat link baru yang aktif {ttlLabel(ttlHours)}.</p>
+            <p className={`tabular-nums ${hintCls}`}>{tr("Link aktif: {siteCount} dari {maxSites}. Setiap publish membuat link baru yang aktif {ttlLabel}.", { siteCount, maxSites: cfg.maxSites, ttlLabel: ttlLabel(ttlHours) })}</p>
             {lastPubId && (
               <label className="flex min-h-[44px] items-start gap-2.5 text-[14px]">
                 <input type="checkbox" checked={replacePrev} onChange={(e) => setReplacePrev(e.target.checked)} className={checkCls} />
                 <span className="min-w-0">
-                  Matikan link sebelumnya setelah publish
-                  <span className={`block ${hintCls}`}>Kalau link lama sudah kamu bagikan, bagikan lagi link yang baru.</span>
+                  {tr("Matikan link sebelumnya setelah publish")}
+                  <span className={`block ${hintCls}`}>{tr("Kalau link lama sudah kamu bagikan, bagikan lagi link yang baru.")}</span>
                 </span>
               </label>
             )}
@@ -1642,42 +1741,42 @@ export function AiSiteView() {
         )}
         {errorBox}
         <div>
-          {subhead("Unduh")}
+          {subhead(tr("Unduh"))}
           <div className="grid grid-cols-2 gap-2">
-            <Btn busy={exporting === "zip"} onClick={() => void runExport("zip", () => downloadZip(content, tplId, accentEff, renderOpts), "ZIP project diunduh.")}>
-              <Package size={13} /> ZIP project
+            <Btn busy={exporting === "zip"} onClick={() => void runExport("zip", () => downloadZip(content, tplId, accentEff, renderOpts), tr("ZIP project diunduh."))}>
+              <Package size={13} />{" "}{tr("ZIP project")}
             </Btn>
-            <Btn busy={exporting === "html"} onClick={() => void runExport("html", () => downloadHtml(content, tplId, accentEff, renderOpts), "File HTML diunduh.")}>
+            <Btn busy={exporting === "html"} onClick={() => void runExport("html", () => downloadHtml(content, tplId, accentEff, renderOpts), tr("File HTML diunduh."))}>
               <FileCode2 size={13} /> index.html
             </Btn>
-            <Btn busy={exporting === "json"} onClick={() => void runExport("json", () => downloadJson(content, tplId, accentEff, renderOpts), "content.json diunduh.")}>
+            <Btn busy={exporting === "json"} onClick={() => void runExport("json", () => downloadJson(content, tplId, accentEff, renderOpts), tr("content.json diunduh."))}>
               <FileJson size={13} /> content.json
             </Btn>
             <Btn
               onClick={async () => {
                 const ok = await copyHtml(content, tplId, accentEff, renderOpts);
                 if (ok) setSavedHtml(html);
-                showToast(ok ? "Kode HTML disalin." : "Tidak bisa menyalin otomatis. Pakai tombol unduh.");
+                showToast(ok ? tr("Kode HTML disalin.") : tr("Tidak bisa menyalin otomatis. Pakai tombol unduh."));
               }}
             >
-              <Copy size={13} /> Salin HTML
+              <Copy size={13} />{" "}{tr("Salin HTML")}
             </Btn>
           </div>
           <p className={`mt-2.5 flex items-start gap-1.5 leading-relaxed ${hintCls}`}>
             <Download size={13} className="mt-0.5 shrink-0" aria-hidden />
-            <span className="min-w-0">ZIP bisa dibuka langsung di browser dan di-upload ke hosting statis mana pun.</span>
+            <span className="min-w-0">{tr("ZIP bisa dibuka langsung di browser dan di-upload ke hosting statis mana pun.")}</span>
           </p>
         </div>
         {shopActive && (
           <div className="rounded-[14px] bg-[var(--pill-bg)] p-3.5 text-[13px] leading-relaxed text-text-muted">
-            <b className="text-text">Kelola produk:</b> di situs yang sudah online, tambahkan <code className="mono">#kelola</code> di akhir link. Perubahan produk tersimpan di browser pemilik, jadi unduh situsnya lalu upload ulang supaya semua pengunjung melihat versi terbaru.
+            <b className="text-text">{tr("Kelola produk:")}</b>{" "}{tr("di situs yang sudah online, tambahkan")}{" "}<code className="mono">#kelola</code>{" "}{tr("di akhir link. Perubahan produk tersimpan di browser pemilik, jadi unduh situsnya lalu upload ulang supaya semua pengunjung melihat versi terbaru.")}
           </div>
         )}
       </div>
     ),
   };
 
-  const panelTitle = PANELS.find((p) => p.id === panel)?.label ?? (panel === "terbit" ? "Publish & unduh" : "");
+  const panelTitle = PANELS.find((p) => p.id === panel)?.label ?? (panel === "terbit" ? tr("Publish & unduh") : "");
 
   const railBtn = (p: (typeof PANELS)[number], mobile = false) => {
     const on = panel === p.id;
@@ -1696,7 +1795,7 @@ export function AiSiteView() {
         )}
       >
         <Icon size={19} aria-hidden />
-        {p.label}
+        {tr(p.label)}
       </button>
     );
   };
@@ -1711,25 +1810,25 @@ export function AiSiteView() {
     >
       <div className="flex items-center gap-2 rounded-[18px] bg-[var(--surface-solid)] p-1.5 pl-3.5 [box-shadow:var(--surface-shadow)] focus-within:ring-2 focus-within:ring-[var(--ring)]">
         <WandSparkles size={17} className="shrink-0 text-[var(--accent)]" aria-hidden />
-        <label htmlFor="ai-edit" className="sr-only">Minta perubahan ke AI</label>
+        <label htmlFor="ai-edit" className="sr-only">{tr("Minta perubahan ke AI")}</label>
         <input
           ref={editRef}
           id="ai-edit"
           maxLength={600}
           value={editText}
           onChange={(e) => setEditText(e.target.value)}
-          placeholder="Minta ke AI: tambah menu Es Teh 5rb, ganti warna jadi hijau…"
+          placeholder={tr("Minta ke AI: tambah menu Es Teh 5rb, ganti warna jadi hijau…")}
           className="min-w-0 flex-1 bg-transparent py-2 text-[14px] outline-none placeholder:text-text-faint"
           autoComplete="off"
           list="ai-edit-ideas"
         />
         <datalist id="ai-edit-ideas">
           {editSuggestions(content.kind).map((t) => (
-            <option key={t} value={t} />
+            <option key={t} value={tr(t)} />
           ))}
         </datalist>
         <Btn type="submit" variant="primary" busy={busy === "edit"} disabled={busy !== null || !editReady} softDisabled onDisabledClick={() => { say(editHint); editRef.current?.focus(); }}>
-          <Send size={13} /> <span className="max-sm:sr-only">Terapkan</span>
+          <Send size={13} /> <span className="max-sm:sr-only">{tr("Terapkan")}</span>
         </Btn>
       </div>
       {editError && (
@@ -1744,26 +1843,26 @@ export function AiSiteView() {
     <div className="flex min-h-[56px] items-center gap-2 border-b border-[var(--surface-line)] px-3 sm:px-4">
       <div className="min-w-0 flex-1">
         <p className="truncate text-[15px] font-semibold">{content.brand}</p>
-        <p className={`truncate ${hintCls} !text-[12px]`}>{kindName} · {presetSel ? presetSel.name : content.look && lookOn ? content.look.name : tpl.name}</p>
+        <p className={`truncate ${hintCls} !text-[12px]`}>{kindName} · {presetSel ? presetSel.name : content.look && lookOn ? content.look.name : tr(tpl.name)}</p>
       </div>
-      <div className="flex items-center gap-1" role="group" aria-label="Riwayat">
-        <button type="button" onClick={undo} disabled={!history.length || busy !== null} aria-label="Urungkan" title="Urungkan (Ctrl+Z)" className="grid h-10 w-10 place-items-center rounded-[12px] hover:bg-[var(--pill-bg)] disabled:opacity-35">
+      <div className="flex items-center gap-1" role="group" aria-label={tr("Riwayat")}>
+        <button type="button" onClick={undo} disabled={!history.length || busy !== null} aria-label={tr("Urungkan")} title={tr("Urungkan (Ctrl+Z)")} className="grid h-10 w-10 place-items-center rounded-[12px] hover:bg-[var(--pill-bg)] disabled:opacity-35">
           <Undo2 size={17} aria-hidden />
         </button>
-        <button type="button" onClick={redo} disabled={!future.length || busy !== null} aria-label="Ulangi" title="Ulangi (Ctrl+Shift+Z)" className="grid h-10 w-10 place-items-center rounded-[12px] hover:bg-[var(--pill-bg)] disabled:opacity-35">
+        <button type="button" onClick={redo} disabled={!future.length || busy !== null} aria-label={tr("Ulangi")} title={tr("Ulangi (Ctrl+Shift+Z)")} className="grid h-10 w-10 place-items-center rounded-[12px] hover:bg-[var(--pill-bg)] disabled:opacity-35">
           <Redo2 size={17} aria-hidden />
         </button>
       </div>
-      <div className="flex rounded-[12px] bg-[var(--pill-bg)] p-1" role="group" aria-label="Ukuran pratinjau">
-        <button type="button" aria-pressed={device === "desktop"} onClick={() => setDevice("desktop")} title="Desktop" className={cn("grid h-8 w-9 place-items-center rounded-[9px]", device === "desktop" && "bg-[var(--surface-solid)] [box-shadow:var(--surface-shadow)]")}>
-          <Monitor size={15} aria-hidden /><span className="sr-only">Desktop</span>
+      <div className="flex rounded-[12px] bg-[var(--pill-bg)] p-1" role="group" aria-label={tr("Ukuran pratinjau")}>
+        <button type="button" aria-pressed={device === "desktop"} onClick={() => setDevice("desktop")} title={tr("Desktop")} className={cn("grid h-8 w-9 place-items-center rounded-[9px]", device === "desktop" && "bg-[var(--surface-solid)] [box-shadow:var(--surface-shadow)]")}>
+          <Monitor size={15} aria-hidden /><span className="sr-only">{tr("Desktop")}</span>
         </button>
         <button type="button" aria-pressed={device === "mobile"} onClick={() => setDevice("mobile")} title="HP" className={cn("grid h-8 w-9 place-items-center rounded-[9px]", device === "mobile" && "bg-[var(--surface-solid)] [box-shadow:var(--surface-shadow)]")}>
           <Smartphone size={15} aria-hidden /><span className="sr-only">HP</span>
         </button>
       </div>
       <Btn variant="primary" className="!px-4" onClick={() => setPanel("terbit")} aria-pressed={panel === "terbit"}>
-        <Rocket size={14} /> <span className="max-sm:sr-only">{published ? "Online" : "Publish"}</span>
+        <Rocket size={14} /> <span className="max-sm:sr-only">{published ? tr("Online") : tr("Publish")}</span>
       </Btn>
     </div>
   );
@@ -1771,8 +1870,8 @@ export function AiSiteView() {
   const panelBox = panel && (
     <div className="flex h-full min-h-0 flex-col">
       <div className="flex min-h-[52px] items-center justify-between gap-2 px-4">
-        <h2 className="text-[15px] font-semibold">{panelTitle}</h2>
-        <button type="button" onClick={() => setPanel(null)} aria-label="Tutup panel" className="grid h-9 w-9 place-items-center rounded-[10px] hover:bg-[var(--pill-bg)]">
+        <h2 className="text-[15px] font-semibold">{tr(panelTitle)}</h2>
+        <button type="button" onClick={() => setPanel(null)} aria-label={tr("Tutup panel")} className="grid h-9 w-9 place-items-center rounded-[10px] hover:bg-[var(--pill-bg)]">
           <X size={16} aria-hidden />
         </button>
       </div>
@@ -1788,7 +1887,7 @@ export function AiSiteView() {
       <div className="overflow-hidden rounded-[24px] bg-[var(--surface-solid)] [box-shadow:var(--surface-shadow)]">
         {topBar}
         {/* Bilah panel (layar sempit): tepat di bawah bilah atas, karena bawah layar dipakai menu aplikasi. */}
-        <nav aria-label="Panel editor" className="flex gap-1 overflow-x-auto border-b border-[var(--surface-line)] px-2 py-2 lg:hidden">
+        <nav aria-label={tr("Panel editor")} className="flex gap-1 overflow-x-auto border-b border-[var(--surface-line)] px-2 py-2 lg:hidden">
           {PANELS.map((p) => railBtn(p, true))}
         </nav>
         <div
@@ -1799,21 +1898,21 @@ export function AiSiteView() {
           )}
         >
           {/* Rel kiri (layar lebar) */}
-          <nav aria-label="Panel editor" className="hidden flex-col items-center gap-1 border-r border-[var(--surface-line)] py-3 lg:flex">
+          <nav aria-label={tr("Panel editor")} className="hidden flex-col items-center gap-1 border-r border-[var(--surface-line)] py-3 lg:flex">
             {PANELS.map((p) => railBtn(p))}
           </nav>
 
           {/* Panel samping (layar lebar) */}
           {panel && isWide && (
-            <aside id="ai-panel" aria-label={panelTitle} className="hidden min-h-0 border-r border-[var(--surface-line)] lg:block">
+            <aside id="ai-panel" aria-label={tr(panelTitle)} className="hidden min-h-0 border-r border-[var(--surface-line)] lg:block">
               {panelBox}
             </aside>
           )}
 
           {/* Kanvas */}
-          <section aria-label="Kanvas website" className="relative flex min-h-0 flex-col bg-[var(--pill-bg)]">
+          <section aria-label={tr("Kanvas website")} className="relative flex min-h-0 flex-col bg-[var(--pill-bg)]">
             <div className="flex items-center justify-center gap-1.5 px-4 pt-3 text-[12.5px] text-text-muted">
-              <MousePointerClick size={14} aria-hidden /> Klik teks untuk mengetik langsung<span className="max-sm:hidden"> · klik gambar untuk mengganti · klik bagian untuk mengaturnya</span>
+              <MousePointerClick size={14} aria-hidden />{" "}{tr("Klik teks untuk mengetik langsung")}<span className="max-sm:hidden">{" "}{tr("· klik gambar untuk mengganti · klik bagian untuk mengaturnya")}</span>
             </div>
             <div className="relative h-[58dvh] min-h-[400px] lg:h-auto lg:min-h-0 lg:flex-1">
               <CanvasFrame ref={canvasRef} html={canvasHtml} device={device} onMessage={onCanvasMsg} busy={busy === "ai" || busy === "edit"} />
@@ -1833,8 +1932,8 @@ export function AiSiteView() {
 
       {/* Lembar bawah (layar sempit) */}
       {panel && !isWide && (
-        <div id="ai-panel" className="fixed inset-0 z-[70] lg:hidden" role="dialog" aria-modal="true" aria-label={panelTitle}>
-          <button type="button" aria-label="Tutup panel" className="absolute inset-0 bg-black/30" onClick={() => setPanel(null)} />
+        <div id="ai-panel" className="fixed inset-0 z-[70] lg:hidden" role="dialog" aria-modal="true" aria-label={tr(panelTitle)}>
+          <button type="button" aria-label={tr("Tutup panel")} className="absolute inset-0 bg-black/30" onClick={() => setPanel(null)} />
           <div className="absolute inset-x-0 bottom-0 max-h-[78dvh] overflow-hidden rounded-t-[24px] bg-[var(--surface-solid)] pb-[env(safe-area-inset-bottom)] [box-shadow:var(--surface-shadow)]">
             <div className="mx-auto mt-2 h-1.5 w-10 rounded-full bg-[var(--surface-line)]" aria-hidden />
             <div className="flex max-h-[calc(78dvh-14px)] flex-col">{panelBox}</div>

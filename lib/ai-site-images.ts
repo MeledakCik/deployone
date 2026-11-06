@@ -1,3 +1,4 @@
+import { tl } from "@/lib/i18n/core";
 /**
  * Gambar unggahan untuk AI Web Builder. Semua diproses di browser (tanpa server):
  * gambar dikecilkan lewat canvas lalu disimpan sebagai data URL (WebP bila didukung, selain itu JPEG/PNG).
@@ -71,17 +72,17 @@ async function decode(file: File): Promise<{ src: CanvasImageSource; w: number; 
  * `maxBytes` = target ukuran hasil; kualitas/dimensi diturunkan bertahap sampai muat.
  */
 export async function fileToDataUrl(file: File, slot: ImageSlot, maxBytes = 900 * 1024): Promise<string> {
-  if (!ACCEPT.test(file.type)) throw new Error("Format belum didukung. Pakai PNG, JPG, WebP, atau GIF.");
+  if (!ACCEPT.test(file.type)) throw new Error(tl("Format belum didukung. Pakai PNG, JPG, WebP, atau GIF."));
   if (file.size > MAX_INPUT_BYTES) throw new Error(`File terlalu besar (maks ${formatBytes(MAX_INPUT_BYTES)}).`);
 
   let dec: Awaited<ReturnType<typeof decode>>;
   try {
     dec = await decode(file);
   } catch {
-    throw new Error("Gambar tidak bisa dibuka. Coba file lain.");
+    throw new Error(tl("Gambar tidak bisa dibuka. Coba file lain."));
   }
   try {
-    if (!dec.w || !dec.h) throw new Error("Gambar tidak bisa dibuka. Coba file lain.");
+    if (!dec.w || !dec.h) throw new Error(tl("Gambar tidak bisa dibuka. Coba file lain."));
     const keepAlpha = slot === "logo";
     let scale = Math.min(1, SLOT_MAX_PX[slot] / Math.max(dec.w, dec.h));
     let quality = 0.84;
@@ -93,7 +94,7 @@ export async function fileToDataUrl(file: File, slot: ImageSlot, maxBytes = 900 
       canvas.width = w;
       canvas.height = h;
       const ctx = canvas.getContext("2d");
-      if (!ctx) throw new Error("Browser tidak mendukung pengolahan gambar.");
+      if (!ctx) throw new Error(tl("Browser tidak mendukung pengolahan gambar."));
       ctx.imageSmoothingQuality = "high";
       let url = "";
       ctx.clearRect(0, 0, w, h);
@@ -115,7 +116,7 @@ export async function fileToDataUrl(file: File, slot: ImageSlot, maxBytes = 900 
       quality = Math.max(0.55, quality - 0.1);
       scale *= 0.82;
     }
-    if (!/^data:image\/(png|jpeg|webp);base64,/.test(best)) throw new Error("Gagal memproses gambar.");
+    if (!/^data:image\/(png|jpeg|webp);base64,/.test(best)) throw new Error(tl("Gagal memproses gambar."));
     return best;
   } finally {
     dec.close();

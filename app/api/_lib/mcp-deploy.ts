@@ -198,7 +198,7 @@ export async function deployProject(email: string, input: DeployInput): Promise<
     if (platform === "cloudflare") {
       if (!accountId) {
         const accounts = await getCloudflareAccounts(token);
-        if (accounts.length === 0) return fail("Token Cloudflare valid tetapi tidak punya akses ke akun manapun.");
+        if (accounts.length === 0) return fail("Token Cloudflare valid tetapi tidak punya akses ke akun mana pun.");
         accountId = accounts[0].id;
         if (accounts.length > 1) notes.push(`Token Cloudflare punya ${accounts.length} akun; dipakai "${accounts[0].name}". Pilih akun lain di Pengaturan kalau perlu.`);
       }

@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 /**
  * Komponen dasar yang dipakai bersama oleh Dashboard dan Panel Admin.
  * Satu sumber supaya tombol, kartu, badge, judul halaman, dan status loading/kosong/error
@@ -192,9 +194,10 @@ export function Btn({
 /* ---------- Status: memuat / error / kosong ---------- */
 
 export function Loading({ label = "Memuat…" }: { label?: string }) {
+  const t = useT();
   return (
     <div className="flex items-center justify-center gap-2 px-6 py-12 text-[13px] text-text-muted" role="status">
-      <Loader2 size={16} className="animate-spin" /> {label}
+      <Loader2 size={16} className="animate-spin" /> {t(label)}
     </div>
   );
 }
@@ -205,12 +208,13 @@ export function Skeleton({ className }: { className?: string }) {
 }
 
 export function ErrorBox({ message, onRetry }: { message: string; onRetry?: () => void }) {
+  const t = useT();
   return (
     <div className="flex flex-wrap items-center gap-3 px-5 py-6 text-[13px] text-bad-fg" role="alert">
       <AlertTriangle size={16} /> <span className="min-w-0 flex-1">{message}</span>
       {onRetry && (
         <Btn onClick={onRetry}>
-          <RefreshCw size={13} /> Coba lagi
+          <RefreshCw size={13} />{" "}{t("Coba lagi")}
         </Btn>
       )}
     </div>

@@ -1,3 +1,5 @@
+import { headers } from "next/headers";
+import { LANG_HEADER } from "@/lib/i18n/core";
 import type { NextRequest } from "next/server";
 import { ok, fail, withErrorHandling } from "@/app/api/_lib/response";
 import { getSessionEmail } from "@/app/api/_lib/session";
@@ -50,7 +52,7 @@ export const POST = withErrorHandling(async (req: NextRequest) => {
   const wantArticles = requestedArticles(prompt) ?? (photoCount >= 2 && (forceKind === "artikel" || /\b(blog|artikel|majalah|berita|jurnal)\b/i.test(prompt)) ? photoCount : null);
   const wantItems = requestedItems(prompt);
 
-  const res = await engineGenerate(prompt, { variant, kind: forceKind, wantItems, wantArticles });
+  const res = await engineGenerate(prompt, { variant, kind: forceKind, wantItems, wantArticles, langHint: headers().get(LANG_HEADER) === "en" ? "en" : "id" });
   if (!res) return fail("Mesin belum bisa menyusun isi dari deskripsi ini. Tambahkan jenis usaha dan apa yang kamu tawarkan, lalu coba lagi.", 422, "bad_request");
   return ok({ content: res.content, source: "engine", domain: res.domain, confidence: Math.round(res.confidence * 100) / 100 });
 });

@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import * as React from "react";
 import { AlertTriangle, Info, X } from "lucide-react";
 
@@ -16,6 +18,7 @@ const STYLE = {
 
 /** Banner pengumuman dari panel admin. Bisa ditutup; muncul lagi kalau teksnya berubah. */
 export function AnnouncementBanner() {
+  const t = useT();
   const [ann, setAnn] = React.useState<Announcement | null>(null);
   const [hidden, setHidden] = React.useState(false);
 
@@ -47,7 +50,7 @@ export function AnnouncementBanner() {
       <p className="min-w-0 flex-1 whitespace-pre-wrap break-words">{ann.text}</p>
       <button
         type="button"
-        aria-label="Tutup pengumuman"
+        aria-label={t("Tutup pengumuman")}
         onClick={() => {
           setHidden(true);
           try {

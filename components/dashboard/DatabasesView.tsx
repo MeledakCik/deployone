@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import * as React from "react";
 import { ArrowLeft, ExternalLink } from "@/components/ui/icons";
 import { Skeleton } from "@/components/ui/primitives";
@@ -37,6 +39,7 @@ export function DatabasesView() {
 }
 
 function DatabaseDetail({ id, onBack }: { id: string; onBack: () => void }) {
+  const t = useT();
   const [d, setD] = React.useState<Detail | null>(null);
   const [err, setErr] = React.useState("");
 
@@ -52,21 +55,21 @@ function DatabaseDetail({ id, onBack }: { id: string; onBack: () => void }) {
     <div className="space-y-4 sm:space-y-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-          <Btn onClick={onBack} aria-label="Kembali ke semua database" className="shrink-0">
+          <Btn onClick={onBack} aria-label={t("Kembali ke semua database")} className="shrink-0">
             <ArrowLeft size={14} aria-hidden />
-            <span className="hidden sm:inline">Semua database</span>
+            <span className="hidden sm:inline">{t("Semua database")}</span>
           </Btn>
-          <h1 className="page-title truncate">{d?.database.displayName ?? "Database"}</h1>
+          <h1 className="page-title truncate">{d?.database.displayName ?? t("Database")}</h1>
         </div>
         <a href={`/db/${id}`} target="_blank" rel="noopener noreferrer" className={`${linkBtn} w-full sm:w-auto`}>
-          Buka di tab baru <ExternalLink size={13} aria-hidden />
+          {t("Buka di tab baru")}{" "}<ExternalLink size={13} aria-hidden />
         </a>
       </div>
       {err && <Notice kind="error">{err}</Notice>}
       {d && (
         <>
           <div className={`${surface} p-4 sm:p-5`}>
-            <p className={`${heading} mb-2`}>Kuota akun (semua database)</p>
+            <p className={`${heading} mb-2`}>{t("Kuota akun (semua database)")}</p>
             <UsageBar used={d.userUsedBytes} quota={d.quotaBytes} />
           </div>
           {d.access === "owner" && <DbInfoCards id={id} username={d.database.username} />}
@@ -74,7 +77,7 @@ function DatabaseDetail({ id, onBack }: { id: string; onBack: () => void }) {
         </>
       )}
       {!d && !err && (
-        <div className="space-y-3" aria-busy="true" role="status" aria-label="Memuat database">
+        <div className="space-y-3" aria-busy="true" role="status" aria-label={t("Memuat database")}>
           <Skeleton className="h-24 !rounded-[28px]" />
           <Skeleton className="h-56 !rounded-[28px]" />
         </div>

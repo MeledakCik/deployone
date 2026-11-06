@@ -1,4 +1,6 @@
 "use client";
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
@@ -12,6 +14,7 @@ type Detail = { database: PublicDb; access: "owner" | "dbsession"; usageBytes: n
 
 /** Panel admin layar penuh. Pemilik (session Google Depup) langsung masuk; selain itu login username/password database. */
 export default function FullDbPage() {
+  const t = useT();
   const { id } = useParams<{ id: string }>();
   const [d, setD] = useState<Detail | null>(null);
   const [state, setState] = useState<"loading" | "login" | "ready" | "error">("loading");
@@ -35,7 +38,7 @@ export default function FullDbPage() {
 
   if (state === "loading")
     return (
-      <div className="mx-auto max-w-7xl space-y-3 p-3 sm:p-5" aria-busy="true" role="status" aria-label="Memuat database">
+      <div className="mx-auto max-w-7xl space-y-3 p-3 sm:p-5" aria-busy="true" role="status" aria-label={t("Memuat database")}>
         <Skeleton className="h-12 w-56" />
         <Skeleton className="h-72 !rounded-[28px]" />
       </div>
@@ -52,13 +55,13 @@ export default function FullDbPage() {
           </div>
           <div className="min-w-0">
             <h1 className="page-title truncate">{d?.database.displayName}</h1>
-            <p className={subtle}>Masuk sebagai {d?.access === "owner" ? "pemilik (akun Google Depup)" : "pengguna database"}</p>
+            <p className={subtle}>{t("Masuk sebagai")}{" "}{d?.access === "owner" ? t("pemilik (akun Google Depup)") : t("pengguna database")}</p>
           </div>
         </div>
         <div className="flex gap-2 [&>*]:flex-1 sm:[&>*]:flex-none">
           {d?.access === "owner" ? (
             <Link href={`/dashboard?view=database&db=${id}`} className={linkBtn}>
-              Ke dashboard
+              {t("Ke dashboard")}
             </Link>
           ) : (
             <Btn
@@ -68,7 +71,7 @@ export default function FullDbPage() {
                 setState("login");
               }}
             >
-              Keluar
+              {t("Keluar")}
             </Btn>
           )}
         </div>
@@ -84,6 +87,7 @@ export default function FullDbPage() {
 }
 
 function Login({ id, onDone }: { id: string; onDone: () => void }) {
+  const t = useT();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [err, setErr] = useState("");
@@ -109,21 +113,21 @@ function Login({ id, onDone }: { id: string; onDone: () => void }) {
           <div aria-hidden className="mb-4 grid h-11 w-11 place-items-center rounded-[14px] bg-tone-lilac text-lav-text">
             <Database size={20} />
           </div>
-          <h1 className="text-[22px] font-bold leading-tight tracking-tight">Login database</h1>
-          <p className="mt-1.5 text-[13px] leading-relaxed text-text-muted">Masukkan username dan password database. Pemilik yang sudah login di Depup masuk otomatis.</p>
+          <h1 className="text-[22px] font-bold leading-tight tracking-tight">{t("Login database")}</h1>
+          <p className="mt-1.5 text-[13px] leading-relaxed text-text-muted">{t("Masukkan username dan password database. Pemilik yang sudah login di Depup masuk otomatis.")}</p>
         </div>
-        <Field label="Username">
+        <Field label={t("Username")}>
           <input className={inputCls} value={username} onChange={(e) => setUsername(e.target.value)} autoComplete="username" autoFocus required />
         </Field>
-        <Field label="Password">
+        <Field label={t("Password")}>
           <input className={inputCls} type="password" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
         </Field>
         {err && <Notice kind="error">{err}</Notice>}
         <button type="submit" disabled={busy} className="btn-primary btn-md w-full disabled:cursor-not-allowed disabled:opacity-60">
-          {busy ? "Masuk…" : "Masuk"}
+          {busy ? t("Masuk…") : t("Masuk")}
         </button>
         <Link href={`/dashboard?view=database&db=${id}`} className="block text-center text-[13px] font-medium text-lav-text underline-offset-4 hover:underline">
-          Login dengan akun Google Depup
+          {t("Login dengan akun Google Depup")}
         </Link>
       </form>
     </div>

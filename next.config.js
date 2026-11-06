@@ -44,6 +44,9 @@ const nextConfig = {
           { key: "X-Content-Type-Options", value: "nosniff" },
           { key: "X-Frame-Options", value: "DENY" },
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+          // Jendela lain (mis. tab yang dibuka dari tautan) tidak bisa mengendalikan tab Depup lewat window.opener.
+          { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
+          { key: "X-Permitted-Cross-Domain-Policies", value: "none" },
           {
             key: "Permissions-Policy",
             value: "camera=(), microphone=(), geolocation=(), interest-cohort=()",
@@ -97,14 +100,16 @@ const nextConfig = {
               "default-src 'self'",
               `script-src 'self' 'unsafe-inline'${isProd ? "" : " 'unsafe-eval'"}`,
               "object-src 'none'",
-              "style-src 'self' 'unsafe-inline'",
+              // Google Fonts: dipakai pratinjau AI Web Builder (huruf pilihan pengguna untuk websitenya).
+              "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "img-src 'self' data: https:",
-              "font-src 'self' data:",
+              "font-src 'self' data: https://fonts.gstatic.com",
               "connect-src 'self' https://accounts.google.com https://oauth2.googleapis.com https://www.googleapis.com https://api.github.com",
               `frame-src ${frameSrc.join(" ")}`,
               "frame-ancestors 'none'",
               "base-uri 'self'",
               "form-action 'self' https://accounts.google.com",
+              ...(isProd ? ["upgrade-insecure-requests"] : []),
             ].join("; "),
           },
         ],

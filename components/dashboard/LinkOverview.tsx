@@ -1,5 +1,7 @@
 "use client";
 
+import { useT, tl } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import * as React from "react";
 import { Copy, ExternalLink, Trash2, Clock, FileText, Globe2, Users } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -22,21 +24,21 @@ export function formatBytes(n: number): string {
 
 function ago(ts: number, now: number): string {
   const m = Math.floor((now - ts) / 60000);
-  if (m < 1) return "baru saja";
-  if (m < 60) return `${m} menit lalu`;
+  if (m < 1) return tl("baru saja");
+  if (m < 60) return tl("{m} menit lalu", { m });
   const h = Math.floor(m / 60);
-  if (h < 48) return `${h} jam lalu`;
-  return `${Math.floor(h / 24)} hari lalu`;
+  if (h < 48) return tl("{h} jam lalu", { h });
+  return tl("{d} hari lalu", { d: Math.floor(h / 24) });
 }
 
 function remaining(expiresAt: number, now: number): string {
   const ms = expiresAt - now;
-  if (ms <= 0) return "kedaluwarsa";
+  if (ms <= 0) return tl("kedaluwarsa");
   const m = Math.floor(ms / 60000);
-  if (m < 60) return `${Math.max(m, 1)} menit lagi`;
+  if (m < 60) return tl("{m} menit lagi", { m: Math.max(m, 1) });
   const h = Math.floor(m / 60);
-  if (h < 48) return `${h} jam lagi`;
-  return `${Math.floor(h / 24)} hari lagi`;
+  if (h < 48) return tl("{h} jam lagi", { h });
+  return tl("{d} hari lagi", { d: Math.floor(h / 24) });
 }
 
 const shortUrl = (u: string) => u.replace(/^https?:\/\//, "").replace(/\/$/, "");
@@ -48,6 +50,7 @@ const PREVIEW_H = 800;
 
 /** Iframe situs yang diperkecil. `depup-preview=1` membuat kunjungan ini tidak masuk statistik. */
 function SitePreview({ url, title }: { url: string; title: string }) {
+  const tr = useT();
   const boxRef = React.useRef<HTMLDivElement>(null);
   const [scale, setScale] = React.useState(0.3);
   const [loaded, setLoaded] = React.useState(false);
@@ -73,7 +76,7 @@ function SitePreview({ url, title }: { url: string; title: string }) {
       {!loaded && <div className="absolute inset-0 animate-pulse bg-[var(--row-hover)]" aria-hidden />}
       <iframe
         src={src}
-        title={`Pratinjau ${title}`}
+        title={tr("Pratinjau {title}", { title })}
         loading="lazy"
         tabIndex={-1}
         aria-hidden
@@ -89,6 +92,7 @@ function SitePreview({ url, title }: { url: string; title: string }) {
 /* ---------- sparkline ---------- */
 
 function Sparkline({ values, className }: { values: number[]; className?: string }) {
+  const tr = useT();
   const W = 200;
   const H = 44;
   const pts = values.length >= 2 ? values : [0, ...values, 0];
@@ -146,6 +150,7 @@ function Metric({
 }
 
 function TrafficCard({ stats, range, onRange }: { stats: SiteStats; range: Range; onRange: (r: Range) => void }) {
+  const tr = useT();
   const cut = (a: number[]) => (range === "24h" ? a.slice(-24) : a);
   const requests = cut(stats.series.requests);
   const views = cut(stats.series.views);
@@ -160,13 +165,13 @@ function TrafficCard({ stats, range, onRange }: { stats: SiteStats; range: Range
     <section className="surface-solid flex flex-col p-5 sm:p-6" aria-labelledby="traffic-title">
       <div className="mb-4 flex items-center justify-between gap-3">
         <h3 id="traffic-title" className="text-[16px] font-semibold">
-          Lalu lintas
+          {tr("Lalu lintas")}
         </h3>
-        <div role="radiogroup" aria-label="Rentang waktu" className="inline-flex rounded-full bg-[var(--pill-bg)] p-0.5 text-[12px]">
+        <div role="radiogroup" aria-label={tr("Rentang waktu")} className="inline-flex rounded-full bg-[var(--pill-bg)] p-0.5 text-[12px]">
           {(
             [
-              ["24h", "24 jam"],
-              ["all", "Semua"],
+              ["24h", tr("24 jam")],
+              ["all", tr("Semua")],
             ] as const
           ).map(([v, label]) => (
             <button
@@ -186,15 +191,15 @@ function TrafficCard({ stats, range, onRange }: { stats: SiteStats; range: Range
         </div>
       </div>
       <div className="divide-y divide-[var(--surface-line)]">
-        <Metric label="Permintaan" value={nf.format(r)} values={requests} />
-        <Metric label="Tampilan halaman" value={nf.format(sum(views))} values={views} />
+        <Metric label={tr("Permintaan")} value={nf.format(r)} values={requests} />
+        <Metric label={tr("Tampilan halaman")} value={nf.format(sum(views))} values={views} />
         <Metric
-          label="Bandwidth"
+          label={tr("Bandwidth")}
           value={formatBytes(sum(bytes))}
           values={bytes}
         />
         <Metric
-          label="Tingkat error"
+          label={tr("Tingkat error")}
           value={`${rate.toFixed(rate > 0 && rate < 10 ? 1 : 0)}%`}
           values={errSeries}
           tone={rate > 5 ? "text-bad-fg" : "text-text-muted"}
@@ -205,12 +210,13 @@ function TrafficCard({ stats, range, onRange }: { stats: SiteStats; range: Range
 }
 
 function VisitorsCard({ stats }: { stats: SiteStats }) {
+  const tr = useT();
   const top = stats.topPages;
   const max = Math.max(1, ...top.map((t) => t.views));
   return (
     <section className="surface-solid flex flex-col p-5 sm:p-6" aria-labelledby="visitors-title">
       <h3 id="visitors-title" className="mb-4 text-[16px] font-semibold">
-        Pengunjung
+        {tr("Pengunjung")}
       </h3>
       <div className="flex items-center gap-3">
         <span className="grid h-10 w-10 place-items-center rounded-[14px] bg-tone-lilac text-text">
@@ -218,14 +224,14 @@ function VisitorsCard({ stats }: { stats: SiteStats }) {
         </span>
         <div>
           <p className="text-[22px] font-semibold leading-tight tracking-tight tabular-nums">{nf.format(stats.visitors)}</p>
-          <p className="text-[12px] text-text-muted">pengunjung unik (perkiraan)</p>
+          <p className="text-[12px] text-text-muted">{tr("pengunjung unik (perkiraan)")}</p>
         </div>
       </div>
 
-      <h4 className="mb-2 mt-6 text-[13px] font-medium text-text-muted">Halaman teratas</h4>
+      <h4 className="mb-2 mt-6 text-[13px] font-medium text-text-muted">{tr("Halaman teratas")}</h4>
       {top.length === 0 ? (
         <p className="rounded-[14px] bg-[var(--pill-bg)] px-4 py-6 text-center text-[13px] text-text-muted">
-          Belum ada kunjungan. Bagikan linknya, lalu angkanya muncul di sini.
+          {tr("Belum ada kunjungan. Bagikan linknya, lalu angkanya muncul di sini.")}
         </p>
       ) : (
         <ul className="space-y-2.5">
@@ -243,7 +249,7 @@ function VisitorsCard({ stats }: { stats: SiteStats }) {
         </ul>
       )}
       <p className="mt-auto pt-5 text-[12px] leading-relaxed text-text-faint">
-        Dihitung saat permintaan sampai ke server. Cache CDN (maks 2 menit) dan kunjungan dari bot bisa membuat angkanya sedikit berbeda.
+        {tr("Dihitung saat permintaan sampai ke server. Cache CDN (maks 2 menit) dan kunjungan dari bot bisa membuat angkanya sedikit berbeda.")}
       </p>
     </section>
   );
@@ -271,6 +277,7 @@ function SiteOverview({
   onCopy: (url: string) => void;
   onDelete: (id: string) => void;
 }) {
+  const tr = useT();
   const [range, setRange] = React.useState<Range>("24h");
   const left = site.expiresAt - now;
   const soon = left < HOUR_MS;
@@ -283,11 +290,11 @@ function SiteOverview({
       <section className="surface-solid" aria-labelledby="active-link-title">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[var(--surface-line)] px-5 py-4 sm:px-6">
           <h3 id="active-link-title" className="text-[16px] font-semibold">
-            Link aktif
+            {tr("Link aktif")}
           </h3>
           <div className="flex items-center gap-2">
             <button type="button" onClick={() => onCopy(site.url)} className="pill inline-flex items-center gap-1.5 px-3 py-1.5 text-[12px]">
-              <Copy size={13} /> Salin
+              <Copy size={13} />{" "}{tr("Salin")}
             </button>
             <a
               href={site.url}
@@ -295,12 +302,12 @@ function SiteOverview({
               rel="noopener noreferrer"
               className="btn-primary inline-flex items-center gap-1.5 px-3.5 py-1.5 text-[12px]"
             >
-              Buka <ExternalLink size={13} />
+              {tr("Buka")}{" "}<ExternalLink size={13} />
             </a>
             <button
               type="button"
               onClick={() => onDelete(site.id)}
-              aria-label="Hapus link"
+              aria-label={tr("Hapus link")}
               className="pill inline-flex items-center px-2.5 py-1.5 text-bad-fg"
             >
               <Trash2 size={13} />
@@ -313,7 +320,7 @@ function SiteOverview({
 
           <dl className="grid content-start gap-x-6 gap-y-5 sm:grid-cols-2">
             <div className="sm:col-span-2">
-              <Detail label="Alamat">
+              <Detail label={tr("Alamat")}>
                 <a
                   href={site.url}
                   target="_blank"
@@ -324,21 +331,21 @@ function SiteOverview({
                 </a>
               </Detail>
             </div>
-            <Detail label="Status">
+            <Detail label={tr("Status")}>
               <span className="inline-flex items-center gap-2 font-medium">
                 <span className={cn("h-2 w-2 rounded-full", soon ? "bg-[var(--warn-dot)]" : "bg-[var(--ok-dot)]")} />
-                {soon ? "Segera berakhir" : "Aktif"}
+                {soon ? tr("Segera berakhir") : tr("Aktif")}
               </span>
             </Detail>
-            <Detail label="Dibuat">{ago(site.createdAt, now)}</Detail>
-            <Detail label="Isi">
+            <Detail label={tr("Dibuat")}>{ago(site.createdAt, now)}</Detail>
+            <Detail label={tr("Isi")}>
               <span className="inline-flex flex-wrap items-center gap-x-2">
                 <FileText size={13} className="text-text-muted" />
-                {nf.format(site.fileCount)} file · {formatBytes(site.totalBytes)}
-                {site.spa && <span className="rounded-full bg-[var(--pill-bg)] px-2 py-0.5 text-[12px] text-text-muted">Mode SPA</span>}
+                {tr("{format} file · {formatBytes}", { format: nf.format(site.fileCount), formatBytes: formatBytes(site.totalBytes) })}
+                {site.spa && <span className="rounded-full bg-[var(--pill-bg)] px-2 py-0.5 text-[12px] text-text-muted">{tr("Mode SPA")}</span>}
               </span>
             </Detail>
-            <Detail label="Kedaluwarsa">
+            <Detail label={tr("Kedaluwarsa")}>
               <span className="inline-flex items-center gap-1.5">
                 <Clock size={13} className="text-text-muted" />
                 {remaining(site.expiresAt, now)}
@@ -346,7 +353,7 @@ function SiteOverview({
               <div
                 className="mt-2 h-1.5 overflow-hidden rounded-full bg-[var(--pill-bg)]"
                 role="progressbar"
-                aria-label="Masa aktif terpakai"
+                aria-label={tr("Masa aktif terpakai")}
                 aria-valuemin={0}
                 aria-valuemax={100}
                 aria-valuenow={Math.round(used)}
@@ -359,7 +366,7 @@ function SiteOverview({
 
         <p className="flex items-start gap-2 border-t border-[var(--surface-line)] px-5 py-3.5 text-[13px] text-text-muted sm:px-6">
           <Globe2 size={14} className="mt-0.5 shrink-0" />
-          Link ini sementara. Untuk memperbarui isinya, upload ulang file di atas lalu hapus link lama.
+          {tr("Link ini sementara. Untuk memperbarui isinya, upload ulang file di atas lalu hapus link lama.")}
         </p>
       </section>
 
@@ -388,6 +395,7 @@ export function LinkOverview({
   onCopy: (url: string) => void;
   onDelete: (id: string) => void;
 }) {
+  const tr = useT();
   const [selectedId, setSelectedId] = React.useState<string | null>(null);
   const site = sites.find((s) => s.id === selectedId) ?? sites[0];
 
@@ -395,10 +403,10 @@ export function LinkOverview({
     <div className="mt-8">
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <h3 className="mr-1 text-[16px] font-semibold">
-          Link aktif ({sites.length}/{maxSites})
+          {tr("Link aktif ({length}/{maxSites})", { length: sites.length, maxSites })}
         </h3>
         {sites.length > 1 && (
-          <div role="tablist" aria-label="Pilih link" className="flex flex-wrap gap-2">
+          <div role="tablist" aria-label={tr("Pilih link")} className="flex flex-wrap gap-2">
             {sites.map((s) => {
               const active = s.id === site.id;
               return (

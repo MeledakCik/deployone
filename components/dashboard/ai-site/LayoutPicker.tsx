@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import * as React from "react";
 import { HERO_LAYOUTS, FEAT_LAYOUTS, type HeroLayout, type FeatLayout } from "@/lib/ai-site-templates";
 import { cn } from "@/lib/utils";
@@ -55,20 +57,22 @@ function Thumb({ art, label, selected, onClick }: { art: string; label: string; 
 }
 
 export function HeroLayoutPicker({ value, suggested, onPick }: { value: HeroLayout; suggested?: HeroLayout | null; onPick: (v: HeroLayout) => void }) {
+  const t = useT();
   return (
-    <div role="radiogroup" aria-label="Bagian paling atas" className="grid grid-cols-2 gap-2">
+    <div role="radiogroup" aria-label={t("Bagian paling atas")} className="grid grid-cols-2 gap-2">
       {HERO_LAYOUTS.map((l) => (
-        <Thumb key={l.id} art={HERO_ART[l.id]} label={l.id === suggested ? `${l.name} · saran` : l.name} selected={value === l.id} onClick={() => onPick(l.id)} />
+        <Thumb key={l.id} art={HERO_ART[l.id]} label={l.id === suggested ? t("{name} · saran", { name: t(l.name) }) : t(l.name)} selected={value === l.id} onClick={() => onPick(l.id)} />
       ))}
     </div>
   );
 }
 
 export function FeatLayoutPicker({ value, onPick }: { value: FeatLayout; onPick: (v: FeatLayout) => void }) {
+  const t = useT();
   return (
-    <div role="radiogroup" aria-label="Tata letak keunggulan" className="grid grid-cols-2 gap-2">
+    <div role="radiogroup" aria-label={t("Tata letak keunggulan")} className="grid grid-cols-2 gap-2">
       {FEAT_LAYOUTS.map((l) => (
-        <Thumb key={l.id} art={FEAT_ART[l.id]} label={l.name} selected={value === l.id} onClick={() => onPick(l.id)} />
+        <Thumb key={l.id} art={FEAT_ART[l.id]} label={t(l.name)} selected={value === l.id} onClick={() => onPick(l.id)} />
       ))}
     </div>
   );

@@ -35,6 +35,44 @@ const packs = fs
   .filter((f) => f.endsWith(".json"))
   .flatMap((f) => JSON.parse(fs.readFileSync(path.join(packDir, f), "utf8")));
 
+/* ---- versi bahasa Inggris (data/site-engine/packs-en): teks ringkas, ikon ikut paket Indonesia ---- */
+const enDir = path.join(root, "data/site-engine/packs-en");
+const enPacks = fs.existsSync(enDir) ? fs.readdirSync(enDir).filter((f) => f.endsWith(".json")).flatMap((f) => JSON.parse(fs.readFileSync(path.join(enDir, f), "utf8"))) : [];
+for (const e of enPacks) {
+  const p = packs.find((x) => x.id === e.id);
+  if (!p) {
+    console.warn(`  ! paket Inggris "${e.id}" tidak punya pasangan, dilewati`);
+    continue;
+  }
+  const arr = (v) => (Array.isArray(v) ? v : []);
+  p.en = {
+    label: e.label,
+    prompts: arr(e.prompts),
+    keywords: arr(e.keywords),
+    brandFallback: arr(e.brandFallback),
+    badges: arr(e.badges),
+    slogans: arr(e.slogans),
+    headlines: arr(e.headlines),
+    subheadlines: arr(e.subheadlines),
+    cta: arr(e.cta),
+    featuresTitle: arr(e.featuresTitle),
+    features: arr(e.features).map(([title, text], i) => ({ icon: p.features[i]?.icon ?? p.brandIcon, title, text })),
+    itemsTitle: arr(e.itemsTitle),
+    items: arr(e.items).map(([name, desc, price, category, tag], i) => ({ name, desc, ...(price ? { price } : {}), ...(category ? { category } : {}), icon: p.items[i]?.icon ?? p.brandIcon, ...(tag ? { tag } : {}) })),
+    stepsTitle: arr(e.stepsTitle),
+    steps: arr(e.steps).map(([title, text]) => ({ title, text })),
+    aboutTitle: arr(e.aboutTitle),
+    about: arr(e.about),
+    testimonials: arr(e.testimonials).map(([text, name]) => ({ text, name })),
+    closing: arr(e.closing),
+    closingText: arr(e.closingText),
+    ...(e.articles ? { articles: e.articles.map(([title, excerpt, category, body]) => ({ title, excerpt, category, body })) } : {}),
+    ...(e.subtopics ? { subtopics: e.subtopics } : {}),
+  };
+}
+const missingEn = packs.filter((p) => !p.en).map((p) => p.id);
+if (missingEn.length) console.warn(`  ! belum ada versi Inggris: ${missingEn.join(", ")}`);
+
 const styleDir = path.join(root, "data/site-engine/styles");
 const styles = fs.existsSync(styleDir)
   ? fs.readdirSync(styleDir).filter((f) => f.endsWith(".json")).flatMap((f) => [].concat(JSON.parse(fs.readFileSync(path.join(styleDir, f), "utf8"))))

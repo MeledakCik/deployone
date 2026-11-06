@@ -1,4 +1,6 @@
 "use client";
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import { useCallback, useEffect, useState } from "react";
 import type { KeyInfo, PublicDb } from "./types";
 import { Btn, CopyBtn, Field, Modal, Notice, PageHeader, SecretRow, UsageBar, api, fmtBytes, fmtDate, heading, inputCls, linkBtn, subtle, surface, td, th } from "./ui";
@@ -12,6 +14,7 @@ type Created = {
 };
 
 export default function DatabaseList({ onOpen }: { onOpen: (id: string) => void }) {
+  const t = useT();
   const [data, setData] = useState<ListData | null>(null);
   const [err, setErr] = useState("");
   const [creating, setCreating] = useState(false);
@@ -36,9 +39,9 @@ export default function DatabaseList({ onOpen }: { onOpen: (id: string) => void 
 
   return (
     <div className="space-y-5">
-      <PageHeader title="Database" subtitle="Database Turso (SQLite) pribadi dengan panel admin ala phpMyAdmin.">
-        <Btn variant="primary" onClick={() => setCreating(true)} disabled={!data || maxed || full} title={maxed ? "Batas database tercapai" : full ? "Kuota penuh" : undefined}>
-          + Create Database
+      <PageHeader title={t("Database")} subtitle={t("Database Turso (SQLite) pribadi dengan panel admin ala phpMyAdmin.")}>
+        <Btn variant="primary" onClick={() => setCreating(true)} disabled={!data || maxed || full} title={maxed ? t("Batas database tercapai") : full ? t("Kuota penuh") : undefined}>
+          {t("+ Create Database")}
         </Btn>
       </PageHeader>
 
@@ -54,19 +57,19 @@ export default function DatabaseList({ onOpen }: { onOpen: (id: string) => void 
         <>
           <section className={`${surface} space-y-3 p-4 sm:p-5`}>
             <div className="flex items-center justify-between gap-3 text-sm">
-              <span className={heading}>Kuota penyimpanan</span>
+              <span className={heading}>{t("Kuota penyimpanan")}</span>
               <span className="rounded-full bg-[var(--pill-bg)] px-2.5 py-1 text-xs font-medium text-lav-text">
-                {data.databases.length}/{data.maxDatabases} database
+                {t("{length}/{maxDatabases} database", { length: data.databases.length, maxDatabases: data.maxDatabases })}
               </span>
             </div>
             <UsageBar used={data.usedBytes} quota={data.quotaBytes} />
-            {data.usageUnknown && <p className={subtle}>Sebagian ukuran belum bisa dibaca dari Turso; angka di atas mungkin lebih rendah dari aslinya.</p>}
+            {data.usageUnknown && <p className={subtle}>{t("Sebagian ukuran belum bisa dibaca dari Turso; angka di atas mungkin lebih rendah dari aslinya.")}</p>}
           </section>
 
           {data.databases.length === 0 && (
             <section className={`${surface} px-5 py-10 text-center`}>
-              <p className={heading}>Belum ada database</p>
-              <p className={`${subtle} mt-1`}>Klik “Create Database” untuk memulai.</p>
+              <p className={heading}>{t("Belum ada database")}</p>
+              <p className={`${subtle} mt-1`}>{t("Klik “Create Database” untuk memulai.")}</p>
             </section>
           )}
 
@@ -79,20 +82,20 @@ export default function DatabaseList({ onOpen }: { onOpen: (id: string) => void 
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
                         <p className="truncate text-base font-semibold text-text">{d.displayName}</p>
-                        <p className={subtle}>Dibuat {fmtDate(d.createdAt)}</p>
+                        <p className={subtle}>{t("Dibuat {fmtDate}", { fmtDate: fmtDate(d.createdAt) })}</p>
                       </div>
                       <span className="shrink-0 rounded-full bg-[var(--pill-bg)] px-2.5 py-1 text-xs font-medium text-lav-text">{fmtBytes(d.usageBytes)}</span>
                     </div>
                     <div className="grid grid-cols-2 gap-2">
                       <Btn variant="primary" onClick={() => onOpen(d.id)}>
-                        Buka
+                        {t("Buka")}
                       </Btn>
                       <a href={`/db/${d.id}`} target="_blank" rel="noopener noreferrer" className={linkBtn}>
-                        Tab baru
+                        {t("Tab baru")}
                       </a>
-                      <Btn onClick={() => setRename(d)}>Rename</Btn>
+                      <Btn onClick={() => setRename(d)}>{t("Rename")}</Btn>
                       <Btn variant="danger" onClick={() => setDel(d)}>
-                        Hapus
+                        {t("Hapus")}
                       </Btn>
                     </div>
                   </li>
@@ -104,9 +107,9 @@ export default function DatabaseList({ onOpen }: { onOpen: (id: string) => void 
                 <table className="w-full">
                   <thead className="bg-[var(--pill-bg)]">
                     <tr>
-                      <th className={th}>Nama</th>
-                      <th className={th}>Ukuran</th>
-                      <th className={th}>Dibuat</th>
+                      <th className={th}>{t("Nama")}</th>
+                      <th className={th}>{t("Ukuran")}</th>
+                      <th className={th}>{t("Dibuat")}</th>
                       <th className={th} />
                     </tr>
                   </thead>
@@ -119,16 +122,16 @@ export default function DatabaseList({ onOpen }: { onOpen: (id: string) => void 
                         <td className={`${td} text-right`}>
                           <div className="flex flex-wrap justify-end gap-1.5">
                             <Btn small variant="primary" onClick={() => onOpen(d.id)}>
-                              Buka
+                              {t("Buka")}
                             </Btn>
                             <a href={`/db/${d.id}`} target="_blank" rel="noopener noreferrer" className={`${linkBtn} !rounded-lg !px-2.5 !py-1.5 text-xs`}>
-                              Tab baru
+                              {t("Tab baru")}
                             </a>
                             <Btn small onClick={() => setRename(d)}>
-                              Rename
+                              {t("Rename")}
                             </Btn>
                             <Btn small variant="danger" onClick={() => setDel(d)}>
-                              Hapus
+                              {t("Hapus")}
                             </Btn>
                           </div>
                         </td>
@@ -188,11 +191,12 @@ export default function DatabaseList({ onOpen }: { onOpen: (id: string) => void 
 }
 
 function CreateModal({ onClose, onDone }: { onClose: () => void; onDone: (c: Created) => void }) {
+  const t = useT();
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   return (
-    <Modal title="Create Database" onClose={onClose}>
+    <Modal title={t("Create Database")} onClose={onClose}>
       <form
         className="space-y-4"
         onSubmit={async (e) => {
@@ -207,14 +211,14 @@ function CreateModal({ onClose, onDone }: { onClose: () => void; onDone: (c: Cre
           }
         }}
       >
-        <Field label="Nama database" hint="Huruf kecil, angka, dan strip. 3–32 karakter. Contoh: toko-online">
+        <Field label={t("Nama database")} hint={t("Huruf kecil, angka, dan strip. 3–32 karakter. Contoh: toko-online")}>
           <input className={inputCls} value={name} onChange={(e) => setName(e.target.value.toLowerCase())} autoFocus required minLength={3} maxLength={32} pattern="[a-z0-9]+(-[a-z0-9]+)*" />
         </Field>
         {err && <Notice kind="error">{err}</Notice>}
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <Btn onClick={onClose}>Batal</Btn>
+          <Btn onClick={onClose}>{t("Batal")}</Btn>
           <Btn variant="primary" type="submit" disabled={busy}>
-            {busy ? "Membuat…" : "Buat"}
+            {busy ? t("Membuat…") : t("Buat")}
           </Btn>
         </div>
       </form>
@@ -223,34 +227,35 @@ function CreateModal({ onClose, onDone }: { onClose: () => void; onDone: (c: Cre
 }
 
 function CreatedCard({ c, onOpen, onClose }: { c: Created; onOpen: () => void; onClose: () => void }) {
+  const t = useT();
   const endpoint = typeof window !== "undefined" ? `${window.location.origin}/api/v1/db/${c.database.id}/query` : `/api/v1/db/${c.database.id}/query`;
   return (
-    <Modal title={`Database “${c.database.displayName}” berhasil dibuat`} onClose={onClose} wide>
+    <Modal title={t("Database “{displayName}” berhasil dibuat", { displayName: c.database.displayName })} onClose={onClose} wide>
       <div className="space-y-4">
-        <Notice kind="warn">Password dan API key di bawah hanya tampil sekali. Simpan sekarang; nanti hanya bisa di-reset atau dibuat ulang.</Notice>
+        <Notice kind="warn">{t("Password dan API key di bawah hanya tampil sekali. Simpan sekarang; nanti hanya bisa di-reset atau dibuat ulang.")}</Notice>
         <div className="grid grid-cols-2 gap-2 sm:flex">
           <Btn variant="primary" onClick={onOpen}>
-            Open
+            {t("Open")}
           </Btn>
           <a href={`/db/${c.database.id}`} target="_blank" rel="noopener noreferrer" className={linkBtn}>
-            Open in new tab
+            {t("Open in new tab")}
           </a>
         </div>
         <section className="space-y-2">
-          <h3 className={heading}>Credentials panel admin</h3>
-          <SecretRow label="Username" value={c.credentials.username} />
-          <SecretRow label="Password" value={c.credentials.password} />
+          <h3 className={heading}>{t("Credentials panel admin")}</h3>
+          <SecretRow label={t("Username")} value={c.credentials.username} />
+          <SecretRow label={t("Password")} value={c.credentials.password} />
         </section>
         <section className="space-y-2">
-          <h3 className={heading}>REST API</h3>
-          <SecretRow label="Endpoint (POST)" value={endpoint} />
+          <h3 className={heading}>{t("REST API")}</h3>
+          <SecretRow label={t("Endpoint (POST)")} value={endpoint} />
           {c.apiKeys.map((k) => (
             <SecretRow key={k.id} label={`API key ${k.mode === "ro" ? "read-only" : "read-write"}`} value={k.plain} />
           ))}
-          <p className={subtle}>Kirim ke Environment project dan kelola/cabut key tersedia di halaman detail database.</p>
+          <p className={subtle}>{t("Kirim ke Environment project dan kelola/cabut key tersedia di halaman detail database.")}</p>
         </section>
         <div className="flex sm:justify-end">
-          <Btn onClick={onClose} className="w-full sm:w-auto">Saya sudah menyimpannya</Btn>
+          <Btn onClick={onClose} className="w-full sm:w-auto">{t("Saya sudah menyimpannya")}</Btn>
         </div>
       </div>
     </Modal>
@@ -258,11 +263,12 @@ function CreatedCard({ c, onOpen, onClose }: { c: Created; onOpen: () => void; o
 }
 
 function RenameModal({ row, onClose, onDone }: { row: Row; onClose: () => void; onDone: () => void }) {
+  const t = useT();
   const [name, setName] = useState(row.displayName);
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   return (
-    <Modal title="Rename database" onClose={onClose}>
+    <Modal title={t("Rename database")} onClose={onClose}>
       <form
         className="space-y-4"
         onSubmit={async (e) => {
@@ -278,14 +284,14 @@ function RenameModal({ row, onClose, onDone }: { row: Row; onClose: () => void; 
           }
         }}
       >
-        <Field label="Nama baru">
+        <Field label={t("Nama baru")}>
           <input className={inputCls} value={name} onChange={(e) => setName(e.target.value.toLowerCase())} autoFocus required minLength={3} maxLength={32} pattern="[a-z0-9]+(-[a-z0-9]+)*" />
         </Field>
         {err && <Notice kind="error">{err}</Notice>}
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <Btn onClick={onClose}>Batal</Btn>
+          <Btn onClick={onClose}>{t("Batal")}</Btn>
           <Btn variant="primary" type="submit" disabled={busy}>
-            Simpan
+            {t("Simpan")}
           </Btn>
         </div>
       </form>
@@ -294,19 +300,20 @@ function RenameModal({ row, onClose, onDone }: { row: Row; onClose: () => void; 
 }
 
 function DeleteModal({ row, onClose, onDone }: { row: Row; onClose: () => void; onDone: () => void }) {
+  const t = useT();
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   return (
-    <Modal title="Hapus database" onClose={onClose}>
+    <Modal title={t("Hapus database")} onClose={onClose}>
       <div className="space-y-4">
-        <Notice kind="error">Semua tabel dan data di “{row.displayName}” akan dihapus permanen. Aksi ini tidak bisa dibatalkan.</Notice>
-        <Field label={`Ketik “${row.displayName}” untuk konfirmasi`}>
+        <Notice kind="error">{t("Semua tabel dan data di “{displayName}” akan dihapus permanen. Aksi ini tidak bisa dibatalkan.", { displayName: row.displayName })}</Notice>
+        <Field label={t("Ketik “{displayName}” untuk konfirmasi", { displayName: row.displayName })}>
           <input className={inputCls} value={confirm} onChange={(e) => setConfirm(e.target.value)} autoFocus />
         </Field>
         {err && <Notice kind="error">{err}</Notice>}
         <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-          <Btn onClick={onClose}>Batal</Btn>
+          <Btn onClick={onClose}>{t("Batal")}</Btn>
           <Btn
             variant="danger"
             disabled={busy || confirm !== row.displayName}
@@ -321,7 +328,7 @@ function DeleteModal({ row, onClose, onDone }: { row: Row; onClose: () => void; 
               }
             }}
           >
-            {busy ? "Menghapus…" : "Hapus permanen"}
+            {busy ? t("Menghapus…") : t("Hapus permanen")}
           </Btn>
         </div>
       </div>

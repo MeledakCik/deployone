@@ -8,7 +8,7 @@
     "start": "next start",
     "lint": "next lint",
     "test:convert": "node --experimental-strip-types --test tests/convert-html.test.mjs tests/convert-next.test.mjs",
-    "test:engine": "node --experimental-strip-types --no-warnings --test tests/site-engine.test.mjs tests/site-render.test.mjs",
+    "test:engine": "node --experimental-strip-types --no-warnings --test tests/site-engine.test.mjs tests/site-render.test.mjs tests/i18n.test.mjs",
     "kv:dev": "node scripts/dev-kv.mjs",
     "engine:train": "node --experimental-strip-types --no-warnings scripts/train-site-engine.mjs"
   },

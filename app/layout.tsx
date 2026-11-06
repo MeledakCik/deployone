@@ -6,6 +6,9 @@ import "./globals.css";
 import { ThemeProvider } from "@/components/ui/theme-provider";
 import { AuthProvider } from "@/lib/auth-context";
 import { ToastProvider } from "@/components/ui/Toast";
+import { LanguageProvider } from "@/lib/i18n";
+import { getLang } from "@/lib/i18n/server";
+import { makeT } from "@/lib/i18n/core";
 import { COMMUNITY_LINKS } from "@/lib/community";
 import { OG_IMAGE, jsonLdString } from "@/lib/seo";
 import {
@@ -18,7 +21,7 @@ import {
   SITE_URL,
 } from "@/lib/site-content";
 
-export const metadata: Metadata = {
+const BASE_METADATA: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
     default: HOME_TITLE,
@@ -87,6 +90,13 @@ export const metadata: Metadata = {
     google: "9309OOKq3o9sncxEEKygjhDjXETZ64oiJbyElumX6h8",
   },
 };
+
+/** Judul & deskripsi bawaan mengikuti bahasa pengunjung; sisanya sama. */
+export function generateMetadata(): Metadata {
+  if (getLang() !== "en") return BASE_METADATA;
+  const t = makeT("en");
+  return { ...BASE_METADATA, title: { default: t(HOME_TITLE), template: "%s | Depup" }, description: t(SITE_DESCRIPTION) };
+}
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
@@ -99,6 +109,7 @@ export const viewport: Viewport = {
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
+  const lang = getLang();
   const jsonLd = [
     {
       "@context": "https://schema.org",
@@ -150,7 +161,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     // Dua FAQPage dengan jawaban berbeda = data terstruktur bentrok.
   ];
   return (
-    <html lang="id" suppressHydrationWarning>
+    <html lang={lang} suppressHydrationWarning>
       <head>
         {jsonLd.map((item) => (
           <script
@@ -161,11 +172,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         ))}
       </head>
       <body className="antialiased min-h-[100dvh] w-full overflow-x-clip">
-        <ThemeProvider>
-          <AuthProvider>
-            <ToastProvider>{children}</ToastProvider>
-          </AuthProvider>
-        </ThemeProvider>
+        <LanguageProvider lang={lang}>
+          <ThemeProvider>
+            <AuthProvider>
+              <ToastProvider>{children}</ToastProvider>
+            </AuthProvider>
+          </ThemeProvider>
+        </LanguageProvider>
       </body>
     </html>
   );

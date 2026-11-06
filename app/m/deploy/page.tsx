@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import * as React from "react";
 import Link from "next/link";
 import { Check, GitBranch, UploadCloud, Link2, CircleAlert, Loader2, Clock, ChevronRight, Sparkles } from "@/components/ui/icons";
@@ -20,6 +22,7 @@ const suggestName = suggestRepoName;
  * Progres & hasil tampil lewat DeployModal yang sama.
  */
 export default function MobileDeploy() {
+  const t = useT();
   const {
     form, setFormField, submitDeploy, deployState, repoEnvCheck,
     vercelToken, railwayToken, cloudflareToken, cloudflareAccountId, githubPat, historyReady,
@@ -74,9 +77,9 @@ export default function MobileDeploy() {
     cloudflare: !!cloudflareToken && !!cloudflareAccountId,
   };
   const missing: Record<Platform, string> = {
-    vercel: "Token Vercel belum diisi",
-    railway: "Token Railway belum diisi",
-    cloudflare: "Token & akun Cloudflare belum lengkap",
+    vercel: t("Token Vercel belum diisi"),
+    railway: t("Token Railway belum diisi"),
+    cloudflare: t("Token & akun Cloudflare belum lengkap"),
   };
   const noToken = historyReady && !hasToken[platform];
   const blocked = repoEnvCheck.validation?.compat[platform]?.level === "blocked";
@@ -90,13 +93,13 @@ export default function MobileDeploy() {
   const reason = busy
     ? ""
     : !form.githubUrl.trim()
-      ? "Isi link repo GitHub dulu."
+      ? t("Isi link repo GitHub dulu.")
       : !form.projectName.trim()
-        ? "Beri nama project dulu."
+        ? t("Beri nama project dulu.")
         : noToken
           ? `${missing[platform]}.`
           : blocked
-            ? `Repo ini belum cocok dengan ${platName}. Cek detailnya di atas.`
+            ? t("Repo ini belum cocok dengan {platName}. Cek detailnya di atas.", { platName })
             : "";
 
   const input = "input-solid h-12 w-full px-4 text-[16px] font-medium";
@@ -110,8 +113,8 @@ export default function MobileDeploy() {
       }}
       className="space-y-5 pb-20 pt-2"
     >
-      <ol className="flex items-center gap-2 px-1 text-[12px] font-semibold" aria-label="Langkah deploy">
-        {["Sumber kode", "Platform", "Deploy"].map((s, i, all) => {
+      <ol className="flex items-center gap-2 px-1 text-[12px] font-semibold" aria-label={t("Langkah deploy")}>
+        {[t("Sumber kode"), "Platform", t("Deploy")].map((s, i, all) => {
           const done = stepDone[i];
           const active = i === currentStep;
           return (
@@ -132,52 +135,52 @@ export default function MobileDeploy() {
       </ol>
 
       <section className="space-y-3">
-        <h2 className="text-[16px] font-bold tracking-tight">Sumber kode</h2>
+        <h2 className="text-[16px] font-bold tracking-tight">{t("Sumber kode")}</h2>
         <div className="grid grid-cols-3 gap-1 rounded-[14px] bg-[var(--pill-bg)] p-1 text-[13px] font-semibold">
           <span className="flex h-10 items-center justify-center gap-1.5 rounded-[10px] bg-white text-lav-text shadow-sm">
-            <GitBranch size={16} aria-hidden /> <span className="truncate">GitHub</span>
+            <GitBranch size={16} aria-hidden /> <span className="truncate">{t("GitHub")}</span>
           </span>
           <Link href="/m/upload" className="flex h-10 items-center justify-center gap-1.5 rounded-[10px] text-text-muted active:bg-white/60">
-            <UploadCloud size={16} aria-hidden /> <span className="truncate">Unggah</span>
+            <UploadCloud size={16} aria-hidden /> <span className="truncate">{t("Unggah")}</span>
           </Link>
           <Link href="/m/link-instan" className="flex h-10 min-w-0 items-center justify-center gap-1.5 rounded-[10px] text-text-muted active:bg-white/60">
-            <Link2 size={16} aria-hidden /> <span className="truncate">Link Instan</span>
+            <Link2 size={16} aria-hidden /> <span className="truncate">{t("Link Instan")}</span>
           </Link>
         </div>
 
         <div className={`${CARD} space-y-3 p-4`}>
           <label className="block">
-            <span className={label}>Link repo GitHub</span>
+            <span className={label}>{t("Link repo GitHub")}</span>
             <input className={input} inputMode="url" autoCapitalize="none" autoCorrect="off" placeholder="https://github.com/nama-akun/nama-repo" value={form.githubUrl} onChange={(e) => onUrl(e.target.value)} />
             <RepoCheckCard platform={platform} />
           </label>
           <label className="block">
-            <span className={label}>Nama project</span>
-            <input className={input} autoCapitalize="none" autoCorrect="off" placeholder="nama-project" value={form.projectName} onChange={(e) => { setNameTouched(true); setFormField("projectName", e.target.value); }} />
+            <span className={label}>{t("Nama project")}</span>
+            <input className={input} autoCapitalize="none" autoCorrect="off" placeholder={t("nama-project")} value={form.projectName} onChange={(e) => { setNameTouched(true); setFormField("projectName", e.target.value); }} />
           </label>
 
           {platform === "cloudflare" && (
             <div className="grid grid-cols-2 gap-3">
               <label className="block">
-                <span className={label}>Perintah build</span>
+                <span className={label}>{t("Perintah build")}</span>
                 <input className={input} autoCapitalize="none" autoCorrect="off" placeholder="otomatis" value={form.buildCommand} onChange={(e) => setFormField("buildCommand", e.target.value)} />
               </label>
               <label className="block">
-                <span className={label}>Folder output</span>
+                <span className={label}>{t("Folder output")}</span>
                 <input className={input} autoCapitalize="none" autoCorrect="off" placeholder="otomatis" value={form.outputDir} onChange={(e) => setFormField("outputDir", e.target.value)} />
               </label>
             </div>
           )}
           {platform === "railway" && (
             <label className="block">
-              <span className={label}>Perintah start (opsional)</span>
-              <input className={input} autoCapitalize="none" autoCorrect="off" placeholder="npm start" value={form.startCommand} onChange={(e) => setFormField("startCommand", e.target.value)} />
+              <span className={label}>{t("Perintah start (opsional)")}</span>
+              <input className={input} autoCapitalize="none" autoCorrect="off" placeholder={t("npm start")} value={form.startCommand} onChange={(e) => setFormField("startCommand", e.target.value)} />
             </label>
           )}
 
           <div>
             <button type="button" onClick={() => setEnvOpen((o) => !o)} aria-expanded={envOpen} className="flex min-h-[40px] w-full items-center justify-between text-[13px] font-semibold text-lav-text">
-              Variabel environment {repoEnvCheck.detectedEnvVars.length > 0 && `(${repoEnvCheck.detectedEnvVars.length} terdeteksi)`}
+              {t("Variabel environment")}{" "}{repoEnvCheck.detectedEnvVars.length > 0 && t("({length} terdeteksi)", { length: repoEnvCheck.detectedEnvVars.length })}
               <ChevronRight size={16} aria-hidden className={`transition ${envOpen ? "rotate-90" : ""}`} />
             </button>
             {(envOpen || form.envText.trim().length > 0) && (
@@ -188,7 +191,7 @@ export default function MobileDeploy() {
                 autoCapitalize="none"
                 autoCorrect="off"
                 spellCheck={false}
-                placeholder={"KEY=value\nDATABASE_URL=..."}
+                placeholder={t("KEY=value\nDATABASE_URL=...")}
                 className="input-solid mt-2 w-full px-4 py-3 font-mono text-[13px]"
               />
             )}
@@ -197,8 +200,8 @@ export default function MobileDeploy() {
       </section>
 
       <section className="space-y-3">
-        <h2 className="text-[16px] font-bold tracking-tight">Pilih platform</h2>
-        {validation && <p className="text-[13px] text-text-muted">Platform paling cocok sudah dipilihkan. Kamu tetap bisa menggantinya.</p>}
+        <h2 className="text-[16px] font-bold tracking-tight">{t("Pilih platform")}</h2>
+        {validation && <p className="text-[13px] text-text-muted">{t("Platform paling cocok sudah dipilihkan. Kamu tetap bisa menggantinya.")}</p>}
         {PLATFORMS.map((p) => {
           const sel = platform === p.id;
           const connected = historyReady && hasToken[p.id];
@@ -224,16 +227,16 @@ export default function MobileDeploy() {
                         validation.compat[p.id].level === "blocked" && "bg-bad-bg text-bad-fg",
                       )}
                     >
-                      {validation.compat[p.id].level === "ok" ? "Cocok" : validation.compat[p.id].level === "warn" ? "Dengan catatan" : "Tidak cocok"}
+                      {validation.compat[p.id].level === "ok" ? t("Cocok") : validation.compat[p.id].level === "warn" ? t("Dengan catatan") : t("Tidak cocok")}
                     </span>
                   )}
                   {connected ? (
-                    <span className="rounded-full bg-ok-bg px-2 py-0.5 text-[12px] font-semibold text-ok-fg">Token tersimpan</span>
+                    <span className="rounded-full bg-ok-bg px-2 py-0.5 text-[12px] font-semibold text-ok-fg">{t("Token tersimpan")}</span>
                   ) : historyReady ? (
-                    <span className="rounded-full bg-[var(--pill-bg)] px-2 py-0.5 text-[12px] font-semibold text-text-muted">Belum ada token</span>
+                    <span className="rounded-full bg-[var(--pill-bg)] px-2 py-0.5 text-[12px] font-semibold text-text-muted">{t("Belum ada token")}</span>
                   ) : null}
                 </div>
-                <p className="mt-0.5 text-[13px] leading-snug text-text-muted">{p.desc}</p>
+                <p className="mt-0.5 text-[13px] leading-snug text-text-muted">{t(p.desc)}</p>
               </div>
               {sel ? (
                 <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[var(--ink-fill)] text-white">
@@ -252,7 +255,7 @@ export default function MobileDeploy() {
           <CircleAlert size={20} className="shrink-0 text-warn" aria-hidden />
           <div className="min-w-0 flex-1">
             <p className="text-[14px] font-semibold">{missing[platform]}</p>
-            <p className="text-[13px] leading-snug">Isi sekali di Pengaturan, lalu deploy dari HP kapan saja.</p>
+            <p className="text-[13px] leading-snug">{t("Isi sekali di Pengaturan, lalu deploy dari HP kapan saja.")}</p>
           </div>
           <ChevronRight size={18} className="shrink-0" aria-hidden />
         </Link>
@@ -264,8 +267,8 @@ export default function MobileDeploy() {
           <Sparkles size={20} aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
-          <p className="text-[14px] font-semibold">Belum punya repo?</p>
-          <p className="text-[12px] text-text-muted">Buat situsnya dengan AI Web Builder.</p>
+          <p className="text-[14px] font-semibold">{t("Belum punya repo?")}</p>
+          <p className="text-[12px] text-text-muted">{t("Buat situsnya dengan AI Web Builder.")}</p>
         </div>
         <ChevronRight size={18} className="shrink-0 text-text-faint" aria-hidden />
       </Link>
@@ -273,8 +276,8 @@ export default function MobileDeploy() {
       <div className="notice notice-info items-center">
         <Clock size={20} className="shrink-0" aria-hidden />
         <div>
-          <p className="text-[14px] font-semibold">Estimasi sekitar 1–3 menit</p>
-          <p className="text-[12px]">Otomatis SSL & CDN dari {platName}.</p>
+          <p className="text-[14px] font-semibold">{t("Estimasi sekitar 1–3 menit")}</p>
+          <p className="text-[12px]">{t("Otomatis SSL & CDN dari {platName}.", { platName })}</p>
         </div>
       </div>
 
@@ -287,7 +290,7 @@ export default function MobileDeploy() {
             </p>
           )}
           <button type="submit" disabled={!ready} className="btn-primary btn-xl w-full disabled:cursor-not-allowed disabled:opacity-50">
-            {busy ? <><Loader2 size={20} className="animate-spin" aria-hidden /> Sedang deploy…</> : `Mulai deploy ke ${platName}`}
+            {busy ? <><Loader2 size={20} className="animate-spin" aria-hidden />{" "}{t("Sedang deploy…")}</> : t("Mulai deploy ke {platName}", { platName })}
           </button>
         </div>
       </div>

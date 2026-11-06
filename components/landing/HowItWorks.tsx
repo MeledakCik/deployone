@@ -1,3 +1,4 @@
+import { getT } from "@/lib/i18n/server";
 import { GlyphText } from "@/components/ui/Icon";
 import { Badge } from "@/components/ui/primitives";
 
@@ -41,11 +42,12 @@ const STEPS = [
 ];
 
 export function HowItWorks() {
+  const tr = getT();
   return (
     <section id="cara-kerja" className="mx-auto w-full max-w-6xl scroll-mt-24 px-4 pb-16 pt-4 sm:px-8 sm:pb-20">
       <div className="mx-auto mb-12 max-w-3xl text-center">
-        <h2 className="lp-h2">Tiga langkah, dari repo ke link.</h2>
-        <p className="lp-lead">Tanpa YAML yang rumit. Tempel link, lalu biarkan Depup menangani sisanya.</p>
+        <h2 className="lp-h2">{tr("Tiga langkah, dari repo ke link.")}</h2>
+        <p className="lp-lead">{tr("Tanpa YAML yang rumit. Tempel link, lalu biarkan Depup menangani sisanya.")}</p>
       </div>
 
       <ol className="grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -59,18 +61,18 @@ export function HowItWorks() {
                   style={{ background: "var(--ink-fill)", color: "var(--ink-fill-text)" }}
                   aria-hidden="true"
                 >
-                  {s.n}
+                  {tr(s.n)}
                 </span>
-                <Badge>{s.badge}</Badge>
+                <Badge>{tr(s.badge)}</Badge>
               </div>
-              <h3 className="mb-3 text-[22px] font-bold tracking-[-0.03em] sm:text-[24px]">{s.title}</h3>
-              <p className="mb-6 text-[15px] leading-relaxed text-text-muted">{s.body}</p>
+              <h3 className="mb-3 text-[22px] font-bold tracking-[-0.03em] sm:text-[24px]">{tr(s.title)}</h3>
+              <p className="mb-6 text-[15px] leading-relaxed text-text-muted">{tr(s.body)}</p>
             </div>
             <div className="rounded-[14px] bg-[var(--surface-solid)] p-3.5 font-mono text-[12px] leading-[18px] break-words">
-              <div className="mb-1 text-[12px] font-bold text-text-faint">{s.label}</div>
+              <div className="mb-1 text-[12px] font-bold text-text-faint">{tr(s.label)}</div>
               {s.lines.map(([cls, t]) => (
                 <div key={t} className={cls}>
-                  <GlyphText>{t}</GlyphText>
+                  <GlyphText>{tr(t)}</GlyphText>
                 </div>
               ))}
             </div>

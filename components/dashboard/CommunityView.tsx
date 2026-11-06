@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import * as React from "react";
 import { ArrowUpRight } from "@/components/ui/icons";
 import { ViewFade } from "@/components/ui/ViewFade";
@@ -18,10 +20,11 @@ const ICONS: Record<CommunityKey, React.ComponentType<{ size?: number }>> = {
 
 /** Halaman "Komunitas": semua saluran resmi DepUp, selalu bisa dibuka dari sidebar. */
 export function CommunityView() {
+  const t = useT();
   return (
     <ViewFade>
       <div className="space-y-5">
-        <PageHead title="Komunitas" desc="Gabung untuk dapat kabar fitur baru, bantuan dari sesama pengguna, dan tips deploy." />
+        <PageHead title={t("Komunitas")} desc={t("Gabung untuk dapat kabar fitur baru, bantuan dari sesama pengguna, dan tips deploy.")} />
         <Card>
           <ul className="divide-y divide-[var(--surface-line)]">
             {COMMUNITY_LINKS.map(({ key, label, desc, href }) => {
@@ -39,8 +42,8 @@ export function CommunityView() {
                       <Icon size={20} />
                     </span>
                     <span className="min-w-0 flex-1">
-                      <span className="block text-[14px] font-bold tracking-tight">{label}</span>
-                      <span className="block truncate text-[13px] text-text-muted">{desc}</span>
+                      <span className="block text-[14px] font-bold tracking-tight">{t(label)}</span>
+                      <span className="block truncate text-[13px] text-text-muted">{t(desc)}</span>
                     </span>
                     <ArrowUpRight size={18} className="shrink-0 text-text-muted" />
                   </a>

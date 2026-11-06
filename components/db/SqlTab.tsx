@@ -1,4 +1,6 @@
 "use client";
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import { useState } from "react";
 import type { Cell } from "./types";
 import { Btn, Notice, api, renderCell, subtle, td, th } from "./ui";
@@ -6,6 +8,7 @@ import { Btn, Notice, api, renderCell, subtle, td, th } from "./ui";
 type R = { sql: string; columns: string[]; rows: Cell[][]; affected: number; lastInsertRowid: string | null; truncated: boolean; error?: string };
 
 export default function SqlTab({ id, onChanged }: { id: string; onChanged: () => void }) {
+  const t = useT();
   const [sql, setSql] = useState("SELECT name, type FROM sqlite_master WHERE name NOT LIKE 'sqlite_%';");
   const [res, setRes] = useState<{ results: R[]; ms: number } | null>(null);
   const [err, setErr] = useState("");
@@ -28,7 +31,7 @@ export default function SqlTab({ id, onChanged }: { id: string; onChanged: () =>
   return (
     <div className="space-y-3">
       <label htmlFor="sql-editor" className="sr-only">
-        Editor SQL
+        {t("Editor SQL")}
       </label>
       <textarea
         id="sql-editor"
@@ -46,14 +49,14 @@ export default function SqlTab({ id, onChanged }: { id: string; onChanged: () =>
       />
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:gap-3">
         <Btn variant="primary" onClick={run} disabled={busy || !sql.trim()}>
-          {busy ? "Menjalankan…" : "Jalankan (Ctrl+Enter)"}
+          {busy ? t("Menjalankan…") : t("Jalankan (Ctrl+Enter)")}
         </Btn>
-        <span className={subtle}>ATTACH, VACUUM, dan PRAGMA berbahaya diblokir. Maks 1.000 baris per hasil.</span>
+        <span className={subtle}>{t("ATTACH, VACUUM, dan PRAGMA berbahaya diblokir. Maks 1.000 baris per hasil.")}</span>
       </div>
       {err && <Notice kind="error">{err}</Notice>}
       {res && (
         <div className="space-y-4">
-          <p className={subtle}>Selesai dalam {res.ms} ms</p>
+          <p className={subtle}>{t("Selesai dalam {ms} ms", { ms: res.ms })}</p>
           {res.results.map((r, i) => (
             <div key={i} className="space-y-1">
               <code className="block truncate font-mono text-xs text-text-muted">{r.sql}</code>
@@ -86,11 +89,11 @@ export default function SqlTab({ id, onChanged }: { id: string; onChanged: () =>
                     </table>
                   </div>
                   <p className={subtle}>
-                    {r.rows.length} baris{r.truncated ? " (dipotong, tambahkan LIMIT)" : ""}
+                    {t("{length} baris", { length: r.rows.length })}{r.truncated ? t(" (dipotong, tambahkan LIMIT)") : ""}
                   </p>
                 </>
               ) : (
-                <Notice kind="ok">Berhasil. {r.affected} baris terpengaruh.{r.lastInsertRowid ? ` Last insert rowid: ${r.lastInsertRowid}.` : ""}</Notice>
+                <Notice kind="ok">{t("Berhasil. {affected} baris terpengaruh.", { affected: r.affected })}{r.lastInsertRowid ? t(" Last insert rowid: {lastInsertRowid}.", { lastInsertRowid: r.lastInsertRowid }) : ""}</Notice>
               )}
             </div>
           ))}

@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/public";
 import * as React from "react";
 import { ArrowUpRight } from "@/components/ui/icons";
 import { useAuth } from "@/lib/auth-context";
@@ -11,6 +13,7 @@ import { DashboardLink } from "@/components/landing/DashboardLink";
  * Dipisah dari PublicNav supaya halaman yang tidak butuh sesi (privasi, dokumentasi konektor) tidak ikut memuatnya.
  */
 export function PublicAuthCta() {
+  const t = useT();
   const { user, ready } = useAuth();
   const [loginOpen, setLoginOpen] = React.useState(false);
   const loggedIn = ready && !!user;
@@ -19,12 +22,12 @@ export function PublicAuthCta() {
     <>
       {loggedIn ? (
         <DashboardLink href="/dashboard" className="btn-primary btn-md">
-          Buka dashboard <ArrowUpRight size={14} />
+          {t("Buka dashboard")}{" "}<ArrowUpRight size={14} />
         </DashboardLink>
       ) : (
         <button type="button" onClick={() => setLoginOpen(true)} className="pill btn-md font-medium">
           <GoogleMark size={14} />
-          Masuk
+          {t("Masuk")}
         </button>
       )}
       <GoogleLoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />

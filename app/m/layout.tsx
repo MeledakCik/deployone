@@ -1,4 +1,6 @@
 "use client";
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import * as React from "react";
 import Link from "next/link";
 import { LayoutDashboard, FolderKanban, Rocket, BookOpen, UserRound, ChevronLeft } from "@/components/ui/icons";
@@ -40,6 +42,7 @@ const TITLES: Record<string, string> = {
 };
 
 export default function MobileLayout({ children }: { children: React.ReactNode }) {
+  const tr = useT();
   const { user, ready, login, loggingIn, loginError } = useAuth();
   const pathname = usePathname();
   if (!ready) {
@@ -71,16 +74,16 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
             <div className="animate-[fadeIn_0.6s_ease-out]">
               <img
                 src="/logo.png"
-                alt="Depup"
+                alt={tr("Depup")}
                 width={72}
                 height={72}
                 className="mx-auto h-[clamp(56px,18vw,72px)] w-[clamp(56px,18vw,72px)] rounded-[clamp(18px,4.5vw,22px)] shadow-[0_12px_32px_-8px_rgba(73,46,160,0.5),0_0_0_1px_rgba(255,255,255,0.2)_inset]"
               />
               <h1 className="mt-[clamp(12px,3vh,20px)] text-center text-[clamp(26px,7vw,30px)] font-bold leading-none tracking-[-0.03em] text-white">
-                Depup
+                {tr("Depup")}
               </h1>
               <p className="mt-2 text-center text-[clamp(13px,3.8vw,15px)] leading-[1.4] text-white/85">
-                Deploy tanpa ribet, dari HP.
+                {tr("Deploy tanpa ribet, dari HP.")}
               </p>
               <div className="mt-[clamp(12px,2.5vh,20px)] flex flex-wrap items-center justify-center gap-2">
                 {[
@@ -103,7 +106,7 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
             <div className="mx-auto w-full max-w-[340px]">
               {loginError && (
                 <div className="mb-3 rounded-[14px] bg-white/90 px-3.5 py-2.5 text-left shadow-lg backdrop-blur animate-[fadeIn_0.3s_ease-out]">
-                  <p className="text-[13px] font-semibold leading-none">Login gagal</p>
+                  <p className="text-[13px] font-semibold leading-none">{tr("Login gagal")}</p>
                   <p className="mt-1 text-[12px] leading-snug opacity-70 line-clamp-2">{loginError}</p>
                 </div>
               )}
@@ -116,17 +119,17 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
                 {loggingIn ? (
                   <>
                     <span className="h-4 w-4 animate-spin rounded-full border-2 border-ink/20 border-t-ink" />
-                    Menghubungkan...
+                    {tr("Menghubungkan...")}
                   </>
                 ) : (
                   <>
                     <GoogleMark size={18} />
-                    Lanjutkan dengan Google
+                    {tr("Lanjutkan dengan Google")}
                   </>
                 )}
               </button>
               <p className="mx-auto mt-3 text-balance text-center text-[12px] leading-[1.4] text-white/75">
-                Kamu akan diarahkan ke halaman masuk Google yang asli, lalu otomatis kembali ke Depup.
+                {tr("Kamu akan diarahkan ke halaman masuk Google yang asli, lalu otomatis kembali ke Depup.")}
               </p>
             </div>
           </div>
@@ -149,6 +152,7 @@ export default function MobileLayout({ children }: { children: React.ReactNode }
 }
 
 function MobileShell({ user, children }: { user: AuthUser; children: React.ReactNode }) {
+  const tr = useT();
   const pathname = usePathname();
   const router = useRouter();
   const { view, setView } = useDeploy();
@@ -179,7 +183,7 @@ function MobileShell({ user, children }: { user: AuthUser; children: React.React
               <button
                 type="button"
                 onClick={() => router.back()}
-                aria-label="Kembali"
+                aria-label={tr("Kembali")}
                 className="pill flex h-10 w-10 shrink-0 items-center justify-center text-lav-text active:scale-90"
               >
                 <ChevronLeft size={20} aria-hidden />
@@ -187,11 +191,11 @@ function MobileShell({ user, children }: { user: AuthUser; children: React.React
             ) : (
               <img src="/logo.png" alt="" width={36} height={36} className="h-9 w-9 shrink-0 rounded-[11px]" />
             )}
-            <h1 className="min-w-0 truncate text-[20px] font-bold tracking-tight">{title}</h1>
+            <h1 className="min-w-0 truncate text-[20px] font-bold tracking-tight">{tr(title)}</h1>
           </div>
           <Link
             href="/m/akun"
-            aria-label="Akun"
+            aria-label={tr("Akun")}
             className="flex h-10 w-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gradient-to-br from-violet-500 to-violet-400 text-[14px] font-bold text-white ring-2 ring-white active:scale-90"
           >
             {user.picture ? <img src={user.picture} alt="" referrerPolicy="no-referrer" className="h-full w-full object-cover" /> : initial}
@@ -207,7 +211,7 @@ function MobileShell({ user, children }: { user: AuthUser; children: React.React
       <nav
         className="fixed inset-x-0 bottom-0 z-50 bg-white/95 shadow-[0_-10px_25px_-5px_rgba(18,11,46,0.08)] backdrop-blur-md"
         style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
-        aria-label="Navigasi utama"
+        aria-label={tr("Navigasi utama")}
       >
         <div className="mx-auto grid h-[64px] max-w-[540px] grid-cols-5">
           {TABS.map((t) => {
@@ -221,7 +225,7 @@ function MobileShell({ user, children }: { user: AuthUser; children: React.React
                   >
                     <t.Icon size={26} aria-hidden />
                   </span>
-                  <span className={`text-[12px] leading-4 ${active ? "font-bold text-lav-text" : "font-medium text-text-muted"}`}>{t.label}</span>
+                  <span className={`text-[12px] leading-4 ${active ? "font-bold text-lav-text" : "font-medium text-text-muted"}`}>{tr(t.label)}</span>
                   <span aria-hidden className="h-1 w-1" />
                 </Link>
               );
@@ -229,7 +233,7 @@ function MobileShell({ user, children }: { user: AuthUser; children: React.React
             return (
               <Link key={t.href} href={t.href} aria-current={active ? "page" : undefined} className="flex flex-col items-center justify-center gap-1 active:scale-95">
                 <t.Icon size={22} aria-hidden className={`transition ${active ? "text-lav-text" : "text-text-faint"}`} />
-                <span className={`text-[12px] leading-4 ${active ? "font-bold text-lav-text" : "font-medium text-text-muted"}`}>{t.label}</span>
+                <span className={`text-[12px] leading-4 ${active ? "font-bold text-lav-text" : "font-medium text-text-muted"}`}>{tr(t.label)}</span>
                 <span className={`h-1 w-1 rounded-full transition ${active ? "bg-[var(--accent)]" : "bg-transparent"}`} />
               </Link>
             );

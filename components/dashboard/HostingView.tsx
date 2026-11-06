@@ -1,5 +1,7 @@
 "use client";
 
+import { useT, tl } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import { Card, Empty, PageTitle } from "@/components/ui/primitives";
 import { useAuth } from "@/lib/auth-context";
 import * as React from "react";
@@ -50,23 +52,24 @@ function formatBytes(n: number): string {
 }
 
 function ttlLabel(h: number): string {
-  if (h < 24) return `${h} jam`;
-  return `${h / 24} hari`;
+  if (h < 24) return tl("{h} jam", { h });
+  return tl("{d} hari", { d: h / 24 });
 }
 
 function remaining(expiresAt: number, now: number): string {
   const ms = expiresAt - now;
-  if (ms <= 0) return "kedaluwarsa";
+  if (ms <= 0) return tl("kedaluwarsa");
   const m = Math.floor(ms / 60000);
-  if (m < 60) return `${Math.max(m, 1)} menit lagi`;
+  if (m < 60) return tl("{m} menit lagi", { m: Math.max(m, 1) });
   const h = Math.floor(m / 60);
-  if (h < 48) return `${h} jam lagi`;
-  return `${Math.floor(h / 24)} hari lagi`;
+  if (h < 48) return tl("{h} jam lagi", { h });
+  return tl("{d} hari lagi", { d: Math.floor(h / 24) });
 }
 
 type Stage = "idle" | "reading" | "ready" | "publishing";
 
 export function HostingView() {
+  const tr = useT();
   const { user } = useAuth();
   const isAdmin = !!user?.isAdmin;
   const { showToast } = useToast();
@@ -95,7 +98,7 @@ export function HostingView() {
       setTtl((cur) => (c.ttlOptionsHours.includes(cur) ? cur : c.defaultTtlHours));
       setLoadError(null);
     } catch (e) {
-      setLoadError(e instanceof SiteError ? e.message : "Gagal memuat daftar link.");
+      setLoadError(e instanceof SiteError ? e.message : tr("Gagal memuat daftar link."));
     }
   }, []);
 
@@ -130,11 +133,11 @@ export function HostingView() {
       const site = prepareSite(res.files);
       if (config && site.totalBytes > config.maxBytes) {
         throw new SiteError(
-          `Ukuran ${formatBytes(site.totalBytes)} melebihi batas ${formatBytes(config.maxBytes)}. Kecilkan gambar/video atau buang file yang tidak dipakai.`
+          tr("Ukuran {formatBytes} melebihi batas {formatBytes2}. Kecilkan gambar/video atau buang file yang tidak dipakai.", { formatBytes: formatBytes(site.totalBytes), formatBytes2: formatBytes(config.maxBytes) })
         );
       }
       if (config && site.files.length > config.maxFiles) {
-        throw new SiteError(`Terlalu banyak file (${site.files.length}). Maksimal ${config.maxFiles}.`);
+        throw new SiteError(tr("Terlalu banyak file ({length}). Maksimal {maxFiles}.", { length: site.files.length, maxFiles: config.maxFiles }));
       }
       const extra = checkSiteLinks(res.files, site);
       if (extra.length > 0) {
@@ -147,7 +150,7 @@ export function HostingView() {
       setPrepared(null);
       setStage("idle");
       setError(
-        e instanceof SiteError || e instanceof UploadError ? e.message : "Gagal membaca file. Coba lagi atau pakai zip lain."
+        e instanceof SiteError || e instanceof UploadError ? e.message : tr("Gagal membaca file. Coba lagi atau pakai zip lain.")
       );
     }
   }
@@ -157,7 +160,7 @@ export function HostingView() {
     e.target.value = "";
     if (!file) return;
     if (!/\.zip$/i.test(file.name)) {
-      setError("File harus berformat .zip");
+      setError(tr("File harus berformat .zip"));
       return;
     }
     void handleCollect(() => collectFromZip(file), file.name.replace(/\.zip$/i, ""));
@@ -186,7 +189,7 @@ export function HostingView() {
     if (!prepared) return;
     setError(null);
     setStage("publishing");
-    setProgress({ done: 0, total: 1, label: "Menyiapkan link…" });
+    setProgress({ done: 0, total: 1, label: tr("Menyiapkan link…") });
     try {
       const res = await publishSite(prepared.files, {
         name,
@@ -194,7 +197,7 @@ export function HostingView() {
         spa,
         onProgress: (done, total, label) => setProgress({ done, total, label }),
       });
-      showToast("Link aktif: " + res.url.replace(/^https?:\/\//, "").replace(/\/$/, ""));
+      showToast(tr("Link aktif: ") + res.url.replace(/^https?:\/\//, "").replace(/\/$/, ""));
       setPrepared(null);
       setReport(null);
       setStage("idle");
@@ -203,7 +206,7 @@ export function HostingView() {
       await reload();
     } catch (e) {
       setStage("ready");
-      setError(e instanceof SiteError ? e.message : "Upload gagal karena kesalahan tak terduga. Coba lagi.");
+      setError(e instanceof SiteError ? e.message : tr("Upload gagal karena kesalahan tak terduga. Coba lagi."));
     } finally {
       setProgress(null);
     }
@@ -212,27 +215,27 @@ export function HostingView() {
   async function remove(id: string) {
     const site = config?.sites.find((x) => x.id === id);
     const { ok } = await confirm({
-      title: "Hapus link ini?",
-      description: site ? `${site.name} akan langsung dihapus.` : "Link akan langsung dihapus.",
-      impact: ["Orang yang membuka link ini akan melihat halaman 404.", "File yang diunggah ikut terhapus dan tidak bisa dikembalikan."],
-      confirmLabel: "Ya, hapus",
+      title: tr("Hapus link ini?"),
+      description: site ? tr("{name} akan langsung dihapus.", { name: site.name }) : tr("Link akan langsung dihapus."),
+      impact: [tr("Orang yang membuka link ini akan melihat halaman 404."), tr("File yang diunggah ikut terhapus dan tidak bisa dikembalikan.")],
+      confirmLabel: tr("Ya, hapus"),
     });
     if (!ok) return;
     try {
       await deleteSite(id);
-      showToast("Link dihapus");
+      showToast(tr("Link dihapus"));
       await reload();
     } catch (e) {
-      setError(e instanceof SiteError ? e.message : "Gagal menghapus link.");
+      setError(e instanceof SiteError ? e.message : tr("Gagal menghapus link."));
     }
   }
 
   async function copy(url: string) {
     try {
       await navigator.clipboard.writeText(url);
-      showToast("Link disalin");
+      showToast(tr("Link disalin"));
     } catch {
-      showToast("Gagal menyalin — salin manual dari daftar");
+      showToast(tr("Gagal menyalin — salin manual dari daftar"));
     }
   }
 
@@ -242,27 +245,26 @@ export function HostingView() {
   return (
     <ViewFade>
       <div className="mb-6">
-        <PageTitle title="Link Instan" desc={<>Upload website statis (zip atau folder) dan langsung dapat link publik sementara
+        <PageTitle title={tr("Link Instan")} desc={<>{tr("Upload website statis (zip atau folder) dan langsung dapat link publik sementara")}
           {config?.baseDomain ? (
             <>
               {" "}
-              seperti <code>nama-xxxxx.{config.baseDomain}</code>
+              seperti <code>{tr("nama-xxxxx.{baseDomain}", { baseDomain: config.baseDomain })}</code>
             </>
           ) : null}
-          . Tanpa CLI, tanpa GitHub.</>} />
+          {tr(". Tanpa CLI, tanpa GitHub.")}</>} />
       </div>
 
       {config && !config.enabled && (
         <div className="notice notice-warn mb-4">
           <CircleAlert size={16} className="mt-0.5 shrink-0" />
           <span>
-            Link Instan sedang tidak tersedia. Sementara itu, kamu tetap bisa menayangkan situs lewat menu Deploy atau Unggah.
+            {tr("Link Instan sedang tidak tersedia. Sementara itu, kamu tetap bisa menayangkan situs lewat menu Deploy atau Unggah.")}
             {isAdmin && (
               <>
                 {" "}
                 <span className="block mt-1 text-[13px]">
-                  Untuk admin: isi env <code>TUNNEL_BASE_DOMAIN</code> (domain wildcard) lalu redeploy. Lihat panduan
-                  &quot;Aktifkan Link Instan dan Link Gaib&quot; di Dokumentasi.
+                  {tr("Untuk admin: isi env")}{" "}<code>TUNNEL_BASE_DOMAIN</code>{" "}{tr("(domain wildcard) lalu redeploy. Lihat panduan \"Aktifkan Link Instan dan Link Gaib\" di Dokumentasi.")}
                 </span>
               </>
             )}
@@ -283,7 +285,7 @@ export function HostingView() {
               setError(null);
               setLoadError(null);
             }}
-            aria-label="Tutup pesan"
+            aria-label={tr("Tutup pesan")}
             className="shrink-0"
           >
             <X size={14} />
@@ -299,8 +301,8 @@ export function HostingView() {
           )}
         >
           <p className="text-[13px] font-semibold">
-            Terdeteksi: {report.label}
-            {report.status === "blocked" && " — belum bisa dipublikasikan"}
+            {tr("Terdeteksi: {label}", { label: report.label })}
+            {report.status === "blocked" && tr(" — belum bisa dipublikasikan")}
           </p>
           <ul className="mt-2 space-y-1.5">
             {report.notes.map((n, i) => (
@@ -320,7 +322,7 @@ export function HostingView() {
               onClick={() => setView("upload")}
               className="pill mt-3 inline-flex items-center gap-1.5 px-3.5 py-1.5 text-[12px] font-medium"
             >
-              Butuh server? Buka menu Upload (GitHub + deploy)
+              {tr("Butuh server? Buka menu Upload (GitHub + deploy)")}
             </button>
           )}
         </div>
@@ -342,21 +344,20 @@ export function HostingView() {
           {stage === "reading" ? (
             <>
               <Loader2 size={34} className="animate-spin text-text-muted" />
-              <p className="mt-4 text-[14px] font-medium">Membaca file…</p>
+              <p className="mt-4 text-[14px] font-medium">{tr("Membaca file…")}</p>
             </>
           ) : full ? (
             <>
               <CircleAlert size={34} className="text-warn-fg" />
-              <p className="mt-4 text-[14px] font-medium">Batas {config.maxSites} link aktif tercapai</p>
-              <p className="mt-1 text-[12px] text-text-muted">Hapus salah satu link di bawah, atau tunggu sampai kedaluwarsa.</p>
+              <p className="mt-4 text-[14px] font-medium">{tr("Batas {maxSites} link aktif tercapai", { maxSites: config.maxSites })}</p>
+              <p className="mt-1 text-[12px] text-text-muted">{tr("Hapus salah satu link di bawah, atau tunggu sampai kedaluwarsa.")}</p>
             </>
           ) : (
             <>
               <UploadCloud size={38} className="text-text-muted" />
-              <p className="mt-4 text-[16px] font-medium">Tarik &amp; lepas file .zip atau folder website ke sini</p>
+              <p className="mt-4 text-[16px] font-medium">{tr("Tarik & lepas file .zip atau folder website ke sini")}</p>
               <p className="mt-1 text-[12px] text-text-muted">
-                Harus ada <code>index.html</code>. Maks {formatBytes(config.maxBytes)} &amp; {config.maxFiles} file. Project
-                React/Vue/Next: upload folder hasil build-nya (dist / build / out).
+                {tr("Harus ada")}{" "}<code>index.html</code>{tr(". Maks {formatBytes} & {maxFiles} file. Project React/Vue/Next: upload folder hasil build-nya (dist / build / out).", { formatBytes: formatBytes(config.maxBytes), maxFiles: config.maxFiles })}
               </p>
               <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
                 <button
@@ -364,14 +365,14 @@ export function HostingView() {
                   onClick={() => zipRef.current?.click()}
                   className="btn-primary btn-md inline-flex items-center gap-2"
                 >
-                  <FileArchive size={15} /> Pilih file ZIP
+                  <FileArchive size={15} />{" "}{tr("Pilih file ZIP")}
                 </button>
                 <button
                   type="button"
                   onClick={() => folderRef.current?.click()}
                   className="pill btn-md inline-flex items-center gap-2 font-medium hover:bg-[var(--card-hover)]"
                 >
-                  <FolderUp size={15} /> Pilih folder
+                  <FolderUp size={15} />{" "}{tr("Pilih folder")}
                 </button>
               </div>
             </>
@@ -395,12 +396,12 @@ export function HostingView() {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-[14px] font-semibold">
-                {prepared.files.length} file siap{" "}
+                {tr("{length} file siap", { length: prepared.files.length })}{" "}
                 <span className="font-normal text-text-muted">· {formatBytes(prepared.totalBytes)}</span>
               </p>
               {prepared.rootDir && (
                 <p className="mt-0.5 text-[12px] text-text-muted">
-                  Folder <code>{prepared.rootDir}/</code> dipakai sebagai root situs.
+                  {tr("Folder")}{" "}<code>{prepared.rootDir}/</code>{" "}{tr("dipakai sebagai root situs.")}
                 </p>
               )}
             </div>
@@ -414,7 +415,7 @@ export function HostingView() {
                 }}
                 className="text-[12px] text-text-muted underline underline-offset-4"
               >
-                Ganti file
+                {tr("Ganti file")}
               </button>
             )}
           </div>
@@ -422,7 +423,7 @@ export function HostingView() {
           <div className="mt-5 grid gap-5 sm:grid-cols-2">
             <div>
               <label htmlFor="site-name" className="mb-1.5 block text-[12px] font-medium">
-                Nama link (opsional)
+                {tr("Nama link (opsional)")}
               </label>
               <input
                 id="site-name"
@@ -433,11 +434,11 @@ export function HostingView() {
                 placeholder="mis. tugas-web"
                 className={inputCls}
               />
-              <p className="mt-1 text-[12px] text-text-muted">Huruf kecil, angka, strip. Akhiran acak ditambah otomatis.</p>
+              <p className="mt-1 text-[12px] text-text-muted">{tr("Huruf kecil, angka, strip. Akhiran acak ditambah otomatis.")}</p>
             </div>
             <div>
               <label htmlFor="site-ttl" className="mb-1.5 block text-[12px] font-medium">
-                Aktif selama
+                {tr("Aktif selama")}
               </label>
               <select
                 id="site-ttl"
@@ -452,14 +453,14 @@ export function HostingView() {
                   </option>
                 ))}
               </select>
-              <p className="mt-1 text-[12px] text-text-muted">Setelah itu link & file otomatis dihapus.</p>
+              <p className="mt-1 text-[12px] text-text-muted">{tr("Setelah itu link & file otomatis dihapus.")}</p>
             </div>
           </div>
 
           <label className="mt-4 flex items-start gap-2.5 text-[13px]">
             <input type="checkbox" checked={spa} disabled={busy} onChange={(e) => setSpa(e.target.checked)} className="mt-0.5" />
             <span>
-              Mode SPA — halaman yang tidak ditemukan diarahkan ke <code>index.html</code> (untuk React/Vue Router).
+              {tr("Mode SPA — halaman yang tidak ditemukan diarahkan ke")}{" "}<code>index.html</code>{" "}{tr("(untuk React/Vue Router).")}
             </span>
           </label>
 
@@ -482,18 +483,17 @@ export function HostingView() {
             className="btn-primary btn-md mt-5 inline-flex items-center gap-2 disabled:opacity-60"
           >
             {stage === "publishing" ? <Loader2 size={15} className="animate-spin" /> : <UploadCloud size={15} />}
-            {stage === "publishing" ? "Mengupload…" : "Buat link publik"}
+            {stage === "publishing" ? tr("Mengupload…") : tr("Buat link publik")}
           </button>
         </div>
       )}
 
 
-      {!config && !loadError && <p className="mt-8 text-[13px] text-text-muted">Memuat…</p>}
+      {!config && !loadError && <p className="mt-8 text-[13px] text-text-muted">{tr("Memuat…")}</p>}
       {config && config.sites.length === 0 && (
         <Card className="mt-6">
-          <Empty icon={Link2} title="Belum ada link aktif">
-            Link yang kamu buat muncul di sini, lengkap dengan sisa masa aktifnya. Kamu bisa punya {config.maxSites} link
-            aktif sekaligus.
+          <Empty icon={Link2} title={tr("Belum ada link aktif")}>
+            {tr("Link yang kamu buat muncul di sini, lengkap dengan sisa masa aktifnya. Kamu bisa punya {maxSites} link aktif sekaligus.", { maxSites: config.maxSites })}
           </Empty>
         </Card>
       )}

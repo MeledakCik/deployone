@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import { PageTitle } from "@/components/ui/primitives";
 import * as React from "react";
 import { InlineIcon } from "@/components/ui/Icon";
@@ -47,6 +49,7 @@ function AddSecretModal({
   defaultProject?: string;
   defaultEnvironment?: EnvName;
 }) {
+  const t = useT();
   const { addEnvVar, vercelToken, savedCloudflareToken, savedRailwayToken } = useDeploy();
   const { showToast } = useToast();
   const projectNames = useProjectNames();
@@ -75,16 +78,16 @@ function AddSecretModal({
     (isVercelProject && Boolean(vercelToken)) ||
     (isCloudflareProject && Boolean(savedCloudflareToken)) ||
     (isRailwayProject && Boolean(savedRailwayToken));
-  const remotePlatformLabel = isVercelProject ? "Vercel" : isCloudflareProject ? "Cloudflare Pages" : "Railway";
+  const remotePlatformLabel = isVercelProject ? "Vercel" : isCloudflareProject ? t("Cloudflare Pages") : "Railway";
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!key.trim() || !value.trim()) {
-      showToast("Key dan value tidak boleh kosong");
+      showToast(t("Key dan value tidak boleh kosong"));
       return;
     }
     if (!project) {
-      showToast("Pilih project untuk secret ini — env var selalu per-project, bukan global.");
+      showToast(t("Pilih project untuk secret ini — env var selalu per-project, bukan global."));
       return;
     }
     addEnvVar(key.trim(), value.trim(), environment, project, {
@@ -101,11 +104,11 @@ function AddSecretModal({
     <div className="anim-fade fixed inset-0 z-[100] flex items-center justify-center modal-scrim px-4">
       <Surface className="anim-pop w-full max-w-sm p-6">
         <div className="flex items-center justify-between mb-5">
-          <h2 className="text-[16px] font-semibold">Tambah secret</h2>
+          <h2 className="text-[16px] font-semibold">{t("Tambah secret")}</h2>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Tutup"
+            aria-label={t("Tutup")}
             className="grid h-8 w-8 place-items-center rounded-full hover:bg-[var(--row-hover)]"
           >
             <X size={16} />
@@ -113,15 +116,15 @@ function AddSecretModal({
         </div>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-[12px] font-medium text-text-muted mb-1.5">Project</label>
+            <label className="block text-[12px] font-medium text-text-muted mb-1.5">{t("Project")}</label>
             {projectNames.length === 0 ? (
               <p className="input-solid h-11 flex items-center px-3.5 text-[13px] text-text-faint">
-                Belum ada project — deploy dulu untuk bisa menyimpan secret.
+                {t("Belum ada project — deploy dulu untuk bisa menyimpan secret.")}
               </p>
             ) : (
               <Select value={project} onValueChange={setProject}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Pilih project" />
+                  <SelectValue placeholder={t("Pilih project")} />
                 </SelectTrigger>
                 <SelectContent>
                   {projectNames.map((name) => (
@@ -133,12 +136,12 @@ function AddSecretModal({
               </Select>
             )}
             <p className="mt-1.5 text-[12px] text-text-faint">
-              Secret hanya berlaku untuk project ini, tidak akan bocor/bentrok ke project lain.
+              {t("Secret hanya berlaku untuk project ini, tidak akan bocor/bentrok ke project lain.")}
             </p>
           </div>
           <div>
             <label htmlFor="envKey" className="block text-[12px] font-medium text-text-muted mb-1.5">
-              Key
+              {t("Key")}
             </label>
             <input
               id="envKey"
@@ -152,7 +155,7 @@ function AddSecretModal({
           </div>
           <div>
             <label htmlFor="envValue" className="block text-[12px] font-medium text-text-muted mb-1.5">
-              Value
+              {t("Value")}
             </label>
             <input
               id="envValue"
@@ -164,14 +167,14 @@ function AddSecretModal({
             />
           </div>
           <div>
-            <label className="block text-[12px] font-medium text-text-muted mb-1.5">Environment</label>
+            <label className="block text-[12px] font-medium text-text-muted mb-1.5">{t("Environment")}</label>
             <Select value={environment} onValueChange={(v) => setEnvironment(v as EnvName)}>
               <SelectTrigger>
-                <SelectValue placeholder="Pilih Environment" />
+                <SelectValue placeholder={t("Pilih Environment")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="Production">Production</SelectItem>
-                <SelectItem value="Preview">Preview</SelectItem>
+                <SelectItem value="Production">{t("Production")}</SelectItem>
+                <SelectItem value="Preview">{t("Preview")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -186,22 +189,22 @@ function AddSecretModal({
                     onChange={(e) => setPushToRemote(e.target.checked)}
                     className="h-4 w-4 accent-[var(--accent)]"
                   />
-                  Push otomatis ke project &quot;{project}&quot; di {remotePlatformLabel}
+                  {t("Push otomatis ke project \"{project}\" di {remotePlatformLabel}", { project, remotePlatformLabel })}
                 </label>
               </div>
             ) : (
               <p className="text-[12px] text-text-faint">
-                Konek-kan {remotePlatformLabel} Token di Pengaturan untuk push otomatis.
+                {t("Hubungkan token {remotePlatformLabel} di Pengaturan untuk push otomatis.", { remotePlatformLabel })}
               </p>
             )
           ) : (
             <p className="text-[12px] text-text-faint">
-              Project ini bukan platform Vercel/Cloudflare/Railway — secret akan disimpan lokal saja untuk project ini.
+              {t("Project ini bukan platform Vercel/Cloudflare/Railway — secret akan disimpan lokal saja untuk project ini.")}
             </p>
           )}
 
           <button type="submit" className="btn-primary btn-md w-full">
-            Simpan secret
+            {t("Simpan secret")}
           </button>
         </form>
       </Surface>
@@ -210,6 +213,7 @@ function AddSecretModal({
 }
 
 export function EnvironmentView() {
+  const t = useT();
   const {
     envVars,
     removeEnvVar,
@@ -287,7 +291,7 @@ export function EnvironmentView() {
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <PageTitle title="Variabel env" desc={<>Simpan variabel environment (secret, API key, URL database) per project. Nilainya dikirim ke platform saat build — tidak ada variabel global antar project.</>} />
+            <PageTitle title={t("Variabel env")} desc={<>{t("Simpan variabel environment (secret, API key, URL database) per project. Nilainya dikirim ke platform saat build — tidak ada variabel global antar project.")}</>} />
           </div>
           <div className="flex flex-wrap items-center gap-2">
             {(vercelToken || savedCloudflareToken || savedRailwayToken) && (
@@ -298,7 +302,7 @@ export function EnvironmentView() {
                 className="pill btn-md inline-flex items-center gap-2 font-medium hover:brightness-110 disabled:opacity-50"
               >
                 <RefreshCw size={13} className={syncingEnvVars ? "animate-spin" : undefined} />
-                {syncingEnvVars ? "Sinkronisasi..." : "Sinkronkan"}
+                {syncingEnvVars ? t("Sinkronisasi...") : t("Sinkronkan")}
               </button>
             )}
             <button
@@ -306,7 +310,7 @@ export function EnvironmentView() {
               onClick={() => setModalOpen(true)}
               className="btn-primary btn-md inline-flex items-center gap-2"
             >
-              <Plus size={15} /> Add Secret
+              <Plus size={15} />{" "}{t("Add Secret")}
             </button>
           </div>
         </div>
@@ -314,21 +318,20 @@ export function EnvironmentView() {
         <Surface className="flex items-start gap-3 px-5 py-4">
           <Info size={16} className="mt-0.5 shrink-0 text-lav-text" />
           <p className="text-[13px] leading-relaxed text-text-muted">
-            Fitur injeksi <span className="mono">.env</span> saat build — setiap secret terikat ke satu
-            project dan hanya tersedia sebagai environment variable pada build & runtime project itu saja.
+            {t("Fitur injeksi")}{" "}<span className="mono">.env</span>{" "}{t("saat build — setiap secret terikat ke satu project dan hanya tersedia sebagai environment variable pada build & runtime project itu saja.")}
           </p>
         </Surface>
 
         <div className="flex flex-wrap items-end gap-4">
           {projectNames.length > 0 && (
             <div className="w-full max-w-xs">
-              <label className="mb-1.5 block text-[12px] font-medium text-text-muted">Filter berdasarkan project</label>
+              <label className="mb-1.5 block text-[12px] font-medium text-text-muted">{t("Filter berdasarkan project")}</label>
               <Select value={activeProject} onValueChange={setActiveProject}>
                 <SelectTrigger>
-                  <SelectValue placeholder="Semua project" />
+                  <SelectValue placeholder={t("Semua project")} />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">Semua project</SelectItem>
+                  <SelectItem value="all">{t("Semua project")}</SelectItem>
                   {projectNames.map((name) => (
                     <SelectItem key={name} value={name}>
                       {name}
@@ -341,7 +344,7 @@ export function EnvironmentView() {
 
           <div>
             <span id="env-filter-label" className="mb-1.5 block text-[12px] font-medium text-text-muted">
-              Filter berdasarkan environment
+              {t("Filter berdasarkan environment")}
             </span>
             <div role="group" aria-labelledby="env-filter-label" className="flex flex-wrap items-center gap-2">
               {ENV_FILTER_OPTIONS.map((opt) => {
@@ -371,16 +374,16 @@ export function EnvironmentView() {
           <Surface className="flex flex-col items-center justify-center gap-3 px-6 py-24 text-center">
             <KeyRound size={52} className="text-text-faint" strokeWidth={1.5} />
             <h2 className="text-[16px] font-semibold">
-              {activeEnv === "all" ? "Belum ada secret" : `Belum ada secret ${activeEnv}`}
+              {activeEnv === "all" ? t("Belum ada secret") : t("Belum ada secret {activeEnv}", { activeEnv })}
             </h2>
             <p className="max-w-xs text-[13px] text-text-muted">
               {activeProject === "all" && activeEnv === "all"
-                ? "Tambahkan environment variable pertamamu untuk digunakan saat deploy."
+                ? t("Tambahkan environment variable pertamamu untuk digunakan saat deploy.")
                 : activeProject === "all"
-                  ? `Tidak ada secret dengan environment ${activeEnv}.`
+                  ? t("Tidak ada secret dengan environment {activeEnv}.", { activeEnv })
                   : activeEnv === "all"
-                    ? `Belum ada secret untuk project "${activeProject}".`
-                    : `Belum ada secret ${activeEnv} untuk project "${activeProject}".`}
+                    ? t("Belum ada secret untuk project \"{activeProject}\".", { activeProject })
+                    : t("Belum ada secret {activeEnv} untuk project \"{activeProject}\".", { activeEnv, activeProject })}
             </p>
           </Surface>
         ) : (
@@ -390,11 +393,11 @@ export function EnvironmentView() {
               <table className="w-full min-w-[560px] text-left">
                 <thead>
                   <tr className="text-[12px] text-text-faint">
-                    <th className="px-4 py-3 font-medium sm:px-5">Key</th>
-                    <th className="px-4 py-3 font-medium sm:px-5">Value</th>
-                    {showProjectColumn && <th className="px-4 py-3 font-medium sm:px-5">Project</th>}
-                    <th className="px-4 py-3 font-medium sm:px-5">Environment</th>
-                    <th className="w-px whitespace-nowrap px-4 py-3 text-right font-medium sm:px-5">Action</th>
+                    <th className="px-4 py-3 font-medium sm:px-5">{t("Key")}</th>
+                    <th className="px-4 py-3 font-medium sm:px-5">{t("Value")}</th>
+                    {showProjectColumn && <th className="px-4 py-3 font-medium sm:px-5">{t("Project")}</th>}
+                    <th className="px-4 py-3 font-medium sm:px-5">{t("Environment")}</th>
+                    <th className="w-px whitespace-nowrap px-4 py-3 text-right font-medium sm:px-5">{t("Action")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -435,15 +438,15 @@ export function EnvironmentView() {
                                   {/* Label, bukan tombol: pakai .chip (bukan .pill) supaya tidak kena min-height 40px layar sentuh */}
                                   <span className="chip min-w-[92px] justify-center !bg-[var(--pill-bg)]">{item.environment}</span>
                                   {item.syncedToVercel && (
-                                    <span className="chip min-w-[92px] justify-center !text-[12px] !text-ok-fg"><InlineIcon name="check" /> Vercel</span>
+                                    <span className="chip min-w-[92px] justify-center !text-[12px] !text-ok-fg"><InlineIcon name="check" />{" "}{t("Vercel")}</span>
                                   )}
                                   {item.syncedToCloudflare && (
                                     <span className="chip min-w-[92px] justify-center !text-[12px] !text-ok-fg">
-                                      <InlineIcon name="check" /> Cloudflare
+                                      <InlineIcon name="check" />{" "}{t("Cloudflare")}
                                     </span>
                                   )}
                                   {item.syncedToRailway && (
-                                    <span className="chip min-w-[92px] justify-center !text-[12px] !text-ok-fg"><InlineIcon name="check" /> Railway</span>
+                                    <span className="chip min-w-[92px] justify-center !text-[12px] !text-ok-fg"><InlineIcon name="check" />{" "}{t("Railway")}</span>
                                   )}
                                 </div>
                               </td>
@@ -452,16 +455,16 @@ export function EnvironmentView() {
                                   <button
                                     type="button"
                                     onClick={() => toggleEnvVisible(item.id)}
-                                    aria-label={item.visible ? "Sembunyikan value" : "Tampilkan value"}
+                                    aria-label={item.visible ? t("Sembunyikan value") : t("Tampilkan value")}
                                     className="pill inline-flex min-w-[68px] items-center justify-center gap-1.5 px-3 py-1 text-[12px] font-medium hover:brightness-110"
                                   >
                                     {item.visible ? <EyeOff size={12} /> : <Eye size={12} />}
-                                    {item.visible ? "Hide" : "Show"}
+                                    {item.visible ? t("Hide") : t("Show")}
                                   </button>
                                   <button
                                     type="button"
                                     onClick={() => removeEnvVar(item.id)}
-                                    aria-label={`Hapus ${item.key}`}
+                                    aria-label={t("Hapus {key}", { key: item.key })}
                                     className="pill inline-flex items-center gap-1.5 px-3 py-1 text-[12px] font-medium text-bad-fg hover:brightness-110"
                                   >
                                     <Trash2 size={12} />

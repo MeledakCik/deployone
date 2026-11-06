@@ -1,3 +1,4 @@
+import { getT } from "@/lib/i18n/server";
 import { Check, Minus, TriangleAlert } from "@/components/ui/icons";
 import { Badge, type BadgeTone } from "@/components/ui/primitives";
 
@@ -17,13 +18,13 @@ const META: Record<Level, { text: string; tone: BadgeTone; Icon: typeof Check }>
 };
 
 export function SupportMatrix() {
+  const t = getT();
   return (
     <section id="support" className="mx-auto w-full max-w-6xl scroll-mt-24 px-4 pb-16 pt-4 sm:px-8 sm:pb-20">
       <div className="mx-auto mb-12 max-w-3xl text-center">
-        <h2 className="lp-h2">Repo kamu cocok di mana?</h2>
+        <h2 className="lp-h2">{t("Repo kamu cocok di mana?")}</h2>
         <p className="lp-lead">
-          Tiap platform ada batasnya. Depup hanya mengizinkan deploy yang memang bisa berhasil. Kalau tidak cocok, kamu mendapat
-          alasan beserta langkah deploy manual.
+          {t("Tiap platform ada batasnya. Depup hanya mengizinkan deploy yang memang bisa berhasil. Kalau tidak cocok, kamu mendapat alasan beserta langkah deploy manual.")}
         </p>
       </div>
 
@@ -31,13 +32,13 @@ export function SupportMatrix() {
       <ul className="flex flex-col gap-3 md:hidden">
         {ROWS.map((r) => (
           <li key={r.type} className="surface-solid p-5">
-            <h3 className="text-[15px] font-semibold">{r.type}</h3>
-            <p className="mt-1 text-[12px] leading-relaxed text-text-muted">{r.examples}</p>
+            <h3 className="text-[15px] font-semibold">{t(r.type)}</h3>
+            <p className="mt-1 text-[12px] leading-relaxed text-text-muted">{t(r.examples)}</p>
             <dl className="mt-4 flex flex-col gap-2.5">
               {(
                 [
                   ["Vercel", r.v],
-                  ["Cloudflare Pages", r.c],
+                  [t("Cloudflare Pages"), r.c],
                   ["Railway", r.r],
                 ] as [string, Level][]
               ).map(([name, l]) => {
@@ -48,7 +49,7 @@ export function SupportMatrix() {
                     <dd>
                       <Badge tone={tone}>
                         <Icon size={13} strokeWidth={l === "ok" ? 3 : 2} aria-hidden="true" />
-                        {text}
+                        {t(text)}
                       </Badge>
                     </dd>
                   </div>
@@ -63,18 +64,18 @@ export function SupportMatrix() {
         <table className="w-full min-w-[640px] text-left text-[14px]">
           <thead>
             <tr className="text-[13px] text-text-muted">
-              <th scope="col" className="px-6 py-4 font-medium">Isi repo</th>
-              <th scope="col" className="px-6 py-4 font-semibold text-text">Vercel</th>
-              <th scope="col" className="px-6 py-4 font-semibold text-text">Cloudflare Pages</th>
-              <th scope="col" className="px-6 py-4 font-semibold text-text">Railway</th>
+              <th scope="col" className="px-6 py-4 font-medium">{t("Isi repo")}</th>
+              <th scope="col" className="px-6 py-4 font-semibold text-text">{t("Vercel")}</th>
+              <th scope="col" className="px-6 py-4 font-semibold text-text">{t("Cloudflare Pages")}</th>
+              <th scope="col" className="px-6 py-4 font-semibold text-text">{t("Railway")}</th>
             </tr>
           </thead>
           <tbody className="bg-[var(--surface-solid)]">
             {ROWS.map((r) => (
               <tr key={r.type} className="surface-solid-row border-t border-[var(--surface-line)]">
                 <th scope="row" className="px-6 py-5 align-top font-semibold">
-                  {r.type}
-                  <div className="mt-1 max-w-[320px] text-[12px] font-normal text-text-muted">{r.examples}</div>
+                  {t(r.type)}
+                  <div className="mt-1 max-w-[320px] text-[12px] font-normal text-text-muted">{t(r.examples)}</div>
                 </th>
                 {[r.v, r.c, r.r].map((l, idx) => {
                   const { text, tone, Icon } = META[l];
@@ -82,7 +83,7 @@ export function SupportMatrix() {
                     <td key={idx} className="px-6 py-5 align-top">
                       <Badge tone={tone}>
                         <Icon size={13} strokeWidth={l === "ok" ? 3 : 2} aria-hidden="true" />
-                        {text}
+                        {t(text)}
                       </Badge>
                     </td>
                   );
@@ -93,8 +94,7 @@ export function SupportMatrix() {
         </table>
       </div>
       <p className="mt-4 text-[13px] text-text-muted">
-        Project di dalam subfolder (misalnya frontend/) perlu deploy manual dengan Root Directory. Depup akan memberi tahu
-        langkahnya.
+        {t("Project di dalam subfolder (misalnya frontend/) perlu deploy manual dengan Root Directory. Depup akan memberi tahu langkahnya.")}
       </p>
     </section>
   );

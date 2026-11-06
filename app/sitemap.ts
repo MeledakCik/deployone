@@ -5,7 +5,8 @@ import { FEATURES, SITE_URL } from "@/lib/site-content";
 // pencari menganggap semua halaman selalu baru lalu mengabaikan sinyal ini. Ubah tanggalnya
 // hanya saat isi halaman benar-benar berubah. Format: YYYY-MM-DD.
 const UPDATED = {
-  home: "2026-10-29",
+  home: "2026-11-05",
+  en: "2026-11-05",
   fitur: "2026-10-29",
   docs: "2026-10-28",
   mcp: "2026-10-28",
@@ -17,7 +18,9 @@ const UPDATED = {
 // dari lib/site-content.ts. Tambahkan halaman publik baru lainnya di sini.
 export default function sitemap(): MetadataRoute.Sitemap {
   return [
-    { url: SITE_URL, lastModified: UPDATED.home, changeFrequency: "weekly", priority: 1 },
+    // Beranda Indonesia & Inggris saling menunjuk lewat hreflang (juga di <head> masing-masing).
+    { url: SITE_URL, lastModified: UPDATED.home, changeFrequency: "weekly", priority: 1, alternates: { languages: { "id-ID": SITE_URL, en: `${SITE_URL}/en` } } },
+    { url: `${SITE_URL}/en`, lastModified: UPDATED.en, changeFrequency: "weekly", priority: 0.9, alternates: { languages: { "id-ID": SITE_URL, en: `${SITE_URL}/en` } } },
     { url: `${SITE_URL}/fitur`, lastModified: UPDATED.fitur, changeFrequency: "weekly", priority: 0.9 },
     ...FEATURES.map((f) => ({
       url: `${SITE_URL}/fitur/${f.slug}`,

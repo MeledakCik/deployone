@@ -1,3 +1,4 @@
+import { getT } from "@/lib/i18n/server";
 import * as React from "react";
 import type { Metadata } from "next";
 import { Navbar } from "@/components/landing/Navbar";
@@ -17,12 +18,16 @@ import { HOME_TITLE, SITE_DESCRIPTION } from "@/lib/site-content";
 
 // Memakai pageMeta agar og:title, og:description, dan og:image tidak hilang
 // (openGraph di halaman menggantikan, bukan menggabung dengan, openGraph di layout).
-export const metadata: Metadata = pageMeta({
-  title: HOME_TITLE,
-  description: SITE_DESCRIPTION,
-  path: "/",
-  absoluteTitle: true,
-});
+export function generateMetadata(): Metadata {
+  const t = getT();
+  return pageMeta({
+    title: t(HOME_TITLE),
+    description: t(SITE_DESCRIPTION),
+    path: "/",
+    absoluteTitle: true,
+    en: "/en",
+  });
+}
 
 export default function LandingPage() {
   return (

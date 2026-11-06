@@ -1,3 +1,4 @@
+import { tl } from "@/lib/i18n/core";
 /**
  * Pemetaan halaman dashboard web (?view=...) ke halaman app mobile /m/*.
  * Dipakai di dua arah: app /m membuka sub-halaman yang setara, dan dashboard web
@@ -23,8 +24,8 @@ export const PREFER_DESKTOP_KEY = "depup-prefer-desktop";
 
 export function greeting(date = new Date()): string {
   const h = date.getHours();
-  if (h < 11) return "Selamat pagi";
-  if (h < 15) return "Selamat siang";
-  if (h < 19) return "Selamat sore";
-  return "Selamat malam";
+  if (h < 11) return tl("Selamat pagi");
+  if (h < 15) return tl("Selamat siang");
+  if (h < 19) return tl("Selamat sore");
+  return tl("Selamat malam");
 }

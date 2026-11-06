@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import * as React from "react";
 import { Maximize2, Minimize2 } from "lucide-react";
 import { Btn } from "@/components/ui/primitives";
@@ -80,6 +82,7 @@ export function ScaledFrame({
  * Iframe tetap di-sandbox tanpa allow-same-origin, jadi skrip di dalamnya tidak bisa menyentuh dashboard.
  */
 export function PreviewFrame({ html, device }: { html: string; device: "desktop" | "mobile" }) {
+  const t = useT();
   const boxRef = React.useRef<HTMLDivElement>(null);
   const [fs, setFs] = React.useState(false);
   const [canFs, setCanFs] = React.useState(false);
@@ -105,9 +108,9 @@ export function PreviewFrame({ html, device }: { html: string; device: "desktop"
     <div ref={boxRef} className={cn(fs && "flex h-full w-full flex-col bg-[var(--bg)]")}>
       {fs && (
         <div className="flex h-12 shrink-0 items-center justify-between gap-3 px-4">
-          <span className="text-[13px] font-medium">Pratinjau {device === "desktop" ? "desktop" : "HP"}</span>
+          <span className="text-[13px] font-medium">{t("Pratinjau")}{" "}{device === "desktop" ? "desktop" : "HP"}</span>
           <Btn onClick={() => document.exitFullscreen?.()}>
-            <Minimize2 size={13} /> Keluar layar penuh
+            <Minimize2 size={13} />{" "}{t("Keluar layar penuh")}
           </Btn>
         </div>
       )}
@@ -125,7 +128,7 @@ export function PreviewFrame({ html, device }: { html: string; device: "desktop"
       {!fs && canFs && (
         <div className="mt-2 flex justify-end">
           <Btn onClick={() => boxRef.current?.requestFullscreen?.().catch(() => {})}>
-            <Maximize2 size={13} /> Layar penuh
+            <Maximize2 size={13} />{" "}{t("Layar penuh")}
           </Btn>
         </div>
       )}

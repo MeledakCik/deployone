@@ -1,5 +1,8 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import { LanguageSwitch } from "@/components/ui/LanguageSwitch";
+import "@/lib/i18n/dict/app";
 import { PageTitle, SectionHead } from "@/components/ui/primitives";
 import { notifySessionExpired } from "@/lib/session-expired";
 import * as React from "react";
@@ -67,6 +70,7 @@ function TokenField({
   /** Hapus token ini dari akun (langsung tersimpan, setelah konfirmasi). */
   onRemove?: () => void;
 }) {
+  const t = useT();
   const [visible, setVisible] = React.useState(false);
   const [confirming, setConfirming] = React.useState(false);
 
@@ -83,12 +87,12 @@ function TokenField({
     check.status === "ok"
       ? { text: "Terverifikasi", tone: "bg-ok-bg text-ok-fg" }
       : check.status === "error"
-        ? { text: "Token ditolak", tone: "bg-bad-bg text-bad-fg" }
+        ? { text: t("Token ditolak"), tone: "bg-bad-bg text-bad-fg" }
         : dirty && filled
-          ? { text: "Belum disimpan", tone: "bg-warn-bg text-warn-fg" }
+          ? { text: t("Belum disimpan"), tone: "bg-warn-bg text-warn-fg" }
           : isSaved
-            ? { text: "Tersimpan", tone: "bg-ok-bg text-ok-fg" }
-            : { text: "Belum diisi", tone: "bg-[var(--pill-bg)] text-text-muted" };
+            ? { text: t("Tersimpan"), tone: "bg-ok-bg text-ok-fg" }
+            : { text: t("Belum diisi"), tone: "bg-[var(--pill-bg)] text-text-muted" };
 
   return (
     <div>
@@ -105,10 +109,10 @@ function TokenField({
           <button
             type="button"
             onClick={() => setConfirming(true)}
-            aria-label={`Hapus ${label}`}
+            aria-label={t("Hapus {label}", { label })}
             className="inline-flex min-h-[32px] items-center gap-1 text-[13px] font-medium text-bad-fg hover:brightness-110"
           >
-            <Trash2 size={13} /> Hapus
+            <Trash2 size={13} />{" "}{t("Hapus")}
           </button>
         )}
       </div>
@@ -117,7 +121,7 @@ function TokenField({
           role="alert"
           className="mb-2 flex flex-wrap items-center justify-between gap-2 rounded-[14px] bg-[var(--bad-bg)] px-3 py-2 text-[13px] text-bad-fg"
         >
-          <span>Hapus {label} dari akunmu? Deploy ke platform ini tidak bisa jalan sampai diisi lagi.</span>
+          <span>{t("Hapus {label} dari akunmu? Deploy ke platform ini tidak bisa jalan sampai diisi lagi.", { label })}</span>
           <span className="flex gap-3">
             <button
               type="button"
@@ -127,10 +131,10 @@ function TokenField({
               }}
               className="font-semibold text-bad-fg underline underline-offset-2"
             >
-              Ya, hapus
+              {t("Ya, hapus")}
             </button>
             <button type="button" onClick={() => setConfirming(false)} className="text-text-muted underline underline-offset-2">
-              Batal
+              {t("Batal")}
             </button>
           </span>
         </div>
@@ -140,7 +144,7 @@ function TokenField({
           <input
             id={id}
             type={visible ? "text" : "password"}
-            placeholder="Belum diisi — tempel token di sini"
+            placeholder={t("Belum diisi — tempel token di sini")}
             autoComplete="off"
             spellCheck={false}
             value={value ?? ""}
@@ -151,7 +155,7 @@ function TokenField({
           <button
             type="button"
             onClick={() => setVisible((v) => !v)}
-            aria-label={visible ? `Sembunyikan ${label}` : `Tampilkan ${label}`}
+            aria-label={visible ? t("Sembunyikan {label}", { label }) : t("Tampilkan {label}", { label })}
             className="absolute right-2 top-1/2 -translate-y-1/2 grid h-8 w-8 place-items-center rounded-full text-text-muted hover:bg-[var(--row-hover)] hover:text-text"
           >
             {visible ? <EyeOff size={16} /> : <Eye size={16} />}
@@ -165,7 +169,7 @@ function TokenField({
             className="pill btn-md inline-flex shrink-0 items-center justify-center gap-1.5 font-semibold disabled:cursor-not-allowed disabled:opacity-50"
           >
             {check.status === "checking" && <Loader2 size={14} className="animate-spin" />}
-            Tes koneksi
+            {t("Tes koneksi")}
           </button>
         )}
       </div>
@@ -224,6 +228,7 @@ const ANIMATION_OPTIONS: { value: DeployAnimation; label: string; hint: string; 
 ];
 
 function AppearanceSettings() {
+  const t = useT();
   const { resolvedTheme, setTheme } = useTheme();
   const [mounted, setMounted] = React.useState(false);
   const [prefs, updatePrefs] = useDeployPreferences();
@@ -235,24 +240,32 @@ function AppearanceSettings() {
     <Surface className="flex flex-col gap-5 p-4 sm:p-6">
       <SectionHead
         icon={isLight ? Sun : Moon}
-        title="Tampilan"
-        desc="Pengaturan ini tersimpan di perangkat ini."
+        title={t("Tampilan")}
+        desc={t("Pengaturan ini tersimpan di perangkat ini.")}
       />
 
       <SwitchRow
         id="settingsLightMode"
         icon={isLight ? <Sun size={16} /> : <Moon size={16} />}
-        title="Mode terang"
-        description={isLight ? "Sedang memakai mode terang. Matikan untuk kembali ke mode gelap." : "Sedang memakai mode gelap. Nyalakan untuk mode terang."}
+        title={t("Mode terang")}
+        description={isLight ? t("Sedang memakai mode terang. Matikan untuk kembali ke mode gelap.") : t("Sedang memakai mode gelap. Nyalakan untuk mode terang.")}
         checked={isLight}
         onChange={(v) => setTheme(v ? "light" : "dark")}
       />
 
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <div className="text-[14px] font-medium">{t("Bahasa")}</div>
+          <div className="text-[13px] text-text-muted">{t("Bahasa tampilan dashboard. Tersimpan di browser ini.")}</div>
+        </div>
+        <LanguageSwitch />
+      </div>
+
       <div className="h-px bg-[var(--surface-line)]" />
 
       <fieldset>
-        <legend className="mb-2 text-[14px] font-medium">Animasi loading deploy</legend>
-        <div className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label="Animasi loading deploy">
+        <legend className="mb-2 text-[14px] font-medium">{t("Animasi loading deploy")}</legend>
+        <div className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label={t("Animasi loading deploy")}>
           {ANIMATION_OPTIONS.map((opt) => {
             const selected = prefs.deployAnimation === opt.value;
             return (
@@ -271,8 +284,8 @@ function AppearanceSettings() {
               >
                 <span className={cn("mt-0.5", selected ? "text-lav-text" : "text-text-muted")}>{opt.icon}</span>
                 <span>
-                  <span className="block text-[14px] font-medium">{opt.label}</span>
-                  <span className="block text-[13px] leading-relaxed text-text-muted">{opt.hint}</span>
+                  <span className="block text-[14px] font-medium">{t(opt.label)}</span>
+                  <span className="block text-[13px] leading-relaxed text-text-muted">{t(opt.hint)}</span>
                 </span>
               </button>
             );
@@ -285,8 +298,8 @@ function AppearanceSettings() {
       <SwitchRow
         id="settingsDebugLog"
         icon={<Bug size={16} />}
-        title="Tampilkan proses debug"
-        description="Munculkan log langkah demi langkah (tahap, status, dan pesan error) di jendela deploy. Berlaku untuk semua animasi."
+        title={t("Tampilkan proses debug")}
+        description={t("Munculkan log langkah demi langkah (tahap, status, dan pesan error) di jendela deploy. Berlaku untuk semua animasi.")}
         checked={prefs.showDebug}
         onChange={(v) => updatePrefs({ showDebug: v })}
       />
@@ -295,6 +308,7 @@ function AppearanceSettings() {
 }
 
 export function SettingsView() {
+  const t = useT();
   const [tokens, setTokens, ready] = useCloudStorage<SettingsTokens>(
     "settingsTokens",
     DEFAULT_TOKENS,
@@ -322,13 +336,13 @@ export function SettingsView() {
       ...(field === "cloudflareToken" ? { cloudflareAccountId: "" } : {}),
     }));
     extra?.();
-    showToast(`${label} dihapus.`);
+    showToast(t("{label} dihapus.", { label }));
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setTokens(draft);
-    showToast("Perubahan berhasil disimpan!");
+    showToast(t("Perubahan berhasil disimpan!"));
   }
 
   async function testVercel() {
@@ -337,9 +351,9 @@ export function SettingsView() {
       const user = await callApi<VercelUserInfo>("/api/vercel/whoami", {
         headers: { "x-vercel-token": draft.vercelToken },
       });
-      setVercelCheck({ status: "ok", label: `Terhubung sebagai @${user.username}` });
+      setVercelCheck({ status: "ok", label: t("Terhubung sebagai @{username}", { username: user.username }) });
     } catch (err) {
-      setVercelCheck({ status: "error", message: err instanceof Error ? err.message : "Token tidak valid." });
+      setVercelCheck({ status: "error", message: err instanceof Error ? err.message : t("Token tidak valid.") });
     }
   }
 
@@ -349,9 +363,9 @@ export function SettingsView() {
       const user = await callApi<GithubUserInfo>("/api/github/whoami", {
         headers: { "x-github-pat": draft.githubPat },
       });
-      setGithubCheck({ status: "ok", label: `Terhubung sebagai @${user.login}` });
+      setGithubCheck({ status: "ok", label: t("Terhubung sebagai @{login}", { login: user.login }) });
     } catch (err) {
-      setGithubCheck({ status: "error", message: err instanceof Error ? err.message : "Token tidak valid." });
+      setGithubCheck({ status: "error", message: err instanceof Error ? err.message : t("Token tidak valid.") });
     }
   }
 
@@ -363,10 +377,10 @@ export function SettingsView() {
       });
       setRailwayCheck({
         status: "ok",
-        label: `Terhubung sebagai ${user.name ?? user.email ?? user.id}`,
+        label: t("Terhubung sebagai {v}", { v: user.name ?? user.email ?? user.id }),
       });
     } catch (err) {
-      setRailwayCheck({ status: "error", message: err instanceof Error ? err.message : "Token tidak valid." });
+      setRailwayCheck({ status: "error", message: err instanceof Error ? err.message : t("Token tidak valid.") });
     }
   }
 
@@ -378,7 +392,7 @@ export function SettingsView() {
       });
       setCloudflareAccounts(accounts);
       if (accounts.length === 0) {
-        setCloudflareCheck({ status: "error", message: "Token valid tetapi tidak memiliki akses ke akun manapun." });
+        setCloudflareCheck({ status: "error", message: t("Token valid tetapi tidak memiliki akses ke akun mana pun.") });
         return;
       }
       const chosen = accounts.find((a) => a.id === draft.cloudflareAccountId) ?? accounts[0];
@@ -387,12 +401,12 @@ export function SettingsView() {
         status: "ok",
         label:
           accounts.length > 1
-            ? `Terhubung — akun aktif: "${chosen.name}" (${accounts.length} akun tersedia di bawah)`
-            : `Terhubung ke akun "${chosen.name}"`,
+            ? t("Terhubung — akun aktif: \"{name}\" ({length} akun tersedia di bawah)", { name: chosen.name, length: accounts.length })
+            : t("Terhubung ke akun \"{name}\"", { name: chosen.name }),
       });
     } catch (err) {
       setCloudflareAccounts([]);
-      setCloudflareCheck({ status: "error", message: err instanceof Error ? err.message : "Token tidak valid." });
+      setCloudflareCheck({ status: "error", message: err instanceof Error ? err.message : t("Token tidak valid.") });
     }
   }
 
@@ -400,9 +414,8 @@ export function SettingsView() {
     <ViewFade>
       <div className="space-y-4 sm:space-y-5">
         <div>
-          <PageTitle title="Pengaturan" desc={<>Token di sini dipakai otomatis setiap kali kamu deploy. Tekan{" "}
-            <span className="font-medium text-text">Tes koneksi</span> untuk memastikan token-nya benar-benar
-            terhubung ke akunmu.</>} />
+          <PageTitle title={t("Pengaturan")} desc={<>{t("Token di sini dipakai otomatis setiap kali kamu deploy. Tekan")}{" "}
+            <span className="font-medium text-text">{t("Tes koneksi")}</span>{" "}{t("untuk memastikan token-nya benar-benar terhubung ke akunmu.")}</>} />
         </div>
 
         {/* 1. Token platform */}
@@ -410,13 +423,13 @@ export function SettingsView() {
           <form onSubmit={handleSubmit} className="flex flex-col gap-5">
             <SectionHead
               icon={KeyRound}
-              title="Token platform"
-              desc="Vercel, Cloudflare Pages, Railway, dan GitHub. Disimpan di akun Depup-mu."
+              title={t("Token platform")}
+              desc={t("Vercel, Cloudflare Pages, Railway, dan GitHub. Disimpan di akun Depup-mu.")}
             />
             <div className="grid gap-4">
               <TokenField
                 id="settingsVercelToken"
-                label="Token Vercel"
+                label={t("Token Vercel")}
                 value={draft.vercelToken}
                 saved={tokens.vercelToken}
                 onChange={(v) => {
@@ -425,11 +438,11 @@ export function SettingsView() {
                 }}
                 check={vercelCheck}
                 onTest={testVercel}
-                onRemove={() => removeToken("vercelToken", "Token Vercel", () => setVercelCheck({ status: "idle" }))}
+                onRemove={() => removeToken("vercelToken", t("Token Vercel"), () => setVercelCheck({ status: "idle" }))}
               />
               <TokenField
                 id="settingsCloudflareToken"
-                label="Token Cloudflare"
+                label={t("Token Cloudflare")}
                 value={draft.cloudflareToken}
                 saved={tokens.cloudflareToken}
                 onChange={(v) => {
@@ -440,7 +453,7 @@ export function SettingsView() {
                 check={cloudflareCheck}
                 onTest={testCloudflare}
                 onRemove={() =>
-                  removeToken("cloudflareToken", "Token Cloudflare", () => {
+                  removeToken("cloudflareToken", t("Token Cloudflare"), () => {
                     setCloudflareCheck({ status: "idle" });
                     setCloudflareAccounts([]);
                   })
@@ -449,7 +462,7 @@ export function SettingsView() {
               {cloudflareAccounts.length > 1 && (
                 <div>
                   <label htmlFor="cloudflareAccount" className="mb-1.5 block text-[14px] font-medium text-text">
-                    Akun Cloudflare aktif
+                    {t("Akun Cloudflare aktif")}
                   </label>
                   <select
                     id="cloudflareAccount"
@@ -464,13 +477,13 @@ export function SettingsView() {
                     ))}
                   </select>
                   <p className="mt-1.5 text-[13px] text-text-muted">
-                    Token ini memiliki akses ke beberapa akun — pilih satu untuk dipakai deploy Cloudflare Pages.
+                    {t("Token ini memiliki akses ke beberapa akun — pilih satu untuk dipakai deploy Cloudflare Pages.")}
                   </p>
                 </div>
               )}
               <TokenField
                 id="settingsGithubPat"
-                label="Token GitHub"
+                label={t("Token GitHub")}
                 value={draft.githubPat}
                 saved={tokens.githubPat}
                 onChange={(v) => {
@@ -479,11 +492,11 @@ export function SettingsView() {
                 }}
                 check={githubCheck}
                 onTest={testGithub}
-                onRemove={() => removeToken("githubPat", "Token GitHub", () => setGithubCheck({ status: "idle" }))}
+                onRemove={() => removeToken("githubPat", t("Token GitHub"), () => setGithubCheck({ status: "idle" }))}
               />
               <TokenField
                 id="settingsRailwayToken"
-                label="Token Railway"
+                label={t("Token Railway")}
                 value={draft.railwayToken}
                 saved={tokens.railwayToken}
                 onChange={(v) => {
@@ -492,12 +505,12 @@ export function SettingsView() {
                 }}
                 check={railwayCheck}
                 onTest={testRailway}
-                onRemove={() => removeToken("railwayToken", "Token Railway", () => setRailwayCheck({ status: "idle" }))}
+                onRemove={() => removeToken("railwayToken", t("Token Railway"), () => setRailwayCheck({ status: "idle" }))}
               />
             </div>
             <div>
               <button type="submit" className="btn-primary btn-md inline-flex w-full items-center justify-center gap-2 sm:w-auto">
-                <Save size={15} /> Simpan token
+                <Save size={15} />{" "}{t("Simpan token")}
               </button>
             </div>
           </form>
@@ -512,7 +525,7 @@ export function SettingsView() {
           onTokensChange={(next) => {
             setTokens(next);
             setDraft((prev) => ({ ...prev, mcpDeployPlatforms: next.mcpDeployPlatforms }));
-            showToast("Izin konektor Claude disimpan.");
+            showToast(t("Izin konektor Claude disimpan."));
           }}
         />
         <CliShareCard />

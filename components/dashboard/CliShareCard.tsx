@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import * as React from "react";
 import { usePathname, useRouter } from "next/navigation";
 import { BookOpen, Terminal } from "@/components/ui/icons";
@@ -55,14 +57,15 @@ function DocsLink({ children }: { children: React.ReactNode }) {
  * Hanya ringkasan yang dipakai langsung; panduan lengkap ada di Docs → "Link Gaib".
  */
 export function CliShareCard() {
+  const t = useT();
   const { showToast } = useToast();
 
   async function copy(text: string) {
     try {
       await navigator.clipboard.writeText(text);
-      showToast("Perintah disalin.");
+      showToast(t("Perintah disalin."));
     } catch {
-      showToast("Gagal menyalin. Salin perintahnya secara manual.");
+      showToast(t("Gagal menyalin. Salin perintahnya secara manual."));
     }
   }
 
@@ -71,11 +74,11 @@ export function CliShareCard() {
       <SectionHead
         id="cli-share-title"
         icon={Terminal}
-        title="Depup CLI · Share"
+        title={t("Depup CLI · Share")}
         desc={
           <>
-            Bagikan website yang masih jalan di localhost lewat link HTTPS sementara, tanpa deploy.{" "}
-            <DocsLink>Lihat panduan lengkap</DocsLink>
+            {t("Bagikan website yang masih jalan di localhost lewat link HTTPS sementara, tanpa deploy.")}{" "}
+            <DocsLink>{t("Lihat panduan lengkap")}</DocsLink>
           </>
         }
       />
@@ -86,22 +89,22 @@ export function CliShareCard() {
             <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-tone-lilac text-[12px] font-bold text-lav-text">
               {i + 1}
             </span>
-            <p className="text-[13px] leading-relaxed text-text-muted">{text}</p>
+            <p className="text-[13px] leading-relaxed text-text-muted">{t(text)}</p>
           </li>
         ))}
       </ol>
 
       <div className="mt-4">
-        <CodeBlock title="Perintah di terminal" code={COMMANDS} onCopy={() => void copy(COMMANDS)} />
+        <CodeBlock title={t("Perintah di terminal")} code={t(COMMANDS)} onCopy={() => void copy(COMMANDS)} />
       </div>
 
       <div className="mt-4 overflow-hidden rounded-[14px] border border-[var(--line)]">
-        <p className="bg-[var(--surface-solid-2)] px-4 py-2.5 text-[14px] font-semibold">Opsi</p>
+        <p className="bg-[var(--surface-solid-2)] px-4 py-2.5 text-[14px] font-semibold">{t("Opsi")}</p>
         <ul className="divide-y divide-[var(--line)] border-t border-[var(--line)]">
           {OPTIONS.map((o) => (
             <li key={o.flag} className="flex flex-col gap-1 px-4 py-3 sm:flex-row sm:items-start sm:gap-4">
-              <code className="mono w-40 shrink-0 text-[12px] font-medium text-lav-text">{o.flag}</code>
-              <span className="text-[13px] leading-relaxed text-text-muted">{o.desc}</span>
+              <code className="mono w-40 shrink-0 text-[12px] font-medium text-lav-text">{t(o.flag)}</code>
+              <span className="text-[13px] leading-relaxed text-text-muted">{t(o.desc)}</span>
             </li>
           ))}
         </ul>
@@ -110,7 +113,7 @@ export function CliShareCard() {
       <ul className="notice notice-info mt-4 list-none flex-col !items-stretch gap-1.5">
         {NOTES.map((n) => (
           <li key={n} className="text-[13px] leading-relaxed">
-            {n}
+            {t(n)}
           </li>
         ))}
       </ul>

@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import { BrandMark } from "@/components/ui/AppSidebar";
 
 /**
@@ -8,6 +10,7 @@ import { BrandMark } from "@/components/ui/AppSidebar";
  * teks yang sama, supaya tidak berkedip atau berganti tampilan di tengah jalan.
  */
 export function BrandLoader({ label = "Memuat…" }: { label?: string }) {
+  const t = useT();
   return (
     <div className="app-canvas flex min-h-[100dvh] items-center justify-center" role="status" aria-live="polite">
       <div className="brand-loader">
@@ -16,7 +19,7 @@ export function BrandLoader({ label = "Memuat…" }: { label?: string }) {
         </div>
         <div className="flex flex-col items-center gap-3">
           <div className="brand-loader-bar" aria-hidden />
-          <p className="text-[13px] font-medium text-text-muted">{label}</p>
+          <p className="text-[13px] font-medium text-text-muted">{t(label)}</p>
         </div>
       </div>
     </div>

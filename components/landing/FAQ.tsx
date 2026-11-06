@@ -1,12 +1,17 @@
 "use client";
+import { tDeep } from "@/lib/i18n";
 
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/public";
 import * as React from "react";
 import { PlusPlain } from "@/components/ui/icons";
 import { DashboardLink } from "./DashboardLink";
-import { HOME_FAQS as FAQS } from "@/lib/site-content";
+import { HOME_FAQS as FAQS_RAW } from "@/lib/site-content";
 import { jsonLdString } from "@/lib/seo";
 
 export function FAQ() {
+  const t = useT();
+  const FAQS = tDeep(FAQS_RAW, t);
   const [open, setOpen] = React.useState<number | null>(0);
   // Tampilkan pertanyaan terpenting dulu; sisanya di balik satu tombol supaya halaman tidak terlalu panjang.
   const INITIAL = 6;
@@ -28,8 +33,8 @@ export function FAQ() {
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: jsonLdString(jsonLd) }} />
 
       <div className="mx-auto mb-12 max-w-3xl text-center">
-        <h2 className="lp-h2">Pertanyaan yang sering muncul.</h2>
-        <p className="lp-lead">Jawaban singkat sebelum kamu mulai. Kalau pertanyaanmu belum ada di sini, tanya Asisten Bantuan di dashboard.</p>
+        <h2 className="lp-h2">{t("Pertanyaan yang sering muncul.")}</h2>
+        <p className="lp-lead">{t("Jawaban singkat sebelum kamu mulai. Kalau pertanyaanmu belum ada di sini, tanya Asisten Bantuan di dashboard.")}</p>
       </div>
 
       <div className="mx-auto flex max-w-3xl flex-col gap-3">
@@ -78,15 +83,15 @@ export function FAQ() {
             aria-expanded={showAll}
             className="pill btn-md font-semibold"
           >
-            {showAll ? "Tampilkan lebih sedikit" : `Lihat ${FAQS.length - INITIAL} pertanyaan lain`}
+            {showAll ? t("Tampilkan lebih sedikit") : t("Lihat {v} pertanyaan lain", { v: FAQS.length - INITIAL })}
           </button>
         </div>
       )}
 
       <p className="mt-8 text-center text-[14px] text-text-muted">
-        Siap mencoba?{" "}
+        {t("Siap mencoba?")}{" "}
         <DashboardLink href="/dashboard" className="font-semibold text-lav-text underline underline-offset-4">
-          Deploy repo pertamamu
+          {t("Deploy repo pertamamu")}
         </DashboardLink>
       </p>
     </section>

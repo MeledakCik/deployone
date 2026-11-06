@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/public";
 import * as React from "react";
 import { X } from "@/components/ui/icons";
 import { useAuth } from "@/lib/auth-context";
@@ -17,6 +19,7 @@ export function GoogleMark({ size = 18 }: { size?: number }) {
 }
 
 export function GoogleLoginModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const t = useT();
   const { login } = useAuth();
   const dialogRef = useDialogA11y<HTMLDivElement>(open, onClose);
 
@@ -31,24 +34,24 @@ export function GoogleLoginModal({ open, onClose }: { open: boolean; onClose: ()
         ref={dialogRef}
         role="dialog"
         aria-modal="true"
-        aria-label="Masuk ke Depup"
+        aria-label={t("Masuk ke Depup")}
         tabIndex={-1}
         className="anim-pop w-full max-w-sm surface-solid p-7 shadow-[0_40px_90px_-30px_rgba(20,18,31,0.55)] outline-none"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-1 flex items-center justify-between">
-          <h3 className="text-[22px] font-bold tracking-[-0.03em]">Masuk ke Depup</h3>
+          <h3 className="text-[22px] font-bold tracking-[-0.03em]">{t("Masuk ke Depup")}</h3>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Tutup"
+            aria-label={t("Tutup")}
             className="pill grid h-9 w-9 place-items-center"
           >
             <X size={18} />
           </button>
         </div>
 
-        <p className="mb-6 text-[14px] text-text-muted">untuk melanjutkan ke dashboard Depup</p>
+        <p className="mb-6 text-[14px] text-text-muted">{t("untuk melanjutkan ke dashboard Depup")}</p>
 
         <button
           type="button"
@@ -56,11 +59,11 @@ export function GoogleLoginModal({ open, onClose }: { open: boolean; onClose: ()
           className="btn-primary btn-lg flex w-full items-center justify-center gap-3"
         >
           <GoogleMark size={18} />
-          <span>Lanjutkan dengan Google</span>
+          <span>{t("Lanjutkan dengan Google")}</span>
         </button>
 
         <p className="mt-5 text-center text-[12px] leading-relaxed text-text-muted">
-          Kamu akan diarahkan ke halaman masuk Google yang asli, lalu otomatis kembali ke dashboard.
+          {t("Kamu akan diarahkan ke halaman masuk Google yang asli, lalu otomatis kembali ke dashboard.")}
         </p>
       </div>
     </div>

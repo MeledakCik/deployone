@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import * as React from "react";
 import { Play } from "lucide-react";
 import { AlertTriangle, Check, Hammer, RotateCcw, Rocket, Search, UploadCloud, X } from "@/components/ui/icons";
@@ -41,6 +43,7 @@ const STATE_CLS: Record<StepState, string> = {
 };
 
 export function KuliProyekDemo({ className }: { className?: string }) {
+  const t = useT();
   const [stage, setStage] = React.useState<KuliStage>("idle");
   const [running, setRunning] = React.useState(false);
   const [speed, setSpeed] = React.useState<(typeof SPEEDS)[number]>(1);
@@ -88,15 +91,15 @@ export function KuliProyekDemo({ className }: { className?: string }) {
   };
 
   return (
-    <Card title="Kuli Proyek" action={<Badge tone="violet">Demo</Badge>} className={className}>
+    <Card title={t("Kuli Proyek")} action={<Badge tone="violet">{t("Demo")}</Badge>} className={className}>
       <div className="space-y-4 p-4 sm:p-5">
         <p className="text-[13px] leading-relaxed text-[var(--text-muted)]">
-          Simulasi lucu selagi &ldquo;deploy&rdquo; berjalan. Ini hanya timer palsu di browser, tidak memanggil deploy asli.
+          {t("Simulasi lucu selagi “deploy” berjalan. Ini hanya timer palsu di browser, tidak memanggil deploy asli.")}
         </p>
 
         <KuliProyek stage={stage} speed={speed} />
 
-        <ol className="grid grid-cols-4 gap-2" aria-label="Tahap deploy">
+        <ol className="grid grid-cols-4 gap-2" aria-label={t("Tahap deploy")}>
           {STEPS.map(({ id, label, Icon }, i) => {
             const st = stateOf(i);
             return (
@@ -106,7 +109,7 @@ export function KuliProyekDemo({ className }: { className?: string }) {
                 </span>
                 <span className={cn("text-[12px] font-medium", st === "todo" ? "text-[var(--text-muted)]" : "text-[var(--text)]")}>
                   {label}
-                  <span className="sr-only">: {STATE_TEXT[st]}</span>
+                  <span className="sr-only">: {t(STATE_TEXT[st])}</span>
                 </span>
               </li>
             );
@@ -115,23 +118,23 @@ export function KuliProyekDemo({ className }: { className?: string }) {
 
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-2">
           <div className="grid grid-cols-2 gap-2 sm:flex sm:items-center">
-          <Btn variant="primary" className="min-h-[36px]" onClick={start} disabled={running || stage !== "idle"} aria-label="Mulai simulasi deploy">
-            <Play size={13} aria-hidden="true" /> Mulai
+          <Btn variant="primary" className="min-h-[36px]" onClick={start} disabled={running || stage !== "idle"} aria-label={t("Mulai simulasi deploy")}>
+            <Play size={13} aria-hidden="true" />{" "}{t("Mulai")}
           </Btn>
-          <Btn className="min-h-[36px]" onClick={start} disabled={stage === "idle"} aria-label="Ulangi simulasi dari awal">
-            <RotateCcw size={13} aria-hidden="true" /> Ulangi
+          <Btn className="min-h-[36px]" onClick={start} disabled={stage === "idle"} aria-label={t("Ulangi simulasi dari awal")}>
+            <RotateCcw size={13} aria-hidden="true" />{" "}{t("Ulangi")}
           </Btn>
-          <Btn variant="danger" className="col-span-2 min-h-[36px] sm:col-span-1" onClick={fail} disabled={!running} aria-label="Gagalkan simulasi deploy">
-            <AlertTriangle size={13} aria-hidden="true" /> Gagalkan
+          <Btn variant="danger" className="col-span-2 min-h-[36px] sm:col-span-1" onClick={fail} disabled={!running} aria-label={t("Gagalkan simulasi deploy")}>
+            <AlertTriangle size={13} aria-hidden="true" />{" "}{t("Gagalkan")}
           </Btn>
           </div>
 
-          <div role="group" aria-label="Kecepatan animasi" className="flex items-center justify-between gap-1.5 sm:ml-auto sm:justify-end">
+          <div role="group" aria-label={t("Kecepatan animasi")} className="flex items-center justify-between gap-1.5 sm:ml-auto sm:justify-end">
             <span className="text-[12px] text-[var(--text-muted)]" aria-hidden="true">
-              Kecepatan
+              {t("Kecepatan")}
             </span>
             {SPEEDS.map((s) => (
-              <Btn key={s} variant={speed === s ? "primary" : "ghost"} className="min-h-[36px] min-w-[40px] px-3" aria-pressed={speed === s} aria-label={`Kecepatan ${s} kali`} onClick={() => setSpeed(s)}>
+              <Btn key={s} variant={speed === s ? "primary" : "ghost"} className="min-h-[36px] min-w-[40px] px-3" aria-pressed={speed === s} aria-label={t("Kecepatan {s} kali", { s })} onClick={() => setSpeed(s)}>
                 {s}x
               </Btn>
             ))}

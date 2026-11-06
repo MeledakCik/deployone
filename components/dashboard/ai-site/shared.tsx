@@ -1,4 +1,5 @@
 "use client";
+import { tl } from "@/lib/i18n";
 
 import * as React from "react";
 import { Check } from "@/components/ui/icons";
@@ -80,7 +81,7 @@ export async function api<T>(url: string, init?: RequestInit): Promise<T> {
   try {
     res = await fetch(url, init);
   } catch {
-    throw new Error("Koneksi ke server gagal. Periksa internet lalu coba lagi.");
+    throw new Error(tl("Koneksi ke server gagal. Periksa internet lalu coba lagi."));
   }
   let json: { ok?: boolean; data?: T; error?: string } | null = null;
   try {
@@ -93,17 +94,17 @@ export async function api<T>(url: string, init?: RequestInit): Promise<T> {
 }
 
 export function ttlLabel(h: number): string {
-  return h < 24 ? `${h} jam` : `${h / 24} hari`;
+  return h < 24 ? tl("{h} jam", { h }) : tl("{d} hari", { d: h / 24 });
 }
 
 /** Sisa waktu yang mudah dibaca, mis. "sekitar 23 jam lagi". */
 export function timeLeftLabel(expiresAt: number): string {
   const ms = expiresAt - Date.now();
-  if (ms <= 60_000) return "kurang dari 1 menit lagi";
+  if (ms <= 60_000) return tl("kurang dari 1 menit lagi");
   const h = ms / 3_600_000;
-  if (h < 1) return `${Math.max(1, Math.round(ms / 60_000))} menit lagi`;
-  if (h < 48) return `sekitar ${Math.round(h)} jam lagi`;
-  return `sekitar ${Math.round(h / 24)} hari lagi`;
+  if (h < 1) return tl("{m} menit lagi", { m: Math.max(1, Math.round(ms / 60_000)) });
+  if (h < 48) return tl("sekitar {h} jam lagi", { h: Math.round(h) });
+  return tl("sekitar {d} hari lagi", { d: Math.round(h / 24) });
 }
 
 /** true bila pengguna meminta gerakan dikurangi (dipakai untuk scroll halus). */

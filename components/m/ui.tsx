@@ -1,4 +1,6 @@
 "use client";
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 /**
  * Komponen bersama untuk shell app Android (/m).
  * Memakai token (globals.css), ikon (components/ui/icons) dan logo platform (PlatformIcon) yang sama dengan
@@ -58,11 +60,12 @@ const STATUS: Record<string, { label: string; wrap: string; dot: string }> = {
 };
 
 export function StatusPill({ status }: { status: string }) {
+  const t = useT();
   const s = STATUS[status] ?? STATUS.deleted;
   return (
     <span className={`inline-flex h-6 shrink-0 items-center gap-1.5 rounded-full px-2.5 text-[12px] font-semibold ${s.wrap}`}>
       <span className={`h-1.5 w-1.5 rounded-full ${s.dot}`} />
-      {s.label}
+      {t(s.label)}
     </span>
   );
 }
@@ -110,8 +113,9 @@ export function EmptyState({ icon, title, hint, cta }: { icon: React.ReactNode; 
 }
 
 export function SkeletonList({ n = 3 }: { n?: number }) {
+  const t = useT();
   return (
-    <div className="space-y-3" role="status" aria-label="Memuat">
+    <div className="space-y-3" role="status" aria-label={t("Memuat")}>
       {Array.from({ length: n }).map((_, i) => (
         <div key={i} className={`${CARD} h-[92px] animate-pulse`} />
       ))}
@@ -194,12 +198,13 @@ export function MiniButton({
 }
 
 export function OpenLink({ domain }: { domain: string }) {
+  const t = useT();
   return (
     <a
       href={hrefOf(domain)}
       target="_blank"
       rel="noreferrer"
-      aria-label={`Buka ${hostOf(domain)}`}
+      aria-label={t("Buka {hostOf}", { hostOf: hostOf(domain) })}
       className="pill flex h-10 w-10 shrink-0 items-center justify-center text-lav-text active:scale-90"
     >
       <ArrowUpRight size={16} />

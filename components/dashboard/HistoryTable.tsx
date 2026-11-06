@@ -1,5 +1,7 @@
 "use client";
 
+import { useT, tl } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import { normalizeDeployDomain, deployDomainToUrl } from "@/lib/utils";
 import { CheckCircle2, XCircle, Trash2, ExternalLink, Rocket } from "@/components/ui/icons";
 import { Badge, Btn, Card, Empty, Skeleton } from "@/components/ui/primitives";
@@ -15,9 +17,9 @@ const FILTERS: { id: HistoryFilter; label: string }[] = [
 ];
 
 function statusMeta(item: HistoryItem) {
-  if (item.status === "deleted") return { label: "Dihapus", tone: "neutral" as const, Icon: Trash2, iconClass: "bg-[var(--pill-bg)] text-text-muted" };
-  if (item.status === "ready") return { label: "Berhasil", tone: "good" as const, Icon: CheckCircle2, iconClass: "bg-tone-mint text-ok-fg" };
-  return { label: "Gagal", tone: "bad" as const, Icon: XCircle, iconClass: "bg-tone-pink text-bad-fg" };
+  if (item.status === "deleted") return { label: tl("Dihapus"), tone: "neutral" as const, Icon: Trash2, iconClass: "bg-[var(--pill-bg)] text-text-muted" };
+  if (item.status === "ready") return { label: tl("Berhasil"), tone: "good" as const, Icon: CheckCircle2, iconClass: "bg-tone-mint text-ok-fg" };
+  return { label: tl("Gagal"), tone: "bad" as const, Icon: XCircle, iconClass: "bg-tone-pink text-bad-fg" };
 }
 
 /** Deretan titik status dari yang terlama ke terbaru: sekilas terlihat apakah deploy belakangan sehat. */
@@ -35,6 +37,7 @@ function StatusStrip({ history }: { history: HistoryItem[] }) {
 }
 
 function DomainCell({ item }: { item: HistoryItem }) {
+  const t = useT();
   const host = normalizeDeployDomain(item.domain, item.platform);
   if (!host || host === "-") return <span className="text-text-muted">—</span>;
   if (item.status !== "ready") return <span className="mono text-[12px] text-text-muted">{host}</span>;
@@ -44,7 +47,7 @@ function DomainCell({ item }: { item: HistoryItem }) {
       target="_blank"
       rel="noopener noreferrer"
       className="mono inline-flex max-w-full items-center gap-1.5 text-[12px] text-lav-text underline-offset-4 hover:underline"
-      aria-label={`Buka ${host} di tab baru`}
+      aria-label={t("Buka {host} di tab baru", { host })}
     >
       <span className="truncate">{host}</span>
       <ExternalLink size={12} className="shrink-0" />
@@ -54,24 +57,26 @@ function DomainCell({ item }: { item: HistoryItem }) {
 
 /** Satu aksi utama per baris: "Coba lagi" menonjol untuk yang gagal, sisanya tenang. */
 function RowAction({ item, onRedeploy }: { item: HistoryItem; onRedeploy: (name: string) => void }) {
+  const t = useT();
   if (item.status === "failed") {
     return (
-      <Btn variant="primary" onClick={() => onRedeploy(item.name)} aria-label={`Coba deploy ulang ${item.name}`}>
-        Coba lagi
+      <Btn variant="primary" onClick={() => onRedeploy(item.name)} aria-label={t("Coba deploy ulang {name}", { name: item.name })}>
+        {t("Coba lagi")}
       </Btn>
     );
   }
   return (
-    <Btn onClick={() => onRedeploy(item.name)} aria-label={`${item.status === "deleted" ? "Deploy ulang" : "Redeploy"} ${item.name}`}>
-      {item.status === "deleted" ? "Deploy ulang" : "Redeploy"}
+    <Btn onClick={() => onRedeploy(item.name)} aria-label={`${item.status === "deleted" ? t("Deploy ulang") : "Redeploy"} ${item.name}`}>
+      {item.status === "deleted" ? t("Deploy ulang") : t("Redeploy")}
     </Btn>
   );
 }
 
 export function HistoryTableSkeleton() {
+  const t = useT();
   return (
-    <Card title="Riwayat deploy">
-      <div className="space-y-3 p-6" role="status" aria-label="Memuat riwayat deploy">
+    <Card title={t("Riwayat deploy")}>
+      <div className="space-y-3 p-6" role="status" aria-label={t("Memuat riwayat deploy")}>
         {[0, 1, 2].map((i) => (
           <div key={i} className="flex items-center gap-3">
             <Skeleton className="h-9 w-9 shrink-0" />
@@ -88,17 +93,18 @@ export function HistoryTableSkeleton() {
 }
 
 export function HistoryTable({ filter, onFilterChange }: { filter: HistoryFilter; onFilterChange: (f: HistoryFilter) => void }) {
+  const t = useT();
   const { history, redeploy, stats } = useDeploy();
   const rows = filter === "all" ? history : history.filter((h) => h.status === filter);
   const counts: Record<HistoryFilter, number> = { all: stats.total, ready: stats.ready, failed: stats.failed };
 
   return (
     <Card
-      title="Riwayat deploy"
+      title={t("Riwayat deploy")}
       action={
         <div className="flex flex-wrap items-center gap-3">
           <StatusStrip history={history} />
-          <div className="flex gap-1.5" role="group" aria-label="Filter status deploy">
+          <div className="flex gap-1.5" role="group" aria-label={t("Filter status deploy")}>
             {FILTERS.map((f) => (
               <button
                 key={f.id}
@@ -109,7 +115,7 @@ export function HistoryTable({ filter, onFilterChange }: { filter: HistoryFilter
                   filter === f.id ? "chip-on" : "bg-[var(--surface-solid-2)] text-text-muted hover:text-text"
                 }`}
               >
-                {f.label} <span className="tabular-nums opacity-80">{counts[f.id]}</span>
+                {t(f.label)} <span className="tabular-nums opacity-80">{counts[f.id]}</span>
               </button>
             ))}
           </div>
@@ -121,11 +127,11 @@ export function HistoryTable({ filter, onFilterChange }: { filter: HistoryFilter
           icon={Rocket}
           action={
             filter !== "all" ? (
-              <Btn onClick={() => onFilterChange("all")}>Tampilkan semua</Btn>
+              <Btn onClick={() => onFilterChange("all")}>{t("Tampilkan semua")}</Btn>
             ) : undefined
           }
         >
-          {filter === "failed" ? "Tidak ada deploy yang gagal. Semua aman." : "Tidak ada deploy dengan status ini."}
+          {filter === "failed" ? t("Tidak ada deploy yang gagal. Semua aman.") : t("Tidak ada deploy dengan status ini.")}
         </Empty>
       ) : (
         <>
@@ -134,11 +140,11 @@ export function HistoryTable({ filter, onFilterChange }: { filter: HistoryFilter
             <table className="w-full text-left text-[13px]">
               <thead>
                 <tr className="text-[12px] text-text-muted">
-                  <th className="px-6 py-3 font-medium">Project</th>
-                  <th className="px-4 py-3 font-medium">Platform</th>
-                  <th className="px-4 py-3 font-medium">Domain</th>
-                  <th className="px-4 py-3 font-medium">Status</th>
-                  <th className="px-6 py-3 text-right font-medium">Aksi</th>
+                  <th className="px-6 py-3 font-medium">{t("Project")}</th>
+                  <th className="px-4 py-3 font-medium">{t("Platform")}</th>
+                  <th className="px-4 py-3 font-medium">{t("Domain")}</th>
+                  <th className="px-4 py-3 font-medium">{t("Status")}</th>
+                  <th className="px-6 py-3 text-right font-medium">{t("Aksi")}</th>
                 </tr>
               </thead>
               <tbody id="history">

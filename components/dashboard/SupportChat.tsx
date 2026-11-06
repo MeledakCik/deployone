@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import * as React from "react";
 import { Bot, CheckCircle2, Copy, Info, Loader2, MessageCircle, RotateCcw, SendHorizonal, TriangleAlert, X, XCircle } from "@/components/ui/icons";
 import { useAuth } from "@/lib/auth-context";
@@ -110,15 +112,16 @@ function RichText({ text }: { text: string }) {
 /* ---------- kartu hasil pemeriksaan teknis ---------- */
 
 function DiagnosticsCard({ checks }: { checks: DiagCheckView[] }) {
+  const t = useT();
   const icon = {
-    ok: <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-ok-fg" aria-label="OK" />,
-    problem: <XCircle size={14} className="mt-0.5 shrink-0 text-bad-fg" aria-label="Masalah" />,
-    warn: <TriangleAlert size={14} className="mt-0.5 shrink-0 text-warn-fg" aria-label="Perhatian" />,
-    unknown: <Info size={14} className="mt-0.5 shrink-0 text-text-muted" aria-label="Tidak diketahui" />,
+    ok: <CheckCircle2 size={14} className="mt-0.5 shrink-0 text-ok-fg" aria-label={t("OK")} />,
+    problem: <XCircle size={14} className="mt-0.5 shrink-0 text-bad-fg" aria-label={t("Masalah")} />,
+    warn: <TriangleAlert size={14} className="mt-0.5 shrink-0 text-warn-fg" aria-label={t("Perhatian")} />,
+    unknown: <Info size={14} className="mt-0.5 shrink-0 text-text-muted" aria-label={t("Tidak diketahui")} />,
   } as const;
   return (
     <div className="w-full max-w-[92%] rounded-[14px] bg-[var(--pill-bg)] px-3.5 py-3">
-      <p className="mb-2 text-[12px] font-semibold text-text-muted">Hasil pemeriksaan akunmu</p>
+      <p className="mb-2 text-[12px] font-semibold text-text-muted">{t("Hasil pemeriksaan akunmu")}</p>
       <ul className="space-y-1.5">
         {checks.map((c) => (
           <li key={c.id} className="flex gap-2 text-[13px] leading-snug">
@@ -136,6 +139,7 @@ function DiagnosticsCard({ checks }: { checks: DiagCheckView[] }) {
 /* ---------- komponen utama ---------- */
 
 export function SupportChat() {
+  const t = useT();
   const { user } = useAuth();
   const { view } = useDeploy();
   const { showToast } = useToast();
@@ -208,7 +212,7 @@ export function SupportChat() {
         const body = await res.json().catch(() => null);
         notifySessionExpired(body);
         if (!res.ok || !body?.ok) {
-          setError(body?.error ?? "Asisten sedang tidak bisa menjawab. Coba lagi nanti.");
+          setError(body?.error ?? t("Asisten sedang tidak bisa menjawab. Coba lagi nanti."));
           return;
         }
         setMessages((m) => [
@@ -223,7 +227,7 @@ export function SupportChat() {
         if (typeof body.data.reportId === "string") setReportedId(body.data.reportId);
       } catch (e) {
         if ((e as { name?: string })?.name === "AbortError") return;
-        setError("Koneksi bermasalah. Periksa internet kamu lalu coba lagi.");
+        setError(t("Koneksi bermasalah. Periksa internet kamu lalu coba lagi."));
       } finally {
         setSending(false);
       }
@@ -256,9 +260,9 @@ export function SupportChat() {
 
   async function copyTranscript() {
     const header = [
-      "Laporan chat bantuan Depup",
-      user ? `Akun: ${user.email}` : null,
-      `Halaman: ${view}`,
+      t("Laporan chat bantuan Depup"),
+      user ? t("Akun: {email}", { email: user.email }) : null,
+      t("Halaman: {view}", { view }),
       `Waktu: ${new Date().toLocaleString("id-ID")}`,
       "",
     ]
@@ -267,9 +271,9 @@ export function SupportChat() {
     const body = messages.map((m) => `${m.role === "user" ? "Saya" : "Asisten"}: ${m.content}`).join("\n\n");
     try {
       await navigator.clipboard.writeText(`${header}\n${body}`);
-      showToast("Percakapan disalin. Kirim ke developer kalau masih butuh bantuan.");
+      showToast(t("Percakapan disalin. Kirim ke developer kalau masih butuh bantuan."));
     } catch {
-      showToast("Tidak bisa menyalin otomatis. Salin teks percakapan secara manual.");
+      showToast(t("Tidak bisa menyalin otomatis. Salin teks percakapan secara manual."));
     }
   }
 
@@ -287,13 +291,13 @@ export function SupportChat() {
       const body = await res.json().catch(() => null);
       notifySessionExpired(body);
       if (!res.ok || !body?.ok) {
-        showToast(body?.error ?? "Laporan belum bisa dikirim. Coba lagi.");
+        showToast(body?.error ?? t("Laporan belum bisa dikirim. Coba lagi."));
         return;
       }
       setReportedId(String(body.data.id));
-      showToast(`Laporan terkirim ke developer (${body.data.id}).`);
+      showToast(t("Laporan terkirim ke developer ({id}).", { id: body.data.id }));
     } catch {
-      showToast("Koneksi bermasalah. Laporan belum terkirim.");
+      showToast(t("Koneksi bermasalah. Laporan belum terkirim."));
     } finally {
       setReporting(false);
     }
@@ -306,11 +310,11 @@ export function SupportChat() {
           ref={fabRef}
           type="button"
           onClick={openChat}
-          aria-label="Buka chat bantuan"
+          aria-label={t("Buka chat bantuan")}
           className={`btn-lime fab ${firstFab.current ? "anim-fab" : ""} fixed bottom-[var(--edge)] right-[var(--edge)] z-40 flex h-12 items-center gap-2 px-5 text-[14px] shadow-lg`}
         >
           <MessageCircle size={18} />
-          <span className="hidden sm:inline">Bantuan</span>
+          <span className="hidden sm:inline">{t("Bantuan")}</span>
         </button>
       )}
 
@@ -325,14 +329,14 @@ export function SupportChat() {
       {open && (
         <section
           role="dialog"
-          aria-label="Chat bantuan Depup"
+          aria-label={t("Chat bantuan Depup")}
           className={`surface-solid morph ${closing ? "morph-close" : "morph-open"} fixed inset-0 z-[60] flex flex-col overflow-hidden !rounded-none shadow-2xl sm:inset-auto sm:bottom-[var(--edge)] sm:right-[var(--edge)] sm:h-[600px] sm:max-h-[calc(100dvh-var(--edge)*2)] sm:w-[400px] sm:!rounded-card`}
           style={fabBox ? ({ "--fab-w": `${fabBox.w}px`, "--fab-h": `${fabBox.h}px` } as React.CSSProperties) : undefined}
         >
           {/* Salinan tombol Bantuan: jembatan visual antara tombol dan panel */}
           <div aria-hidden className={`morph-fab ${closing ? "morph-fab-in" : "morph-fab-out"}`}>
             <MessageCircle size={18} />
-            <span className="hidden sm:inline">Bantuan</span>
+            <span className="hidden sm:inline">{t("Bantuan")}</span>
           </div>
 
           {/* Header */}
@@ -341,16 +345,16 @@ export function SupportChat() {
               <Bot size={18} />
             </span>
             <div className="min-w-0 flex-1">
-              <h2 className="text-[14px] font-semibold leading-tight">Asisten Depup</h2>
-              <p className="text-[12px] text-text-muted">Dijawab AI, bisa saja keliru</p>
+              <h2 className="text-[14px] font-semibold leading-tight">{t("Asisten Depup")}</h2>
+              <p className="text-[12px] text-text-muted">{t("Dijawab AI, bisa saja keliru")}</p>
             </div>
             {messages.length > 0 && (
               <>
                 <button
                   type="button"
                   onClick={copyTranscript}
-                  aria-label="Salin percakapan"
-                  title="Salin percakapan"
+                  aria-label={t("Salin percakapan")}
+                  title={t("Salin percakapan")}
                   className="grid h-8 w-8 place-items-center rounded-full text-text-muted hover:bg-[var(--card-hover)] hover:text-text"
                 >
                   <Copy size={15} />
@@ -358,8 +362,8 @@ export function SupportChat() {
                 <button
                   type="button"
                   onClick={reset}
-                  aria-label="Mulai percakapan baru"
-                  title="Percakapan baru"
+                  aria-label={t("Mulai percakapan baru")}
+                  title={t("Percakapan baru")}
                   className="grid h-8 w-8 place-items-center rounded-full text-text-muted hover:bg-[var(--card-hover)] hover:text-text"
                 >
                   <RotateCcw size={15} />
@@ -369,7 +373,7 @@ export function SupportChat() {
             <button
               type="button"
               onClick={closeChat}
-              aria-label="Tutup chat"
+              aria-label={t("Tutup chat")}
               className="grid h-8 w-8 place-items-center rounded-full text-text-muted hover:bg-[var(--card-hover)] hover:text-text"
             >
               <X size={17} />
@@ -381,8 +385,7 @@ export function SupportChat() {
             {messages.length === 0 && (
               <div className="space-y-4">
                 <div className="bubble-in-l rounded-[14px] rounded-tl-md bg-[var(--pill-bg)] px-3.5 py-3 text-[14px] leading-relaxed">
-                  Halo{user?.name ? `, ${user.name.split(" ")[0]}` : ""}! Aku asisten Depup. Tanya soal deploy, token, domain, atau
-                  error yang kamu temui.
+                  {t("Halo")}{user?.name ? `, ${user.name.split(" ")[0]}` : ""}{t("! Aku asisten Depup. Tanya soal deploy, token, domain, atau error yang kamu temui.")}
                 </div>
                 <div className="flex flex-col items-start gap-2">
                   {SUGGESTIONS.map((s, i) => (
@@ -393,7 +396,7 @@ export function SupportChat() {
                       onClick={() => send(s)}
                       className="pill chip-in px-3.5 py-2 text-left text-[13px] text-text-muted transition hover:text-text"
                     >
-                      {s}
+                      {t(s)}
                     </button>
                   ))}
                 </div>
@@ -415,7 +418,7 @@ export function SupportChat() {
                   </div>
                   {m.reportId && (
                     <p className="px-1 text-[12px] text-text-muted">
-                      Laporan otomatis diteruskan ke developer · <span className="font-mono">{m.reportId}</span>
+                      {t("Laporan otomatis diteruskan ke developer ·")}{" "}<span className="font-mono">{m.reportId}</span>
                     </p>
                   )}
                 </div>
@@ -423,7 +426,7 @@ export function SupportChat() {
             )}
 
             {sending && (
-              <div className="flex" aria-label="Asisten sedang mengetik">
+              <div className="flex" aria-label={t("Asisten sedang mengetik")}>
                 <div className="bubble-in-l flex items-center gap-1 rounded-[14px] rounded-tl-md bg-[var(--pill-bg)] px-4 py-3.5">
                   {[0, 1, 2].map((d) => (
                     <span
@@ -441,7 +444,7 @@ export function SupportChat() {
                 <p>{error}</p>
                 {messages.length > 0 && messages[messages.length - 1].role === "user" && (
                   <button type="button" onClick={retry} className="mt-2 font-semibold underline underline-offset-2">
-                    Coba lagi
+                    {t("Coba lagi")}
                   </button>
                 )}
               </div>
@@ -450,7 +453,7 @@ export function SupportChat() {
             {hasReply && !sending && (
               reportedId ? (
                 <p className="rounded-[14px] bg-[var(--ok-bg)] px-3.5 py-2.5 text-center text-[13px] text-ok-fg">
-                  Laporan sudah diterima developer · <span className="font-mono">{reportedId}</span>
+                  {t("Laporan sudah diterima developer ·")}{" "}<span className="font-mono">{reportedId}</span>
                 </p>
               ) : (
                 <button
@@ -460,7 +463,7 @@ export function SupportChat() {
                   className="pill inline-flex w-full items-center justify-center gap-2 px-3.5 py-2 text-[13px] font-medium hover:text-text disabled:opacity-60"
                 >
                   {reporting && <Loader2 size={13} className="animate-spin" />}
-                  Masalah belum selesai? Laporkan ke developer
+                  {t("Masalah belum selesai? Laporkan ke developer")}
                 </button>
               )
             )}
@@ -486,21 +489,21 @@ export function SupportChat() {
                   }
                 }}
                 rows={1}
-                placeholder="Tulis pertanyaanmu…"
-                aria-label="Pesan"
+                placeholder={t("Tulis pertanyaanmu…")}
+                aria-label={t("Pesan")}
                 className="input-solid max-h-28 min-h-[44px] flex-1 resize-none px-3.5 py-3 text-[14px]"
               />
               <button
                 type="submit"
                 disabled={!input.trim() || sending}
-                aria-label="Kirim"
+                aria-label={t("Kirim")}
                 className="btn-primary grid h-11 w-11 shrink-0 place-items-center disabled:opacity-40"
               >
                 <SendHorizonal size={17} />
               </button>
             </div>
             <p className="mt-2 px-1 text-[12px] text-text-muted">
-              Jangan tempel token atau password di sini.
+              {t("Jangan tempel token atau password di sini.")}
             </p>
           </form>
         </section>

@@ -1,10 +1,13 @@
 "use client";
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import * as React from "react";
 import { Copy, Check, GitBranch } from "@/components/ui/icons";
 import type { HistoryItem } from "@/types";
 import { CARD, MiniButton, OpenLink, PLATFORM_LABEL, PlatformTile, StatusPill, hostOf, hrefOf, prettyDate, useCopy } from "./ui";
 
 export function HistoryCard({ item }: { item: HistoryItem }) {
+  const t = useT();
   const { copied, copy } = useCopy();
   const hasUrl = !!item.domain && item.status !== "deleted";
   return (
@@ -33,7 +36,7 @@ export function HistoryCard({ item }: { item: HistoryItem }) {
         <div className="mt-3 flex items-center gap-2">
           <MiniButton onClick={() => copy(item.id, hrefOf(item.domain))}>
             {copied === item.id ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
-            {copied === item.id ? "Tersalin" : "Salin URL"}
+            {copied === item.id ? t("Tersalin") : t("Salin URL")}
           </MiniButton>
           <span className="min-w-0 flex-1 truncate font-mono text-[12px] text-text-muted">{hostOf(item.domain)}</span>
           <OpenLink domain={item.domain} />

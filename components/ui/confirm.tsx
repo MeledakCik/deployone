@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import * as React from "react";
 import { ShieldAlert } from "@/components/ui/icons";
 import { useDialogA11y } from "@/components/ui/useDialogA11y";
@@ -28,6 +30,7 @@ const ConfirmContext = React.createContext<Confirm>(() => Promise.resolve({ ok: 
 export const useConfirm = () => React.useContext(ConfirmContext);
 
 export function ConfirmProvider({ children }: { children: React.ReactNode }) {
+  const t = useT();
   const [state, setState] = React.useState<{ opts: ConfirmOptions; resolve: (r: ConfirmResult) => void } | null>(null);
   const [checked, setChecked] = React.useState(false);
 
@@ -99,7 +102,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
             )}
             <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               <button type="button" autoFocus onClick={() => finish(false)} className="pill btn-md press font-medium">
-                Batal
+                {t("Batal")}
               </button>
               <button
                 type="button"
@@ -109,7 +112,7 @@ export function ConfirmProvider({ children }: { children: React.ReactNode }) {
                   danger ? "bg-bad-solid hover:brightness-110" : "bg-[var(--ink-fill)] hover:bg-[var(--ink-fill-hover)]"
                 )}
               >
-                {o.confirmLabel ?? "Lanjutkan"}
+                {o.confirmLabel ?? t("Lanjutkan")}
               </button>
             </div>
           </div>

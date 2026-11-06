@@ -1,5 +1,8 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
+import { LanguageSwitch } from "@/components/ui/LanguageSwitch";
 import * as React from "react";
 import Link from "next/link";
 import { ChevronRight, Settings2, FolderKanban, Heart, LogOut, ShieldCheck, History, CheckCircle2, Circle, Globe2, KeyRound } from "@/components/ui/icons";
@@ -8,6 +11,7 @@ import { useUserData } from "@/lib/m-data";
 import { CARD, HERO_GRADIENT, uniqueProjects } from "@/components/m/ui";
 
 export default function MobileAccount() {
+  const t = useT();
   const { user, logout } = useAuth();
   const { tokens, history, loading } = useUserData();
   const [leaving, setLeaving] = React.useState(false);
@@ -28,13 +32,13 @@ export default function MobileAccount() {
 
   // Nama dan ikon sama dengan menu di sidebar web.
   const rows = [
-    { href: "/m/pengaturan", label: "Pengaturan & token", hint: "Token Vercel, Cloudflare Pages, Railway, GitHub", Icon: Settings2 },
-    { href: "/m/riwayat", label: "Riwayat deploy", hint: "Semua deploy tercatat permanen", Icon: History },
-    { href: "/m/kelola", label: "Kelola project", hint: "Sinkron, import, hapus project", Icon: FolderKanban },
-    { href: "/m/domain", label: "Domain", hint: "Hubungkan domain ke project", Icon: Globe2 },
-    { href: "/m/env", label: "Variabel env", hint: "Variabel environment per project", Icon: KeyRound },
-    { href: "/m/donasi", label: "Donasi", hint: "Traktir kopi lewat Saweria", Icon: Heart },
-    ...(user.isAdmin ? [{ href: "/admin", label: "Panel admin", hint: "Khusus admin Depup", Icon: ShieldCheck }] : []),
+    { href: "/m/pengaturan", label: t("Pengaturan & token"), hint: t("Token Vercel, Cloudflare Pages, Railway, GitHub"), Icon: Settings2 },
+    { href: "/m/riwayat", label: t("Riwayat deploy"), hint: t("Semua deploy tercatat permanen"), Icon: History },
+    { href: "/m/kelola", label: t("Kelola project"), hint: t("Sinkron, import, hapus project"), Icon: FolderKanban },
+    { href: "/m/domain", label: t("Domain"), hint: t("Hubungkan domain ke project"), Icon: Globe2 },
+    { href: "/m/env", label: t("Variabel env"), hint: t("Variabel environment per project"), Icon: KeyRound },
+    { href: "/m/donasi", label: t("Donasi"), hint: t("Traktir kopi lewat Saweria"), Icon: Heart },
+    ...(user.isAdmin ? [{ href: "/admin", label: t("Panel admin"), hint: t("Khusus admin Depup"), Icon: ShieldCheck }] : []),
   ];
 
   return (
@@ -54,13 +58,13 @@ export default function MobileAccount() {
       </section>
 
       <section className={`${CARD} p-4`}>
-        <p className="text-[16px] font-bold tracking-tight">Koneksi platform</p>
+        <p className="text-[16px] font-bold tracking-tight">{t("Koneksi platform")}</p>
         <ul className="mt-3 grid grid-cols-2 gap-x-3 gap-y-2.5">
           {conns.map((c) => (
             <li key={c.name} className="flex min-w-0 items-center gap-2 text-[13px] font-medium [&>svg]:shrink-0">
               {c.ok ? <CheckCircle2 size={18} className="text-ok" aria-hidden /> : <Circle size={18} className="text-violet-200" aria-hidden />}
               <span className={c.ok ? "text-text" : "text-text-faint"}>{c.name}</span>
-              <span className="sr-only">{c.ok ? "terhubung" : "belum terhubung"}</span>
+              <span className="sr-only">{c.ok ? t("terhubung") : t("belum terhubung")}</span>
             </li>
           ))}
         </ul>
@@ -83,21 +87,26 @@ export default function MobileAccount() {
         ))}
       </ul>
 
+      <div className={`${CARD} flex items-center justify-between gap-3 p-4`}>
+        <span className="text-[14px] font-semibold">{t("Bahasa")}</span>
+        <LanguageSwitch compact />
+      </div>
+
       <button
         onClick={async () => { setLeaving(true); await logout(); }}
         disabled={leaving}
         className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-bad-bg text-[14px] font-semibold text-bad-fg transition active:scale-[0.98] disabled:opacity-60"
       >
-        <LogOut size={18} aria-hidden /> Keluar
+        <LogOut size={18} aria-hidden />{" "}{t("Keluar")}
       </button>
       {inBrowser && (
         <p className="text-center text-[13px] text-text-muted">
           <a href="/dashboard?desktop=1" className="font-semibold text-lav-text underline underline-offset-4">
-            Buka tampilan desktop
+            {t("Buka tampilan desktop")}
           </a>
         </p>
       )}
-      <p className="pb-2 text-center text-[12px] text-text-muted">Depup · deploy dari HP</p>
+      <p className="pb-2 text-center text-[12px] text-text-muted">{t("Depup · deploy dari HP")}</p>
     </div>
   );
 }

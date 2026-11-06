@@ -4,6 +4,7 @@ import { rateLimit, clientIp } from "@/app/api/_lib/rate-limit";
 import { slugFromHost, slugFromReferer, isTunnelSlug, tunnelPathHost, sameHost, SLUG_RE } from "@/app/api/_lib/tunnel-host";
 import { isAdminEmail } from "@/app/api/_lib/admin-config";
 import { kv } from "@vercel/kv";
+import { LANG_COOKIE, LANG_HEADER, detectLang, isLang, type Lang } from "@/lib/i18n/core";
 export const config = {
   matcher: [
     "/((?!_next/static|_next/image|favicon\\.ico|robots\\.txt|sitemap\\.xml|manifest\\.webmanifest|apple-touch-icon\\.png|icon-128\\.png|icon-192\\.png|icon-512\\.png|icon-maskable-512\\.png|logo\\.png|logo-lime\\.png|logo-white\\.png|og-image\\.png|email/|glassmorphic_dashboard_hero\\.svg).*)",
@@ -177,6 +178,46 @@ async function isBlockedEdge(email: string): Promise<boolean> {
     return false;
   }
 }
+
+/* ---------- bahasa: Indonesia untuk pengunjung dari Indonesia, Inggris untuk lainnya ---------- */
+
+function resolveLang(req: NextRequest): { lang: Lang; save: boolean } {
+  const { pathname, searchParams } = req.nextUrl;
+  if (pathname === "/en" || pathname.startsWith("/en/")) return { lang: "en", save: false };
+  if (pathname === "/admin" || pathname.startsWith("/admin/")) return { lang: "id", save: false };
+  const q = searchParams.get("lang");
+  if (isLang(q)) return { lang: q, save: true };
+  const c = req.cookies.get(LANG_COOKIE)?.value;
+  if (isLang(c)) return { lang: c, save: false };
+  const country = req.headers.get("x-vercel-ip-country") || (req as unknown as { geo?: { country?: string } }).geo?.country;
+  return { lang: detectLang(country, req.headers.get("accept-language"), req.headers.get("user-agent")), save: true };
+}
+
+const MW_EN: Record<string, string> = {
+  "Request lintas-origin ditolak.": "Cross-origin request rejected.",
+  "Sesi login habis. Silakan login lagi.": "Your session has expired. Please sign in again.",
+  "Akun ini dinonaktifkan oleh admin Depup.": "This account has been disabled by the Depup admins.",
+  "Terlalu banyak request. Coba lagi sebentar lagi.": "Too many requests. Please try again in a moment.",
+};
+/** Pesan error middleware dalam bahasa pengguna. */
+function mwText(req: NextRequest, msg: string): string {
+  return resolveLang(req).lang === "en" ? MW_EN[msg] ?? msg : msg;
+}
+
+/** NextResponse.next() yang membawa bahasa request ini (header internal, selalu ditimpa) + menyimpan pilihan awal. */
+function nextWithLang(req: NextRequest, saveCookie = true): NextResponse {
+  const { lang, save } = resolveLang(req);
+  const headers = new Headers(req.headers);
+  headers.set(LANG_HEADER, lang);
+  const res = NextResponse.next({ request: { headers } });
+  // Bot tidak diberi cookie: bahasanya ditentukan ulang tiap kunjungan.
+  if (save && saveCookie && !/bot|crawl|spider/i.test(req.headers.get("user-agent") || "")) {
+    res.cookies.set(LANG_COOKIE, lang, { path: "/", maxAge: 31536000, sameSite: "lax", secure: req.nextUrl.protocol === "https:" });
+  }
+  res.headers.append("Vary", "Cookie");
+  return res;
+}
+
 export async function middleware(req: NextRequest) {
   const { pathname, search } = req.nextUrl;
   const host = req.headers.get("host") || "";
@@ -279,7 +320,7 @@ export async function middleware(req: NextRequest) {
       return NextResponse.redirect(login);
     }
     if (!isAdminEmail(who)) return NextResponse.rewrite(new URL("/__tidak-ada", req.url), { status: 404 });
-    const res = NextResponse.next();
+    const res = nextWithLang(req, false);
     res.headers.set("Cache-Control", "no-store");
     res.headers.set("X-Robots-Tag", "noindex, nofollow");
     if (isDepushSubdomain) res.headers.append("X-Robots-Tag", "noindex, nofollow");
@@ -287,16 +328,13 @@ export async function middleware(req: NextRequest) {
   }
 
   if (pathname !== "/api" && !pathname.startsWith("/api/")) {
-    if (isDepushSubdomain) {
-      const res = NextResponse.next();
-      res.headers.set("X-Robots-Tag", "noindex, nofollow");
-      return res;
-    }
-    return NextResponse.next();
+    const res = nextWithLang(req);
+    if (isDepushSubdomain) res.headers.set("X-Robots-Tag", "noindex, nofollow");
+    return res;
   }
 
-  if (isDbRestApiPath(pathname)) return NextResponse.next();
-  if (isMcpOwnAuthPath(pathname)) return NextResponse.next();
+  if (isDbRestApiPath(pathname)) return nextWithLang(req, false);
+  if (isMcpOwnAuthPath(pathname)) return nextWithLang(req, false);
   const origin = req.headers.get("origin");
   if (origin && !["GET", "HEAD", "OPTIONS"].includes(req.method)) {
     let originHost = "";
@@ -307,14 +345,14 @@ export async function middleware(req: NextRequest) {
     }
     if (!originHost || originHost !== req.headers.get("host")) {
       return NextResponse.json(
-        { ok: false, error: "Request lintas-origin ditolak.", code: "unauthorized" },
+        { ok: false, error: mwText(req, "Request lintas-origin ditolak."), code: "unauthorized" },
         { status: 403 }
       );
     }
   } else if (!origin && !["GET", "HEAD", "OPTIONS"].includes(req.method)) {
     if (req.headers.get("sec-fetch-site") === "cross-site") {
       return NextResponse.json(
-        { ok: false, error: "Request lintas-origin ditolak.", code: "unauthorized" },
+        { ok: false, error: mwText(req, "Request lintas-origin ditolak."), code: "unauthorized" },
         { status: 403 }
       );
     }
@@ -324,7 +362,7 @@ export async function middleware(req: NextRequest) {
 
   if (!email && !isPublicPath(pathname) && !isDbOwnAuthPath(pathname)) {
     return NextResponse.json(
-      { ok: false, error: "Sesi login habis. Silakan login lagi.", code: "unauthorized" },
+      { ok: false, error: mwText(req, "Sesi login habis. Silakan login lagi."), code: "unauthorized" },
       { status: 401 }
     );
   }
@@ -332,13 +370,13 @@ export async function middleware(req: NextRequest) {
   // 401 + code "unauthorized" -> klien memperlakukannya sebagai sesi habis dan kembali ke halaman login.
   if (email && !isPublicPath(pathname) && !isAdminEmail(email) && (await isBlockedEdge(email))) {
     return NextResponse.json(
-      { ok: false, error: "Akun ini dinonaktifkan oleh admin Depup.", code: "unauthorized" },
+      { ok: false, error: mwText(req, "Akun ini dinonaktifkan oleh admin Depup."), code: "unauthorized" },
       { status: 401 }
     );
   }
 
   if (skipRateLimit(pathname)) {
-    const res = NextResponse.next();
+    const res = nextWithLang(req, false);
     if (isDepushSubdomain) res.headers.set("X-Robots-Tag", "noindex, nofollow");
     return res;
   }
@@ -346,7 +384,7 @@ export async function middleware(req: NextRequest) {
   // Cek session dipanggil di setiap load halaman dan hanya memverifikasi HMAC cookie (tanpa Redis).
   // Untuk user yang sudah terverifikasi, rate limit-nya cuma membuang 1 command Redis per load.
   if (email && req.method === "GET" && pathname === "/api/auth/session") {
-    const res = NextResponse.next();
+    const res = nextWithLang(req, false);
     if (isDepushSubdomain) res.headers.set("X-Robots-Tag", "noindex, nofollow");
     return res;
   }
@@ -358,7 +396,7 @@ export async function middleware(req: NextRequest) {
 
   if (!result.allowed) {
     return NextResponse.json(
-      { ok: false, error: "Terlalu banyak request. Coba lagi sebentar lagi.", code: "rate_limited" },
+      { ok: false, error: mwText(req, "Terlalu banyak request. Coba lagi sebentar lagi."), code: "rate_limited" },
       {
         status: 429,
         headers: {
@@ -370,7 +408,7 @@ export async function middleware(req: NextRequest) {
     );
   }
 
-  const res = NextResponse.next();
+  const res = nextWithLang(req, false);
   res.headers.set("X-RateLimit-Limit", String(result.limit));
   res.headers.set("X-RateLimit-Remaining", String(result.remaining));
   if (isDepushSubdomain) {

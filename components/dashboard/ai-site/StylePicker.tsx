@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import * as React from "react";
 import { Check } from "lucide-react";
 import { SELECTED_FILL } from "./shared";
@@ -9,6 +11,7 @@ import { ScaledFrame } from "./ScaledFrame";
 
 /** Miniatur tampilan nyata: warna & huruf ikut pilihan aktif, cuma bentuk/bayangan/dekorasi yang beda per gaya. */
 function StyleThumb({ build, name }: { build: () => string; name: string }) {
+  const t = useT();
   const ref = React.useRef<HTMLDivElement>(null);
   const [seen, setSeen] = React.useState(false);
 
@@ -37,7 +40,7 @@ function StyleThumb({ build, name }: { build: () => string; name: string }) {
   return (
     <div ref={ref} className="h-[86px] w-full overflow-hidden rounded-lg" aria-hidden>
       {html ? (
-        <ScaledFrame html={html} title={`Contoh gaya ${name}`} vw={1100} fitHeight={86} sandbox="" interactive={false} />
+        <ScaledFrame html={html} title={t("Contoh gaya {name}", { name })} vw={1100} fitHeight={86} sandbox="" interactive={false} />
       ) : (
         <span className="flex h-full w-full items-center justify-center bg-[var(--pill-bg)] text-[12px] text-text-faint">{name}</span>
       )}
@@ -64,8 +67,9 @@ export function StylePicker({
   preview: SiteContent;
   onPick: (id: DesignStyleId) => void;
 }) {
+  const t = useT();
   return (
-    <div role="group" aria-label="Pilih gaya desain" className="grid grid-cols-2 gap-2.5 min-[420px]:grid-cols-3">
+    <div role="group" aria-label={t("Pilih gaya desain")} className="grid grid-cols-2 gap-2.5 min-[420px]:grid-cols-3">
       {DESIGN_STYLES.map((s) => (
         <StyleCard key={s.id} s={s} selected={value === s.id} template={template} accent={accent} palette={palette} fonts={fonts} preview={preview} onPick={onPick} />
       ))}
@@ -92,6 +96,7 @@ function StyleCard({
   preview: SiteContent;
   onPick: (id: DesignStyleId) => void;
 }) {
+  const t = useT();
   const build = React.useCallback(() => {
     const opts: RenderOpts = { palette: palette ?? undefined, fonts, shop: false, images: {}, style: s.id, look: false };
     return renderSite(preview, template, accent, opts);
@@ -104,17 +109,17 @@ function StyleCard({
         selected ? SELECTED_FILL : "bg-[var(--tile-fill,var(--pill-bg))] hover:bg-[var(--card-hover)]",
       )}
     >
-      <StyleThumb build={build} name={s.name} />
+      <StyleThumb build={build} name={t(s.name)} />
       <span className="flex min-w-0 items-center gap-1.5">
         {selected && <Check size={14} className="shrink-0" aria-hidden />}
-        <span className="block min-w-0 truncate text-[13px] font-semibold">{s.name}</span>
+        <span className="block min-w-0 truncate text-[13px] font-semibold">{t(s.name)}</span>
       </span>
-      <span className={cn("block text-[12px] leading-snug", selected ? "opacity-90" : "text-text-muted")}>{s.desc}</span>
+      <span className={cn("block text-[12px] leading-snug", selected ? "opacity-90" : "text-text-muted")}>{t(s.desc)}</span>
       <button
         type="button"
         onClick={() => onPick(s.id)}
         aria-pressed={selected}
-        aria-label={`${s.name}. ${s.desc}`}
+        aria-label={`${t(s.name)}. ${t(s.desc)}`}
         className="absolute inset-0 rounded-[14px]"
       />
     </div>

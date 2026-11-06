@@ -62,7 +62,7 @@ export interface EngineGenerate {
 
 export async function engineGenerate(
   prompt: string,
-  opts: { variant?: number; kind?: SiteKind; wantItems?: number | null; wantArticles?: number | null },
+  opts: { variant?: number; kind?: SiteKind; wantItems?: number | null; wantArticles?: number | null; lang?: "id" | "en"; langHint?: "id" | "en" },
 ): Promise<EngineGenerate | null> {
   const model = await loadModel();
   const res = generateSite(model, prompt, { ...opts, kind: opts.kind as Kind | undefined });

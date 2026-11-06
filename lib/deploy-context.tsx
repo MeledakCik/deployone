@@ -1,5 +1,7 @@
 "use client";
 
+import { useT, tl } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import { notifySessionExpired } from "@/lib/session-expired";
 import * as React from "react";
 import { useToast } from "@/components/ui/Toast";
@@ -78,12 +80,12 @@ async function callApi<T>(url: string, init?: RequestInit): Promise<T> {
     res = await fetch(url, init);
   } catch {
     // fetch hanya melempar error kalau tidak ada respons sama sekali (offline / DNS / diblokir).
-    throw new ApiRequestError("Tidak bisa menghubungi server.", { code: "network" });
+    throw new ApiRequestError(tl("Tidak bisa menghubungi server."), { code: "network" });
   }
   const body = (await res.json().catch(() => null)) as ApiResponse<T> | null;
   notifySessionExpired(body);
   if (!body || !body.ok) {
-    throw new ApiRequestError(body?.error ?? `Request gagal (${res.status})`, {
+    throw new ApiRequestError(body?.error ?? tl("Permintaan gagal ({status}).", { status: res.status }), {
       code: body && !body.ok ? body.code : undefined,
       status: res.status,
       guide: body && !body.ok ? body.guide : undefined,
@@ -350,6 +352,7 @@ function isDashboardView(v: string | null): v is DashboardView {
  * ================================================================ */
 
 export function DeployProvider({ children }: { children: React.ReactNode }) {
+  const t = useT();
   const { showToast } = useToast();
 
   // View aktif disinkronkan ke URL (?view=deploy) supaya refresh, tombol Back,
@@ -854,7 +857,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         }
         return added.length > 0 ? [...added, ...safePrev] : safePrev;
       });
-      showToast(`${keys.length} env var ikut terpasang & tercatat di halaman Environment.`);
+      showToast(t("{length} env var ikut terpasang & tercatat di halaman Environment.", { length: keys.length }));
     },
     [setEnvVars, showToast],
   );
@@ -887,7 +890,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         ...prev,
         stepIndex: 1,
         barWidth: 20,
-        subtitle: `Repo ${validation.fullName} (${validation.visibility}) terverifikasi — terdeteksi: ${validation.project.label}.`,
+        subtitle: t("Repo {fullName} ({visibility}) terverifikasi — terdeteksi: {label}.", { fullName: validation.fullName, visibility: validation.visibility, label: validation.project.label }),
       }));
       validation.warnings.forEach((w) => showToast(w));
 
@@ -949,8 +952,8 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
             status: "success",
             stepIndex: 5,
             barWidth: 100,
-            title: "Deploy Berhasil!",
-            subtitle: `Project ${projectName} siap di ${status.url}`,
+            title: t("Deploy Berhasil!"),
+            subtitle: t("Project {projectName} siap di {url}", { projectName, url: status.url }),
             result: {
               name: projectName,
               domain: status.url,
@@ -1015,7 +1018,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       const cfToken = (data.platformToken ?? "").trim();
       const accountId = (data.accountId ?? "").trim();
       if (!cfToken || !accountId) {
-        showToast("Cloudflare Token & Account ID wajib diisi.");
+        showToast(t("Cloudflare Token & Account ID wajib diisi."));
         return;
       }
       beginDeploy();
@@ -1042,7 +1045,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         ...prev,
         stepIndex: 1,
         barWidth: 20,
-        subtitle: `Repo ${validation.fullName} (${validation.visibility}) terverifikasi — terdeteksi: ${validation.project.label}.`,
+        subtitle: t("Repo {fullName} ({visibility}) terverifikasi — terdeteksi: {label}.", { fullName: validation.fullName, visibility: validation.visibility, label: validation.project.label }),
       }));
       validation.warnings.forEach((w) => showToast(w));
 
@@ -1113,8 +1116,8 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
             status: "success",
             stepIndex: 5,
             barWidth: 100,
-            title: "Deploy Berhasil!",
-            subtitle: `Project ${projectName} siap di ${status.url}`,
+            title: t("Deploy Berhasil!"),
+            subtitle: t("Project {projectName} siap di {url}", { projectName, url: status.url }),
             result: {
               name: projectName,
               domain: status.url,
@@ -1147,7 +1150,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       if (intervalRef.current) clearInterval(intervalRef.current);
       const railwayTokenValue = (data.platformToken ?? "").trim();
       if (!railwayTokenValue) {
-        showToast("Railway Token wajib diisi.");
+        showToast(t("Railway Token wajib diisi."));
         return;
       }
       beginDeploy();
@@ -1174,7 +1177,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         ...prev,
         stepIndex: 1,
         barWidth: 20,
-        subtitle: `Repo ${validation.fullName} (${validation.visibility}) terverifikasi — terdeteksi: ${validation.project.label}.`,
+        subtitle: t("Repo {fullName} ({visibility}) terverifikasi — terdeteksi: {label}.", { fullName: validation.fullName, visibility: validation.visibility, label: validation.project.label }),
       }));
       validation.warnings.forEach((w) => showToast(w));
 
@@ -1206,7 +1209,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       const autofix = created.autofix;
       const autofixNames = autofix?.files.map((f) => f.path).join(", ") ?? "";
       if (autofix?.status === "committed" && autofix.files.length > 0) {
-        showToast(`Depup melengkapi repo-mu otomatis: ${autofixNames}`);
+        showToast(t("Depup melengkapi repo-mu otomatis: {autofixNames}", { autofixNames }));
       } else if (autofix && autofix.status !== "none" && autofix.message) {
         showToast(autofix.message);
       }
@@ -1216,7 +1219,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         barWidth: 40,
         ...(autofix?.status === "committed" && autofix.files.length > 0
           ? {
-              subtitle: `Repo ${validation.fullName} dilengkapi otomatis (${autofixNames}) — membangun di Railway…`,
+              subtitle: t("Repo {fullName} dilengkapi otomatis ({autofixNames}) — membangun di Railway…", { fullName: validation.fullName, autofixNames }),
             }
           : {}),
       }));
@@ -1258,8 +1261,8 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
             status: "success",
             stepIndex: 5,
             barWidth: 100,
-            title: "Deploy Berhasil!",
-            subtitle: `Project ${actualName} siap di ${domain}`,
+            title: t("Deploy Berhasil!"),
+            subtitle: t("Project {actualName} siap di {domain}", { actualName, domain }),
             result: {
               name: actualName,
               domain,
@@ -1292,7 +1295,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       e.preventDefault();
       const repoCandidate = (form.githubUrl || form.projectName || "").trim();
       if (!GITHUB_REPO_RE.test(repoCandidate)) {
-        showToast("Format URL GitHub belum benar");
+        showToast(t("Format URL GitHub belum benar"));
         return;
       }
       lastDeployDataRef.current = form;
@@ -1303,7 +1306,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       } else if (form.platform === "railway") {
         void startRailwayDeploy(form);
       } else {
-        showToast("Pilih platform tujuan deploy dulu.");
+        showToast(t("Pilih platform tujuan deploy dulu."));
       }
     },
     [
@@ -1341,7 +1344,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     (name: string) => {
       setForm((prev) => ({ ...prev, projectName: name }));
       setView("deploy");
-      showToast("Project dimuat ke form deploy");
+      showToast(t("Project dimuat ke form deploy"));
     },
     [showToast, setView],
   );
@@ -1375,12 +1378,12 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     const failed = deployState.status === "error";
     resetDeployState();
     if (failed) {
-      showToast("Deploy gagal — periksa pesan error dan coba lagi.");
+      showToast(t("Deploy gagal — periksa pesan error dan coba lagi."));
       return;
     }
     setView("dashboard");
     setForm(emptyForm);
-    showToast("Deploy berhasil — periksa dashboard!");
+    showToast(t("Deploy berhasil — periksa dashboard!"));
   }, [deployState.status, resetDeployState, showToast, setView]);
 
   /* ================================================================
@@ -1577,7 +1580,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     setSyncingProjects(false);
     if (deletedCount > 0) {
       showToast(
-        `${deletedCount} project sudah dihapus di platform aslinya — ditandai "Deleted" di riwayat (riwayatnya tetap kesimpen).`,
+        t("{deletedCount} project sudah dihapus di platform aslinya — ditandai \"Deleted\" di riwayat (riwayatnya tetap tersimpan).", { deletedCount }),
       );
     }
   }, [
@@ -1617,7 +1620,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       if (options.alsoDeleteFromVercel && isVercelProject) {
         if (!vercelToken) {
           showToast(
-            "Isi Vercel Token di Settings dulu untuk hapus project di Vercel.",
+            t("Isi token Vercel di Pengaturan dulu untuk menghapus project di Vercel."),
           );
           return;
         }
@@ -1634,8 +1637,8 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           setDeletingProject(null);
           showToast(
             err instanceof Error
-              ? `Gagal menghapus "${name}" di Vercel: ${err.message}`
-              : `Gagal menghapus "${name}" di Vercel.`,
+              ? t("Gagal menghapus \"{name}\" di Vercel: {message}", { name, message: err.message })
+              : t("Gagal menghapus \"{name}\" di Vercel.", { name }),
           );
           return;
         }
@@ -1645,7 +1648,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       if (options.alsoDeleteFromCloudflare && isCloudflareProject) {
         if (!savedCloudflareToken) {
           showToast(
-            "Konek-kan Cloudflare Token di Settings dulu untuk hapus project di Cloudflare.",
+            t("Hubungkan token Cloudflare di Pengaturan dulu untuk menghapus project di Cloudflare."),
           );
           return;
         }
@@ -1666,8 +1669,8 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           setDeletingProject(null);
           showToast(
             err instanceof Error
-              ? `Gagal menghapus "${name}" di Cloudflare: ${err.message}`
-              : `Gagal menghapus "${name}" di Cloudflare.`,
+              ? t("Gagal menghapus \"{name}\" di Cloudflare: {message}", { name, message: err.message })
+              : t("Gagal menghapus \"{name}\" di Cloudflare.", { name }),
           );
           return;
         }
@@ -1677,7 +1680,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       if (options.alsoDeleteFromRailway && isRailwayProject) {
         if (!savedRailwayToken) {
           showToast(
-            "Konek-kan Railway Token di Settings dulu untuk hapus project di Railway.",
+            t("Hubungkan token Railway di Pengaturan dulu untuk menghapus project di Railway."),
           );
           return;
         }
@@ -1694,8 +1697,8 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           setDeletingProject(null);
           showToast(
             err instanceof Error
-              ? `Gagal menghapus "${name}" di Railway: ${err.message}`
-              : `Gagal menghapus "${name}" di Railway.`,
+              ? t("Gagal menghapus \"{name}\" di Railway: {message}", { name, message: err.message })
+              : t("Gagal menghapus \"{name}\" di Railway.", { name }),
           );
           return;
         }
@@ -1712,7 +1715,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       if (githubRepo) {
         const pat = settingsTokens.githubPat ?? "";
         if (!pat) {
-          githubError = "Isi GitHub PAT di Settings dulu untuk hapus repo di GitHub.";
+          githubError = t("Isi GitHub PAT di Pengaturan dulu untuk menghapus repo di GitHub.");
         } else {
           setDeletingProject(name);
           try {
@@ -1722,13 +1725,13 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
             );
             githubDeleted = true;
           } catch (err) {
-            githubError = err instanceof Error ? err.message : "Gagal menghapus repo di GitHub.";
+            githubError = err instanceof Error ? err.message : t("Gagal menghapus repo di GitHub.");
           }
           setDeletingProject(null);
         }
         // Tidak ada yang berhasil dihapus sama sekali → jangan ubah riwayat.
         if (githubError && !alsoDelete) {
-          showToast(`Gagal menghapus repo ${githubRepo}: ${githubError}`);
+          showToast(t("Gagal menghapus repo {githubRepo}: {githubError}", { githubRepo, githubError }));
           return;
         }
       }
@@ -1765,9 +1768,9 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       if (githubDeleted) removedFrom.push("GitHub");
       const base = alsoDelete || githubDeleted
         ? `Project "${name}" dihapus dari ${removedFrom.join(" & ")}.`
-        : `Project "${name}" dihapus dari Depup (tetap ada di platform aslinya).`;
+        : t("Project \"{name}\" dihapus dari Depup (tetap ada di platform aslinya).", { name });
       showToast(
-        githubError ? `${base} Namun repo ${githubRepo} gagal dihapus: ${githubError}` : base,
+        githubError ? t("{base} Namun repo {githubRepo} gagal dihapus: {githubError}", { base, githubRepo, githubError }) : base,
       );
     },
     [history, setHistory, showToast, vercelToken, savedCloudflareToken, savedRailwayToken, settingsTokens.githubPat],
@@ -1776,7 +1779,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
   const fetchImportableVercelProjects = React.useCallback(async () => {
     if (!vercelToken) {
       throw new Error(
-        "Isi Vercel Token di Settings dulu untuk konek ke Vercel.",
+        tl("Isi token Vercel di Pengaturan dulu untuk terhubung ke Vercel."),
       );
     }
     const remote = await callApi<VercelProjectSummary[]>("/api/vercel/project", {
@@ -1797,7 +1800,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     (project: VercelProjectSummary) => {
       const safeHistory = Array.isArray(history) ? history : [];
       if (safeHistory.some((h) => h.name === project.name)) {
-        showToast(`Project "${project.name}" sudah ada di Depup.`);
+        showToast(t("Project \"{name}\" sudah ada di Depup.", { name: project.name }));
         return;
       }
       const readyState = project.latestDeploymentReadyState;
@@ -1811,7 +1814,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         project.domain ?? `${project.name}.vercel.app`,
         status,
       );
-      showToast(`Project "${project.name}" berhasil diimport dari Vercel.`);
+      showToast(t("Project \"{name}\" berhasil diimport dari Vercel.", { name: project.name }));
     },
     [history, addHistory, showToast],
   );
@@ -1819,7 +1822,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
   const fetchImportableCloudflareProjects = React.useCallback(async () => {
     if (!savedCloudflareToken) {
       throw new Error(
-        "Konek-kan Cloudflare Token di Settings dulu untuk konek ke Cloudflare.",
+        tl("Hubungkan token Cloudflare di Pengaturan dulu untuk terhubung ke Cloudflare."),
       );
     }
     const remote = await callApi<CloudflareProjectSummary[]>(
@@ -1843,7 +1846,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     (project: CloudflareProjectSummary) => {
       const safeHistory = Array.isArray(history) ? history : [];
       if (safeHistory.some((h) => h.name === project.name)) {
-        showToast(`Project "${project.name}" sudah ada di Depup.`);
+        showToast(t("Project \"{name}\" sudah ada di Depup.", { name: project.name }));
         return;
       }
       const readyState = project.latestDeploymentReadyState;
@@ -1858,7 +1861,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         status,
       );
       showToast(
-        `Project "${project.name}" berhasil diimport dari Cloudflare Pages.`,
+        t("Project \"{name}\" berhasil diimport dari Cloudflare Pages.", { name: project.name }),
       );
     },
     [history, addHistory, showToast],
@@ -1867,7 +1870,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
   const fetchImportableRailwayProjects = React.useCallback(async () => {
     if (!savedRailwayToken) {
       throw new Error(
-        "Konek-kan Railway Token di Settings dulu untuk konek ke Railway.",
+        tl("Hubungkan token Railway di Pengaturan dulu untuk terhubung ke Railway."),
       );
     }
     const remote = await callApi<RailwayProjectSummary[]>("/api/railway/project", {
@@ -1888,7 +1891,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
     (project: RailwayProjectSummary) => {
       const safeHistory = Array.isArray(history) ? history : [];
       if (safeHistory.some((h) => h.name === project.name)) {
-        showToast(`Project "${project.name}" sudah ada di Depup.`);
+        showToast(t("Project \"{name}\" sudah ada di Depup.", { name: project.name }));
         return;
       }
       const readyState = project.latestDeploymentReadyState;
@@ -1902,7 +1905,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         project.domain ?? `${project.name}.up.railway.app`,
         status,
       );
-      showToast(`Project "${project.name}" berhasil diimport dari Railway.`);
+      showToast(t("Project \"{name}\" berhasil diimport dari Railway.", { name: project.name }));
     },
     [history, addHistory, showToast],
   );
@@ -1938,7 +1941,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           });
           if (removedCount > 0) {
             showToast(
-              `${removedCount} secret untuk "${project}" sudah dihapus di Cloudflare — dihapus juga di sini.`,
+              t("{removedCount} secret untuk \"{project}\" sudah dihapus di Cloudflare — dihapus juga di sini.", { removedCount, project }),
             );
           }
           return "synced";
@@ -1965,7 +1968,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           });
           if (removedCount > 0) {
             showToast(
-              `${removedCount} secret untuk "${project}" sudah dihapus di Railway — dihapus juga di sini.`,
+              t("{removedCount} secret untuk \"{project}\" sudah dihapus di Railway — dihapus juga di sini.", { removedCount, project }),
             );
           }
           return "synced";
@@ -1995,7 +1998,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         });
         if (removedCount > 0) {
           showToast(
-            `${removedCount} secret untuk "${project}" sudah dihapus di Vercel — dihapus juga di sini.`,
+            t("{removedCount} secret untuk \"{project}\" sudah dihapus di Vercel — dihapus juga di sini.", { removedCount, project }),
           );
         }
         return "synced";
@@ -2033,7 +2036,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       if (platform === "cloudflare") {
         if (!savedCloudflareToken) return;
         showToast(
-          `Redeploy otomatis "${projectName}" dimulai karena secret berubah...`,
+          t("Redeploy otomatis \"{projectName}\" dimulai karena secret berubah...", { projectName }),
         );
         try {
           await callApi<RedeployResult>("/api/cloudflare/redeploy", {
@@ -2046,13 +2049,13 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
             }),
           });
           showToast(
-            `Redeploy "${projectName}" berhasil — perubahan secret sudah live.`,
+            t("Redeploy \"{projectName}\" berhasil — perubahan secret sudah live.", { projectName }),
           );
         } catch (err) {
           showToast(
             err instanceof Error
-              ? `Redeploy otomatis "${projectName}" gagal: ${err.message}`
-              : `Redeploy otomatis "${projectName}" gagal.`,
+              ? t("Redeploy otomatis \"{projectName}\" gagal: {message}", { projectName, message: err.message })
+              : t("Redeploy otomatis \"{projectName}\" gagal.", { projectName }),
           );
         }
         return;
@@ -2060,7 +2063,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       if (platform === "railway") {
         if (!savedRailwayToken) return;
         showToast(
-          `Redeploy otomatis "${projectName}" dimulai karena secret berubah...`,
+          t("Redeploy otomatis \"{projectName}\" dimulai karena secret berubah...", { projectName }),
         );
         try {
           await callApi<RedeployResult>("/api/railway/redeploy", {
@@ -2072,20 +2075,20 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
             }),
           });
           showToast(
-            `Redeploy "${projectName}" berhasil — perubahan secret sudah live.`,
+            t("Redeploy \"{projectName}\" berhasil — perubahan secret sudah live.", { projectName }),
           );
         } catch (err) {
           showToast(
             err instanceof Error
-              ? `Redeploy otomatis "${projectName}" gagal: ${err.message}`
-              : `Redeploy otomatis "${projectName}" gagal.`,
+              ? t("Redeploy otomatis \"{projectName}\" gagal: {message}", { projectName, message: err.message })
+              : t("Redeploy otomatis \"{projectName}\" gagal.", { projectName }),
           );
         }
         return;
       }
       if (!vercelToken) return;
       showToast(
-        `Redeploy otomatis "${projectName}" dimulai karena secret berubah...`,
+        t("Redeploy otomatis \"{projectName}\" dimulai karena secret berubah...", { projectName }),
       );
       try {
         await callApi<RedeployResult>("/api/vercel/redeploy", {
@@ -2094,13 +2097,13 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           body: JSON.stringify({ project: projectName, vercelToken }),
         });
         showToast(
-          `Redeploy "${projectName}" berhasil — perubahan secret sudah live.`,
+          t("Redeploy \"{projectName}\" berhasil — perubahan secret sudah live.", { projectName }),
         );
       } catch (err) {
         showToast(
           err instanceof Error
-            ? `Redeploy otomatis "${projectName}" gagal: ${err.message}`
-            : `Redeploy otomatis "${projectName}" gagal.`,
+            ? t("Redeploy otomatis \"{projectName}\" gagal: {message}", { projectName, message: err.message })
+            : t("Redeploy otomatis \"{projectName}\" gagal.", { projectName }),
         );
       }
     },
@@ -2124,7 +2127,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       );
       if (alreadyExists) {
         if (!isPairCall)
-          showToast(`Domain "${trimmedDomain}" sudah ada untuk project ini.`);
+          showToast(t("Domain \"{trimmedDomain}\" sudah ada untuk project ini.", { trimmedDomain }));
         return;
       }
 
@@ -2166,7 +2169,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
                       ? "Cloudflare"
                       : "Railway"
                 } Token di Settings untuk push otomatis.`
-              : "Domain disimpan lokal (project ini bukan platform Vercel/Cloudflare/Railway).",
+              : t("Domain disimpan lokal (project ini bukan platform Vercel/Cloudflare/Railway)."),
           );
         }
       } else if (canSyncCloudflare && savedCloudflareToken) {
@@ -2202,8 +2205,8 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           if (!isPairCall) {
             showToast(
               result.verified
-                ? "Domain berhasil ditambahkan & terverifikasi di Cloudflare."
-                : "Domain ditambahkan di Cloudflare — arahkan DNS sesuai instruksi untuk verifikasi.",
+                ? t("Domain berhasil ditambahkan & terverifikasi di Cloudflare.")
+                : t("Domain ditambahkan di Cloudflare — arahkan DNS sesuai instruksi untuk verifikasi."),
             );
           }
         } catch (err) {
@@ -2218,7 +2221,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           showToast(
             err instanceof Error
               ? err.message
-              : "Gagal menambahkan domain ke Cloudflare.",
+              : t("Gagal menambahkan domain ke Cloudflare."),
           );
           return;
         }
@@ -2255,8 +2258,8 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           if (!isPairCall) {
             showToast(
               result.verified
-                ? "Domain berhasil ditambahkan & terverifikasi di Railway."
-                : "Domain ditambahkan di Railway — arahkan DNS (CNAME + TXT) sesuai instruksi untuk verifikasi.",
+                ? t("Domain berhasil ditambahkan & terverifikasi di Railway.")
+                : t("Domain ditambahkan di Railway — arahkan DNS (CNAME + TXT) sesuai instruksi untuk verifikasi."),
             );
           }
         } catch (err) {
@@ -2271,7 +2274,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           showToast(
             err instanceof Error
               ? err.message
-              : "Gagal menambahkan domain ke Railway.",
+              : t("Gagal menambahkan domain ke Railway."),
           );
           return;
         }
@@ -2307,8 +2310,8 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           if (!isPairCall) {
             showToast(
               result.verified
-                ? "Domain berhasil ditambahkan & terverifikasi di Vercel."
-                : "Domain ditambahkan di Vercel — arahkan DNS sesuai instruksi untuk verifikasi.",
+                ? t("Domain berhasil ditambahkan & terverifikasi di Vercel.")
+                : t("Domain ditambahkan di Vercel — arahkan DNS sesuai instruksi untuk verifikasi."),
             );
           }
         } catch (err) {
@@ -2323,7 +2326,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           showToast(
             err instanceof Error
               ? err.message
-              : "Gagal menambahkan domain ke Vercel.",
+              : t("Gagal menambahkan domain ke Vercel."),
           );
           return;
         }
@@ -2368,8 +2371,8 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           } catch (err) {
             showToast(
               err instanceof Error
-                ? `Gagal menghapus "${target.domain}" di Vercel: ${err.message}`
-                : `Gagal menghapus "${target.domain}" di Vercel.`,
+                ? t("Gagal menghapus \"{domain}\" di Vercel: {message}", { domain: target.domain, message: err.message })
+                : t("Gagal menghapus \"{domain}\" di Vercel.", { domain: target.domain }),
             );
             continue;
           }
@@ -2393,8 +2396,8 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           } catch (err) {
             showToast(
               err instanceof Error
-                ? `Gagal menghapus "${target.domain}" di Cloudflare: ${err.message}`
-                : `Gagal menghapus "${target.domain}" di Cloudflare.`,
+                ? t("Gagal menghapus \"{domain}\" di Cloudflare: {message}", { domain: target.domain, message: err.message })
+                : t("Gagal menghapus \"{domain}\" di Cloudflare.", { domain: target.domain }),
             );
             continue;
           }
@@ -2412,8 +2415,8 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           } catch (err) {
             showToast(
               err instanceof Error
-                ? `Gagal menghapus "${target.domain}" di Railway: ${err.message}`
-                : `Gagal menghapus "${target.domain}" di Railway.`,
+                ? t("Gagal menghapus \"{domain}\" di Railway: {message}", { domain: target.domain, message: err.message })
+                : t("Gagal menghapus \"{domain}\" di Railway.", { domain: target.domain }),
             );
             continue;
           }
@@ -2431,7 +2434,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
 
       if (removedIds.length > 1) {
         showToast(
-          `${removedIds.length} domain (termasuk pasangan www) berhasil dihapus.`,
+          t("{length} domain (termasuk pasangan www) berhasil dihapus.", { length: removedIds.length }),
         );
       }
     },
@@ -2465,7 +2468,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           });
           if (removedCount > 0) {
             showToast(
-              `${removedCount} domain untuk "${project}" sudah dihapus di Cloudflare — dihapus juga di sini.`,
+              t("{removedCount} domain untuk \"{project}\" sudah dihapus di Cloudflare — dihapus juga di sini.", { removedCount, project }),
             );
           }
           return "synced";
@@ -2492,7 +2495,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           });
           if (removedCount > 0) {
             showToast(
-              `${removedCount} domain untuk "${project}" sudah dihapus di Railway — dihapus juga di sini.`,
+              t("{removedCount} domain untuk \"{project}\" sudah dihapus di Railway — dihapus juga di sini.", { removedCount, project }),
             );
           }
           return "synced";
@@ -2518,7 +2521,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         });
         if (removedCount > 0) {
           showToast(
-            `${removedCount} domain untuk "${project}" sudah dihapus di Vercel — dihapus juga di sini.`,
+            t("{removedCount} domain untuk \"{project}\" sudah dihapus di Vercel — dihapus juga di sini.", { removedCount, project }),
           );
         }
         return "synced";
@@ -2573,7 +2576,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
               (Array.isArray(prev) ? prev : []).filter((d) => d.id !== id),
             );
             showToast(
-              `${item.domain} sudah tidak ada di Cloudflare — dihapus juga di sini.`,
+              t("{domain} sudah tidak ada di Cloudflare — dihapus juga di sini.", { domain: item.domain }),
             );
             return;
           }
@@ -2591,12 +2594,12 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           );
           showToast(
             match.verified
-              ? `${item.domain} sudah aktif — DNS terverifikasi.`
-              : `${item.domain} masih menunggu DNS provider (belum terverifikasi).`,
+              ? t("{domain} sudah aktif — DNS terverifikasi.", { domain: item.domain })
+              : t("{domain} masih menunggu DNS provider (belum terverifikasi).", { domain: item.domain }),
           );
         } catch (err) {
           showToast(
-            err instanceof Error ? err.message : "Gagal memeriksa status domain.",
+            err instanceof Error ? err.message : t("Gagal memeriksa status domain."),
           );
         }
         return;
@@ -2614,7 +2617,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
               (Array.isArray(prev) ? prev : []).filter((d) => d.id !== id),
             );
             showToast(
-              `${item.domain} sudah tidak ada di Railway — dihapus juga di sini.`,
+              t("{domain} sudah tidak ada di Railway — dihapus juga di sini.", { domain: item.domain }),
             );
             return;
           }
@@ -2634,12 +2637,12 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           );
           showToast(
             match.verified
-              ? `${item.domain} sudah aktif — DNS terverifikasi.`
-              : `${item.domain} masih menunggu DNS provider (belum terverifikasi).`,
+              ? t("{domain} sudah aktif — DNS terverifikasi.", { domain: item.domain })
+              : t("{domain} masih menunggu DNS provider (belum terverifikasi).", { domain: item.domain }),
           );
         } catch (err) {
           showToast(
-            err instanceof Error ? err.message : "Gagal memeriksa status domain.",
+            err instanceof Error ? err.message : t("Gagal memeriksa status domain."),
           );
         }
         return;
@@ -2657,7 +2660,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
             (Array.isArray(prev) ? prev : []).filter((d) => d.id !== id),
           );
           showToast(
-            `${item.domain} sudah tidak ada di Vercel — dihapus juga di sini.`,
+            t("{domain} sudah tidak ada di Vercel — dihapus juga di sini.", { domain: item.domain }),
           );
           return;
         }
@@ -2675,12 +2678,12 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         );
         showToast(
           match.verified
-            ? `${item.domain} sudah aktif — DNS terverifikasi.`
-            : `${item.domain} masih menunggu DNS provider (belum terverifikasi).`,
+            ? t("{domain} sudah aktif — DNS terverifikasi.", { domain: item.domain })
+            : t("{domain} masih menunggu DNS provider (belum terverifikasi).", { domain: item.domain }),
         );
       } catch (err) {
         showToast(
-          err instanceof Error ? err.message : "Gagal memeriksa status domain.",
+          err instanceof Error ? err.message : t("Gagal memeriksa status domain."),
         );
       }
     },
@@ -2699,13 +2702,13 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       const trimmedProject = project.trim();
       if (!ENV_KEY_RE.test(trimmedKey)) {
         showToast(
-          "Key harus UPPER_SNAKE_CASE, contoh: DATABASE_URL (huruf besar & underscore).",
+          t("Key harus UPPER_SNAKE_CASE, contoh: DATABASE_URL (huruf besar & underscore)."),
         );
         return;
       }
       if (!trimmedProject) {
         showToast(
-          "Pilih project untuk secret ini — env var selalu disimpan per-project.",
+          t("Pilih project untuk secret ini — env var selalu disimpan per-project."),
         );
         return;
       }
@@ -2719,7 +2722,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
         )
       ) {
         showToast(
-          `Key "${trimmedKey}" sudah ada untuk project "${trimmedProject}" (${environment}).`,
+          t("Key \"{trimmedKey}\" sudah ada untuk project \"{trimmedProject}\" ({environment}).", { trimmedKey, trimmedProject, environment }),
         );
         return;
       }
@@ -2729,7 +2732,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       if (options?.pushToVercel) {
         if (!vercelToken) {
           showToast(
-            "Isi Vercel Token di Settings dulu untuk push env ke Vercel.",
+            t("Isi token Vercel di Pengaturan dulu untuk push env ke Vercel."),
           );
           return;
         }
@@ -2751,14 +2754,14 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           showToast(
             err instanceof Error
               ? err.message
-              : "Gagal push env var ke Vercel.",
+              : t("Gagal push env var ke Vercel."),
           );
           return;
         }
       } else if (options?.pushToCloudflare) {
         if (!savedCloudflareToken) {
           showToast(
-            "Konek-kan Cloudflare Token di Settings dulu untuk push env ke Cloudflare.",
+            t("Hubungkan token Cloudflare di Pengaturan dulu untuk push env ke Cloudflare."),
           );
           return;
         }
@@ -2781,14 +2784,14 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           showToast(
             err instanceof Error
               ? err.message
-              : "Gagal push env var ke Cloudflare.",
+              : t("Gagal push env var ke Cloudflare."),
           );
           return;
         }
       } else if (options?.pushToRailway) {
         if (!savedRailwayToken) {
           showToast(
-            "Konek-kan Railway Token di Settings dulu untuk push env ke Railway.",
+            t("Hubungkan token Railway di Pengaturan dulu untuk push env ke Railway."),
           );
           return;
         }
@@ -2808,7 +2811,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           showToast(
             err instanceof Error
               ? err.message
-              : "Gagal push env var ke Railway.",
+              : t("Gagal push env var ke Railway."),
           );
           return;
         }
@@ -2832,12 +2835,12 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
       });
       showToast(
         syncedToVercel
-          ? `Secret disimpan untuk "${trimmedProject}" & dikirim ke Vercel.`
+          ? t("Secret disimpan untuk \"{trimmedProject}\" & dikirim ke Vercel.", { trimmedProject })
           : syncedToCloudflare
-            ? `Secret disimpan untuk "${trimmedProject}" & dikirim ke Cloudflare.`
+            ? t("Secret disimpan untuk \"{trimmedProject}\" & dikirim ke Cloudflare.", { trimmedProject })
             : syncedToRailway
-              ? `Secret disimpan untuk "${trimmedProject}" & dikirim ke Railway.`
-              : `Secret disimpan untuk project "${trimmedProject}".`,
+              ? t("Secret disimpan untuk \"{trimmedProject}\" & dikirim ke Railway.", { trimmedProject })
+              : t("Secret disimpan untuk project \"{trimmedProject}\".", { trimmedProject }),
       );
       if (syncedToVercel) {
         void triggerAutoRedeploy(trimmedProject, "vercel");
@@ -2874,7 +2877,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           showToast(
             err instanceof Error
               ? err.message
-              : "Gagal menghapus env var di Vercel.",
+              : t("Gagal menghapus env var di Vercel."),
           );
           return;
         }
@@ -2895,7 +2898,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           showToast(
             err instanceof Error
               ? err.message
-              : "Gagal menghapus env var di Cloudflare.",
+              : t("Gagal menghapus env var di Cloudflare."),
           );
           return;
         }
@@ -2914,7 +2917,7 @@ export function DeployProvider({ children }: { children: React.ReactNode }) {
           showToast(
             err instanceof Error
               ? err.message
-              : "Gagal menghapus env var di Railway.",
+              : t("Gagal menghapus env var di Railway."),
           );
           return;
         }

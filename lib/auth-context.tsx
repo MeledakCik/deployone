@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import * as React from "react";
 import type { AuthUser } from "@/types";
 import { describeLoginError, isNativeApp, listenForNativeAuth, startNativeLogin } from "@/lib/native-auth";
@@ -29,6 +31,7 @@ export function useAuth() {
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const t = useT();
   const [user, setUser] = React.useState<AuthUser | null>(null);
   const [ready, setReady] = React.useState(false);
   const [loggingIn, setLoggingIn] = React.useState(false);
@@ -70,7 +73,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!loggingInRef.current) return;
         setLoggingIn(false);
         setLoginError(
-          "Login belum selesai. Kalau kamu sudah memilih akun, tekan tombol \"Buka aplikasi Depup\" di halaman browser, atau coba lagi."
+          t("Login belum selesai. Kalau kamu sudah memilih akun, tekan tombol \"Buka aplikasi Depup\" di halaman browser, atau coba lagi.")
         );
       }
     );

@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import * as React from "react";
 
 interface ToastContextValue {
@@ -15,6 +17,7 @@ export function useToast() {
 }
 
 export function ToastProvider({ children }: { children: React.ReactNode }) {
+  const t = useT();
   const [message, setMessage] = React.useState("");
   const [visible, setVisible] = React.useState(false);
   const timerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -46,7 +49,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         onMouseEnter={pause}
         onMouseLeave={resume}
         onClick={() => setVisible(false)}
-        title="Klik untuk menutup"
+        title={t("Klik untuk menutup")}
         role="status"
         aria-live="polite"
       >

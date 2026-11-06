@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/public";
 import * as React from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -17,19 +19,20 @@ import { PUBLIC_LINKS } from "./links";
  * sehingga halaman dokumen hukum tetap bisa dibuka siapa saja (termasuk reviewer).
  */
 export function PublicNav({ cta }: { cta?: React.ReactNode }) {
+  const t = useT();
   const pathname = usePathname() ?? "";
   const isActive = (href: string) => (href === "/docs" ? pathname === "/docs" : pathname === href || pathname.startsWith(`${href}/`));
 
   return (
     <header className="sticky top-0 z-40 px-3 pb-2 sm:px-6" style={{ paddingTop: "max(12px, env(safe-area-inset-top))" }}>
       <div className="pub-nav mx-auto flex max-w-4xl flex-wrap items-center gap-x-3 gap-y-1 rounded-[28px] p-2 pl-3 md:flex-nowrap md:rounded-full">
-        <Link href="/" className="flex shrink-0 items-center gap-2.5" aria-label="Depup, beranda">
+        <Link href="/" className="flex shrink-0 items-center gap-2.5" aria-label={t("Depup, beranda")}>
           <Image src="/logo.png" alt="" width={32} height={32} priority className="h-8 w-8" />
-          <span className="text-[18px] font-bold tracking-tight text-text">Depup</span>
+          <span className="text-[18px] font-bold tracking-tight text-text">{t("Depup")}</span>
         </Link>
 
         <nav
-          aria-label="Halaman publik"
+          aria-label={t("Halaman publik")}
           className="order-last -mx-1 flex w-full gap-1 overflow-x-auto px-1 pb-1 [scrollbar-width:none] md:order-none md:mx-0 md:ml-2 md:w-auto md:flex-1 md:overflow-visible md:p-0 [&::-webkit-scrollbar]:hidden"
         >
           {PUBLIC_LINKS.map((l) => {
@@ -44,7 +47,7 @@ export function PublicNav({ cta }: { cta?: React.ReactNode }) {
                   active ? "bg-[var(--pill-bg)] text-text" : "text-text-muted hover:bg-[var(--pill-bg)] hover:text-text",
                 )}
               >
-                {l.label}
+                {t(l.label)}
               </Link>
             );
           })}
@@ -53,7 +56,7 @@ export function PublicNav({ cta }: { cta?: React.ReactNode }) {
         <div className="ml-auto shrink-0">
           {cta ?? (
             <Link href="/dashboard" className="btn-primary btn-md">
-              Buka dashboard <ArrowUpRight size={14} />
+              {t("Buka dashboard")}{" "}<ArrowUpRight size={14} />
             </Link>
           )}
         </div>

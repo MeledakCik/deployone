@@ -260,3 +260,40 @@ test("HP: menu lipat berisi semua tautan bagian + tombol utama, dan tidak ada bi
   assert.match(h, /\.mlinks a:not\(\.btn\)\{display:flex;align-items:center;min-height:48px/);
   assert.match(h, /@media\(max-width:480px\)\{\.nav \.wrap>\.btn:not\(\.cartbtn\)\{display:none\}/, "tombol menu atas disembunyikan, tombol di menu tetap");
 });
+
+/* ---------------- keamanan, SEO, sudut, Google Fonts ---------------- */
+const { GOOGLE_FONTS, googleFontsHref } = await import(new URL("lib/ai-site-templates.ts", ROOT).href);
+
+test("keamanan & SEO: CSP, referrer, dan data terstruktur JSON-LD dari isi sendiri", () => {
+  const c = normalizeContent({ ...sampleContent("umkm"), template: "hangat", whatsapp: "6281234567890", address: "Jl. Merdeka 1", hours: "Setiap hari 08.00–21.00" });
+  const h = html(c, "hangat");
+  assert.match(h, /<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline';[^"]*object-src 'none'; base-uri 'none'; form-action 'none'">/);
+  assert.match(h, /<meta name="referrer" content="strict-origin-when-cross-origin">/);
+  assert.ok(!/<script[^>]+src="https?:/.test(h), "tanpa skrip dari luar");
+  const ld = JSON.parse(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/.exec(h)[1]);
+  assert.equal(ld["@type"], "LocalBusiness");
+  assert.equal(ld.name, c.brand);
+  assert.equal(ld.telephone, "+6281234567890");
+  assert.equal(ld.address.streetAddress, "Jl. Merdeka 1");
+  assert.ok(ld.makesOffer.every((o) => !o.price || o.priceCurrency === "IDR"));
+  const art = normalizeContent({ ...sampleContent("artikel"), template: "majalah" });
+  assert.equal(JSON.parse(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/.exec(html(art, "majalah"))[1])["@type"], "Blog");
+  // nama usaha berisi </script> tidak bisa keluar dari blok JSON-LD
+  const evil = normalizeContent({ ...sampleContent("jasa"), template: "bersih", brand: "A</script><script>alert(1)</script>" });
+  const he = html(evil, "bersih");
+  assert.ok(!he.includes("<script>alert(1)"), "nama usaha tidak bisa menyisipkan skrip");
+});
+
+test("sudut & Google Fonts: dipasang dari pilihan, nama di luar daftar diabaikan", () => {
+  const c = neoContent();
+  const h = html(c, c.template, { radius: 30, pill: 999, gfonts: { title: "Fraunces", body: "Inter" } });
+  assert.match(h, /\.lk\.lkn \.card\{border:3px solid var\(--ink\);border-radius:30px/);
+  assert.match(h, /\.lk\.lkn \.btn\{border-radius:999px/);
+  assert.ok(h.includes(`<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:wght@400;500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap">`));
+  assert.match(h, /h1,h2,h3,[^{]*\{font-family:'Fraunces',Georgia/);
+  const bad = html(c, c.template, { gfonts: { title: "Evil');}body{x", body: "Comic Sans" } });
+  assert.ok(!bad.includes("fonts.googleapis.com/css2") && !bad.includes("Evil"), "nama huruf tidak dikenal tidak dipakai");
+  assert.equal(googleFontsHref(["Bebas Neue"]), "https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap");
+  assert.ok(GOOGLE_FONTS.length >= 20);
+  assert.equal(setContentField(c, "ctaLabel", "Pesan sekarang").ctaLabel, "Pesan sekarang");
+});

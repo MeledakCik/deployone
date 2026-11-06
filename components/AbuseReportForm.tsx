@@ -1,10 +1,13 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/public";
 import * as React from "react";
 
 type State = { kind: "idle" } | { kind: "busy" } | { kind: "done" } | { kind: "error"; message: string };
 
 export function AbuseReportForm({ initialTarget }: { initialTarget: string }) {
+  const t = useT();
   const [target, setTarget] = React.useState(initialTarget);
   const [reason, setReason] = React.useState("");
   const [contact, setContact] = React.useState("");
@@ -24,19 +27,19 @@ export function AbuseReportForm({ initialTarget }: { initialTarget: string }) {
       if (res.ok && body?.ok) {
         setState({ kind: "done" });
       } else {
-        setState({ kind: "error", message: body?.error ?? `Gagal mengirim laporan (${res.status}).` });
+        setState({ kind: "error", message: body?.error ?? t("Gagal mengirim laporan ({status}).", { status: res.status }) });
       }
     } catch {
-      setState({ kind: "error", message: "Tidak bisa terhubung ke server. Coba lagi." });
+      setState({ kind: "error", message: t("Tidak bisa terhubung ke server. Coba lagi.") });
     }
   }
 
   if (state.kind === "done") {
     return (
       <div className="surface-solid w-full max-w-md p-7 text-center">
-        <h2 className="text-[20px] font-bold tracking-[-0.025em]">Terima kasih</h2>
+        <h2 className="text-[20px] font-bold tracking-[-0.025em]">{t("Terima kasih")}</h2>
         <p className="mt-2 text-[14px] text-text-muted">
-          Laporanmu sudah diteruskan ke admin Depup dan akan ditinjau.
+          {t("Laporanmu sudah diteruskan ke admin Depup dan akan ditinjau.")}
         </p>
       </div>
     );
@@ -45,7 +48,7 @@ export function AbuseReportForm({ initialTarget }: { initialTarget: string }) {
   return (
     <form onSubmit={submit} className="surface-solid flex w-full max-w-md flex-col gap-4 p-6 text-left sm:p-7">
       <label className="flex flex-col gap-1.5 text-[13px] text-text-muted">
-        <span className="font-medium text-text">Alamat link yang dilaporkan</span>
+        <span className="font-medium text-text">{t("Alamat link yang dilaporkan")}</span>
         <input
           className="input-solid px-3.5 py-2.5 text-[14px]"
           value={target}
@@ -57,7 +60,7 @@ export function AbuseReportForm({ initialTarget }: { initialTarget: string }) {
       </label>
       <label className="flex flex-col gap-1.5 text-[13px] text-text-muted">
         <span>
-          <span className="font-medium text-text">Kenapa dilaporkan?</span> Phishing, penipuan, malware, dan sebagainya.
+          <span className="font-medium text-text">{t("Kenapa dilaporkan?")}</span>{" "}{t("Phishing, penipuan, malware, dan sebagainya.")}
         </span>
         <textarea
           className="input-solid min-h-[96px] px-3.5 py-2.5 text-[14px]"
@@ -69,7 +72,7 @@ export function AbuseReportForm({ initialTarget }: { initialTarget: string }) {
       </label>
       <label className="flex flex-col gap-1.5 text-[13px] text-text-muted">
         <span>
-          <span className="font-medium text-text">Kontak kamu</span> Opsional, kalau perlu ditanya lagi.
+          <span className="font-medium text-text">{t("Kontak kamu")}</span>{" "}{t("Opsional, kalau perlu ditanya lagi.")}
         </span>
         <input
           className="input-solid px-3.5 py-2.5 text-[14px]"
@@ -88,7 +91,7 @@ export function AbuseReportForm({ initialTarget }: { initialTarget: string }) {
         disabled={state.kind === "busy"}
         className="btn-primary btn-md mt-1 w-full disabled:opacity-60"
       >
-        {state.kind === "busy" ? "Mengirim…" : "Kirim laporan"}
+        {state.kind === "busy" ? t("Mengirim…") : t("Kirim laporan")}
       </button>
     </form>
   );

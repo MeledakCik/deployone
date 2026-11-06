@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import * as React from "react";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -373,12 +375,13 @@ function Section({
 
 /** Blok kode + tombol salin. Kode di-scroll ke samping, tidak melebarkan halaman. */
 export function CodeBlock({ title, code, onCopy }: { title: string; code: string; onCopy: () => void }) {
+  const tr = useT();
   return (
     <div>
       <div className="mb-1.5 flex items-center justify-between gap-2">
         <span className="min-w-0 truncate text-[12px] font-medium text-text-muted">{title}</span>
         <button type="button" onClick={onCopy} className="pill inline-flex shrink-0 items-center gap-1 px-2.5 py-1 text-[12px]">
-          <Copy size={12} /> Salin
+          <Copy size={12} />{" "}{tr("Salin")}
         </button>
       </div>
       <pre className="max-w-full overflow-x-auto rounded-[14px] border border-[var(--line)] bg-[var(--pill-bg)] p-3 font-mono text-[12px] leading-relaxed">
@@ -401,6 +404,7 @@ export function ClaudeConnectCard({
   /** Simpan perubahan izin platform langsung ke akun. */
   onTokensChange: (next: SettingsTokens) => void;
 }) {
+  const tr = useT();
   const allowed = parsePlatforms(tokens.mcpDeployPlatforms);
   function togglePlatform(p: Platform, on: boolean) {
     const next = DEPLOY_TARGETS.map((t) => t.platform).filter((x) => (x === p ? on : allowed.includes(x)));
@@ -463,9 +467,9 @@ export function ClaudeConnectCard({
     if (!val) return;
     try {
       await navigator.clipboard.writeText(val);
-      showToast(`${label} disalin`);
+      showToast(tr("{label} disalin", { label }));
     } catch {
-      showToast(`Gagal menyalin ${label} — salin manual`);
+      showToast(tr("Gagal menyalin {label} — salin manual", { label }));
     }
   }
 
@@ -502,11 +506,11 @@ export function ClaudeConnectCard({
         promptCount: Array.isArray(promptsRes?.prompts) ? promptsRes.prompts.length : 3,
         version: initRes?.serverInfo?.version ?? "1.2.0",
       });
-      showToast("Konektor MCP berjalan normal!");
+      showToast(tr("Konektor MCP berjalan normal!"));
     } catch (e) {
       setTestState({
         status: "error",
-        message: (e as Error).message || "Gagal menghubungi endpoint MCP.",
+        message: (e as Error).message || tr("Gagal menghubungi endpoint MCP."),
       });
     }
   }
@@ -522,7 +526,7 @@ export function ClaudeConnectCard({
       if (trimmed) uris.push(trimmed);
     }
     if (uris.length === 0) {
-      showToast("Pilih minimal satu Redirect URI (mis. Claude, Gemini, Cursor, OpenCode, Codex, atau Localhost; DeepSeek memakai token, bukan OAuth).");
+      showToast(tr("Pilih minimal satu Redirect URI (mis. Claude, Gemini, Cursor, OpenCode, Codex, atau Localhost; DeepSeek memakai token, bukan OAuth)."));
       return;
     }
 
@@ -545,7 +549,7 @@ export function ClaudeConnectCard({
         oauthEndpoints: res.oauthEndpoints,
       });
       setShowSecret(true);
-      showToast(`OAuth "${res.client.name}" berhasil dibuat!`);
+      showToast(tr("OAuth \"{name}\" berhasil dibuat!", { name: res.client.name }));
     } catch (err) {
       showToast((err as Error).message);
     } finally {
@@ -555,13 +559,13 @@ export function ClaudeConnectCard({
 
   async function handleDeleteOAuth(client: CustomOAuthClientItem) {
     const { ok } = await confirm({
-      title: `Hapus OAuth "${client.name}"?`,
-      description: "Client ID, Client Secret, dan semua token akses dari OAuth ini akan langsung dicabut.",
+      title: tr("Hapus OAuth \"{name}\"?", { name: client.name }),
+      description: tr("Client ID, Client Secret, dan semua token akses dari OAuth ini akan langsung dicabut."),
       impact: [
-        "Konektor di Claude, OpenCode, Cursor, Codex, Gemini, atau DeepSeek yang memakai Client ID ini akan berhenti bekerja.",
-        "Kamu bisa membuat OAuth baru kapan saja.",
+        tr("Konektor di Claude, OpenCode, Cursor, Codex, Gemini, atau DeepSeek yang memakai Client ID ini akan berhenti bekerja."),
+        tr("Kamu bisa membuat OAuth baru kapan saja."),
       ],
-      confirmLabel: "Ya, hapus OAuth",
+      confirmLabel: tr("Ya, hapus OAuth"),
     });
     if (!ok) return;
     setBusyClientId(client.id);
@@ -572,7 +576,7 @@ export function ClaudeConnectCard({
       });
       setCustomClients(res.customClients);
       if (newlyCreated?.client.id === client.id) setNewlyCreated(null);
-      showToast(`OAuth "${client.name}" dihapus`);
+      showToast(tr("OAuth \"{name}\" dihapus", { name: client.name }));
     } catch (err) {
       showToast((err as Error).message);
     } finally {
@@ -588,13 +592,13 @@ export function ClaudeConnectCard({
         json: {
           action: "generate_oauth_token",
           ttlDays,
-          clientLabel: labelOverride ?? AI_CLIENTS.find((c) => c.id === selectedClient)?.label ?? "MCP CLI",
+          clientLabel: labelOverride ?? AI_CLIENTS.find((c) => c.id === selectedClient)?.label ?? tr("MCP CLI"),
           ...(client ? { id: client.id } : {}),
         },
       });
       setGeneratedToken(tok);
       setShowBearer(false);
-      showToast(`Token ${tok.clientName} (${ttlDays} hari) berhasil dibuat & dimasukkan ke konfigurasi!`);
+      showToast(tr("Token {clientName} ({ttlDays} hari) berhasil dibuat & dimasukkan ke konfigurasi!", { clientName: tok.clientName, ttlDays }));
     } catch (err) {
       showToast((err as Error).message);
     } finally {
@@ -604,20 +608,20 @@ export function ClaudeConnectCard({
 
   async function revoke() {
     const { ok } = await confirm({
-      title: "Cabut semua akses MCP (Claude, OpenCode, Cursor, Codex, Gemini, DeepSeek)?",
-      description: "Semua koneksi MCP dan token OAuth aktif ke akun Depup-mu akan diputus seketika.",
+      title: tr("Cabut semua akses MCP (Claude, OpenCode, Cursor, Codex, Gemini, DeepSeek)?"),
+      description: tr("Semua koneksi MCP dan token OAuth aktif ke akun Depup-mu akan diputus seketika."),
       impact: [
-        "Claude, OpenCode, Cursor, Codex, Gemini, dan DeepSeek tidak bisa lagi menayangkan website atau deploy atas namamu sampai kamu menghubungkannya ulang.",
-        "Link dan deployment yang sudah jalan tetap aktif.",
+        tr("Claude, OpenCode, Cursor, Codex, Gemini, dan DeepSeek tidak bisa lagi menayangkan website atau deploy atas namamu sampai kamu menghubungkannya ulang."),
+        tr("Link dan deployment yang sudah jalan tetap aktif."),
       ],
-      confirmLabel: "Ya, cabut semua akses",
+      confirmLabel: tr("Ya, cabut semua akses"),
     });
     if (!ok) return;
     setBusy(true);
     try {
       await api("/api/mcp/connect", { method: "POST", json: { action: "revoke" } });
       setGeneratedToken(null);
-      showToast("Semua akses token MCP dicabut");
+      showToast(tr("Semua akses token MCP dicabut"));
     } catch (e) {
       showToast((e as Error).message);
     } finally {
@@ -658,12 +662,12 @@ export function ClaudeConnectCard({
       <SectionHead
         id="claude-connect-title"
         icon={Sparkles}
-        title="Konektor AI (MCP)"
+        title={tr("Konektor AI (MCP)")}
         desc={
           <>
-            Hubungkan Claude, Gemini, Cursor, OpenCode, Codex, atau DeepSeek ke Depup.{" "}
+            {tr("Hubungkan Claude, Gemini, Cursor, OpenCode, Codex, atau DeepSeek ke Depup.")}{" "}
             <DocsLink className="inline-flex items-center gap-1 font-medium text-lav-text underline-offset-4 hover:underline">
-              <BookOpen size={12} /> Lihat panduan lengkap
+              <BookOpen size={12} />{" "}{tr("Lihat panduan lengkap")}
             </DocsLink>
           </>
         }
@@ -675,7 +679,7 @@ export function ClaudeConnectCard({
             className="pill inline-flex shrink-0 items-center justify-center gap-1.5 px-3.5 py-2 text-[12px] font-medium disabled:opacity-50"
           >
             {testState.status === "testing" ? <Loader2 size={13} className="animate-spin" /> : <Zap size={13} />}
-            Tes konektor
+            {tr("Tes konektor")}
           </button>
         }
       />
@@ -684,13 +688,13 @@ export function ClaudeConnectCard({
         <div className="mt-3 flex items-start gap-2 rounded-[14px] bg-[var(--ok-bg)] px-3.5 py-2.5 text-[12px] text-ok-fg">
           <ShieldCheck size={14} className="mt-0.5 shrink-0" />
           <span>
-            Server MCP v{testState.version} aktif · {testState.toolCount} tool, {testState.promptCount} prompt · {testState.latencyMs} ms
+            {tr("Server MCP v{version} aktif · {toolCount} tool, {promptCount} prompt · {latencyMs} ms", { version: testState.version, toolCount: testState.toolCount, promptCount: testState.promptCount, latencyMs: testState.latencyMs })}
           </span>
         </div>
       )}
       {testState.status === "error" && (
         <div className="mt-3 rounded-[14px] bg-[var(--bad-bg)] px-3.5 py-2.5 text-[12px] text-bad-fg">
-          Gagal menguji endpoint MCP: {testState.message}
+          {tr("Gagal menguji endpoint MCP: {message}", { message: testState.message })}
         </div>
       )}
 
@@ -699,27 +703,27 @@ export function ClaudeConnectCard({
         <input
           readOnly
           value={mcpUrl ?? "Memuat…"}
-          aria-label="URL konektor MCP Depup"
+          aria-label={tr("URL konektor MCP Depup")}
           onFocus={(e) => e.currentTarget.select()}
           className="min-w-0 flex-1 rounded-[14px] border border-[var(--line)] bg-[var(--pill-bg)] px-3.5 py-2.5 font-mono text-[13px] outline-none"
         />
         <button
           type="button"
-          onClick={() => void copyText(mcpUrl, "URL konektor MCP")}
+          onClick={() => void copyText(mcpUrl, tr("URL konektor MCP"))}
           disabled={!mcpUrl}
           className="pill btn-md inline-flex items-center justify-center gap-1.5 font-medium disabled:opacity-50"
         >
-          <Copy size={13} /> Salin URL
+          <Copy size={13} />{" "}{tr("Salin URL")}
         </button>
       </div>
       <p className="mt-2 text-[12px] text-text-faint">
-        {siteQuota ? `Link Instan ${siteQuota.active}/${siteQuota.max} · ` : ""}Platform siap {readyPlatformsCount}/3 · OAuth sendiri {customClients.length}
+        {siteQuota ? tr("Link Instan {active}/{max} · ", { active: siteQuota.active, max: siteQuota.max }) : ""}{tr("Platform siap {readyPlatformsCount}/3 · OAuth sendiri {length}", { readyPlatformsCount, length: customClients.length })}
       </p>
 
       <div className="mt-4 space-y-3">
         {/* ── 1. Pasang di aplikasi AI ── */}
         <Section
-          title="Pasang di aplikasi AI"
+          title={tr("Pasang di aplikasi AI")}
           summary={`${currentClientMeta.label} · ${currentClientMeta.hint}`}
           open={openSection === "install"}
           onToggle={() => toggleSection("install")}
@@ -728,7 +732,7 @@ export function ClaudeConnectCard({
           <div
             className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1 [scrollbar-width:none] sm:grid sm:grid-cols-3 sm:overflow-visible lg:grid-cols-6 [&::-webkit-scrollbar]:hidden"
             role="tablist"
-            aria-label="Pilih aplikasi AI"
+            aria-label={tr("Pilih aplikasi AI")}
           >
             {AI_CLIENTS.map((c) => {
               const active = selectedClient === c.id;
@@ -749,7 +753,7 @@ export function ClaudeConnectCard({
                       : "border-[var(--line)] bg-[var(--pill-bg)] text-text-muted hover:border-[var(--line-strong)] hover:text-text",
                   )}
                 >
-                  {c.label}
+                  {tr(c.label)}
                 </button>
               );
             })}
@@ -757,35 +761,30 @@ export function ClaudeConnectCard({
 
           {(selectedClient === "claude" || selectedClient === "gemini") && (
             <p className="rounded-[14px] bg-[var(--pill-bg)] px-3.5 py-2.5 text-[12px] leading-relaxed text-text-muted">
-              {currentClientMeta.label} Web memakai OAuth otomatis: cukup tempel URL MCP di atas, tanpa token.
-              Token di bawah hanya untuk CLI atau file konfigurasi.{" "}
-              <DocsLink className="font-medium text-lav-text underline-offset-4 hover:underline">Langkah lengkap</DocsLink>
+              {tr("{label} Web memakai OAuth otomatis: cukup tempel URL MCP di atas, tanpa token. Token di bawah hanya untuk CLI atau file konfigurasi.", { label: tr(currentClientMeta.label) })}{" "}
+              <DocsLink className="font-medium text-lav-text underline-offset-4 hover:underline">{tr("Langkah lengkap")}</DocsLink>
             </p>
           )}
 
           {selectedClient === "deepseek" && (
             <p className="rounded-[14px] bg-[var(--pill-bg)] px-3.5 py-2.5 text-[12px] leading-relaxed text-text-muted">
-              DeepSeek Harness memakai Bearer Token (bukan login OAuth otomatis). Urutannya: buat token di bawah,
-              jalankan langkah terminal di &quot;Cara lain&quot; (ganti &lt;VERSI_DSH&gt; dengan hasil <code>dsh --version</code>),
-              tempel YAML ini ke <code>cordis.patch.yml</code> (kalau sudah ada <code>- insert:</code>, tambahkan blok
-              <code> - id: mcp-depup</code> di bawahnya), lalu restart <code>dsh web</code>. Token disimpan di variabel
-              lingkungan <code>DEPUP_MCP_AUTH</code>, bukan di file YAML. DeepSeek Harness masih developer preview, jadi
-              formatnya bisa berubah.{" "}
-              <DocsLink className="font-medium text-lav-text underline-offset-4 hover:underline">Langkah lengkap</DocsLink>
+              {tr("DeepSeek Harness memakai Bearer Token (bukan login OAuth otomatis). Urutannya: buat token di bawah, jalankan langkah terminal di \"Cara lain\" (ganti <VERSI_DSH> dengan hasil")}{" "}<code>{tr("dsh --version")}</code>{tr("), tempel YAML ini ke")}{" "}<code>cordis.patch.yml</code>{" "}{tr("(kalau sudah ada")}{" "}<code>{tr("- insert:")}</code>{tr(", tambahkan blok")}
+              <code>{" "}{tr("- id: mcp-depup")}</code>{" "}{tr("di bawahnya), lalu restart")}{" "}<code>{tr("dsh web")}</code>{tr(". Token disimpan di variabel lingkungan")}{" "}<code>DEPUP_MCP_AUTH</code>{tr(", bukan di file YAML. DeepSeek Harness masih developer preview, jadi formatnya bisa berubah.")}{" "}
+              <DocsLink className="font-medium text-lav-text underline-offset-4 hover:underline">{tr("Langkah lengkap")}</DocsLink>
             </p>
           )}
 
           {/* Token */}
           <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
             <select
-              aria-label="Durasi Token MCP"
+              aria-label={tr("Durasi Token MCP")}
               value={ttlDays}
               onChange={(e) => setTtlDays(Number(e.target.value))}
               className="input-solid h-10 rounded-[14px] px-2.5 text-[12px] sm:w-auto"
             >
               {TOKEN_TTL_OPTIONS.map((o) => (
                 <option key={o.days} value={o.days}>
-                  Aktif {o.label}
+                  {tr("Aktif {label}", { label: tr(o.label) })}
                 </option>
               ))}
             </select>
@@ -796,7 +795,7 @@ export function ClaudeConnectCard({
               className="btn-primary btn-md inline-flex items-center justify-center gap-1.5 disabled:opacity-50"
             >
               {busyClientId === "personal" ? <Loader2 size={13} className="animate-spin" /> : <KeyRound size={13} />}
-              {generatedToken ? "Buat Ulang Token" : "Buat Token"}
+              {generatedToken ? tr("Buat Ulang Token") : tr("Buat Token")}
             </button>
             {generatedToken && (
               <button
@@ -805,7 +804,7 @@ export function ClaudeConnectCard({
                 className="pill btn-md inline-flex items-center justify-center gap-1"
               >
                 {showBearer ? <EyeOff size={12} /> : <Eye size={12} />}
-                {showBearer ? "Sembunyikan" : "Tampilkan"}
+                {showBearer ? tr("Sembunyikan") : tr("Tampilkan")}
               </button>
             )}
           </div>
@@ -815,7 +814,7 @@ export function ClaudeConnectCard({
               href={cursorDeepLink}
               className="pill btn-md inline-flex w-full items-center justify-center gap-1.5 font-medium text-lav-text hover:brightness-110 sm:w-auto"
             >
-              <ExternalLink size={13} /> Pasang 1-Klik ke Cursor
+              <ExternalLink size={13} />{" "}{tr("Pasang 1-Klik ke Cursor")}
             </a>
           )}
 
@@ -833,22 +832,22 @@ export function ClaudeConnectCard({
                 className="inline-flex items-center gap-1 text-[12px] font-medium text-lav-text"
               >
                 <ChevronDown size={13} className={cn("transition-transform", showMoreSnippets && "rotate-180")} />
-                {showMoreSnippets ? "Sembunyikan cara lain" : "Cara lain (perintah terminal / OAuth)"}
+                {showMoreSnippets ? tr("Sembunyikan cara lain") : tr("Cara lain (perintah terminal / OAuth)")}
               </button>
               {showMoreSnippets && (
                 <div className="space-y-4">
                   {displaySnippets.cliCode && (
                     <CodeBlock
-                      title={displaySnippets.cliTitle ?? "Perintah terminal"}
+                      title={displaySnippets.cliTitle ?? tr("Perintah terminal")}
                       code={displaySnippets.cliCode}
                       onCopy={() => void copyText(copySnippets.cliCode, `Perintah ${currentClientMeta.label}`)}
                     />
                   )}
                   {displaySnippets.extraCode && (
                     <CodeBlock
-                      title={displaySnippets.extraTitle ?? "Konfigurasi OAuth"}
+                      title={displaySnippets.extraTitle ?? tr("Konfigurasi OAuth")}
                       code={displaySnippets.extraCode}
-                      onCopy={() => void copyText(copySnippets.extraCode, `Konfigurasi OAuth ${currentClientMeta.label}`)}
+                      onCopy={() => void copyText(copySnippets.extraCode, tr("Konfigurasi OAuth {label}", { label: tr(currentClientMeta.label) }))}
                     />
                   )}
                 </div>
@@ -859,8 +858,8 @@ export function ClaudeConnectCard({
 
         {/* ── 2. OAuth sendiri ── */}
         <Section
-          title="Buat OAuth sendiri"
-          summary={customClients.length ? `${customClients.length} OAuth client dibuat` : "Client ID & Secret untuk aplikasi AI kustom"}
+          title={tr("Buat OAuth sendiri")}
+          summary={customClients.length ? tr("{length} OAuth client dibuat", { length: customClients.length }) : tr("Client ID & Secret untuk aplikasi AI kustom")}
           open={openSection === "oauth"}
           onToggle={() => toggleSection("oauth")}
         >
@@ -868,7 +867,7 @@ export function ClaudeConnectCard({
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
                 <label htmlFor="custom-oauth-name" className="mb-1 block text-[12px] font-medium">
-                  Nama OAuth Client
+                  {tr("Nama OAuth Client")}
                 </label>
                 <input
                   id="custom-oauth-name"
@@ -880,11 +879,11 @@ export function ClaudeConnectCard({
                 />
               </div>
               <div>
-                <span className="mb-1 block text-[12px] font-medium">Metode</span>
+                <span className="mb-1 block text-[12px] font-medium">{tr("Metode")}</span>
                 <div className="grid grid-cols-2 gap-2">
                   {[
                     { on: true, title: "ID + Secret" },
-                    { on: false, title: "Public (PKCE)" },
+                    { on: false, title: tr("Public (PKCE)") },
                   ].map((m) => (
                     <button
                       key={m.title}
@@ -903,7 +902,7 @@ export function ClaudeConnectCard({
             </div>
 
             <div>
-              <span className="mb-1.5 block text-[12px] font-medium">Redirect URI yang diizinkan</span>
+              <span className="mb-1.5 block text-[12px] font-medium">{tr("Redirect URI yang diizinkan")}</span>
               <div className="flex flex-wrap gap-2">
                 {OAUTH_URI_PRESETS.map((preset) => {
                   const on = !!selectedPresets[preset.id];
@@ -924,7 +923,7 @@ export function ClaudeConnectCard({
                         className="sr-only"
                       />
                       {on && <Check size={12} />}
-                      {preset.label}
+                      {tr(preset.label)}
                     </label>
                   );
                 })}
@@ -933,7 +932,7 @@ export function ClaudeConnectCard({
                 type="text"
                 value={extraRedirectUris}
                 onChange={(e) => setExtraRedirectUris(e.target.value)}
-                placeholder="Redirect URI tambahan (opsional, pisahkan koma)"
+                placeholder={tr("Redirect URI tambahan (opsional, pisahkan koma)")}
                 className="input-solid mono mt-2 h-10 w-full px-3 text-[12px]"
               />
             </div>
@@ -945,7 +944,7 @@ export function ClaudeConnectCard({
                 className="btn-primary btn-md inline-flex items-center justify-center gap-1.5 disabled:opacity-50"
               >
                 {creatingOauth ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
-                Buat OAuth
+                {tr("Buat OAuth")}
               </button>
               <button
                 type="button"
@@ -954,7 +953,7 @@ export function ClaudeConnectCard({
                 className="pill btn-md inline-flex items-center justify-center gap-1.5 font-medium hover:brightness-95 disabled:opacity-50"
               >
                 {busyClientId === "personal" ? <Loader2 size={13} className="animate-spin" /> : <RefreshCw size={13} />}
-                Bearer Token ({ttlDays} hari)
+                {tr("Bearer Token ({ttlDays} hari)", { ttlDays })}
               </button>
             </div>
           </form>
@@ -962,11 +961,11 @@ export function ClaudeConnectCard({
           {newlyCreated && (
             <div className="space-y-3 rounded-[14px] border border-violet-500/40 bg-violet-500/10 p-3.5 text-[12px]">
               <p className="flex items-center gap-1.5 text-[13px] font-semibold">
-                <Check size={15} /> &ldquo;{newlyCreated.client.name}&rdquo; siap dipakai
+                <Check size={15} />{" "}{tr("“{name}” siap dipakai", { name: newlyCreated.client.name })}
               </p>
-              <p className="text-[12px] text-text-muted">Simpan Client Secret sekarang, hanya ditampilkan sekali.</p>
+              <p className="text-[12px] text-text-muted">{tr("Simpan Client Secret sekarang, hanya ditampilkan sekali.")}</p>
               <div>
-                <span className="mb-1 block font-medium text-text-muted">Client ID</span>
+                <span className="mb-1 block font-medium text-text-muted">{tr("Client ID")}</span>
                 <div className="flex gap-2">
                   <input
                     readOnly
@@ -976,16 +975,16 @@ export function ClaudeConnectCard({
                   />
                   <button
                     type="button"
-                    onClick={() => void copyText(newlyCreated.client.clientId, "OAuth Client ID")}
+                    onClick={() => void copyText(newlyCreated.client.clientId, tr("OAuth Client ID"))}
                     className="pill inline-flex shrink-0 items-center gap-1 px-3 py-1.5 text-[12px]"
                   >
-                    <Copy size={12} /> Salin
+                    <Copy size={12} />{" "}{tr("Salin")}
                   </button>
                 </div>
               </div>
               {newlyCreated.clientSecret && (
                 <div>
-                  <span className="mb-1 block font-medium text-text-muted">Client Secret</span>
+                  <span className="mb-1 block font-medium text-text-muted">{tr("Client Secret")}</span>
                   <div className="flex gap-2">
                     <input
                       readOnly
@@ -998,16 +997,16 @@ export function ClaudeConnectCard({
                       type="button"
                       onClick={() => setShowSecret((v) => !v)}
                       className="pill inline-flex shrink-0 items-center px-2.5 py-1.5"
-                      aria-label={showSecret ? "Sembunyikan Secret" : "Tampilkan Secret"}
+                      aria-label={showSecret ? tr("Sembunyikan Secret") : tr("Tampilkan Secret")}
                     >
                       {showSecret ? <EyeOff size={12} /> : <Eye size={12} />}
                     </button>
                     <button
                       type="button"
-                      onClick={() => void copyText(newlyCreated.clientSecret, "OAuth Client Secret")}
+                      onClick={() => void copyText(newlyCreated.clientSecret, tr("OAuth Client Secret"))}
                       className="pill inline-flex shrink-0 items-center gap-1 px-3 py-1.5 text-[12px]"
                     >
-                      <Copy size={12} /> Salin
+                      <Copy size={12} />{" "}{tr("Salin")}
                     </button>
                   </div>
                 </div>
@@ -1018,7 +1017,7 @@ export function ClaudeConnectCard({
           {generatedToken && (
             <div className="space-y-2 rounded-[14px] border border-[var(--line-strong)] bg-[var(--pill-bg)] p-3.5 text-[12px]">
               <span className="block font-semibold">
-                Bearer Token ({generatedToken.clientName}) · aktif {Math.round(generatedToken.expiresIn / 86400) || 1} hari
+                {tr("Bearer Token ({clientName}) · aktif", { clientName: generatedToken.clientName })}{" "}{Math.round(generatedToken.expiresIn / 86400) || 1}{" "}{tr("hari")}
               </span>
               <div className="flex gap-2">
                 <input
@@ -1032,16 +1031,16 @@ export function ClaudeConnectCard({
                   type="button"
                   onClick={() => setShowBearer((v) => !v)}
                   className="pill inline-flex shrink-0 items-center px-2.5 py-1.5"
-                  aria-label={showBearer ? "Sembunyikan token" : "Tampilkan token"}
+                  aria-label={showBearer ? tr("Sembunyikan token") : tr("Tampilkan token")}
                 >
                   {showBearer ? <EyeOff size={12} /> : <Eye size={12} />}
                 </button>
                 <button
                   type="button"
-                  onClick={() => void copyText(generatedToken.accessToken, "Access Token")}
+                  onClick={() => void copyText(generatedToken.accessToken, tr("Access Token"))}
                   className="pill inline-flex shrink-0 items-center gap-1 px-3 py-1.5 text-[12px]"
                 >
-                  <Copy size={12} /> Salin
+                  <Copy size={12} />{" "}{tr("Salin")}
                 </button>
               </div>
             </div>
@@ -1050,8 +1049,8 @@ export function ClaudeConnectCard({
           {endpoints && (
             <div className="grid gap-2 sm:grid-cols-2">
               {[
-                { label: "Authorization URL", value: endpoints.authorizationEndpoint },
-                { label: "Token URL", value: endpoints.tokenEndpoint },
+                { label: tr("Authorization URL"), value: endpoints.authorizationEndpoint },
+                { label: tr("Token URL"), value: endpoints.tokenEndpoint },
               ].map((e) => (
                 <div key={e.label} className="flex items-center justify-between gap-2 rounded-[14px] bg-[var(--pill-bg)] px-3 py-2">
                   <div className="min-w-0">
@@ -1062,7 +1061,7 @@ export function ClaudeConnectCard({
                     type="button"
                     onClick={() => void copyText(e.value, e.label)}
                     className="shrink-0 p-1 text-text-muted hover:text-text"
-                    aria-label={`Salin ${e.label}`}
+                    aria-label={tr("Salin {label}", { label: e.label })}
                   >
                     <Copy size={14} />
                   </button>
@@ -1072,9 +1071,9 @@ export function ClaudeConnectCard({
           )}
 
           <div>
-            <h4 className="text-[13px] font-semibold">OAuth client buatanmu ({customClients.length})</h4>
+            <h4 className="text-[13px] font-semibold">{tr("OAuth client buatanmu ({length})", { length: customClients.length })}</h4>
             {customClients.length === 0 ? (
-              <p className="mt-1.5 text-[12px] text-text-muted">Belum ada. Pakai form di atas untuk membuatnya.</p>
+              <p className="mt-1.5 text-[12px] text-text-muted">{tr("Belum ada. Pakai form di atas untuk membuatnya.")}</p>
             ) : (
               <ul className="mt-2.5 space-y-2.5">
                 {customClients.map((c) => (
@@ -1083,12 +1082,12 @@ export function ClaudeConnectCard({
                       <div className="flex flex-wrap items-center gap-2">
                         <strong className="text-[13px]">{c.name}</strong>
                         <span className="rounded-md bg-[var(--surface-solid-2)] px-2 py-0.5 text-[12px] font-medium text-lav-text">
-                          {c.hasSecret ? "ID + Secret" : "Public PKCE"}
+                          {c.hasSecret ? tr("ID + Secret") : tr("Public PKCE")}
                         </span>
-                        {c.secretPreview && <code className="text-[12px] text-text-muted">Secret: {c.secretPreview}</code>}
+                        {c.secretPreview && <code className="text-[12px] text-text-muted">{tr("Secret: {secretPreview}", { secretPreview: c.secretPreview })}</code>}
                       </div>
                       <p className="truncate font-mono text-[12px] text-text-muted" title={c.redirectUris.join(", ")}>
-                        {c.redirectUris.length} Redirect URI · {c.redirectUris[0]}
+                        {tr("{length} Redirect URI · {v}", { length: c.redirectUris.length, v: c.redirectUris[0] })}
                       </p>
                     </div>
                     <div className="grid grid-cols-3 gap-2">
@@ -1097,7 +1096,7 @@ export function ClaudeConnectCard({
                         onClick={() => void copyText(c.clientId, `Client ID "${c.name}"`)}
                         className="pill inline-flex items-center justify-center gap-1 px-2 py-2 text-[12px]"
                       >
-                        <Copy size={12} /> ID
+                        <Copy size={12} />{" "}{tr("ID")}
                       </button>
                       <button
                         type="button"
@@ -1106,7 +1105,7 @@ export function ClaudeConnectCard({
                         className="pill inline-flex items-center justify-center gap-1 px-2 py-2 text-[12px]"
                       >
                         {busyClientId === c.id ? <Loader2 size={12} className="animate-spin" /> : <KeyRound size={12} />}
-                        Token
+                        {tr("Token")}
                       </button>
                       <button
                         type="button"
@@ -1114,7 +1113,7 @@ export function ClaudeConnectCard({
                         disabled={busyClientId === c.id}
                         className="pill inline-flex items-center justify-center gap-1 px-2 py-2 text-[12px] text-bad-fg"
                       >
-                        <Trash2 size={12} /> Hapus
+                        <Trash2 size={12} />{" "}{tr("Hapus")}
                       </button>
                     </div>
                   </li>
@@ -1126,8 +1125,8 @@ export function ClaudeConnectCard({
 
         {/* ── 3. Izin deploy ── */}
         <Section
-          title="Izin deploy"
-          summary={`${readyPlatformsCount} dari ${DEPLOY_TARGETS.length} platform aktif untuk AI`}
+          title={tr("Izin deploy")}
+          summary={tr("{readyPlatformsCount} dari {length} platform aktif untuk AI", { readyPlatformsCount, length: DEPLOY_TARGETS.length })}
           open={openSection === "deploy"}
           onToggle={() => toggleSection("deploy")}
         >
@@ -1140,10 +1139,10 @@ export function ClaudeConnectCard({
                 <li key={t.platform} className="flex items-center justify-between gap-4">
                   <div className="min-w-0">
                     <label htmlFor={id} className="block cursor-pointer text-[13px] font-medium">
-                      {t.label}
+                      {tr(t.label)}
                     </label>
                     <p className="text-[12px] text-text-muted">
-                      {hasToken ? "Token tersimpan." : `Isi token ${t.label} di form di atas, lalu Simpan.`}
+                      {hasToken ? tr("Token tersimpan.") : tr("Isi token {label} di form di atas, lalu Simpan.", { label: tr(t.label) })}
                     </p>
                   </div>
                   <Switch id={id} checked={on} disabled={!hasToken} onChange={(v) => togglePlatform(t.platform, v)} />
@@ -1152,7 +1151,7 @@ export function ClaudeConnectCard({
             })}
           </ul>
           <p className="text-[12px] text-text-muted">
-            AI memakai token tersimpan langsung dari server, tidak lewat chat. Platform yang dimatikan tidak bisa dipakai untuk deploy.
+            {tr("AI memakai token tersimpan langsung dari server, tidak lewat chat. Platform yang dimatikan tidak bisa dipakai untuk deploy.")}
           </p>
         </Section>
       </div>
@@ -1163,7 +1162,7 @@ export function ClaudeConnectCard({
         disabled={busy}
         className="pill mt-4 inline-flex w-full items-center justify-center gap-1.5 px-3 py-2 text-[12px] text-bad-fg disabled:opacity-50 sm:w-auto"
       >
-        <Unplug size={13} /> Cabut semua akses MCP
+        <Unplug size={13} />{" "}{tr("Cabut semua akses MCP")}
       </button>
     </section>
   );

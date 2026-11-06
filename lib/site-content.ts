@@ -83,7 +83,7 @@ export const FEATURES: Feature[] = [
       "Depup membaca isi repo GitHub-mu sebelum deploy dan memberi tahu platform mana yang cocok. Kalau pilihanmu tidak cocok, kamu langsung tahu alasannya, jadi waktu tidak terbuang untuk deploy yang pasti gagal. Setelah itu Depup memantau progres sampai alamat situsmu muncul.",
     audience: "Pelajar, freelancer, dan siapa saja yang ingin website online tanpa mempelajari tiga dashboard sekaligus.",
     points: [
-      "Deploy repo publik maupun private (isi GitHub Token dengan izin repo di Pengaturan).",
+      "Deploy repo publik maupun privat (isi GitHub Token dengan izin repo di Pengaturan).",
       "Pemeriksaan repo sebelum deploy: mengenali HTML biasa, Node.js, Next.js, Docker, Python, dan lainnya, lalu menyarankan platform yang cocok.",
       "Tiga tujuan dalam satu form: Vercel, Cloudflare Pages, dan Railway.",
       "Pemantauan progres deploy, daftar Projects, tombol deploy ulang, dan riwayat deploy.",
@@ -109,8 +109,8 @@ export const FEATURES: Feature[] = [
         a: "Vercel paling mudah untuk Next.js dan situs frontend lain. Cloudflare Pages unggul untuk situs statis, Vite, dan Astro. Railway dipakai untuk backend yang harus jalan terus, seperti Express, Python, atau Docker. Depup menjelaskan alasannya bila pilihanmu tidak cocok dengan isi repo.",
       },
       {
-        q: "Repo saya private, apakah bisa di-deploy?",
-        a: "Bisa. Isi GitHub Token dengan izin repo di menu Settings, lalu Depup bisa membaca repo private-mu.",
+        q: "Repo saya privat, apakah bisa di-deploy?",
+        a: "Bisa. Isi GitHub Token dengan izin repo di menu Pengaturan, lalu Depup bisa membaca repo privatmu.",
       },
       {
         q: "Kenapa deploy ke Railway diblokir karena security vulnerabilities?",
@@ -216,7 +216,7 @@ export const FEATURES: Feature[] = [
     seoDescription:
       "Ceritakan usahamu, mesin milik Depup menyusun website lengkap tanpa token dan tanpa kuota. Atur tampilan, ubah dengan perintah, lalu publish atau ekspor.",
     tldr:
-      "AI Web Builder membuat website dari deskripsi berbahasa Indonesia memakai mesin milik Depup sendiri (bukan layanan AI luar). Mesin memilih jenis situs (UMKM, jasa, portofolio, event, profil, atau artikel), menyusun isi, dan kamu tinggal mengatur palet warna, tata letak, serta gambar. Hasilnya bisa dipublish sebagai Link Instan atau diekspor sebagai file.",
+      "AI Web Builder membuat website dari deskripsi memakai mesin milik Depup sendiri (bukan layanan AI luar). Mesin memilih jenis situs (UMKM, jasa, portofolio, event, profil, atau artikel), menyusun isi, dan kamu tinggal mengatur palet warna, tata letak, serta gambar. Hasilnya bisa dipublish sebagai Link Instan atau diekspor sebagai file.",
     audience: "Pemilik UMKM, mahasiswa, dan kreator yang butuh website sederhana tanpa menulis kode.",
     points: [
       "Enam jenis situs: UMKM, jasa, portofolio, event, profil, dan artikel/blog.",
@@ -481,8 +481,8 @@ export const HOME_FAQS: FeatureFaq[] = [
     a: "Vercel paling mudah untuk Next.js dan situs frontend lain. Cloudflare Pages unggul untuk situs statis, Vite, dan Astro. Railway dipakai untuk backend yang harus jalan terus, seperti Express, Python, atau Docker. Kalau pilihanmu tidak cocok dengan isi repo, Depup menjelaskan alasannya dan menyarankan platform lain.",
   },
   {
-    q: "Repo saya private, apakah bisa?",
-    a: "Bisa. Isi GitHub Token dengan izin repo di menu Settings, lalu Depup bisa membaca repo private-mu.",
+    q: "Repo saya privat, apakah bisa?",
+    a: "Bisa. Isi GitHub Token dengan izin repo di menu Pengaturan, lalu Depup bisa membaca repo privatmu.",
   },
   {
     q: "Saya belum punya repo GitHub. Bagaimana?",

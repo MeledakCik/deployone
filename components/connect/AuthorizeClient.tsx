@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import * as React from "react";
 import Image from "next/image";
 import { Check, Lock } from "@/components/ui/icons";
@@ -18,6 +20,7 @@ const KEYS = ["client_id", "redirect_uri", "response_type", "code_challenge", "c
 
 /** Layar izin untuk konektor MCP (Claude web, app HP & Custom OAuth). Semua validasi sebenarnya dilakukan di server. */
 export default function AuthorizeClient() {
+  const tr = useT();
   const [view, setView] = React.useState<View>({ kind: "loading" });
   const [busy, setBusy] = React.useState(false);
   const paramsRef = React.useRef<Params>({});
@@ -34,7 +37,7 @@ export default function AuthorizeClient() {
     paramsRef.current = params;
     setLoginHref(`/api/auth/google?next=${encodeURIComponent(window.location.pathname + window.location.search)}`);
     if (!params.client_id || !params.redirect_uri) {
-      setView({ kind: "error", message: "Link tidak lengkap. Mulai lagi dengan menambahkan konektor Depup dari Claude atau aplikasi OAuth-mu." });
+      setView({ kind: "error", message: tr("Link tidak lengkap. Mulai lagi dengan menambahkan konektor Depup dari Claude atau aplikasi OAuth-mu.") });
       return;
     }
     api<Preview>("/api/mcp/connect", { method: "POST", json: { action: "preview", params } })
@@ -52,7 +55,7 @@ export default function AuthorizeClient() {
         method: "POST",
         json: { action, params: paramsRef.current },
       });
-      setView({ kind: "redirecting", text: action === "approve" ? "Mengembalikan kamu ke aplikasi…" : "Akses ditolak. Mengembalikan kamu…" });
+      setView({ kind: "redirecting", text: action === "approve" ? tr("Mengembalikan kamu ke aplikasi…") : tr("Akses ditolak. Mengembalikan kamu…") });
       window.location.assign(redirectTo);
     } catch (e) {
       setView({ kind: "error", message: (e as Error).message });
@@ -61,7 +64,7 @@ export default function AuthorizeClient() {
     }
   }
 
-  const title = view.kind === "ready" ? `Izinkan ${view.preview.clientName}?` : "Hubungkan Depup";
+  const title = view.kind === "ready" ? tr("Izinkan {clientName}?", { clientName: view.preview.clientName }) : tr("Hubungkan Depup");
 
   return (
     <main className="mx-auto flex min-h-[100dvh] max-w-md items-center px-4 py-10">
@@ -74,7 +77,7 @@ export default function AuthorizeClient() {
           </div>
         </div>
 
-        {view.kind === "loading" && <p className={subtle} role="status">Memeriksa permintaan…</p>}
+        {view.kind === "loading" && <p className={subtle} role="status">{tr("Memeriksa permintaan…")}</p>}
 
         {view.kind === "error" && <Notice kind="error">{view.message}</Notice>}
 
@@ -82,9 +85,9 @@ export default function AuthorizeClient() {
 
         {view.kind === "login" && (
           <>
-            <p className="text-[14px] leading-relaxed text-text-muted">Masuk dengan akun Google dulu supaya aplikasi bisa terhubung ke akun Depup-mu.</p>
+            <p className="text-[14px] leading-relaxed text-text-muted">{tr("Masuk dengan akun Google dulu supaya aplikasi bisa terhubung ke akun Depup-mu.")}</p>
             <a href={loginHref} className="btn-primary btn-lg w-full">
-              Masuk dengan Google
+              {tr("Masuk dengan Google")}
             </a>
           </>
         )}
@@ -92,17 +95,17 @@ export default function AuthorizeClient() {
         {view.kind === "ready" && (
           <>
             <p className="text-[14px] leading-relaxed text-text-muted">
-              Aplikasi ini meminta izin memakai akun Depup <strong className="font-semibold text-text">{view.preview.email}</strong>
-              {view.preview.isCustomClient ? ", melalui Custom OAuth milikmu." : "."}
+              {tr("Aplikasi ini meminta izin memakai akun Depup")}{" "}<strong className="font-semibold text-text">{view.preview.email}</strong>
+              {view.preview.isCustomClient ? tr(", melalui Custom OAuth milikmu.") : "."}
             </p>
 
             <section aria-labelledby="izin-bisa" className="rounded-[14px] bg-[var(--surface-solid-2)] p-4">
-              <h2 id="izin-bisa" className="text-[13px] font-semibold">Yang bisa dilakukan konektor</h2>
+              <h2 id="izin-bisa" className="text-[13px] font-semibold">{tr("Yang bisa dilakukan konektor")}</h2>
               <ul className="mt-3 space-y-2.5 text-[13px] leading-snug">
                 {[
-                  "Menayangkan dan memperbarui website statis (Link Instan) di akunmu, secara bertahap",
-                  "Melihat daftar file, statistik kunjungan, dan daftar link aktifmu",
-                  "Menghapus link yang kamu minta, dan men-deploy ke platform yang kamu izinkan di Pengaturan",
+                  tr("Menayangkan dan memperbarui website statis (Link Instan) di akunmu, secara bertahap"),
+                  tr("Melihat daftar file, statistik kunjungan, dan daftar link aktifmu"),
+                  tr("Menghapus link yang kamu minta, dan men-deploy ke platform yang kamu izinkan di Pengaturan"),
                 ].map((t) => (
                   <li key={t} className="flex items-start gap-2.5">
                     <span className="mt-px grid h-5 w-5 shrink-0 place-items-center rounded-full bg-tone-mint text-ok-fg">
@@ -112,24 +115,24 @@ export default function AuthorizeClient() {
                   </li>
                 ))}
               </ul>
-              <h2 className="mt-4 text-[13px] font-semibold">Yang tidak bisa dilihat</h2>
+              <h2 className="mt-4 text-[13px] font-semibold">{tr("Yang tidak bisa dilihat")}</h2>
               <p className="mt-2 flex items-start gap-2.5 text-[13px] leading-snug text-text-muted">
                 <span className="mt-px grid h-5 w-5 shrink-0 place-items-center rounded-full bg-[var(--pill-bg)] text-text-muted">
                   <Lock size={11} aria-hidden />
                 </span>
-                Token platform, environment variable, dan database-mu. Akses bisa dicabut kapan saja di Pengaturan → Konektor AI (MCP).
+                {tr("Token platform, environment variable, dan database-mu. Akses bisa dicabut kapan saja di Pengaturan → Konektor AI (MCP).")}
               </p>
             </section>
 
             <div className="grid grid-cols-2 gap-2.5">
               <button type="button" className="pill btn-lg font-medium disabled:cursor-not-allowed disabled:opacity-60" disabled={busy} onClick={() => decide("deny")}>
-                Tolak
+                {tr("Tolak")}
               </button>
               <button type="button" className="btn-primary btn-lg disabled:cursor-not-allowed disabled:opacity-60" disabled={busy} onClick={() => decide("approve")}>
-                Izinkan
+                {tr("Izinkan")}
               </button>
             </div>
-            <p className="notice notice-info">Bukan kamu yang memulai ini? Tekan Tolak dan tutup halaman ini.</p>
+            <p className="notice notice-info">{tr("Bukan kamu yang memulai ini? Tekan Tolak dan tutup halaman ini.")}</p>
           </>
         )}
       </div>

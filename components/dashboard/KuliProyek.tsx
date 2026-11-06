@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import * as React from "react";
 import { cn } from "@/lib/utils";
 
@@ -435,6 +437,7 @@ export type KuliProyekProps = {
 };
 
 export function KuliProyek({ stage, compact = false, speed = 1, className }: KuliProyekProps) {
+  const t = useT();
   const uid = React.useId().replace(/:/g, "");
   const reduced = usePrefersReducedMotion();
   const visible = usePageVisible();
@@ -454,7 +457,7 @@ export function KuliProyek({ stage, compact = false, speed = 1, className }: Kul
   }, [stage, safeSpeed, reduced, visible]);
 
   const line = lines[tick % lines.length];
-  const label = `Ilustrasi kuli proyek, tahap ${KULI_STAGE_LABEL[stage]}: ${STAGE_DESC[stage]}.`;
+  const label = t("Ilustrasi kuli proyek, tahap {v}: {v2}.", { v: t(KULI_STAGE_LABEL[stage]), v2: t(STAGE_DESC[stage]) });
 
   return (
     <div className={cn("kuli-root w-full", compact && "mx-auto max-w-[320px]", !visible && "kuli-paused", className)} style={sv({ "--kuli-d": 1 / safeSpeed })}>
@@ -503,17 +506,17 @@ export function KuliProyek({ stage, compact = false, speed = 1, className }: Kul
 
         {!compact && (
           <span aria-hidden="true" className="pointer-events-none absolute left-2.5 top-2.5 rounded-full border border-[var(--line-strong)] bg-black/35 px-2.5 py-1 text-[12px] font-medium text-white backdrop-blur-sm">
-            {KULI_STAGE_LABEL[stage]}
+            {t(KULI_STAGE_LABEL[stage])}
           </span>
         )}
         {stage === "gagal" && (
           <span aria-hidden="true" style={dly(1.8)} className="kuli-pop pointer-events-none absolute inset-x-3 bottom-3 mx-auto w-fit max-w-full rounded-[14px] border border-red-500/40 bg-red-950/80 px-3 py-1.5 text-center text-[12px] font-semibold text-red-100">
-            Proyek mangkrak, cek lognya Bos
+            {t("Proyek mangkrak, cek lognya Bos")}
           </span>
         )}
         {stage === "live" && (
           <span aria-hidden="true" className="kuli-pop pointer-events-none absolute right-2.5 top-2.5 rounded-full border border-emerald-500/40 bg-emerald-950/70 px-2.5 py-1 text-[12px] font-semibold text-emerald-200">
-            Resmi live!
+            {t("Resmi live!")}
           </span>
         )}
       </div>
@@ -525,7 +528,7 @@ export function KuliProyek({ stage, compact = false, speed = 1, className }: Kul
             className={cn("mt-[3px] h-3 w-3 shrink-0 rounded-full border", line.who === "mandor" ? "border-slate-400 bg-white" : "border-yellow-600 bg-yellow-400")}
           />
           <span>
-            <b className="font-semibold">{line.who === "mandor" ? "Mandor" : "Kuli"}:</b> {line.text}
+            <b className="font-semibold">{line.who === "mandor" ? t("Mandor") : t("Kuli")}:</b> {t(line.text)}
           </span>
         </p>
       </div>

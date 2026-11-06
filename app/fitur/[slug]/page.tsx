@@ -1,3 +1,5 @@
+import { tDeep } from "@/lib/i18n/core";
+import { getT } from "@/lib/i18n/server";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -16,17 +18,20 @@ export function generateStaticParams() {
 }
 
 export function generateMetadata({ params }: { params: { slug: string } }): Metadata {
-  const f = getFeature(params.slug);
+  const fRaw0 = getFeature(params.slug);
+  const f = fRaw0 ? tDeep(fRaw0, getT()) : fRaw0;
   if (!f) return {};
   return pageMeta({ title: f.seoTitle, description: f.seoDescription, path: `/fitur/${f.slug}` });
 }
 
 export default function FeaturePage({ params }: { params: { slug: string } }) {
-  const f = getFeature(params.slug);
+  const t = getT();
+  const fRaw = getFeature(params.slug);
+  const f = fRaw ? tDeep(fRaw, t) : fRaw;
   if (!f) notFound();
 
   const url = `${SITE_URL}/fitur/${f.slug}`;
-  const related = f.related.map((s) => getFeature(s)).filter((x): x is NonNullable<typeof x> => !!x);
+  const related = f.related.map((s) => getFeature(s)).filter((x): x is NonNullable<typeof x> => !!x).map((x) => tDeep(x, t));
 
   const ld: unknown[] = [
     breadcrumbLd([
@@ -69,10 +74,10 @@ export default function FeaturePage({ params }: { params: { slug: string } }) {
     <PublicShell cta={<PublicAuthCta />}>
       <JsonLd data={ld} />
       <div>
-        <nav aria-label="Jejak halaman" className="mb-4 text-[13px] text-text-muted">
-          <Link href="/" className="underline-offset-4 hover:underline">Depup</Link>
+        <nav aria-label={t("Jejak halaman")} className="mb-4 text-[13px] text-text-muted">
+          <Link href="/" className="underline-offset-4 hover:underline">{t("Depup")}</Link>
           <span aria-hidden="true"> / </span>
-          <Link href="/fitur" className="underline-offset-4 hover:underline">Fitur</Link>
+          <Link href="/fitur" className="underline-offset-4 hover:underline">{t("Fitur")}</Link>
           <span aria-hidden="true"> / </span>
           <span>{f.name}</span>
         </nav>
@@ -84,29 +89,29 @@ export default function FeaturePage({ params }: { params: { slug: string } }) {
           </header>
 
           <section aria-labelledby="tldr" className="surface-solid p-5 sm:p-7">
-            <h2 id="tldr" className="text-[16px] font-bold tracking-tight">Ringkasan singkat</h2>
+            <h2 id="tldr" className="text-[16px] font-bold tracking-tight">{t("Ringkasan singkat")}</h2>
             <p className="mt-2 text-[14px] leading-relaxed">{f.tldr}</p>
             <p className="mt-3 text-[13px] text-text-muted">
-              <strong className="font-semibold text-text">Cocok untuk:</strong> {f.audience}
+              <strong className="font-semibold text-text">{t("Cocok untuk:")}</strong> {f.audience}
             </p>
           </section>
 
           <section aria-labelledby="kemampuan" className="surface-solid p-5 sm:p-7">
-            <h2 id="kemampuan" className="text-[16px] font-bold tracking-tight">Yang bisa kamu lakukan</h2>
+            <h2 id="kemampuan" className="text-[16px] font-bold tracking-tight">{t("Yang bisa kamu lakukan")}</h2>
             <ul className="mt-3 list-disc space-y-1.5 pl-5 text-[14px] leading-relaxed">
               {f.points.map((p) => <li key={p}>{p}</li>)}
             </ul>
           </section>
 
           <section aria-labelledby="langkah" className="surface-solid p-5 sm:p-7">
-            <h2 id="langkah" className="text-[16px] font-bold tracking-tight">Cara memakainya</h2>
+            <h2 id="langkah" className="text-[16px] font-bold tracking-tight">{t("Cara memakainya")}</h2>
             <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-[14px] leading-relaxed">
               {f.steps.map((s) => <li key={s}>{s}</li>)}
             </ol>
           </section>
 
           <section aria-labelledby="batas" className="surface-solid p-5 sm:p-7">
-            <h2 id="batas" className="text-[16px] font-bold tracking-tight">Batas dan hal yang perlu diketahui</h2>
+            <h2 id="batas" className="text-[16px] font-bold tracking-tight">{t("Batas dan hal yang perlu diketahui")}</h2>
             <ul className="mt-3 list-disc space-y-1.5 pl-5 text-[14px] leading-relaxed">
               {f.limits.map((l) => <li key={l}>{l}</li>)}
             </ul>
@@ -114,7 +119,7 @@ export default function FeaturePage({ params }: { params: { slug: string } }) {
 
           {f.faqs.length > 0 && (
             <section aria-labelledby="tanya" className="surface-solid p-5 sm:p-7">
-              <h2 id="tanya" className="text-[16px] font-bold tracking-tight">Pertanyaan yang sering muncul</h2>
+              <h2 id="tanya" className="text-[16px] font-bold tracking-tight">{t("Pertanyaan yang sering muncul")}</h2>
               <dl className="mt-3 space-y-4">
                 {f.faqs.map((q) => (
                   <div key={q.q}>
@@ -131,18 +136,18 @@ export default function FeaturePage({ params }: { params: { slug: string } }) {
               href="/dashboard"
               className="btn-primary btn-lg"
             >
-              Coba {f.name}
+              {t("Coba {name}", { name: f.name })}
             </DashboardLink>
             {f.docsHref && (
               <Link href={f.docsHref} className="pill btn-lg font-medium">
-                Baca dokumentasi
+                {t("Baca dokumentasi")}
               </Link>
             )}
           </div>
 
           {related.length > 0 && (
-            <nav aria-label="Fitur terkait" className="border-t border-[var(--line-strong)] pt-6">
-              <h2 className="text-[14px] font-semibold">Fitur terkait</h2>
+            <nav aria-label={t("Fitur terkait")} className="border-t border-[var(--line-strong)] pt-6">
+              <h2 className="text-[14px] font-semibold">{t("Fitur terkait")}</h2>
               <ul className="mt-3 flex flex-wrap gap-2">
                 {related.map((r) => (
                   <li key={r.slug}>
@@ -152,7 +157,7 @@ export default function FeaturePage({ params }: { params: { slug: string } }) {
                   </li>
                 ))}
                 <li>
-                  <Link href="/fitur" className="pill inline-block px-4 py-2 text-[13px]">Semua fitur</Link>
+                  <Link href="/fitur" className="pill inline-block px-4 py-2 text-[13px]">{t("Semua fitur")}</Link>
                 </li>
               </ul>
             </nav>

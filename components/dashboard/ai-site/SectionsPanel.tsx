@@ -1,5 +1,7 @@
 "use client";
 
+import { useT, tl } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import * as React from "react";
 import { ArrowDown, ArrowUp, Eye, EyeOff, GripVertical, LayoutTemplate } from "lucide-react";
 import { sectionOrder, type SectionId, type SiteContent } from "@/lib/ai-site-templates";
@@ -17,13 +19,13 @@ export function presentSections(c: SiteContent, shop: boolean): { id: SectionId;
     kontak: !!(c.whatsapp || c.email),
   };
   const label: Record<SectionId, string> = {
-    katalog: shop ? `Katalog · ${c.itemsTitle}` : c.itemsTitle,
-    artikel: `Artikel · ${c.itemsTitle}`,
-    fitur: c.featuresTitle || "Keunggulan",
-    testimoni: "Testimoni",
-    cara: c.stepsTitle || "Langkah",
-    tentang: c.about ? c.aboutTitle : "Info kontak",
-    kontak: `Ajakan · ${c.closing}`,
+    katalog: shop ? `${tl("Katalog")} · ${c.itemsTitle}` : c.itemsTitle,
+    artikel: `${tl("Artikel")} · ${c.itemsTitle}`,
+    fitur: c.featuresTitle || tl("Keunggulan"),
+    testimoni: tl("Testimoni"),
+    cara: c.stepsTitle || tl("Langkah"),
+    tentang: c.about ? c.aboutTitle : tl("Info kontak"),
+    kontak: `${tl("Ajakan")} · ${c.closing}`,
   };
   return sectionOrder(c, shop)
     .filter((id) => has[id])
@@ -43,6 +45,7 @@ export function SectionsPanel({
   onChange: (next: NonNullable<SiteContent["sections"]>) => void;
   onSelect: (id: string) => void;
 }) {
+  const t = useT();
   const list = presentSections(content, shop);
   const hidden = new Set(content.sections?.hidden ?? []);
   const [drag, setDrag] = React.useState<SectionId | null>(null);
@@ -72,10 +75,10 @@ export function SectionsPanel({
         )}
       >
         <LayoutTemplate size={16} className="shrink-0" aria-hidden />
-        <span className="min-w-0 flex-1 truncate">Bagian paling atas</span>
-        <span className="text-[12px] opacity-70">tetap di atas</span>
+        <span className="min-w-0 flex-1 truncate">{t("Bagian paling atas")}</span>
+        <span className="text-[12px] opacity-70">{t("tetap di atas")}</span>
       </button>
-      <ol className="space-y-2" aria-label="Urutan bagian halaman">
+      <ol className="space-y-2" aria-label={t("Urutan bagian halaman")}>
         {list.map((s, i) => {
           const off = hidden.has(s.id);
           return (
@@ -114,13 +117,13 @@ export function SectionsPanel({
               <button type="button" onClick={() => onSelect(s.id)} className={cn("min-w-0 flex-1 truncate py-3 text-left text-[14px] font-medium", off && "line-through opacity-60")}>
                 {s.label}
               </button>
-              <button type="button" onClick={() => move(s.id, i - 1)} disabled={i === 0} aria-label={`Naikkan ${s.label}`} className="grid h-10 w-9 place-items-center rounded-[10px] hover:bg-black/5 disabled:opacity-30">
+              <button type="button" onClick={() => move(s.id, i - 1)} disabled={i === 0} aria-label={t("Naikkan {label}", { label: s.label })} className="grid h-10 w-9 place-items-center rounded-[10px] hover:bg-black/5 disabled:opacity-30">
                 <ArrowUp size={15} aria-hidden />
               </button>
-              <button type="button" onClick={() => move(s.id, i + 1)} disabled={i === list.length - 1} aria-label={`Turunkan ${s.label}`} className="grid h-10 w-9 place-items-center rounded-[10px] hover:bg-black/5 disabled:opacity-30">
+              <button type="button" onClick={() => move(s.id, i + 1)} disabled={i === list.length - 1} aria-label={t("Turunkan {label}", { label: s.label })} className="grid h-10 w-9 place-items-center rounded-[10px] hover:bg-black/5 disabled:opacity-30">
                 <ArrowDown size={15} aria-hidden />
               </button>
-              <button type="button" onClick={() => toggle(s.id)} aria-pressed={off} aria-label={off ? `Tampilkan ${s.label}` : `Sembunyikan ${s.label}`} className="grid h-10 w-9 place-items-center rounded-[10px] hover:bg-black/5">
+              <button type="button" onClick={() => toggle(s.id)} aria-pressed={off} aria-label={off ? t("Tampilkan {label}", { label: s.label }) : t("Sembunyikan {label}", { label: s.label })} className="grid h-10 w-9 place-items-center rounded-[10px] hover:bg-black/5">
                 {off ? <EyeOff size={15} aria-hidden /> : <Eye size={15} aria-hidden />}
               </button>
             </li>

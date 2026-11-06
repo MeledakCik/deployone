@@ -1,5 +1,8 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import { LanguageSwitch } from "@/components/ui/LanguageSwitch";
+import "@/lib/i18n/dict/public";
 import * as React from "react";
 import Image from "next/image";
 import Link from "next/link";
@@ -21,6 +24,7 @@ const NAV_LINKS = [
 ];
 
 export function Navbar() {
+  const t = useT();
   const { user, ready } = useAuth();
   const { showToast } = useToast();
   const router = useRouter();
@@ -66,14 +70,14 @@ export function Navbar() {
     <>
       <header ref={headerRef} className="lp-header fixed inset-x-0 z-50">
         <div className="lp-nav mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 rounded-full pl-2.5 pr-2 sm:h-16 sm:pl-3">
-          <Link href="/" className="flex items-center gap-2.5" aria-label="Depup, beranda">
+          <Link href="/" className="flex items-center gap-2.5" aria-label={t("Depup, beranda")}>
             <Image src="/logo.png" alt="" width={36} height={36} priority className="h-9 w-9" />
-            <span className="text-[18px] font-bold tracking-tight text-text">Depup</span>
+            <span className="text-[18px] font-bold tracking-tight text-text">{t("Depup")}</span>
           </Link>
 
           <nav
             className="hidden items-center gap-1 rounded-full bg-[var(--pill-bg)] p-1 lg:flex"
-            aria-label="Utama"
+            aria-label={t("Utama")}
           >
             {NAV_LINKS.map((l) => (
               <a
@@ -81,7 +85,7 @@ export function Navbar() {
                 href={l.href}
                 className="rounded-full px-4 py-2 text-[13px] font-medium text-text-muted transition-colors hover:bg-[var(--surface-solid)] hover:text-text"
               >
-                {l.label}
+                {t(l.label)}
               </a>
             ))}
           </nav>
@@ -92,23 +96,24 @@ export function Navbar() {
                 href="/dashboard"
                 className="btn-primary btn-md inline-flex items-center gap-1.5"
               >
-                Buka dashboard <ArrowUpRight size={14} />
+                {t("Buka dashboard")}{" "}<ArrowUpRight size={14} />
               </DashboardLink>
             ) : (
               <>
+                <LanguageSwitch compact className="hidden lg:inline-flex" />
                 <button
                   type="button"
                   onClick={() => setLoginOpen(true)}
                   className="pill btn-md inline-flex items-center gap-2 font-medium"
                 >
                   <GoogleMark size={14} />
-                  Masuk
+                  {t("Masuk")}
                 </button>
                 <DashboardLink
                   href="/dashboard"
                   className="btn-primary btn-md inline-flex items-center gap-1.5"
                 >
-                  Deploy sekarang <ArrowUpRight size={14} />
+                  {t("Deploy sekarang")}{" "}<ArrowUpRight size={14} />
                 </DashboardLink>
               </>
             )}
@@ -118,7 +123,7 @@ export function Navbar() {
             type="button"
             className="pill grid h-10 w-10 place-items-center lg:hidden"
             onClick={() => setMenuOpen((v) => !v)}
-            aria-label={menuOpen ? "Tutup menu" : "Buka menu"}
+            aria-label={menuOpen ? t("Tutup menu") : t("Buka menu")}
             aria-expanded={menuOpen}
           >
             {menuOpen ? <X size={18} /> : <Menu size={18} />}
@@ -134,7 +139,7 @@ export function Navbar() {
                 onClick={() => setMenuOpen(false)}
                 className="rounded-[14px] px-4 py-3 text-[15px] font-medium text-text-muted hover:bg-[var(--pill-bg)] hover:text-text"
               >
-                {l.label}
+                {t(l.label)}
               </a>
             ))}
             <div className="mt-2 flex flex-col gap-2">
@@ -144,10 +149,11 @@ export function Navbar() {
                   onClick={() => setMenuOpen(false)}
                   className="btn-primary btn-lg flex items-center justify-center gap-1.5"
                 >
-                  Buka dashboard <ArrowUpRight size={15} />
+                  {t("Buka dashboard")}{" "}<ArrowUpRight size={15} />
                 </DashboardLink>
               ) : (
                 <>
+                  <LanguageSwitch className="self-center" />
                   <button
                     type="button"
                     onClick={() => {
@@ -157,14 +163,14 @@ export function Navbar() {
                     className="pill btn-lg flex items-center justify-center gap-2 font-medium"
                   >
                     <GoogleMark size={16} />
-                    Masuk dengan Google
+                    {t("Masuk dengan Google")}
                   </button>
                   <DashboardLink
                     href="/dashboard"
                     onClick={() => setMenuOpen(false)}
                     className="btn-primary btn-lg flex items-center justify-center gap-1.5"
                   >
-                    Deploy sekarang <ArrowUpRight size={15} />
+                    {t("Deploy sekarang")}{" "}<ArrowUpRight size={15} />
                   </DashboardLink>
                 </>
               )}

@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { LayoutDashboard, FolderKanban, Rocket, UploadCloud, Link2, Sparkles, RefreshCw, Globe2, KeyRound, BookOpen, Database, Settings2, Heart, Users, LogOut, ShieldCheck, LayoutGrid } from "@/components/ui/icons";
@@ -11,6 +13,7 @@ import type { DashboardView } from "@/types";
 import { PREFER_DESKTOP_KEY } from "@/lib/mobile-routes";
 
 export function Sidebar() {
+  const t = useT();
   const router = useRouter();
   const { user, logout } = useAuth();
   const { view, setView, stats } = useDeploy();
@@ -22,35 +25,35 @@ export function Sidebar() {
       {
         label: "Ringkasan",
         items: [
-          { id: "dashboard", label: "Beranda", icon: LayoutDashboard, badge: stats.failed, badgeLabel: `${stats.failed} deploy gagal` },
+          { id: "dashboard", label: t("Beranda"), icon: LayoutDashboard, badge: stats.failed, badgeLabel: t("{failed} deploy gagal", { failed: stats.failed }) },
           { id: "projects", label: "Project", icon: FolderKanban },
         ],
       },
       {
         label: "Rilis",
         items: [
-          { id: "deploy", label: "Deploy", icon: Rocket },
-          { id: "upload", label: "Unggah", icon: UploadCloud },
-          { id: "hosting", label: "Link Instan", icon: Link2 },
-          { id: "ai", label: "AI Web Builder", icon: Sparkles },
+          { id: "deploy", label: t("Deploy"), icon: Rocket },
+          { id: "upload", label: t("Unggah"), icon: UploadCloud },
+          { id: "hosting", label: t("Link Instan"), icon: Link2 },
+          { id: "ai", label: t("AI Web Builder"), icon: Sparkles },
           { id: "convert", label: "Konversi", icon: RefreshCw },
         ],
       },
       {
         label: "Konfigurasi",
         items: [
-          { id: "domains", label: "Domain", icon: Globe2 },
-          { id: "env", label: "Variabel env", icon: KeyRound },
+          { id: "domains", label: t("Domain"), icon: Globe2 },
+          { id: "env", label: t("Variabel env"), icon: KeyRound },
           { id: "database", label: "Database", icon: Database },
-          { id: "settings", label: "Pengaturan", icon: Settings2 },
+          { id: "settings", label: t("Pengaturan"), icon: Settings2 },
         ],
       },
       {
         label: "Lainnya",
         items: [
-          { id: "docs", label: "Dokumentasi", icon: BookOpen },
-          { id: "community", label: "Komunitas", icon: Users },
-          { id: "donate", label: "Donasi", icon: Heart },
+          { id: "docs", label: t("Dokumentasi"), icon: BookOpen },
+          { id: "community", label: t("Komunitas"), icon: Users },
+          { id: "donate", label: t("Donasi"), icon: Heart },
         ],
       },
     ],
@@ -67,7 +70,7 @@ export function Sidebar() {
       groups={groups}
       active={view}
       onSelect={(id) => setView(id as DashboardView)}
-      navLabel="Menu dashboard"
+      navLabel={t("Menu dashboard")}
       onCloseDrawerRef={closeRef}
       footer={
         <>
@@ -90,8 +93,8 @@ export function Sidebar() {
               <button
                 type="button"
                 onClick={handleLogout}
-                aria-label="Keluar"
-                title="Keluar"
+                aria-label={t("Keluar")}
+                title={t("Keluar")}
                 className="grid h-9 w-9 shrink-0 place-items-center rounded-[14px] text-white transition hover:bg-white/15 max-md:h-10 max-md:w-10"
               >
                 <LogOut size={18} aria-hidden />
@@ -100,7 +103,7 @@ export function Sidebar() {
           )}
           {user?.isAdmin && (
             <a href="/admin" className={SIDEBAR_LINK_CLASS}>
-              <ShieldCheck size={18} /> Panel admin
+              <ShieldCheck size={18} />{" "}{t("Panel admin")}
             </a>
           )}
           {/* Hanya muncul di layar HP, bila pengguna sengaja memilih tampilan desktop. */}
@@ -116,11 +119,11 @@ export function Sidebar() {
               router.replace("/m");
             }}
           >
-            <LayoutGrid size={18} aria-hidden /> Tampilan HP
+            <LayoutGrid size={18} aria-hidden />{" "}{t("Tampilan HP")}
           </button>
           {!user && (
             <button type="button" onClick={handleLogout} className={SIDEBAR_LINK_CLASS}>
-              <LogOut size={18} /> Keluar
+              <LogOut size={18} />{" "}{t("Keluar")}
             </button>
           )}
         </>

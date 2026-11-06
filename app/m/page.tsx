@@ -1,4 +1,6 @@
 "use client";
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import { greeting } from "@/lib/mobile-routes";
 
 import * as React from "react";
@@ -29,6 +31,7 @@ const ACTIONS = [
 ] as const;
 
 export default function MobileHome() {
+  const t = useT();
   const { user } = useAuth();
   const { history, loading } = useUserData();
   const [filter, setFilter] = React.useState<Filter>("all");
@@ -42,7 +45,7 @@ export default function MobileHome() {
   const rate = done === 0 ? null : Math.round((ready / done) * 100);
 
   const shown = live.filter((h) => filter === "all" || h.status === filter).slice(0, 5);
-  const first = (user?.name ?? "").split(" ")[0] || "kamu";
+  const first = (user?.name ?? "").split(" ")[0] || t("kamu");
 
   return (
     <div className="space-y-6 pt-2">
@@ -50,7 +53,7 @@ export default function MobileHome() {
         <h2 className="break-words text-[22px] font-bold leading-tight tracking-tight">
           {greeting()}, {first}
         </h2>
-        <p className="mt-0.5 text-[13px] text-text-muted">Semua deploy-mu ada di sini.</p>
+        <p className="mt-0.5 text-[13px] text-text-muted">{t("Semua deploy-mu ada di sini.")}</p>
       </div>
 
       {/* Hero */}
@@ -59,7 +62,7 @@ export default function MobileHome() {
         <div className="pointer-events-none absolute -left-8 -top-8 h-32 w-32 rounded-full bg-white/15 blur-xl" />
         <div className="relative flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <p className="text-[13px] font-semibold text-violet-100">Project aktif</p>
+            <p className="text-[13px] font-semibold text-violet-100">{t("Project aktif")}</p>
             <p className="mt-1 flex items-baseline gap-1.5">
               <span className="text-[40px] font-bold leading-none tracking-tight tabular-nums">{loading ? "–" : projects.length}</span>
               <span className="text-[14px] font-semibold text-violet-100">project</span>
@@ -70,19 +73,19 @@ export default function MobileHome() {
             className="flex h-10 shrink-0 items-center gap-1.5 whitespace-nowrap rounded-full bg-white pl-3 pr-4 text-[13px] font-bold text-lav-text shadow-lg active:scale-95"
           >
             <Plus size={16} aria-hidden />
-            Deploy baru
+            {t("Deploy baru")}
           </Link>
         </div>
         <div className="relative mt-4 grid grid-cols-3 gap-2">
-          <Stat label="Online" value={loading ? "–" : `${online}`} dot />
-          <Stat label="Berhasil" value={loading ? "–" : rate === null ? "–" : `${rate}%`} />
-          <Stat label="Gagal" value={loading ? "–" : `${failed}`} />
+          <Stat label={t("Online")} value={loading ? "–" : `${online}`} dot />
+          <Stat label={t("Berhasil")} value={loading ? "–" : rate === null ? "–" : `${rate}%`} />
+          <Stat label={t("Gagal")} value={loading ? "–" : `${failed}`} />
         </div>
       </section>
 
       {/* Pintasan */}
       <section className="space-y-3">
-        <SectionTitle>Layanan Kilat</SectionTitle>
+        <SectionTitle>{t("Layanan Kilat")}</SectionTitle>
         <div className={`${CARD} grid grid-cols-3 gap-x-2 gap-y-5 px-3 py-5`}>
           {ACTIONS.map(({ href, label, Icon, tone, ...rest }) => (
             <Link key={label} href={href} className="flex min-w-0 flex-col items-center gap-2 active:scale-95">
@@ -90,11 +93,11 @@ export default function MobileHome() {
                 <Icon size={24} aria-hidden />
                 {"badge" in rest && (
                   <span className="absolute -right-2 -top-2 rounded-full bg-lime-500 px-2 py-0.5 text-[12px] font-bold leading-none text-[var(--lime-text)] ring-2 ring-[color:var(--frame)]">
-                    {rest.badge}
+                    {t(rest.badge)}
                   </span>
                 )}
               </span>
-              <span className="w-full truncate text-center text-[13px] font-medium leading-tight text-text">{label}</span>
+              <span className="w-full truncate text-center text-[13px] font-medium leading-tight text-text">{t(label)}</span>
             </Link>
           ))}
         </div>
@@ -102,20 +105,20 @@ export default function MobileHome() {
 
       {/* Riwayat */}
       <section className="space-y-3">
-        <SectionTitle action={{ href: "/m/riwayat", label: "Lihat semua" }}>Riwayat Deploy</SectionTitle>
+        <SectionTitle action={{ href: "/m/riwayat", label: t("Lihat semua") }}>{t("Riwayat Deploy")}</SectionTitle>
         <div className="-mx-4 flex gap-2 overflow-x-auto px-4 pb-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          <Chip active={filter === "all"} onClick={() => setFilter("all")}>Semua ({live.length})</Chip>
-          <Chip active={filter === "ready"} onClick={() => setFilter("ready")}>Berhasil ({ready})</Chip>
-          <Chip active={filter === "failed"} onClick={() => setFilter("failed")}>Gagal ({failed})</Chip>
+          <Chip active={filter === "all"} onClick={() => setFilter("all")}>{t("Semua ({length})", { length: live.length })}</Chip>
+          <Chip active={filter === "ready"} onClick={() => setFilter("ready")}>{t("Berhasil ({ready})", { ready })}</Chip>
+          <Chip active={filter === "failed"} onClick={() => setFilter("failed")}>{t("Gagal ({failed})", { failed })}</Chip>
         </div>
         {loading ? (
           <SkeletonList />
         ) : shown.length === 0 ? (
           <EmptyState
             icon={<Inbox size={24} aria-hidden />}
-            title={live.length === 0 ? "Belum ada deploy" : "Tidak ada yang cocok"}
-            hint={live.length === 0 ? "Deploy repo GitHub pertamamu dalam hitungan detik." : "Coba filter lain."}
-            cta={live.length === 0 ? { href: "/m/deploy", label: "Deploy sekarang" } : undefined}
+            title={live.length === 0 ? t("Belum ada deploy") : t("Tidak ada yang cocok")}
+            hint={live.length === 0 ? t("Deploy repo GitHub pertamamu dalam hitungan detik.") : t("Coba filter lain.")}
+            cta={live.length === 0 ? { href: "/m/deploy", label: t("Deploy sekarang") } : undefined}
           />
         ) : (
           <ul className="space-y-3">

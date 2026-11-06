@@ -1,9 +1,12 @@
 "use client";
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import { useRef, useState } from "react";
 import type { Schema } from "./types";
 import { Btn, Field, Notice, api, heading, inputCls, linkBtn, subtle } from "./ui";
 
 export default function ImportExportTab({ id, schema, onChanged }: { id: string; schema: Schema; onChanged: () => void }) {
+  const tr = useT();
   const [csvTable, setCsvTable] = useState(schema.tables[0]?.name ?? "");
   const [expTable, setExpTable] = useState(schema.tables[0]?.name ?? "");
   const [hasHeader, setHasHeader] = useState(true);
@@ -14,16 +17,16 @@ export default function ImportExportTab({ id, schema, onChanged }: { id: string;
 
   async function doImport() {
     const f = file.current?.files?.[0];
-    if (!f) return setMsg({ kind: "error", text: "Pilih file .sql atau .csv dulu." });
-    if (f.size > 2_000_000) return setMsg({ kind: "error", text: "File terlalu besar (maks 2MB)." });
+    if (!f) return setMsg({ kind: "error", text: tr("Pilih file .sql atau .csv dulu.") });
+    if (f.size > 2_000_000) return setMsg({ kind: "error", text: tr("File terlalu besar (maks 2MB).") });
     const kind = f.name.toLowerCase().endsWith(".csv") ? "csv" : f.name.toLowerCase().endsWith(".sql") ? "sql" : null;
-    if (!kind) return setMsg({ kind: "error", text: "Format harus .sql atau .csv." });
+    if (!kind) return setMsg({ kind: "error", text: tr("Format harus .sql atau .csv.") });
     setBusy(true);
     setMsg(null);
     try {
       const content = await f.text();
       const r = await api<any>(`/api/databases/${id}/import`, { method: "POST", json: kind === "sql" ? { kind, content } : { kind, content, table: csvTable, hasHeader, createTable } });
-      setMsg({ kind: "ok", text: kind === "sql" ? `${r.executed} statement berhasil dijalankan.` : `${r.inserted} baris diimpor${r.createdTable ? " (tabel baru dibuat)" : ""}.` });
+      setMsg({ kind: "ok", text: kind === "sql" ? tr("{executed} statement berhasil dijalankan.", { executed: r.executed }) : `${r.inserted} baris diimpor${r.createdTable ? tr(" (tabel baru dibuat)") : ""}.` });
       onChanged();
       if (file.current) file.current.value = "";
     } catch (e) {
@@ -36,29 +39,29 @@ export default function ImportExportTab({ id, schema, onChanged }: { id: string;
   return (
     <div className="grid gap-4 lg:grid-cols-2 lg:gap-6">
       <section className="space-y-3 rounded-[14px] p-4">
-        <h3 className={heading}>Export</h3>
+        <h3 className={heading}>{tr("Export")}</h3>
         <a className={link} href={`/api/databases/${id}/export?format=sql`}>
-          Unduh seluruh database (.sql)
+          {tr("Unduh seluruh database (.sql)")}
         </a>
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-          <select className={`${inputCls} sm:!w-auto`} value={expTable} onChange={(e) => setExpTable(e.target.value)} aria-label="Tabel untuk CSV">
+          <select className={`${inputCls} sm:!w-auto`} value={expTable} onChange={(e) => setExpTable(e.target.value)} aria-label={tr("Tabel untuk CSV")}>
             {schema.tables.map((t) => (
               <option key={t.name}>{t.name}</option>
             ))}
           </select>
           <a className={link} aria-disabled={!expTable} href={expTable ? `/api/databases/${id}/export?format=csv&table=${encodeURIComponent(expTable)}` : undefined}>
-            Unduh CSV
+            {tr("Unduh CSV")}
           </a>
         </div>
-        <p className={subtle}>Maksimal 50.000 baris per ekspor.</p>
+        <p className={subtle}>{tr("Maksimal 50.000 baris per ekspor.")}</p>
       </section>
 
       <section className="space-y-3 rounded-[14px] p-4">
-        <h3 className={heading}>Import</h3>
-        <input ref={file} type="file" accept=".sql,.csv" className="block w-full cursor-pointer rounded-[14px] bg-[var(--pill-bg)] p-3 text-sm text-text file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-[var(--pill-bg)]0 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:bg-[var(--card-hover)]" aria-label="File import" />
+        <h3 className={heading}>{tr("Import")}</h3>
+        <input ref={file} type="file" accept=".sql,.csv" className="block w-full cursor-pointer rounded-[14px] bg-[var(--pill-bg)] p-3 text-sm text-text file:mr-3 file:cursor-pointer file:rounded-lg file:border-0 file:bg-[var(--pill-bg)]0 file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-white hover:bg-[var(--card-hover)]" aria-label={tr("File import")} />
         <div className="space-y-2 rounded-[14px] bg-[var(--pill-bg)] p-3">
-          <p className="text-xs font-medium text-text-muted">Khusus CSV</p>
-          <Field label="Tabel tujuan">
+          <p className="text-xs font-medium text-text-muted">{tr("Khusus CSV")}</p>
+          <Field label={tr("Tabel tujuan")}>
             <input className={inputCls} list="tbls" value={csvTable} onChange={(e) => setCsvTable(e.target.value)} />
             <datalist id="tbls">
               {schema.tables.map((t) => (
@@ -67,17 +70,17 @@ export default function ImportExportTab({ id, schema, onChanged }: { id: string;
             </datalist>
           </Field>
           <label className="flex items-center gap-2 text-sm text-text">
-            <input type="checkbox" checked={hasHeader} onChange={(e) => setHasHeader(e.target.checked)} /> Baris pertama adalah header
+            <input type="checkbox" checked={hasHeader} onChange={(e) => setHasHeader(e.target.checked)} />{" "}{tr("Baris pertama adalah header")}
           </label>
           <label className="flex items-center gap-2 text-sm text-text">
-            <input type="checkbox" checked={createTable} onChange={(e) => setCreateTable(e.target.checked)} /> Buat tabel baru jika belum ada (semua kolom TEXT)
+            <input type="checkbox" checked={createTable} onChange={(e) => setCreateTable(e.target.checked)} />{" "}{tr("Buat tabel baru jika belum ada (semua kolom TEXT)")}
           </label>
         </div>
         {msg && <Notice kind={msg.kind}>{msg.text}</Notice>}
         <Btn variant="primary" onClick={doImport} disabled={busy} className="w-full sm:w-auto">
-          {busy ? "Mengimpor…" : "Import"}
+          {busy ? tr("Mengimpor…") : tr("Import")}
         </Btn>
-        <p className={subtle}>Maks 2MB. Dijalankan dalam satu transaksi: jika ada yang gagal, tidak ada yang tersimpan.</p>
+        <p className={subtle}>{tr("Maks 2MB. Dijalankan dalam satu transaksi: jika ada yang gagal, tidak ada yang tersimpan.")}</p>
       </section>
     </div>
   );

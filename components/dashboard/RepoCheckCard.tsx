@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import * as React from "react";
 import { Check, CircleAlert, ExternalLink, Loader2, RotateCw } from "@/components/ui/icons";
 import { cn } from "@/lib/utils";
@@ -13,6 +15,7 @@ import type { Platform } from "@/types";
  * (2) cocok dengan platform yang dipilih? (3) kalau tidak, harus bagaimana?
  */
 export function RepoCheckCard({ platform }: { platform: Platform }) {
+  const t = useT();
   const { form, repoEnvCheck, recheckRepo, setFormField, railwayPreview } = useDeploy();
   const { status, validation, errorGuide } = repoEnvCheck;
   const url = form.githubUrl?.trim() ?? "";
@@ -23,7 +26,7 @@ export function RepoCheckCard({ platform }: { platform: Platform }) {
         <div className="mt-2 text-[12px] sm:text-[12px] text-[var(--dc-text-faint)] flex items-start gap-1.5">
           <CircleAlert className="w-3 h-3 shrink-0 mt-0.5" />
           <span>
-            Link belum lengkap. Formatnya{" "}
+            {t("Link belum lengkap. Formatnya")}{" "}
             <span className="font-mono">https://github.com/nama-akun/nama-repo</span>
           </span>
         </div>
@@ -36,7 +39,7 @@ export function RepoCheckCard({ platform }: { platform: Platform }) {
     return (
       <div className="mt-2 text-[12px] sm:text-[12px] text-[var(--dc-text-faint)] flex items-center gap-1.5">
         <Loader2 className="w-3 h-3 shrink-0 animate-spin" />
-        Memeriksa repo: jenis project, framework, dan env var…
+        {t("Memeriksa repo: jenis project, framework, dan env var…")}
       </div>
     );
   }
@@ -47,7 +50,7 @@ export function RepoCheckCard({ platform }: { platform: Platform }) {
         <div className="flex items-start gap-2 text-bad-fg">
           <CircleAlert className="w-3.5 h-3.5 shrink-0 mt-0.5" />
           <div>
-            <div className="font-semibold">{errorGuide?.title ?? "Repo belum bisa diperiksa"}</div>
+            <div className="font-semibold">{errorGuide?.title ?? t("Repo belum bisa diperiksa")}</div>
             <div className="mt-0.5 opacity-90">{errorGuide?.message}</div>
           </div>
         </div>
@@ -64,7 +67,7 @@ export function RepoCheckCard({ platform }: { platform: Platform }) {
             onClick={recheckRepo}
             className="h-7 px-3 rounded-full bg-[var(--dc-pill)] text-[12px] font-medium inline-flex items-center gap-1.5 hover:bg-[var(--dc-hover)]"
           >
-            <RotateCw className="w-3 h-3" /> Periksa ulang
+            <RotateCw className="w-3 h-3" />{" "}{t("Periksa ulang")}
           </button>
           {errorGuide?.links?.map((l) => (
             <a
@@ -106,7 +109,7 @@ export function RepoCheckCard({ platform }: { platform: Platform }) {
         )}
         <div>
           <div className="font-semibold">
-            Terdeteksi: {validation.project.label}
+            {t("Terdeteksi: {label}", { label: validation.project.label })}
             <span className="font-normal opacity-70">
               {" "}
               · {validation.fullName} ({validation.visibility})
@@ -127,7 +130,7 @@ export function RepoCheckCard({ platform }: { platform: Platform }) {
       {platform === "railway" && level !== "blocked" && railwayPreview.status === "loading" && (
         <div className="mt-2 flex items-center gap-1.5 opacity-80">
           <Loader2 className="w-3 h-3 shrink-0 animate-spin" />
-          Mengecek file yang mungkin kurang…
+          {t("Mengecek file yang mungkin kurang…")}
         </div>
       )}
 
@@ -139,8 +142,8 @@ export function RepoCheckCard({ platform }: { platform: Platform }) {
           <div className="mt-2.5 rounded-lg bg-[var(--dc-pill)] p-2.5 text-[var(--dc-text)]">
             <div className="font-semibold">
               {railwayPreview.preview.canWrite
-                ? `Depup akan menambahkan ${railwayPreview.preview.files.length} file otomatis saat deploy`
-                : `Repo ini kekurangan ${railwayPreview.preview.files.length} file agar bisa jalan di Railway`}
+                ? t("Depup akan menambahkan {length} file otomatis saat deploy", { length: railwayPreview.preview.files.length })
+                : t("Repo ini kekurangan {length} file agar bisa jalan di Railway", { length: railwayPreview.preview.files.length })}
             </div>
             <ul className="mt-1.5 space-y-1.5">
               {railwayPreview.preview.files.map((f) => (
@@ -154,8 +157,8 @@ export function RepoCheckCard({ platform }: { platform: Platform }) {
             </ul>
             <div className="mt-2 text-[var(--dc-text-muted)]">
               {railwayPreview.preview.canWrite
-                ? "Semuanya dikirim dalam satu commit ke branch utama repo-mu. File buatanmu tidak ditimpa."
-                : "Isi GitHub Token dengan izin menulis (“repo”) supaya Depup bisa menambahkannya otomatis — atau tambahkan file di atas sendiri sebelum deploy."}
+                ? t("Semuanya dikirim dalam satu commit ke branch utama repo-mu. File buatanmu tidak ditimpa.")
+                : t("Isi GitHub Token dengan izin menulis (“repo”) supaya Depup bisa menambahkannya otomatis — atau tambahkan file di atas sendiri sebelum deploy.")}
             </div>
           </div>
         )}
@@ -175,7 +178,7 @@ export function RepoCheckCard({ platform }: { platform: Platform }) {
                 onClick={() => setFormField("platform", guide.suggestPlatform as Platform)}
                 className="h-7 px-3 rounded-full bg-[var(--dc-text)] text-[var(--dc-surface)] text-[12px] font-semibold"
               >
-                Pakai {PLATFORM_NAME[guide.suggestPlatform]}
+                {t("Pakai {v}", { v: t(PLATFORM_NAME[guide.suggestPlatform]) })}
               </button>
             )}
             <button
@@ -183,13 +186,13 @@ export function RepoCheckCard({ platform }: { platform: Platform }) {
               onClick={recheckRepo}
               className="h-7 px-3 rounded-full bg-[var(--dc-pill)] text-[12px] font-medium inline-flex items-center gap-1.5 hover:bg-[var(--dc-hover)]"
             >
-              <RotateCw className="w-3 h-3" /> Periksa ulang
+              <RotateCw className="w-3 h-3" />{" "}{t("Periksa ulang")}
             </button>
           </div>
 
           <details className="mt-3">
             <summary className="cursor-pointer font-medium select-none">
-              Atau deploy manual ke {PLATFORM_NAME[platform]}
+              {t("Atau deploy manual ke {v}", { v: t(PLATFORM_NAME[platform]) })}
             </summary>
             <ol className="mt-2 ml-5 list-decimal space-y-1 text-[var(--dc-text-muted)]">
               {manual.steps.map((s, i) => (

@@ -25,6 +25,7 @@
 /* ======================================================================== */
 
 import type { SiteLook, StylePack } from "../site-look.ts";
+import { detectCurrency, detectSiteLang, type SiteLang } from "../ai-site-i18n.ts";
 import { ELEMENT_SLOTS, TEMPLATE_ICON_STYLES, isIconStyle, templateIconStyle } from "../site-assets.ts";
 import type { ElementDef, ElementFamily, ElementPack, IconPack, IconStyle, SiteOrnament } from "../site-assets.ts";
 
@@ -96,6 +97,19 @@ export interface DomainPack {
   subtopics?: string[];
   /** Jumlah item bawaan. */
   itemCount?: number;
+  /** Versi bahasa Inggris dari semua teks paket (ikon/harga mengikuti urutan yang sama). */
+  en?: PackText;
+}
+
+/** Bagian teks paket yang punya versi bahasa lain. */
+export type PackText = Pick<
+  DomainPack,
+  "label" | "prompts" | "keywords" | "brandFallback" | "badges" | "slogans" | "headlines" | "subheadlines" | "cta" | "featuresTitle" | "features" | "itemsTitle" | "items" | "stepsTitle" | "steps" | "aboutTitle" | "about" | "testimonials" | "closing" | "closingText"
+> & Pick<DomainPack, "articles" | "subtopics">;
+
+/** Paket dalam bahasa yang diminta (fallback ke Indonesia bila belum ada terjemahan). */
+export function packIn(pack: DomainPack, lang: SiteLang): DomainPack {
+  return lang === "en" && pack.en ? { ...pack, ...pack.en } : pack;
 }
 
 /** Contoh dari pengguna: deskripsi + isi website yang ia terima/publikasikan. */
@@ -153,7 +167,9 @@ const STOP = new Set(
     "tolong mau ingin website situs web halaman landing page punya sebuah satu dua tiga para pada dalam oleh akan bisa sudah " +
     "agar supaya karena jadi seperti sangat lebih paling banyak sedikit tentang nya lah kah pun saja aja dong ya tidak bukan " +
     "namanya bernama nama usaha bisnis toko kecil baru lama sendiri setiap hari jam buka mulai sampai hingga harga rp ribu rb " +
-    "kota daerah jalan jl wa whatsapp nomor email alamat tolong please yg dgn utk tdk sy"
+    "kota daerah jalan jl wa whatsapp nomor email alamat tolong please yg dgn utk tdk sy " +
+    "the an of for to in on at with my our your we is are be this that it its by from as want make create build need called named " +
+    "open until price prices order site page small new local best great good also just like some any will can our"
   ).split(" "),
 );
 
@@ -304,6 +320,8 @@ export function trainModel(packsIn: DomainPack[], feedback: FeedbackExample[] = 
     features(p.keywords.join(" ")),
     features(p.keywords.join(" ")),
     features(p.label),
+    // versi Inggris: deskripsi berbahasa Inggris diklasifikasikan ke domain yang sama
+    ...(p.en ? [...p.en.prompts.map(features), features(p.en.keywords.join(" ")), features(p.en.keywords.join(" ")), features(p.en.label)] : []),
   ];
 
   const build = (extra: Record<string, string[][]>) => {
@@ -351,6 +369,9 @@ export function trainModel(packsIn: DomainPack[], feedback: FeedbackExample[] = 
     p.items.forEach((i) => learn(i.name, i.icon));
     p.features.forEach((f) => learn(f.title, f.icon));
     learn(p.keywords.join(" "), p.brandIcon);
+    p.en?.items.forEach((i) => learn(i.name, i.icon));
+    p.en?.features.forEach((f) => learn(f.title, f.icon));
+    if (p.en) learn(p.en.keywords.join(" "), p.brandIcon);
   }
   const iconLex: Record<string, string> = {};
   for (const [t, m] of Object.entries(tally)) {
@@ -365,7 +386,7 @@ export function trainModel(packsIn: DomainPack[], feedback: FeedbackExample[] = 
       packs: Object.keys(packs).length,
       feedback: used,
       vocab: final.vocab.size,
-      prompts: Object.values(packs).reduce((n, p) => n + p.prompts.length, 0) + used,
+      prompts: Object.values(packs).reduce((n, p) => n + p.prompts.length + (p.en?.prompts.length ?? 0), 0) + used,
     },
     domains: final.domains,
     kinds: final.kinds,
@@ -930,12 +951,129 @@ export function extract(prompt: string): Extracted {
   return { brand, city, whatsapp: /^\d{8,15}$/.test(whatsapp) ? whatsapp : "", email, hours, address, products, topic, subject };
 }
 
+
+/* ---------- deskripsi berbahasa Inggris ---------- */
+
+const EN_BIZ =
+  "shop|store|cafe|café|coffee|bakery|kitchen|bar|grill|diner|restaurant|bistro|studio|salon|barbershop|barber|garage|clinic|laundry|catering|boutique|market|house|co\\.|company|club|academy|school|tutoring|agency|lab|works|festival|fest|conference|summit|workshop|blog|journal";
+const EN_STOPNAME = /^(i|we|my|our|a|an|the|this|it|please|make|create|build|website|site|need|want|hello|hi)$/i;
+
+function cleanNameEn(s: string): string {
+  return s
+    .replace(/\s+(?:in|at|on|near|located|that|which|who|for|with|and|selling|sells|offering|offers|open|is|are)\b.*$/i, "")
+    .replace(/^[\s"'“”‘’]+|[\s"'“”‘’.,!?:;]+$/g, "")
+    .replace(/\s+/g, " ")
+    .slice(0, 40)
+    .trim();
+}
+
+/** Harga "$9", "$9.50", "9 dollars", "€5", "£4.50", "USD 12". 0 = tidak disebut. */
+export function parseMoneyEn(t: string): number {
+  const m = /(?:[$€£]|\b(?:usd|eur|gbp|aud|sgd|rm)\s?)\s*(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d{1,2}))?|(\d{1,3}(?:,\d{3})+|\d+)(?:\.(\d{1,2}))?\s*(?:dollars?|bucks|euros?|pounds?|usd|eur|gbp)\b/i.exec(t);
+  if (!m) return 0;
+  const whole = (m[1] ?? m[3] ?? "").replace(/,/g, "");
+  const frac = m[2] ?? m[4];
+  return parseFloat(whole + (frac ? "." + frac : "")) || 0;
+}
+
+function hour12(h: string, m: string | undefined, ap: string | undefined): string {
+  let n = parseInt(h, 10);
+  if (ap) {
+    const pm = /p/i.test(ap);
+    if (pm && n < 12) n += 12;
+    if (!pm && n === 12) n = 0;
+  }
+  return `${String(n).padStart(2, "0")}:${m ?? "00"}`;
+}
+
+export function extractEn(prompt: string): Extracted {
+  const p = prompt.replace(/\s+/g, " ").trim();
+
+  let brand = "";
+  const named = /\b(?:called|named|name is|brand is|it's called)\s+["“']?([^,."”'\n(]{2,40})/i.exec(p);
+  if (named) brand = cleanNameEn(named[1]);
+  if (!brand) {
+    const q = /["“]([^"”]{2,40})["”]/.exec(p);
+    if (q) brand = cleanNameEn(q[1]);
+  }
+  if (!brand) {
+    // "Sam's Noodle Bar in Austin", "Sweet Home Bakery: ..."
+    const lead = /^((?:[A-Z][\w'’&.-]*)(?:\s+(?:[A-Z][\w'’&.-]*|\d{2,4}|&|and|of|the)){0,4})(?=\s+(?:in|at|on|near|is|offers|sells|serves|—|-|–)\b|[:,.]|\s*$)/.exec(p);
+    if (lead && !EN_STOPNAME.test(lead[1].split(" ")[0])) brand = cleanNameEn(lead[1]);
+  }
+  if (!brand) {
+    const re = new RegExp(`((?:[A-Z][\\w'’&-]*\\s+){1,3}(?:${EN_BIZ}))\\b`, "i");
+    const m = re.exec(p);
+    if (m && /^[A-Z]/.test(m[1]) && !EN_STOPNAME.test(m[1].split(" ")[0])) brand = cleanNameEn(m[1]);
+  }
+
+  let city = "";
+  const cm = /\b(?:in|from|based in|located in)\s+([A-Z][a-zA-Z]+(?:\s+[A-Z][a-zA-Z]+)?)(?=[\s,.;:!?)]|$)/.exec(p);
+  if (cm && !brand.includes(cm[1]) && !/^(English|Indonesian|January|February|March|April|May|June|July|August|September|October|November|December|Monday|Tuesday|Wednesday|Thursday|Friday|Saturday|Sunday)$/.test(cm[1])) city = cm[1];
+  if (!city) {
+    for (const c of CITY_LIST) {
+      if (new RegExp(`(?<![a-z])${c}(?![a-z])`, "i").test(p)) {
+        city = titleCase(c);
+        break;
+      }
+    }
+  }
+
+  const wa = /(?:whats\s?app|wa|phone|call|text|tel)\b[^\d+]{0,12}(\+?\d[\d\s().-]{7,18}\d)/i.exec(p) ?? /(\+\d[\d\s().-]{7,18}\d)/.exec(p);
+  let whatsapp = wa ? wa[1].replace(/\D/g, "") : "";
+  if (/^08\d{7,12}$/.test(whatsapp)) whatsapp = "62" + whatsapp.slice(1);
+  const em = /[^\s@<>"',;:()]+@[^\s@<>"',;:()]+\.[a-z]{2,}/i.exec(p);
+  const email = em ? em[0].replace(/[.,;:!?]+$/, "") : "";
+  const hr = /(?:open|hours|from)?\s*(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)?\s*(?:-|–|—|to|until|till)\s*(\d{1,2})(?:[:.](\d{2}))?\s*(am|pm)?/i.exec(p);
+  const hasHours = hr && (hr[3] || hr[6] || /\bopen\b|\bhours\b/i.test(p.slice(Math.max(0, hr.index - 12), hr.index + 2)));
+  const daily = /\b(daily|every day|7 days)\b/i.test(p);
+  const hours = hr && hasHours ? `${daily ? "Daily " : ""}${hour12(hr[1], hr[2], hr[3] ?? hr[6])}–${hour12(hr[4], hr[5], hr[6] ?? hr[3])}` : "";
+  const ad = /\b\d{1,5}\s+[A-Z][\w.]*(?:\s+[A-Z][\w.]*){0,3}\s+(?:St|Street|Ave|Avenue|Rd|Road|Blvd|Boulevard|Ln|Lane|Dr|Drive|Way|Pl|Place|Sq|Square)\b\.?/.exec(p);
+  const address = ad ? ad[0] + (city ? `, ${city}` : "") : city;
+
+  const products: { name: string; price: number }[] = [];
+  const list = /(?:menu|products?|services?|selling|sells|we sell|offering|offers|we offer|serving|serves|packages?|collection|items?)\s*(?:include|includes|are|is)?\s*:?\s+((?:[^.!?\n]|(?<=\d)\.(?=\d)){3,260})/i.exec(p);
+  if (list) {
+    const parts = list[1]
+      .split(/(?<!\d),|,(?!\d)|;|\s+and\s+|\s+&\s+|\/(?!\d)/i)
+      .map((x) => x.trim())
+      .filter(Boolean);
+    for (const part of parts.slice(0, 12)) {
+      const price = parseMoneyEn(part);
+      const name = cleanNameEn(
+        part
+          .replace(/\(?\s*(?:for\s+|at\s+|@\s*)?(?:[$€£]|\b(?:usd|eur|gbp)\s?)\s*\d+(?:[.,]\d+)*\s*\)?/gi, "")
+          .replace(/\(?\s*\d+(?:[.,]\d+)*\s*(?:dollars?|bucks|euros?|pounds?|usd|eur|gbp)\b\s*\)?/gi, "")
+          .replace(/^(?:all kinds of|various|different|some|like|such as)\s+/i, ""),
+      );
+      if (name.length >= 3 && name.split(" ").length <= 6 && !/^(in|at|for|with|open|from|price|prices|etc|more|other|order|orders|contact)\b/i.test(name)) {
+        products.push({ name: titleCase(name), price });
+      }
+    }
+  }
+
+  const tp = /(?:about|covering|on the topic of|topics? (?:like|such as)|themed)\s+([^.,!?\n]{3,60})/i.exec(p);
+  const topic = tp ? cleanNameEn(tp[1]) : "";
+
+  let subject = products[0]?.name.toLowerCase() ?? "";
+  if (!subject) {
+    const sj = /\b(?:a|an|my|our)\s+(?:small\s+|local\s+|little\s+|new\s+|family\s+|home\s+)*([a-z][a-z\s-]{2,25}?)\s+(?:business|shop|store|service|services|company|brand)\b/i.exec(p);
+    if (sj) subject = sj[1].trim().toLowerCase();
+  }
+  if (!subject && topic) subject = topic.toLowerCase();
+
+  return { brand, city, whatsapp: /^\d{8,15}$/.test(whatsapp) ? whatsapp : "", email, hours, address, products, topic, subject };
+}
+
 /* ======================================================================== */
 /*  GENERATE                                                                 */
 /* ======================================================================== */
 
 export interface GenerateOptions {
   variant?: number;
+  /** Bahasa isi website. Kosong = dari deskripsi (ragu → langHint, lalu Indonesia). */
+  lang?: SiteLang;
+  langHint?: SiteLang;
   kind?: Kind;
   wantItems?: number | null;
   wantArticles?: number | null;
@@ -964,7 +1102,7 @@ function fill(tpl: string, slots: Record<string, string>): string {
     .replace(/\(\s*\)/g, "")
     .replace(/\s{2,}/g, " ")
     // kata depan yang kehilangan pasangannya karena slot kosong ("di {city}" tanpa kota)
-    .replace(/\s+(?:di|dari|ke|untuk|warga|sejak)\s*(?=[,.]|$)/g, "")
+    .replace(/\s+(?:di|dari|ke|untuk|warga|sejak|in|from|at|for|since)\s*(?=[,.:]|$)/g, "")
     .replace(/,\s*(?=[.]|$)/g, "")
     .trim();
 }
@@ -1015,8 +1153,16 @@ function chooseDomain(model: SiteModel, prompt: string, kind?: Kind): { pack: Do
 export function generateSite(model: SiteModel, prompt: string, opts: GenerateOptions = {}): GenerateResult {
   const variant = Math.max(0, Math.floor(opts.variant ?? 0));
   const r = rng(hash(normText(prompt)) + variant * 7919);
-  const ex = extract(prompt);
-  const { pack, confidence } = chooseDomain(model, prompt, opts.kind);
+  const lang: SiteLang = opts.lang ?? detectSiteLang(prompt, opts.langHint);
+  const en = lang === "en";
+  const ex = en ? extractEn(prompt) : extract(prompt);
+  const chosen = chooseDomain(model, prompt, opts.kind);
+  const confidence = chosen.confidence;
+  const pack = packIn(chosen.pack, lang);
+  const currency = detectCurrency(prompt, lang);
+  // Harga contoh paket hanya dipakai bila mata uangnya sama (paket Indonesia = rupiah, paket Inggris = dolar).
+  const packCur = en && chosen.pack.en ? "USD" : "IDR";
+  const samplePrice = (n: number | undefined) => (currency === packCur ? n ?? 0 : 0);
   const kind: Kind = opts.kind ?? pack.kind;
 
   const subject = ex.subject || pack.label.toLowerCase();
@@ -1046,7 +1192,7 @@ export function generateSite(model: SiteModel, prompt: string, opts: GenerateOpt
       const out = fill(t, slots);
       const repeats = subject && brandLow.includes(subject.toLowerCase()) && /\{brand\}/.test(t) && /\{product\}/i.test(t);
       // Tanpa nama asli, hindari kalimat orang pertama seperti "Halo, saya {brand}".
-      const fakeSelf = !ex.brand && /saya\s+\{brand\}/i.test(t);
+      const fakeSelf = !ex.brand && /(saya|i'm|i am)\s+\{brand\}/i.test(t);
       if (!repeats && !fakeSelf && !(city === "" && /\{city\}/.test(t) && out.split(" ").length < 4)) return out;
     }
     return fill(order[0], slots);
@@ -1059,8 +1205,8 @@ export function generateSite(model: SiteModel, prompt: string, opts: GenerateOpt
     const sim = similarItem(pack, pr.name);
     items.push({
       name: pr.name,
-      desc: sim ? fill(sim.desc, slots) : fill(pick(r, ["{name} buatan {brand}, dibuat setiap hari.", "Pilihan {name} dari {brand}.", "{name} dengan resep andalan {brand}."]), { ...slots, name: pr.name }),
-      price: pr.price || sim?.price || 0,
+      desc: sim ? fill(sim.desc, slots) : fill(pick(r, en ? ["{name} by {brand}, made fresh every day.", "A {brand} favorite: {name}.", "{name}, made the {brand} way."] : ["{name} buatan {brand}, dibuat setiap hari.", "Pilihan {name} dari {brand}.", "{name} dengan resep andalan {brand}."]), { ...slots, name: pr.name }),
+      price: pr.price || samplePrice(sim?.price),
       category: sim?.category ?? "",
       icon: iconFor(model, pr.name, sim?.icon ?? pack.brandIcon),
     });
@@ -1070,12 +1216,12 @@ export function generateSite(model: SiteModel, prompt: string, opts: GenerateOpt
       if (items.length >= target) break;
       if (items.some((x) => String(x.name).toLowerCase() === it.name.toLowerCase())) continue;
       const nm = fill(it.name, slots);
-      items.push({ name: nm, desc: fill(it.desc, slots), price: it.price ?? 0, category: it.category ?? "", icon: phraseIcon(model, nm) ?? it.icon ?? pack.brandIcon, tag: it.tag ?? "" });
+      items.push({ name: nm, desc: fill(it.desc, slots), price: samplePrice(it.price), category: it.category ?? "", icon: phraseIcon(model, nm) ?? it.icon ?? pack.brandIcon, tag: it.tag ?? "" });
     }
   }
   if (items.length >= 3) {
     items[0].size = "large";
-    if (!items[0].tag) items[0].tag = kind === "umkm" ? "Paling laris" : kind === "jasa" ? "Paling dipilih" : "";
+    if (!items[0].tag) items[0].tag = kind === "umkm" ? (en ? "Best seller" : "Paling laris") : kind === "jasa" ? (en ? "Most popular" : "Paling dipilih") : "";
   }
 
   // Fitur: 3–5, kartu pertama lebar di bento.
@@ -1092,7 +1238,9 @@ export function generateSite(model: SiteModel, prompt: string, opts: GenerateOpt
     const pool = shuffle(r, pack.articles ?? []);
     articles = pool.slice(0, want).map((a) => ({ title: fill(a.title, slots), excerpt: fill(a.excerpt, slots), category: fill(a.category, slots), author: brand, body: a.body.map((b) => fill(b, slots)) }));
     const subs = shuffle(r, pack.subtopics ?? [subject]);
-    const TITLE = ["Panduan singkat {sub} untuk pemula", "{Sub}: hal yang jarang dibahas", "5 catatan penting soal {sub}", "Kesalahan umum saat {sub}", "Mulai {sub} dengan modal kecil"];
+    const TITLE = en
+      ? ["A quick guide to {sub} for beginners", "{Sub}: what rarely gets talked about", "5 key notes on {sub}", "Common mistakes with {sub}", "Getting started with {sub} on a small budget"]
+      : ["Panduan singkat {sub} untuk pemula", "{Sub}: hal yang jarang dibahas", "5 catatan penting soal {sub}", "Kesalahan umum saat {sub}", "Mulai {sub} dengan modal kecil"];
     let i = 0;
     while (articles.length < want && i < 40) {
       const sub = fill(subs[i % subs.length], slots).toLowerCase();
@@ -1101,16 +1249,24 @@ export function generateSite(model: SiteModel, prompt: string, opts: GenerateOpt
       if (!articles.some((a) => a.title === title))
         articles.push({
           title,
-          excerpt: fill("Ringkasan praktis tentang {sub}, ditulis dari pengalaman {brand}.", s2),
+          excerpt: fill(en ? "A practical summary of {sub}, written from {brand}'s experience." : "Ringkasan praktis tentang {sub}, ditulis dari pengalaman {brand}.", s2),
           category: titleCase(ex.topic || pack.label).slice(0, 24),
           author: brand,
-          body: [
-            fill("Banyak pembaca bertanya soal {sub}. Tulisan ini merangkum hal yang paling sering kami temui, tanpa istilah yang berbelit.", s2),
-            "## Mulai dari yang paling dasar",
-            fill("Langkah pertama untuk {sub} adalah memahami tujuanmu sendiri. Catat apa yang ingin dicapai, lalu tentukan satu hal kecil yang bisa dicoba minggu ini.", s2),
-            "## Yang perlu dihindari",
-            fill("Jangan terburu-buru meniru cara orang lain. Setiap situasi berbeda, jadi uji sedikit demi sedikit dan perhatikan hasilnya.", s2),
-          ],
+          body: en
+            ? [
+                fill("Plenty of readers ask about {sub}. This post sums up what we see most often, without the jargon.", s2),
+                "## Start with the basics",
+                fill("The first step with {sub} is understanding your own goal. Write down what you want to achieve, then pick one small thing to try this week.", s2),
+                "## What to avoid",
+                fill("Don't rush to copy someone else's approach. Every situation is different, so test a little at a time and watch the results.", s2),
+              ]
+            : [
+                fill("Banyak pembaca bertanya soal {sub}. Tulisan ini merangkum hal yang paling sering kami temui, tanpa istilah yang berbelit.", s2),
+                "## Mulai dari yang paling dasar",
+                fill("Langkah pertama untuk {sub} adalah memahami tujuanmu sendiri. Catat apa yang ingin dicapai, lalu tentukan satu hal kecil yang bisa dicoba minggu ini.", s2),
+                "## Yang perlu dihindari",
+                fill("Jangan terburu-buru meniru cara orang lain. Setiap situasi berbeda, jadi uji sedikit demi sedikit dan perhatikan hasilnya.", s2),
+              ],
         });
       i++;
     }
@@ -1120,6 +1276,8 @@ export function generateSite(model: SiteModel, prompt: string, opts: GenerateOpt
 
   const raw: Record<string, unknown> = {
     kind,
+    ...(en ? { lang: "en" } : {}),
+    ...(currency !== "IDR" ? { currency } : {}),
     template: pack.templates[(hash(brand) + variant) % pack.templates.length],
     accent: "",
     hero: pack.heroes[(hash(brand) + variant * 3) % pack.heroes.length],
@@ -1223,8 +1381,49 @@ function sameName(a: unknown, b: string): boolean {
  * Terapkan satu atau beberapa perintah (dipisah "lalu", ";", atau baris baru).
  * Perintah yang tidak dikenali dilaporkan di note; bila tak satu pun dikenali, raw = null.
  */
-export function editSite(model: SiteModel, current: Record<string, unknown>, instruction: string): EditResult {
+/** Perintah berbahasa Inggris → kata kunci perintah Indonesia (nilai seperti nama/harga dibiarkan). */
+const EN_CMD: [RegExp, string][] = [
+  [/\b(?:and then|then|after that)\b/gi, "lalu"],
+  [/\b(?:change|update|rename|replace|set|make|switch)\b/gi, "ganti"],
+  [/\b(?:add|insert|include)\b/gi, "tambah"],
+  [/\b(?:remove|delete|drop|get rid of)\b/gi, "hapus"],
+  [/\b(?:hide|turn off|disable)\b/gi, "matikan"],
+  [/\b(?:without|no)\b/gi, "tanpa"],
+  [/\buse\b/gi, "pakai"],
+  [/\b(?:colou?r|accent|main colou?r)\b/gi, "warna"],
+  [/\b(?:business name|brand name|shop name|store name|site name|name)\b/gi, "nama"],
+  [/\b(?:main title|headline|title)\b/gi, "judul"],
+  [/\b(?:subtitle|subheadline|subheading|intro)\b/gi, "subjudul"],
+  [/\bbutton\b/gi, "tombol"],
+  [/\baddress\b/gi, "alamat"],
+  [/\b(?:opening hours|hours)\b/gi, "jam buka"],
+  [/\b(?:whatsapp number|phone number|phone)\b/gi, "nomor wa"],
+  [/\bclosing\b/gi, "penutup"],
+  [/\btestimonials?\b/gi, "testimoni"],
+  [/\bsteps\b/gi, "langkah"],
+  [/\b(?:decorations?|ornaments?|patterns?)\b/gi, "hiasan"],
+  [/\b(?:products?|items?|dishes|drinks?)\b/gi, "menu"],
+  [/\bservices?\b/gi, "layanan"],
+  [/\bprice of\b/gi, "harga"],
+  [/\bprice\b/gi, "harga"],
+  [/\b(?:to|into|as)\b/gi, "jadi"],
+  [/\bthe\b/gi, ""],
+];
+const EN_COLORS: Record<string, string> = { red: "merah", blue: "biru", "light blue": "biru muda", green: "hijau", yellow: "kuning", purple: "ungu", violet: "ungu", black: "hitam", brown: "coklat", gold: "emas", teal: "tosca", gray: "abu", grey: "abu" };
+
+function enCommand(s0: string): string {
+  let out = s0;
+  for (const [re, to] of EN_CMD) out = out.replace(re, to);
+  out = out.replace(/\b(light blue|red|blue|green|yellow|purple|violet|black|brown|gold|teal|gray|grey)\b/gi, (m) => EN_COLORS[m.toLowerCase()] ?? m);
+  return out.replace(/\s{2,}/g, " ").trim();
+}
+
+export function editSite(model: SiteModel, current: Record<string, unknown>, instructionIn: string): EditResult {
   const c: Record<string, unknown> = JSON.parse(JSON.stringify(current));
+  const EN = detectSiteLang(instructionIn, c.lang === "en" ? "en" : "id") === "en";
+  const instruction = EN ? enCommand(instructionIn) : instructionIn;
+  const usd = typeof c.currency === "string" && c.currency !== "IDR";
+  const priceOf = (t: string): number => (usd ? parseMoneyEn(t) || parseFloat(/\d+(?:\.\d{1,2})?/.exec(t)?.[0] ?? "0") || 0 : parseRupiah(t));
   const done: string[] = [];
   const skipped: string[] = [];
   const parts = instruction
@@ -1248,7 +1447,7 @@ export function editSite(model: SiteModel, current: Record<string, unknown>, ins
       const col = hex ?? (word ? COLOR_WORDS[word] : "");
       if (col) {
         c.accent = col.toLowerCase();
-        done.push(`warna aksen ${word ?? col}`);
+        done.push(EN ? `accent color ${word ?? col}` : `warna aksen ${word ?? col}`);
         continue;
       }
     }
@@ -1257,7 +1456,7 @@ export function editSite(model: SiteModel, current: Record<string, unknown>, ins
       const st = iconStyleFromText(part);
       if (st) {
         c.iconStyle = st;
-        done.push(`gaya ikon ${st}`);
+        done.push(EN ? `icon style ${st}` : `gaya ikon ${st}`);
         continue;
       }
     }
@@ -1267,7 +1466,7 @@ export function editSite(model: SiteModel, current: Record<string, unknown>, ins
         if (c.ornaments) {
           delete c.ornaments;
           delete c.ornFamily;
-          done.push("ornamen dihapus");
+          done.push(EN ? "ornaments removed" : "ornamen dihapus");
           continue;
         }
       } else if (Object.keys(model.elements ?? {}).length) {
@@ -1284,7 +1483,7 @@ export function editSite(model: SiteModel, current: Record<string, unknown>, ins
         if (res.ornaments.length) {
           c.ornaments = res.ornaments;
           c.ornFamily = res.family;
-          done.push(`ornamen ${model.families?.[res.family ?? ""]?.label ?? res.family}`);
+          done.push(`${EN ? "ornaments" : "ornamen"} ${model.families?.[res.family ?? ""]?.label ?? res.family}`);
           continue;
         }
       }
@@ -1294,7 +1493,7 @@ export function editSite(model: SiteModel, current: Record<string, unknown>, ins
       if (/\b(hapus|lepas|tanpa|matikan|biasa)\b/.test(low) && c.look) {
         delete c.look;
         c.iconStyle = templateIconStyle(String(c.template ?? ""));
-        done.push("gaya visual dilepas (kembali ke template)");
+        done.push(EN ? "visual style dropped (back to the template)" : "gaya visual dilepas (kembali ke template)");
         continue;
       }
       const st = styleFromText(Object.values(model.styles ?? {}), normText(part), hash(String(c.brand ?? "")));
@@ -1304,7 +1503,7 @@ export function editSite(model: SiteModel, current: Record<string, unknown>, ins
         if (st.layouts.feat.length) c.feat = st.layouts.feat[0];
         c.accent = "";
         c.iconStyle = pickIconStyle(model, { template: String(c.template ?? ""), style: st, family: typeof c.ornFamily === "string" ? c.ornFamily : null, seed: hash(String(c.brand ?? "")), variant: 0 });
-        done.push(`gaya ${st.label}`);
+        done.push(EN ? `style ${st.label}` : `gaya ${st.label}`);
         continue;
       }
     }
@@ -1323,7 +1522,7 @@ export function editSite(model: SiteModel, current: Record<string, unknown>, ins
       const h = /\bkolase\b/.test(low) ? "collage" : HERO_IDS.find((id) => new RegExp(`(^|[^a-z-])${id}(?![a-z-])`).test(low));
       if (h) {
         c.hero = h;
-        done.push(`tata letak hero ${h}`);
+        done.push(EN ? `hero layout ${h}` : `tata letak hero ${h}`);
         continue;
       }
     }
@@ -1332,12 +1531,12 @@ export function editSite(model: SiteModel, current: Record<string, unknown>, ins
     if (/\b(hapus|hilangkan|buang)\b/.test(low)) {
       if (/testimoni/.test(low)) {
         c.testimonial = { text: "", name: "" };
-        done.push("testimoni dihapus");
+        done.push(EN ? "testimonial removed" : "testimoni dihapus");
         continue;
       }
       if (/\b(langkah|cara pesan|cara order)\b/.test(low)) {
         c.steps = [];
-        done.push("bagian langkah dihapus");
+        done.push(EN ? "steps section removed" : "bagian langkah dihapus");
         continue;
       }
       const target = /(?:hapus|hilangkan|buang)\s+(?:produk|menu|item|layanan|paket|karya|artikel)?\s*["“']?(.+?)["”']?\s*$/i.exec(part)?.[1];
@@ -1347,7 +1546,7 @@ export function editSite(model: SiteModel, current: Record<string, unknown>, ins
         if (Array.isArray(c.articles)) c.articles = (c.articles as Record<string, unknown>[]).filter((a) => !sameName(a.title, target));
         const after = Array.isArray(c.items) ? (c.items as unknown[]).length : 0;
         if (after < before) {
-          done.push(`"${target}" dihapus`);
+          done.push(EN ? `"${target}" removed` : `"${target}" dihapus`);
           continue;
         }
       }
@@ -1356,11 +1555,11 @@ export function editSite(model: SiteModel, current: Record<string, unknown>, ins
     // Ubah harga
     const hp = /harga\s+["“']?(.+?)["”']?\s+(?:jadi|menjadi|=)\s+(.+)$/i.exec(part);
     if (hp && Array.isArray(c.items)) {
-      const price = parseRupiah(hp[2]);
+      const price = priceOf(hp[2]);
       const it = (c.items as Record<string, unknown>[]).find((x) => sameName(x.name, hp[1]));
       if (it && price) {
         it.price = price;
-        done.push(`harga ${it.name}`);
+        done.push(EN ? `price of ${it.name}` : `harga ${it.name}`);
         continue;
       }
     }
@@ -1376,25 +1575,25 @@ export function editSite(model: SiteModel, current: Record<string, unknown>, ins
         // "tambah 3 menu minuman": ambil dari paket domain yang paling cocok dengan kata setelahnya.
         const cat = rest;
         const ranked = classify(model, `${String(c.brand ?? "")} ${cat} ${(items[0]?.name as string) ?? ""}`, (KINDS.includes(c.kind as Kind) ? c.kind : undefined) as Kind | undefined);
-        const pool = ranked.flatMap((s) => model.packs[s.id]?.items ?? []);
+        const pool = ranked.flatMap((s) => (model.packs[s.id] ? packIn(model.packs[s.id], c.lang === "en" ? "en" : "id").items : []));
         const catTokens = new Set(tokens(cat));
         const preferred = pool.filter((it) => tokens(`${it.name} ${it.category ?? ""} ${it.desc}`).some((t) => catTokens.has(t)));
         for (const it of [...preferred, ...pool]) {
           if (items.length - before >= n || items.length >= 12) break;
           if (items.some((x) => sameName(x.name, it.name))) continue;
-          items.push({ name: it.name, desc: it.desc.replace(/\{brand\}/g, String(c.brand ?? "")).replace(/\{\w+\}/g, ""), price: it.price ?? 0, category: it.category ?? "", icon: it.icon ?? "package" });
+          items.push({ name: it.name, desc: it.desc.replace(/\{brand\}/g, String(c.brand ?? "")).replace(/\{\w+\}/g, ""), price: (c.lang === "en") === usd ? it.price ?? 0 : 0, category: it.category ?? "", icon: it.icon ?? "package" });
         }
       } else if (rest) {
         for (const raw of rest.split(/(?<!\d),|,(?!\d)|\s+dan\s+|\s+&\s+/)) {
-          const price = parseRupiah(raw);
-          const name = titleCase(cleanName(raw.replace(/\(?\s*(?:harga\s*|seharga\s*)?(?:rp\.?\s*)?\d+(?:[.,]\d+)*\s*(?:rb|ribu|k|jt|juta)?\s*\)?/gi, "")));
+          const price = priceOf(raw);
+          const name = titleCase(cleanName(raw.replace(/\(?\s*(?:harga\s*|seharga\s*|for\s+|at\s+)?(?:rp\.?\s*|[$€£]\s*)?\d+(?:[.,]\d+)*\s*(?:rb|ribu|k|jt|juta|dollars?)?\s*\)?/gi, "")));
           if (name.length < 2 || items.length >= 12 || items.some((x) => sameName(x.name, name))) continue;
           items.push({ name, desc: "", price, category: "", icon: iconFor(model, name, String(c.brandIcon || "package")) });
         }
       }
       if (items.length > before) {
         c.items = items;
-        done.push(`${items.length - before} item ditambahkan`);
+        done.push(EN ? `${items.length - before} ${items.length - before === 1 ? "item" : "items"} added` : `${items.length - before} item ditambahkan`);
         continue;
       }
     }
@@ -1403,7 +1602,7 @@ export function editSite(model: SiteModel, current: Record<string, unknown>, ins
     const tm = /testimoni\s*(?:jadi|:|dari)?\s*["“']?(.+?)["”']?\s*(?:-|—|oleh|dari)\s*([^-—]{2,40})$/i.exec(part);
     if (tm) {
       c.testimonial = { text: tm[1].trim(), name: tm[2].trim() };
-      done.push("testimoni");
+      done.push(EN ? "testimonial" : "testimoni");
       continue;
     }
 
@@ -1422,7 +1621,7 @@ export function editSite(model: SiteModel, current: Record<string, unknown>, ins
           for (const k of Object.keys(c)) if (k !== "brand") c[k] = swap(c[k]);
         }
         c[field] = v;
-        done.push(field === "brand" ? "nama" : field);
+        done.push(field === "brand" ? (EN ? "name" : "nama") : field);
         continue;
       }
     }
@@ -1430,6 +1629,11 @@ export function editSite(model: SiteModel, current: Record<string, unknown>, ins
   }
 
   if (!done.length) {
+    if (EN)
+      return {
+        raw: null,
+        note: 'The Depup engine didn\'t recognize that command yet. Examples that work: "change the name to Sunset Coffee", "change the title to …", "add menu Iced Tea $2, Orange Juice $3", "add 3 drinks", "remove Iced Tea", "price of Iced Tea to $3", "change the color to green", "use the gelap template", "remove ornaments", "remove testimonial".',
+      };
     return {
       raw: null,
       note:
@@ -1437,5 +1641,6 @@ export function editSite(model: SiteModel, current: Record<string, unknown>, ins
     };
   }
   attachIcons(model, c);
+  if (EN) return { raw: c, note: `Changed: ${done.join(", ")}.${skipped.length ? ` Not recognized: "${skipped.join('", "')}".` : ""}` };
   return { raw: c, note: `Diubah: ${done.join(", ")}.${skipped.length ? ` Tidak dikenali: "${skipped.join('", "')}".` : ""}` };
 }

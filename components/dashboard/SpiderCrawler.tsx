@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import * as React from "react";
 
 /**
@@ -217,6 +219,7 @@ export function SpiderCrawler({
   /** Tema aktif aplikasi. Animasi mengikuti dan langsung berganti saat tema diubah. */
   theme?: SpiderTheme;
 }) {
+  const tx_ = useT();
   const wrapRef = React.useRef<HTMLDivElement>(null);
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
   const stepRef = React.useRef(stepIndex);
@@ -671,7 +674,7 @@ export function SpiderCrawler({
         const done = step > i;
         const running = step === i;
         const n = Math.floor(c.total * pr + (done ? 0.0001 : 0));
-        const status = done ? "selesai" : running ? "berjalan" : "antre";
+        const status = done ? tx_("selesai") : running ? tx_("berjalan") : tx_("antre");
         const nameFont = Math.max(10, 12 * k);
         const subFont = Math.max(8, 8.8 * k);
         const lx = clamp(cc.x - R * c.asp * 0.85, 8, w - 108 * k);
@@ -946,10 +949,10 @@ export function SpiderCrawler({
       ctx.textBaseline = "alphabetic";
       ctx.textAlign = "left";
       ctx.fillText("SPIDER · CRAWL", m + bl + 6 * k, m + font * 0.8);
-      ctx.fillText(`NODE ${nDone}/${nAll}`, m + bl + 6 * k, H - m - 2 * k);
+      ctx.fillText(tx_("NODE {nDone}/{nAll}", { nDone, nAll }), m + bl + 6 * k, H - m - 2 * k);
       ctx.textAlign = "right";
       ctx.fillText(
-        `TAHAP ${Math.min(step + 1, NODE_COUNT)}/${NODE_COUNT}`,
+        tx_("TAHAP {min}/{NODE_COUNT}", { min: Math.min(step + 1, NODE_COUNT), NODE_COUNT }),
         w - m - bl - 6 * k,
         m + font * 0.8,
       );

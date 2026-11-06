@@ -1,3 +1,4 @@
+import { getT } from "@/lib/i18n/server";
 import * as React from "react";
 import { GlyphText, InlineIcon } from "@/components/ui/Icon";
 import { Globe, History, KeyRound, LayoutGrid, Layers, RefreshCw, ScanSearch, ShieldCheck } from "@/components/ui/icons";
@@ -26,11 +27,12 @@ const H3 = "mb-2 text-[20px] font-bold tracking-[-0.025em]";
 const P = "mb-5 text-[14px] leading-relaxed text-text-muted";
 
 export function FeaturesGrid() {
+  const t = getT();
   return (
     <section id="fitur" className="mx-auto w-full max-w-6xl scroll-mt-24 px-4 py-16 sm:px-8 sm:py-20">
       <div className="mx-auto mb-12 max-w-3xl text-center">
-        <h2 className="lp-h2">Setelah website live, semuanya tetap di satu tempat.</h2>
-        <p className="lp-lead">Domain, environment variables, dan riwayat deploy dari tiga platform, tanpa pindah tab.</p>
+        <h2 className="lp-h2">{t("Setelah website live, semuanya tetap di satu tempat.")}</h2>
+        <p className="lp-lead">{t("Domain, environment variables, dan riwayat deploy dari tiga platform, tanpa pindah tab.")}</p>
       </div>
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
@@ -52,16 +54,15 @@ export function FeaturesGrid() {
             <Icon dark>
               <Layers size={22} />
             </Icon>
-            <h3 className="mb-3 text-balance text-[24px] font-bold tracking-[-0.03em] text-white sm:text-[26px]">Satu dashboard, tiga platform</h3>
+            <h3 className="mb-3 text-balance text-[24px] font-bold tracking-[-0.03em] text-white sm:text-[26px]">{t("Satu dashboard, tiga platform")}</h3>
             <p className="mb-7 max-w-xl text-[15px] leading-relaxed text-night-80">
-              Project dari Vercel, Cloudflare Pages, dan Railway tampil dalam satu daftar, lengkap dengan status dan tombol
-              redeploy.
+              {t("Project dari Vercel, Cloudflare Pages, dan Railway tampil dalam satu daftar, lengkap dengan status dan tombol redeploy.")}
             </p>
           </div>
           <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
             {[
-              ["Vercel", "Situs web & framework"],
-              ["Cloudflare Pages", "Situs statis & SPA"],
+              ["Vercel", t("Situs web & framework")],
+              [t("Cloudflare Pages"), t("Situs statis & SPA")],
               ["Railway", "Server, Docker, bahasa lain"],
             ].map(([name, note]) => (
               <div key={name} className="flex flex-col gap-1.5 rounded-[14px] bg-night-15 p-4">
@@ -69,7 +70,7 @@ export function FeaturesGrid() {
                 <span className="text-[13px] text-night-80">{note}</span>
                 <span className="mt-1 self-start">
                   <Badge tone="good" dot>
-                    Terhubung
+                    {t("Terhubung")}
                   </Badge>
                 </span>
               </div>
@@ -83,8 +84,8 @@ export function FeaturesGrid() {
             <Icon>
               <ScanSearch size={22} />
             </Icon>
-            <h3 className={H3}>Periksa repo dulu</h3>
-            <p className={P}>Depup membaca isi repo dan memberi tahu platform mana yang cocok sebelum deploy dimulai.</p>
+            <h3 className={H3}>{t("Periksa repo dulu")}</h3>
+            <p className={P}>{t("Depup membaca isi repo dan memberi tahu platform mana yang cocok sebelum deploy dimulai.")}</p>
           </div>
           <Mini className="flex flex-col gap-1.5 leading-[18px] text-text-muted">
             <div className="mb-1 flex items-center gap-1.5 pb-1">
@@ -93,11 +94,11 @@ export function FeaturesGrid() {
               <span className="h-2 w-2 rounded-full bg-ok" aria-hidden="true" />
               <span className="ml-2 text-[12px] text-text-faint">hasil-periksa.log</span>
             </div>
-            <div className="font-semibold text-text">Terdeteksi: Express</div>
-            <div className="text-warn-fg">! Vercel: butuh penyesuaian</div>
-            <div className="text-text-faint">– Cloudflare: tidak cocok</div>
+            <div className="font-semibold text-text">{t("Terdeteksi: Express")}</div>
+            <div className="text-warn-fg">{t("! Vercel: butuh penyesuaian")}</div>
+            <div className="text-text-faint">{t("– Cloudflare: tidak cocok")}</div>
             <div className="text-ok-fg">
-              <GlyphText>✓ Railway: cocok untuk server</GlyphText>
+              <GlyphText>{t("✓ Railway: cocok untuk server")}</GlyphText>
             </div>
           </Mini>
         </div>
@@ -108,12 +109,12 @@ export function FeaturesGrid() {
             <Icon>
               <Globe size={22} />
             </Icon>
-            <h3 className={H3}>Domain sendiri</h3>
-            <p className={P}>Tambahkan domain dan dapatkan record DNS persis yang perlu dipasang di registrar.</p>
+            <h3 className={H3}>{t("Domain sendiri")}</h3>
+            <p className={P}>{t("Tambahkan domain dan dapatkan record DNS persis yang perlu dipasang di registrar.")}</p>
           </div>
           <Mini className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
             <span>tokokopi.id</span>
-            <Badge tone="good">DNS siap</Badge>
+            <Badge tone="good">{t("DNS siap")}</Badge>
           </Mini>
         </div>
 
@@ -122,8 +123,8 @@ export function FeaturesGrid() {
             <Icon>
               <KeyRound size={22} />
             </Icon>
-            <h3 className={H3}>Environment variables</h3>
-            <p className={P}>Simpan per project, lalu kirim ke platform tujuan. Variabel yang dibutuhkan repo terdeteksi otomatis.</p>
+            <h3 className={H3}>{t("Environment variables")}</h3>
+            <p className={P}>{t("Simpan per project, lalu kirim ke platform tujuan. Variabel yang dibutuhkan repo terdeteksi otomatis.")}</p>
           </div>
           <Mini className="flex flex-col gap-1 text-text-muted">
             <div className="flex flex-wrap justify-between gap-x-3 gap-y-0.5">
@@ -142,11 +143,11 @@ export function FeaturesGrid() {
             <Icon>
               <RefreshCw size={22} />
             </Icon>
-            <h3 className={H3}>Redeploy otomatis</h3>
-            <p className={P}>Ubah secret, project langsung dideploy ulang supaya nilai barunya terpakai.</p>
+            <h3 className={H3}>{t("Redeploy otomatis")}</h3>
+            <p className={P}>{t("Ubah secret, project langsung dideploy ulang supaya nilai barunya terpakai.")}</p>
           </div>
           <Mini className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-text-muted">
-            <span>API_KEY diperbarui</span>
+            <span>{t("API_KEY diperbarui")}</span>
             <span className="font-semibold text-ok-fg">
               redeploy <InlineIcon name="check" />
             </span>
@@ -158,12 +159,12 @@ export function FeaturesGrid() {
             <Icon>
               <LayoutGrid size={22} />
             </Icon>
-            <h3 className={H3}>Satu daftar project</h3>
-            <p className={P}>Semua project dan statusnya terlihat sekilas. Impor project yang sudah ada kapan saja.</p>
+            <h3 className={H3}>{t("Satu daftar project")}</h3>
+            <p className={P}>{t("Semua project dan statusnya terlihat sekilas. Impor project yang sudah ada kapan saja.")}</p>
           </div>
           <Mini className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-text-muted">
-            <span>Vercel · Cloudflare · Railway</span>
-            <span className="font-semibold text-text">1 daftar</span>
+            <span>{t("Vercel · Cloudflare · Railway")}</span>
+            <span className="font-semibold text-text">{t("1 daftar")}</span>
           </Mini>
         </div>
 
@@ -172,8 +173,8 @@ export function FeaturesGrid() {
             <Icon>
               <History size={22} />
             </Icon>
-            <h3 className={H3}>Riwayat deploy</h3>
-            <p className={P}>Lihat deploy terakhir, hasilnya, dan buka lagi dengan satu klik.</p>
+            <h3 className={H3}>{t("Riwayat deploy")}</h3>
+            <p className={P}>{t("Lihat deploy terakhir, hasilnya, dan buka lagi dengan satu klik.")}</p>
           </div>
           <div className="flex h-14 items-end gap-1.5 rounded-[14px] bg-[var(--surface-solid)] p-2.5" aria-hidden="true">
             {[
@@ -195,14 +196,14 @@ export function FeaturesGrid() {
             <Icon>
               <ShieldCheck size={22} />
             </Icon>
-            <h3 className={H3}>Token tetap milikmu</h3>
+            <h3 className={H3}>{t("Token tetap milikmu")}</h3>
             <p className={P}>
-              Token platform hanya dikirim saat dipakai. Kamu masuk dengan akun Google, dan repo private cukup dilengkapi GitHub Token.
+              {t("Token platform hanya dikirim saat dipakai. Kamu masuk dengan akun Google, dan repo private cukup dilengkapi GitHub Token.")}
             </p>
           </div>
           <Mini className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-text-muted">
-            <span>Token Vercel</span>
-            <span className="font-semibold text-ok-fg">saat deploy saja</span>
+            <span>{t("Token Vercel")}</span>
+            <span className="font-semibold text-ok-fg">{t("saat deploy saja")}</span>
           </Mini>
         </div>
       </div>

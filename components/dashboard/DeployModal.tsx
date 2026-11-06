@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import * as React from "react";
 import { useTheme } from "next-themes";
 import { GlyphText, InlineIcon } from "@/components/ui/Icon";
@@ -23,6 +25,7 @@ const DEPLOY_STEPS_LABELS = [
 ];
 
 export function DeployModal() {
+  const t = useT();
   const { deployState, closeModal, handleCloseAfterDeploy, retryDeploy } =
     useDeploy();
   const { status, stepIndex, barWidth, title, subtitle, error, errorGuide, result } =
@@ -105,7 +108,7 @@ export function DeployModal() {
           ref={dialogRef}
           role="dialog"
           aria-modal="true"
-          aria-label={title || "Proses deploy"}
+          aria-label={title || t("Proses deploy")}
           tabIndex={-1}
           className="relative w-full max-w-[520px] rounded-[28px] bg-[var(--dm-surface)] shadow-[var(--dm-shadow)] overflow-hidden flex flex-col max-h-[90dvh] outline-none"
           style={{ animation: "dcModalIn .3s ease" }}
@@ -135,17 +138,17 @@ export function DeployModal() {
               <div>
                 <div className="text-[13px] font-semibold leading-none">
                   {isError
-                    ? "Deploy belum berhasil"
+                    ? t("Deploy belum berhasil")
                     : isDone
-                      ? "Deploy berhasil"
-                      : "Konsol deploy"}
+                      ? t("Deploy berhasil")
+                      : t("Konsol deploy")}
                 </div>
                 <div className="text-[12px] text-[var(--text-faint)] mt-1">
                   {isDeploying
-                    ? "Sedang menyiapkan deploy…"
+                    ? t("Sedang menyiapkan deploy…")
                     : isDone
-                      ? "Selesai"
-                      : "Ada yang perlu diperiksa"}
+                      ? t("Selesai")
+                      : t("Ada yang perlu diperiksa")}
                 </div>
               </div>
             </div>
@@ -155,7 +158,7 @@ export function DeployModal() {
                 type="button"
                 onClick={closeModal}
                 className="w-8 h-8 rounded-full bg-[var(--dm-chip)] flex items-center justify-center hover:bg-[var(--dm-chip-hover)] transition-colors"
-                aria-label="Tutup"
+                aria-label={t("Tutup")}
               >
                 <X className="w-4 h-4 text-[var(--text-muted)]" />
               </button>
@@ -211,10 +214,10 @@ export function DeployModal() {
 
               <div className="mt-2.5 flex items-center justify-between gap-3 text-[12px] text-[var(--text-faint)]">
                 <span className="truncate font-medium text-[var(--text-muted)]">
-                  {DEPLOY_STEPS_LABELS[Math.min(stepIndex, DEPLOY_STEPS_LABELS.length - 1)]}
+                  {t(DEPLOY_STEPS_LABELS[Math.min(stepIndex, DEPLOY_STEPS_LABELS.length - 1)])}
                 </span>
                 <span className="shrink-0 tabular-nums">
-                  Tahap {Math.min(stepIndex + 1, DEPLOY_STEPS_LABELS.length)} dari {DEPLOY_STEPS_LABELS.length}
+                  {t("Tahap {min} dari {length}", { min: Math.min(stepIndex + 1, DEPLOY_STEPS_LABELS.length), length: DEPLOY_STEPS_LABELS.length })}
                 </span>
               </div>
             </div>
@@ -251,7 +254,7 @@ export function DeployModal() {
                 )}
 
                 <div className="mt-5 text-[16px] font-medium">
-                  {title || "Sedang menyiapkan deploy…"}
+                  {title || t("Sedang menyiapkan deploy…")}
                 </div>
                 <div className="mt-1.5 text-[12px] text-[var(--text-muted)] max-w-[340px] mx-auto leading-relaxed">
                   {subtitle}
@@ -296,7 +299,7 @@ export function DeployModal() {
                             <Loader2 className="w-2.5 h-2.5 animate-spin text-[var(--text-muted)]" />
                           ) : null}
                         </div>
-                        <span className="truncate">{label}</span>
+                        <span className="truncate">{t(label)}</span>
                       </div>
                     );
                   })}
@@ -323,44 +326,44 @@ export function DeployModal() {
                 )}
 
                 <div className="mt-5 text-[18px] font-semibold">
-                  Deploy dimulai! <InlineIcon name="rocket_launch" className="ml-1" />
+                  {t("Deploy dimulai!")}{" "}<InlineIcon name="rocket_launch" className="ml-1" />
                 </div>
                 <div className="mt-1.5 text-[13px] text-[var(--text-muted)] max-w-[320px] mx-auto leading-relaxed">
-                  Project{" "}
+                  {t("Project")}{" "}
                   <span className="text-[var(--text)] font-medium">
                     {result?.name || "my-project"}
                   </span>{" "}
-                  sedang dibangun. Periksa progress di dashboard.
+                  {t("sedang dibangun. Periksa progress di dashboard.")}
                 </div>
 
                 {/* logs panel */}
                 <div className="mt-6 p-3 rounded-[14px] bg-[var(--dm-surface-2)] text-left">
                   <div className="text-[12px] text-[var(--text-faint)]">
-                    Logs
+                    {t("Logs")}
                   </div>
                   <div className="mt-2 font-mono text-[12px] leading-[1.6] text-[var(--text-muted)]">
                     <div>
                       <span className="text-[var(--text-faint)]">$</span>{" "}
                       {result?.domain?.includes("pages.dev")
-                        ? "wrangler pages deploy"
-                        : "vercel --prod --token ****"}
+                        ? t("wrangler pages deploy")
+                        : t("vercel --prod --token ****")}
                     </div>
                     <div className="text-[var(--ok-fg)]">
                       <GlyphText>{`✓ Project created: ${result?.name || "my-project"}`}</GlyphText>
                     </div>
                     {result?.domain && (
                       <div className="text-[var(--ok-fg)]">
-                        <GlyphText>{`✓ Deployed: ${normalizeDeployDomain(result.domain)}`}</GlyphText>
+                        <GlyphText>{t("✓ Deployed: {normalizeDeployDomain}", { normalizeDeployDomain: normalizeDeployDomain(result.domain) })}</GlyphText>
                       </div>
                     )}
-                    <div className="text-[var(--text-faint)]"><GlyphText>→ Building…</GlyphText></div>
+                    <div className="text-[var(--text-faint)]"><GlyphText>{t("→ Building…")}</GlyphText></div>
                   </div>
                 </div>
 
                 {prefs.showDebug && debugLines.length > 0 && (
                   <details className="mt-4 text-left">
                     <summary className="cursor-pointer select-none text-center text-[12px] text-[var(--text-faint)] hover:text-[var(--text)]">
-                      Lihat log proses debug
+                      {t("Lihat log proses debug")}
                     </summary>
                     <DeployDebugLog lines={debugLines} className="mt-2" />
                   </details>
@@ -377,7 +380,7 @@ export function DeployModal() {
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 text-[12px] text-[var(--accent-text)] hover:text-[var(--text)] underline underline-offset-4 transition-colors"
                     >
-                      Buka {normalizeDeployDomain(result.domain)}{" "}
+                      {t("Buka {normalizeDeployDomain}", { normalizeDeployDomain: normalizeDeployDomain(result.domain) })}{" "}
                       <ExternalLink className="w-3 h-3 shrink-0" />
                     </a>
                   </div>
@@ -390,7 +393,7 @@ export function DeployModal() {
                     onClick={handleCloseAfterDeploy}
                     className="h-10 px-5 rounded-full bg-[var(--dm-accent)] text-[var(--dm-accent-fg)] text-[13px] font-medium hover:bg-[var(--dm-accent-hover)] transition-colors"
                   >
-                    Selesai
+                    {t("Selesai")}
                   </button>
 
                   {result?.inspectorUrl && (
@@ -400,7 +403,7 @@ export function DeployModal() {
                       rel="noopener noreferrer"
                       className="h-10 px-5 rounded-full bg-[var(--dm-chip)] text-[var(--text-muted)] text-[13px] font-medium flex items-center gap-2 hover:bg-[var(--dm-chip-hover)] hover:text-[var(--text)] transition-colors"
                     >
-                      <ExternalLink className="w-3.5 h-3.5" /> Lihat Logs
+                      <ExternalLink className="w-3.5 h-3.5" />{" "}{t("Lihat Logs")}
                     </a>
                   )}
                 </div>
@@ -452,6 +455,7 @@ function ErrorPanel({
   logsUrl?: string;
   debugLines?: React.ComponentProps<typeof DeployDebugLog>["lines"] | null;
 }) {
+  const t = useT();
   const [copied, setCopied] = React.useState(false);
 
   const copyDetail = async () => {
@@ -465,8 +469,8 @@ function ErrorPanel({
     }
   };
 
-  const title = guide?.title ?? "Deploy belum berhasil";
-  const message = guide?.message ?? fallbackMessage ?? "Terjadi kesalahan. Coba lagi sebentar lagi.";
+  const title = guide?.title ?? t("Deploy belum berhasil");
+  const message = guide?.message ?? fallbackMessage ?? t("Terjadi kesalahan. Coba lagi sebentar lagi.");
 
   return (
     <div className="py-2" style={{ animation: "dcFadeIn .4s ease" }}>
@@ -483,7 +487,7 @@ function ErrorPanel({
       {guide && guide.steps.length > 0 && (
         <div className="mt-5 rounded-[14px] bg-[var(--dm-surface-2)] p-4 text-left">
           <div className="text-[12px] text-[var(--text-faint)] font-medium mb-2.5">
-            Yang bisa kamu lakukan
+            {t("Yang bisa kamu lakukan")}
           </div>
           <ol className="space-y-2">
             {guide.steps.map((step, i) => (
@@ -500,8 +504,7 @@ function ErrorPanel({
 
       {guide?.suggestPlatform && (
         <div className="mt-3 text-[12px] text-[var(--accent-text)] text-center">
-          Saran: pilih <span className="font-semibold">{PLATFORM_NAME[guide.suggestPlatform]}</span> sebagai
-          platform tujuan.
+          {t("Saran: pilih")}{" "}<span className="font-semibold">{t(PLATFORM_NAME[guide.suggestPlatform])}</span>{" "}{t("sebagai platform tujuan.")}
         </div>
       )}
 
@@ -524,7 +527,7 @@ function ErrorPanel({
       {guide?.technical && (
         <details className="mt-4 group">
           <summary className="cursor-pointer text-[12px] text-[var(--text-faint)] hover:text-[var(--text)] text-center select-none">
-            Detail teknis (untuk dilaporkan)
+            {t("Detail teknis (untuk dilaporkan)")}
           </summary>
           <pre className="mt-2 max-h-28 overflow-auto rounded-[14px] bg-[var(--dm-surface-2)] p-3 text-[12px] text-[var(--text-muted)] whitespace-pre-wrap break-words font-mono">
             {guide.technical}
@@ -536,7 +539,7 @@ function ErrorPanel({
               className="text-[12px] text-[var(--text-faint)] hover:text-[var(--text)] inline-flex items-center gap-1.5"
             >
               {copied ? <Check className="w-3 h-3" /> : <Copy className="w-3 h-3" />}
-              {copied ? "Tersalin" : "Salin detail"}
+              {copied ? t("Tersalin") : t("Salin detail")}
             </button>
           </div>
         </details>
@@ -545,7 +548,7 @@ function ErrorPanel({
       {debugLines && debugLines.length > 0 && (
         <details className="mt-4 text-left" open>
           <summary className="cursor-pointer select-none text-center text-[12px] text-[var(--text-faint)] hover:text-[var(--text)]">
-            Log proses debug
+            {t("Log proses debug")}
           </summary>
           <DeployDebugLog lines={debugLines} className="mt-2" />
         </details>
@@ -558,7 +561,7 @@ function ErrorPanel({
             onClick={onRetry}
             className="h-10 px-5 rounded-full bg-[var(--dm-accent)] text-[var(--dm-accent-fg)] text-[13px] font-medium hover:bg-[var(--dm-accent-hover)] transition-colors flex items-center gap-2"
           >
-            <RotateCw className="w-3.5 h-3.5" /> Coba lagi
+            <RotateCw className="w-3.5 h-3.5" />{" "}{t("Coba lagi")}
           </button>
         )}
         {logsUrl && (
@@ -568,7 +571,7 @@ function ErrorPanel({
             rel="noopener noreferrer"
             className="h-10 px-5 rounded-full bg-[var(--dm-chip)] text-[var(--text-muted)] text-[13px] font-medium flex items-center gap-2 hover:bg-[var(--dm-chip-hover)] hover:text-[var(--text)] transition-colors"
           >
-            <ExternalLink className="w-3.5 h-3.5" /> Lihat log
+            <ExternalLink className="w-3.5 h-3.5" />{" "}{t("Lihat log")}
           </a>
         )}
         <button
@@ -581,7 +584,7 @@ function ErrorPanel({
               : "bg-[var(--dm-accent)] text-[var(--dm-accent-fg)] hover:bg-[var(--dm-accent-hover)]",
           )}
         >
-          {retryable ? "Tutup" : "Mengerti"}
+          {retryable ? t("Tutup") : t("Mengerti")}
         </button>
       </div>
     </div>

@@ -1,4 +1,6 @@
 "use client";
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import { useCallback, useEffect, useState } from "react";
 import type { KeyInfo } from "./types";
 import { Btn, Field, Modal, Notice, SecretRow, api, fmtDate, heading, inputCls, subtle, surface } from "./ui";
@@ -17,22 +19,23 @@ export default function DbInfoCards({ id, username }: { id: string; username: st
 }
 
 function CredentialsCard({ id, username }: { id: string; username: string }) {
+  const tr = useT();
   const [pw, setPw] = useState<string | null>(null);
   const [confirm, setConfirm] = useState(false);
   const [err, setErr] = useState("");
   return (
     <section className={`${surface} min-w-0 space-y-4 p-4 sm:p-5`}>
-      <h2 className={heading}>Credentials panel admin</h2>
-      <p className={subtle}>Dipakai untuk login ke /db/{"<id>"} dari perangkat yang tidak memakai akun Google Depup.</p>
-      <SecretRow label="Username" value={username} />
-      {pw ? <SecretRow label="Password baru (tampil sekali)" value={pw} /> : <p className={subtle}>Password tidak bisa dilihat lagi; hanya bisa di-reset.</p>}
+      <h2 className={heading}>{tr("Credentials panel admin")}</h2>
+      <p className={subtle}>{tr("Dipakai untuk login ke /db/")}{tr("<id>")}{" "}{tr("dari perangkat yang tidak memakai akun Google Depup.")}</p>
+      <SecretRow label={tr("Username")} value={username} />
+      {pw ? <SecretRow label={tr("Password baru (tampil sekali)")} value={pw} /> : <p className={subtle}>{tr("Password tidak bisa dilihat lagi; hanya bisa di-reset.")}</p>}
       {err && <Notice kind="error">{err}</Notice>}
-      <Btn onClick={() => setConfirm(true)} className="w-full sm:w-auto">Reset password</Btn>
+      <Btn onClick={() => setConfirm(true)} className="w-full sm:w-auto">{tr("Reset password")}</Btn>
       {confirm && (
-        <Modal title="Reset password?" onClose={() => setConfirm(false)}>
-          <p className="mb-4 text-sm text-text">Password lama tidak berlaku lagi dan semua sesi login database yang aktif akan keluar.</p>
+        <Modal title={tr("Reset password?")} onClose={() => setConfirm(false)}>
+          <p className="mb-4 text-sm text-text">{tr("Password lama tidak berlaku lagi dan semua sesi login database yang aktif akan keluar.")}</p>
           <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
-            <Btn onClick={() => setConfirm(false)}>Batal</Btn>
+            <Btn onClick={() => setConfirm(false)}>{tr("Batal")}</Btn>
             <Btn
               variant="primary"
               onClick={async () => {
@@ -46,7 +49,7 @@ function CredentialsCard({ id, username }: { id: string; username: string }) {
                 setConfirm(false);
               }}
             >
-              Reset
+              {tr("Reset")}
             </Btn>
           </div>
         </Modal>
@@ -56,6 +59,7 @@ function CredentialsCard({ id, username }: { id: string; username: string }) {
 }
 
 function ApiCard({ id }: { id: string }) {
+  const tr = useT();
   const [keys, setKeys] = useState<KeyInfo[]>([]);
   const [fresh, setFresh] = useState<{ key: string; mode: string } | null>(null);
   const [label, setLabel] = useState("");
@@ -76,16 +80,13 @@ function ApiCard({ id }: { id: string }) {
 
   return (
     <section className={`${surface} min-w-0 space-y-4 p-4 sm:p-5`}>
-      <h2 className={heading}>REST API</h2>
-      <SecretRow label="Endpoint (POST)" value={endpoint} />
-      <pre className="overflow-x-auto rounded-[14px] bg-[#1e1150] p-3 font-mono text-[12px] leading-relaxed text-white sm:text-xs">{`curl -X POST ${endpoint} \\
-  -H "Authorization: Bearer <api_key>" \\
-  -H "Content-Type: application/json" \\
-  -d '{"sql":"SELECT * FROM users WHERE id = ?","args":[1]}'`}</pre>
+      <h2 className={heading}>{tr("REST API")}</h2>
+      <SecretRow label={tr("Endpoint (POST)")} value={endpoint} />
+      <pre className="overflow-x-auto rounded-[14px] bg-[#1e1150] p-3 font-mono text-[12px] leading-relaxed text-white sm:text-xs">{tr("curl -X POST {endpoint} \\\n  -H \"Authorization: Bearer <api_key>\" \\\n  -H \"Content-Type: application/json\" \\\n  -d '{\"sql\":\"SELECT * FROM users WHERE id = ?\",\"args\":[1]}'", { endpoint })}</pre>
       {fresh && (
         <div className="space-y-1">
-          <Notice kind="warn">Key {fresh.mode === "ro" ? "read-only" : "read-write"} baru. Hanya tampil sekali.</Notice>
-          <SecretRow label="API key" value={fresh.key} />
+          <Notice kind="warn">{tr("Key")}{" "}{fresh.mode === "ro" ? "read-only" : "read-write"}{" "}{tr("baru. Hanya tampil sekali.")}</Notice>
+          <SecretRow label={tr("API key")} value={fresh.key} />
         </div>
       )}
       <ul className="divide-y divide-[var(--line)] rounded-[14px] px-3 text-sm">
@@ -96,7 +97,7 @@ function ApiCard({ id }: { id: string }) {
                 {k.label} <span className="ml-1 rounded-full bg-[var(--pill-bg)] px-2 py-0.5 text-[12px] font-medium text-lav-text">({k.mode === "ro" ? "read-only" : "read-write"})</span>
               </div>
               <div className="truncate text-xs text-text-muted">
-                {k.prefix}… · {fmtDate(k.createdAt)} {k.revokedAt && "· dicabut"}
+                {k.prefix}… · {fmtDate(k.createdAt)} {k.revokedAt && tr("· dicabut")}
               </div>
             </div>
             {!k.revokedAt && (
@@ -104,7 +105,7 @@ function ApiCard({ id }: { id: string }) {
                 small
                 variant="danger"
                 onClick={async () => {
-                  if (!window.confirm(`Cabut key “${k.label}”? Aplikasi yang memakainya akan berhenti bekerja.`)) return;
+                  if (!window.confirm(tr("Cabut key “{label}”? Aplikasi yang memakainya akan berhenti bekerja.", { label: k.label }))) return;
                   try {
                     await api(`/api/databases/${id}/keys/${k.id}`, { method: "DELETE" });
                     load();
@@ -113,7 +114,7 @@ function ApiCard({ id }: { id: string }) {
                   }
                 }}
               >
-                Cabut
+                {tr("Cabut")}
               </Btn>
             )}
           </li>
@@ -135,16 +136,16 @@ function ApiCard({ id }: { id: string }) {
         }}
       >
         <div className="min-w-0">
-          <Field label="Label key baru">
+          <Field label={tr("Label key baru")}>
             <input className={inputCls} value={label} onChange={(e) => setLabel(e.target.value)} maxLength={40} required />
           </Field>
         </div>
-        <select className={`${inputCls} sm:!w-auto`} value={mode} onChange={(e) => setMode(e.target.value as "ro" | "rw")} aria-label="Jenis key">
-          <option value="ro">Read-only</option>
-          <option value="rw">Read-write</option>
+        <select className={`${inputCls} sm:!w-auto`} value={mode} onChange={(e) => setMode(e.target.value as "ro" | "rw")} aria-label={tr("Jenis key")}>
+          <option value="ro">{tr("Read-only")}</option>
+          <option value="rw">{tr("Read-write")}</option>
         </select>
         <Btn variant="primary" type="submit" className="w-full sm:w-auto">
-          Buat key
+          {tr("Buat key")}
         </Btn>
       </form>
       {err && <Notice kind="error">{err}</Notice>}
@@ -153,6 +154,7 @@ function ApiCard({ id }: { id: string }) {
 }
 
 function EnvCard({ id }: { id: string }) {
+  const tr = useT();
   const [token, setToken] = useState("");
   const [projects, setProjects] = useState<{ id: string; name: string }[]>([]);
   const [project, setProject] = useState("");
@@ -173,16 +175,16 @@ function EnvCard({ id }: { id: string }) {
   const headers = { "x-vercel-token": token };
   return (
     <section className={`${surface} min-w-0 space-y-4 p-4 sm:p-5`}>
-      <h2 className={heading}>Kirim ke Environment project</h2>
-      <p className={subtle}>Menyuntik TURSO_DATABASE_URL dan TURSO_AUTH_TOKEN ke project Vercel. Token Vercel hanya dipakai untuk request ini dan tidak disimpan.</p>
+      <h2 className={heading}>{tr("Kirim ke Environment project")}</h2>
+      <p className={subtle}>{tr("Menyuntik TURSO_DATABASE_URL dan TURSO_AUTH_TOKEN ke project Vercel. Token Vercel hanya dipakai untuk request ini dan tidak disimpan.")}</p>
       <div className="grid gap-3 sm:grid-cols-2">
-        <Field label="Token Vercel">
+        <Field label={tr("Token Vercel")}>
           <input className={inputCls} type="password" value={token} onChange={(e) => setToken(e.target.value)} autoComplete="off" />
         </Field>
-        <Field label="Project">
+        <Field label={tr("Project")}>
           <div className="flex min-w-0 gap-2">
             <select className={inputCls} value={project} onChange={(e) => setProject(e.target.value)}>
-              <option value="">{projects.length ? "Pilih project…" : "Muat project dulu"}</option>
+              <option value="">{projects.length ? tr("Pilih project…") : tr("Muat project dulu")}</option>
               {projects.map((p) => (
                 <option key={p.id} value={p.name}>
                   {p.name}
@@ -200,15 +202,15 @@ function EnvCard({ id }: { id: string }) {
                 }
               }}
             >
-              Muat
+              {tr("Muat")}
             </Btn>
           </div>
         </Field>
       </div>
-      <Field label="Hak akses token Turso" hint="Pakai read-only jika project hanya membaca data.">
+      <Field label={tr("Hak akses token Turso")} hint={tr("Pakai read-only jika project hanya membaca data.")}>
         <select className={inputCls} value={mode} onChange={(e) => setMode(e.target.value as "full-access" | "read-only")}>
-          <option value="full-access">Full access</option>
-          <option value="read-only">Read-only</option>
+          <option value="full-access">{tr("Full access")}</option>
+          <option value="read-only">{tr("Read-only")}</option>
         </select>
       </Field>
       {msg && <Notice kind={msg.kind}>{msg.text}</Notice>}
@@ -220,14 +222,14 @@ function EnvCard({ id }: { id: string }) {
           setBusy(true);
           try {
             const r = await api<{ note: string }>(`/api/databases/${id}/send-env`, { method: "POST", headers, json: { project, mode } });
-            setMsg({ kind: "ok", text: `Variabel berhasil dikirim ke “${project}”. ${r.note}` });
+            setMsg({ kind: "ok", text: tr("Variabel berhasil dikirim ke “{project}”. {note}", { project, note: r.note }) });
           } catch (e) {
             setMsg({ kind: "error", text: (e as Error).message });
           }
           setBusy(false);
         }}
       >
-        {busy ? "Mengirim…" : "Kirim ke Environment"}
+        {busy ? tr("Mengirim…") : tr("Kirim ke Environment")}
       </Btn>
     </section>
   );

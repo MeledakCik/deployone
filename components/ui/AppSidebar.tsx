@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import * as React from "react";
 import Image from "next/image";
 import { Menu, X } from "@/components/ui/icons";
@@ -23,10 +25,11 @@ export interface NavGroup {
 
 /** Ikon DepUp sesuai latar sidebar: Putih + Ungu di tema terang, Midnight + Lime di tema gelap. */
 export function BrandMark({ size, className }: { size: number; className: string }) {
+  const t = useT();
   return (
     <>
-      <Image src="/logo-white.png" alt="Depup logo" width={size} height={size} className={`${className} dark:hidden`} priority />
-      <Image src="/logo-lime.png" alt="Depup logo" width={size} height={size} className={`${className} hidden dark:block`} priority />
+      <Image src="/logo-white.png" alt={t("Depup logo")} width={size} height={size} className={`${className} dark:hidden`} priority />
+      <Image src="/logo-lime.png" alt={t("Depup logo")} width={size} height={size} className={`${className} hidden dark:block`} priority />
     </>
   );
 }
@@ -67,6 +70,7 @@ export function AppSidebar({
   /** Beri akses ke fungsi penutup drawer, untuk aksi di footer yang harus menutupnya (mis. logout). */
   onCloseDrawerRef?: React.MutableRefObject<(() => void) | null>;
 }) {
+  const t = useT();
   const [open, setOpen] = React.useState(false);
 
   React.useEffect(() => {
@@ -129,7 +133,7 @@ export function AppSidebar({
         <button
           type="button"
           onClick={() => setOpen(true)}
-          aria-label="Buka menu"
+          aria-label={t("Buka menu")}
           className="relative grid h-10 w-10 place-items-center justify-self-start rounded-[14px] text-[var(--sidebar-muted)] transition hover:bg-[var(--sidebar-hover)] hover:text-white"
         >
           <Menu size={19} />
@@ -137,7 +141,7 @@ export function AppSidebar({
         </button>
         <div className="flex items-center justify-center gap-2">
           <BrandMark size={28} className="h-7 w-7 rounded-lg" />
-          <span className="text-[16px] font-bold tracking-tight">Depup</span>
+          <span className="text-[16px] font-bold tracking-tight">{t("Depup")}</span>
           {tagShort && <span className="rounded-full bg-[var(--lime)] px-2 py-0.5 text-[12px] font-bold text-[var(--lime-text)]">{tagShort}</span>}
         </div>
         <div aria-hidden />
@@ -154,14 +158,14 @@ export function AppSidebar({
           <div className="flex items-center gap-2.5">
             <BrandMark size={36} className="h-9 w-9 rounded-[14px]" />
             <span className="leading-tight">
-              <span className="block text-[18px] font-bold tracking-tight">Depup</span>
+              <span className="block text-[18px] font-bold tracking-tight">{t("Depup")}</span>
               {tag && <span className="mt-1 inline-block rounded-full bg-[var(--lime)] px-2 py-0.5 text-[12px] font-bold text-[var(--lime-text)]">{tag}</span>}
             </span>
           </div>
           <button
             type="button"
             onClick={() => setOpen(false)}
-            aria-label="Tutup menu"
+            aria-label={t("Tutup menu")}
             className="grid h-10 w-10 place-items-center rounded-full text-[var(--sidebar-muted)] transition hover:bg-[var(--sidebar-hover)] hover:text-white md:hidden"
           >
             <X size={16} />
@@ -171,7 +175,7 @@ export function AppSidebar({
         <nav ref={navRef} className="relative min-h-0 flex-1 overflow-y-auto overscroll-contain pr-0.5 [mask-image:linear-gradient(to_bottom,#000_calc(100%-28px),transparent)]" aria-label={navLabel}>
           {groups.map((g, gi) => (
             <div key={g.label ?? gi} className={gi === 0 ? "space-y-0.5" : "mt-3 space-y-0.5"}>
-              {g.label && <p className="px-3.5 pb-0.5 text-[12px] font-semibold text-[var(--sidebar-muted)]">{g.label}</p>}
+              {g.label && <p className="px-3.5 pb-0.5 text-[12px] font-semibold text-[var(--sidebar-muted)]">{t(g.label)}</p>}
               {g.items.map((item) => {
                 const isActive = active === item.id;
                 return (
@@ -189,7 +193,7 @@ export function AppSidebar({
                     onClick={() => onSelect(item.id)}
                   >
                     <item.icon size={18} strokeWidth={isActive ? 2.3 : 1.9} />
-                    {item.label}
+                    {t(item.label)}
                     {!!item.badge && (
                       <span
                         className="ml-auto min-w-[22px] rounded-full bg-[var(--bad-solid)] px-1.5 py-0.5 text-center text-[12px] font-bold leading-none text-white tabular-nums"

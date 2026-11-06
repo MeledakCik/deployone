@@ -1,3 +1,4 @@
+import { tl } from "@/lib/i18n/core";
 /**
  * Ekspor hasil AI Web Builder ke file di komputer pengguna (semua di browser, tanpa server).
  *  - ZIP proyek: index.html + assets/style.css (+ assets/app.js bila ada katalog) + content.json + README.txt
@@ -38,30 +39,30 @@ function readme(c: SiteContent, shop: boolean, hasImages: boolean): string {
     `${c.brand}`,
     "=".repeat(Math.max(8, c.brand.length)),
     "",
-    "Website ini dibuat dengan Depup AI Web Builder.",
+    tl("Website ini dibuat dengan Depup AI Web Builder."),
     "",
-    "ISI PAKET",
-    "- index.html          halaman utama",
-    "- assets/style.css    tampilan",
-    shop ? "- assets/app.js       katalog, keranjang, dan mode kelola produk" : "",
-    hasImages ? "- assets/img/         gambar yang kamu unggah" : "",
-    "- content.json        isi teks mentah (bisa dipakai ulang)",
+    tl("ISI PAKET"),
+    tl("- index.html          halaman utama"),
+    tl("- assets/style.css    tampilan"),
+    shop ? tl("- assets/app.js       katalog, keranjang, dan mode kelola produk") : "",
+    hasImages ? tl("- assets/img/         gambar yang kamu unggah") : "",
+    tl("- content.json        isi teks mentah (bisa dipakai ulang)"),
     "",
-    "CARA PAKAI",
-    "1. Ekstrak ZIP ini, lalu buka index.html di browser. Tidak perlu install apa pun.",
-    "2. Untuk online: upload seluruh isi folder ke hosting statis apa saja (Depup Link Instan,",
-    "   Vercel, Netlify, Cloudflare Pages, GitHub Pages) atau tarik-lepas foldernya ke menu Upload Depup.",
-    "3. Edit teks langsung di index.html dengan editor teks biasa.",
+    tl("CARA PAKAI"),
+    tl("1. Ekstrak ZIP ini, lalu buka index.html di browser. Tidak perlu install apa pun."),
+    tl("2. Untuk online: upload seluruh isi folder ke hosting statis apa saja (Depup Link Instan,"),
+    tl("   Vercel, Netlify, Cloudflare Pages, GitHub Pages) atau tarik-lepas foldernya ke menu Upload Depup."),
+    tl("3. Edit teks langsung di index.html dengan editor teks biasa."),
   ];
   if (shop) {
     lines.push(
       "",
-      "KATALOG & KELOLA PRODUK (CRUD)",
-      "- Buka situs dengan tambahan #kelola di akhir alamat (mis. index.html#kelola) untuk menambah, mengubah, dan menghapus produk.",
-      "- Perubahan disimpan di browser pemilik (localStorage), bukan di server. Pengunjung lain tetap melihat produk yang tertulis di file.",
-      "- Setelah selesai mengubah, tekan \"Unduh situs\" di bilah kelola untuk mendapatkan index.html terbaru, lalu upload ulang.",
-      "- \"Ekspor JSON\" / \"Impor JSON\" dipakai untuk cadangan daftar produk.",
-      "- Pesanan dikirim lewat WhatsApp (bila nomor WhatsApp diisi) atau disalin sebagai teks.",
+      tl("KATALOG & KELOLA PRODUK (CRUD)"),
+      tl("- Buka situs dengan tambahan #kelola di akhir alamat (mis. index.html#kelola) untuk menambah, mengubah, dan menghapus produk."),
+      tl("- Perubahan disimpan di browser pemilik (localStorage), bukan di server. Pengunjung lain tetap melihat produk yang tertulis di file."),
+      tl("- Setelah selesai mengubah, tekan \"Unduh situs\" di bilah kelola untuk mendapatkan index.html terbaru, lalu upload ulang."),
+      tl("- \"Ekspor JSON\" / \"Impor JSON\" dipakai untuk cadangan daftar produk."),
+      tl("- Pesanan dikirim lewat WhatsApp (bila nomor WhatsApp diisi) atau disalin sebagai teks."),
     );
   }
   return lines.filter((l, i, arr) => !(l === "" && arr[i - 1] === "")).join("\n") + "\n";

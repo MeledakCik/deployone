@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import type { DeployState } from "@/lib/deploy-context";
@@ -44,6 +46,7 @@ function fmt(ms: number) {
 
 /** Menurunkan log dari DeployState. Dipanggil dari modal (hook harus di atas early-return). */
 export function useDeployLog(state: DeployState, enabled: boolean) {
+  const t = useT();
   const [lines, setLines] = React.useState<LogLine[]>([]);
   const startRef = React.useRef<number>(0);
   const idRef = React.useRef(0);
@@ -67,7 +70,7 @@ export function useDeployLog(state: DeployState, enabled: boolean) {
       // deploy baru dimulai → mulai log baru
       startRef.current = Date.now();
       idRef.current = 0;
-      setLines([{ id: ++idRef.current, at: 0, level: "info", text: "Deploy dimulai. Memeriksa repo & token…" }]);
+      setLines([{ id: ++idRef.current, at: 0, level: "info", text: t("Deploy dimulai. Memeriksa repo & token…") }]);
       seen.step = -1;
       seen.subtitle = "";
     }
@@ -123,6 +126,7 @@ export function DeployDebugLog({
   className?: string;
   maxHeightClass?: string;
 }) {
+  const t = useT();
   const boxRef = React.useRef<HTMLDivElement>(null);
 
   React.useEffect(() => {
@@ -135,17 +139,17 @@ export function DeployDebugLog({
       className={cn("rounded-[14px] border border-[var(--line)] bg-[var(--dm-log,var(--frame))] text-left", className)}
       role="log"
       aria-live="off"
-      aria-label="Log proses debug"
+      aria-label={t("Log proses debug")}
     >
       <div className="flex items-center justify-between px-3 pt-2 text-[12px] text-[var(--text-faint)]">
-        <span>Debug log</span>
-        <span>{lines.length} baris</span>
+        <span>{t("Debug log")}</span>
+        <span>{t("{length} baris", { length: lines.length })}</span>
       </div>
       <div
         ref={boxRef}
         className={cn("mt-1 overflow-y-auto px-3 pb-2.5 font-mono text-[12px] leading-[1.6]", maxHeightClass)}
       >
-        {lines.length === 0 && <div className="text-[var(--text-faint)]">Belum ada log.</div>}
+        {lines.length === 0 && <div className="text-[var(--text-faint)]">{t("Belum ada log.")}</div>}
         {lines.map((l) => {
           const st = LEVEL_STYLE[l.level];
           return (

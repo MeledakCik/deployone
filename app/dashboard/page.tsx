@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/auth-context";
@@ -28,6 +30,7 @@ import { DeployModal } from "@/components/dashboard/DeployModal";
 import { SupportChat } from "@/components/dashboard/SupportChat";
 
 export default function DashboardPage() {
+  const t = useT();
   const router = useRouter();
   const { user, ready, refresh } = useAuth();
   const { view } = useDeploy();
@@ -39,7 +42,7 @@ export default function DashboardPage() {
     const onError = () => {
       if (Date.now() - last < 10_000) return;
       last = Date.now();
-      showToast("Perubahan belum tersimpan ke server — periksa koneksi, lalu coba lagi.");
+      showToast(t("Perubahan belum tersimpan ke server — periksa koneksi, lalu coba lagi."));
     };
     window.addEventListener("depup:sync-error", onError);
     return () => window.removeEventListener("depup:sync-error", onError);
@@ -51,7 +54,7 @@ export default function DashboardPage() {
     const onExpired = () => {
       if (handled) return;
       handled = true;
-      showToast("Sesi login habis — silakan login lagi.");
+      showToast(t("Sesi login habis — silakan login lagi."));
       void refresh();
     };
     window.addEventListener(SESSION_EXPIRED_EVENT, onExpired);

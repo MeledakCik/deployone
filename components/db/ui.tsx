@@ -1,4 +1,6 @@
 "use client";
+import { useT, tl } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 /** ui.tsx — util + komponen kecil bersama untuk fitur Database. Ubah warna aksen di sini saja. */
 import { ReactNode, useEffect, useState } from "react";
 import { X } from "@/components/ui/icons";
@@ -29,7 +31,7 @@ export async function api<T = any>(url: string, init: Omit<RequestInit, "body"> 
   } catch {
     /* bukan JSON */
   }
-  if (!res.ok || !j?.ok) throw new ApiError((typeof j?.error === "string" ? j.error : j?.error?.message) || `Permintaan gagal (${res.status}).`, res.status, j?.error?.code ?? j?.code);
+  if (!res.ok || !j?.ok) throw new ApiError((typeof j?.error === "string" ? j.error : j?.error?.message) || tl("Permintaan gagal ({status}).", { status: res.status }), res.status, j?.error?.code ?? j?.code);
   return j.data as T;
 }
 
@@ -91,6 +93,7 @@ export function Field({ label, hint, children }: { label: string; hint?: string;
 }
 
 export function Modal({ title, onClose, children, wide }: { title: string; onClose: () => void; children: ReactNode; wide?: boolean }) {
+  const t = useT();
   // Perilaku dialog yang sama dengan semua modal lain: Esc menutup, Tab berputar di dalam, fokus kembali ke pemicu,
   // scroll halaman dikunci (ref-count).
   const dialogRef = useDialogA11y<HTMLDivElement>(true, onClose);
@@ -113,7 +116,7 @@ export function Modal({ title, onClose, children, wide }: { title: string; onClo
       >
         <div className="mb-4 flex items-start justify-between gap-3">
           <h2 className="text-[18px] font-bold tracking-tight text-text">{title}</h2>
-          <button type="button" onClick={onClose} aria-label="Tutup" className="-mr-1 -mt-1 grid h-9 w-9 shrink-0 place-items-center rounded-full text-text-muted transition-colors hover:bg-[var(--card-hover)] hover:text-text">
+          <button type="button" onClick={onClose} aria-label={t("Tutup")} className="-mr-1 -mt-1 grid h-9 w-9 shrink-0 place-items-center rounded-full text-text-muted transition-colors hover:bg-[var(--card-hover)] hover:text-text">
             <X size={16} />
           </button>
         </div>
@@ -125,6 +128,7 @@ export function Modal({ title, onClose, children, wide }: { title: string; onClo
 
 /** Tombol salin ke clipboard. */
 export function CopyBtn({ text, label = "Salin" }: { text: string; label?: string }) {
+  const t = useT();
   const [done, setDone] = useState(false);
   return (
     <Btn
@@ -139,7 +143,7 @@ export function CopyBtn({ text, label = "Salin" }: { text: string; label?: strin
         }
       }}
     >
-      {done ? "Tersalin" : label}
+      {done ? t("Tersalin") : t(label)}
     </Btn>
   );
 }
@@ -157,6 +161,7 @@ export function SecretRow({ label, value }: { label: string; value: string }) {
 }
 
 export function UsageBar({ used, quota }: { used: number; quota: number }) {
+  const t = useT();
   const ratio = quota ? used / quota : 0;
   const pct = Math.min(100, Math.round(ratio * 100));
   const color = ratio >= 1 ? "bg-bad-solid" : ratio >= 0.8 ? "bg-warn" : "bg-[var(--accent)]";
@@ -164,17 +169,17 @@ export function UsageBar({ used, quota }: { used: number; quota: number }) {
     <div>
       <div className="mb-1.5 flex justify-between gap-3 text-xs text-text-muted">
         <span>
-          {fmtBytes(used)} dari {fmtBytes(quota)}
+          {t("{fmtBytes} dari {fmtBytes2}", { fmtBytes: fmtBytes(used), fmtBytes2: fmtBytes(quota) })}
         </span>
         <span className="font-medium">{pct}%</span>
       </div>
-      <div className="h-2.5 overflow-hidden rounded-full bg-tone-lilac" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label="Pemakaian kuota">
+      <div className="h-2.5 overflow-hidden rounded-full bg-tone-lilac" role="progressbar" aria-valuenow={pct} aria-valuemin={0} aria-valuemax={100} aria-label={t("Pemakaian kuota")}>
         <div className={cx("h-full rounded-full transition-all", color)} style={{ width: `${Math.max(pct, used > 0 ? 2 : 0)}%` }} />
       </div>
       {ratio >= 1 ? (
-        <p className="mt-2 text-xs font-medium text-bad-fg">Kuota penuh. Operasi tulis ditolak; hapus data/tabel (DELETE/DROP) untuk melanjutkan.</p>
+        <p className="mt-2 text-xs font-medium text-bad-fg">{t("Kuota penuh. Operasi tulis ditolak; hapus data/tabel (DELETE/DROP) untuk melanjutkan.")}</p>
       ) : ratio >= 0.8 ? (
-        <p className="mt-2 text-xs font-medium text-warn-fg">Pemakaian sudah di atas 80%. Segera bersihkan data yang tidak dipakai.</p>
+        <p className="mt-2 text-xs font-medium text-warn-fg">{t("Pemakaian sudah di atas 80%. Segera bersihkan data yang tidak dipakai.")}</p>
       ) : null}
     </div>
   );

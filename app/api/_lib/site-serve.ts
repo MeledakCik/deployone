@@ -8,6 +8,8 @@ const BASE_HEADERS: Record<string, string> = {
   "x-content-type-options": "nosniff",
   "x-robots-tag": "noindex, nofollow",
   "referrer-policy": "strict-origin-when-cross-origin",
+  // Situs pengguna tidak butuh kamera/mikrofon/lokasi/pembayaran: tutup aksesnya walau ada skrip yang memintanya.
+  "permissions-policy": "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=()",
 };
 
 /**

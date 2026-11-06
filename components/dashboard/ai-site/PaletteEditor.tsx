@@ -1,5 +1,7 @@
 "use client";
 
+import { useT } from "@/lib/i18n";
+import "@/lib/i18n/dict/app";
 import * as React from "react";
 import { Plus, RefreshCw, X, TriangleAlert } from "lucide-react";
 import { Btn } from "@/components/ui/primitives";
@@ -21,6 +23,7 @@ const COLOR_ROLES: { name: string; hint: string }[] = [
 ];
 
 function HexInput({ value, label, id, onChange }: { value: string; label: string; id: string; onChange: (v: string) => void }) {
+  const t = useT();
   const [draft, setDraft] = React.useState(value);
   const [reverted, setReverted] = React.useState(false);
   React.useEffect(() => setDraft(value), [value]);
@@ -32,7 +35,7 @@ function HexInput({ value, label, id, onChange }: { value: string; label: string
         spellCheck={false}
         autoCapitalize="off"
         autoCorrect="off"
-        aria-label={`Kode hex ${label}`}
+        aria-label={t("Kode hex {label}", { label })}
         aria-invalid={reverted || undefined}
         aria-describedby={reverted ? `${id}-err` : undefined}
         onChange={(e) => {
@@ -50,7 +53,7 @@ function HexInput({ value, label, id, onChange }: { value: string; label: string
       />
       {reverted && (
         <p id={`${id}-err`} role="status" className="basis-full text-[13px] leading-snug text-bad-fg">
-          Kode hex tidak valid, dikembalikan ke {value.toUpperCase()}. Pakai 6 karakter, contoh #7B50FF.
+          {t("Kode hex tidak valid, dikembalikan ke {toUpperCase}. Pakai 6 karakter, contoh #7B50FF.", { toUpperCase: value.toUpperCase() })}
         </p>
       )}
     </>
@@ -71,6 +74,7 @@ export function PaletteEditor({
   onChange: (next: string[]) => void;
   onReset: () => void;
 }) {
+  const t = useT();
   const uid = React.useId();
   const setAt = (i: number, v: string) => onChange(colors.map((c, k) => (k === i ? v : c)));
   const addColor = () => {
@@ -93,7 +97,7 @@ export function PaletteEditor({
 
       <ul className="space-y-3">
         {colors.map((c, i) => {
-          const role = COLOR_ROLES[i] ?? { name: `Warna tambahan ${i + 1}`, hint: "Variasi ikon dan cahaya hero" };
+          const role = COLOR_ROLES[i] ?? { name: `Warna tambahan ${i + 1}`, hint: t("Variasi ikon dan cahaya hero") };
           const rowId = `${uid}-${i}`;
           return (
             <li key={i} className="flex flex-wrap items-center gap-x-2.5 gap-y-2">
@@ -102,21 +106,21 @@ export function PaletteEditor({
                 <input
                   type="color"
                   value={c}
-                  aria-label={`Pilih ${role.name.toLowerCase()}`}
+                  aria-label={t("Pilih {toLowerCase}", { toLowerCase: t(role.name).toLowerCase() })}
                   onChange={(e) => setAt(i, e.target.value.toLowerCase())}
                   className="absolute inset-0 h-full w-full cursor-pointer rounded-[14px] opacity-0"
                 />
               </label>
               <div className="min-w-0 flex-1 basis-[8.5rem]">
-                <p className="text-[14px] font-medium">{role.name}</p>
-                <p className={hintCls}>{role.hint}</p>
+                <p className="text-[14px] font-medium">{t(role.name)}</p>
+                <p className={hintCls}>{t(role.hint)}</p>
               </div>
-              <HexInput value={c} label={role.name.toLowerCase()} id={rowId} onChange={(v) => setAt(i, v)} />
+              <HexInput value={c} label={t(role.name).toLowerCase()} id={rowId} onChange={(v) => setAt(i, v)} />
               {i >= 2 ? (
                 <button
                   type="button"
                   onClick={() => onChange(colors.filter((_, k) => k !== i))}
-                  aria-label={`Hapus ${role.name.toLowerCase()}`}
+                  aria-label={t("Hapus {toLowerCase}", { toLowerCase: t(role.name).toLowerCase() })}
                   className="pill grid h-10 w-10 shrink-0 place-items-center hover:!bg-bad-bg hover:text-bad-fg"
                 >
                   <X size={15} />
@@ -134,8 +138,7 @@ export function PaletteEditor({
           <div className="notice notice-warn flex items-start gap-2 !p-3 text-[13px] leading-snug">
             <TriangleAlert size={15} className="mt-0.5 shrink-0" aria-hidden />
             <span className="min-w-0">
-              Warna utama hampir sama dengan warna latar template (kontras {ratio.toFixed(1)}:1). Tombol dan blok sorot jadi sulit dibedakan.
-              Coba warna yang lebih gelap atau lebih terang. Warna teks di atasnya sudah disesuaikan otomatis.
+              {t("Warna utama hampir sama dengan warna latar template (kontras {toFixed}:1). Tombol dan blok sorot jadi sulit dibedakan. Coba warna yang lebih gelap atau lebih terang. Warna teks di atasnya sudah disesuaikan otomatis.", { toFixed: ratio.toFixed(1) })}
             </span>
           </div>
         )}
@@ -143,25 +146,25 @@ export function PaletteEditor({
 
       <div className="flex flex-wrap items-center gap-2">
         <Btn onClick={addColor} disabled={colors.length >= MAX_PALETTE}>
-          <Plus size={13} /> Tambah warna
+          <Plus size={13} />{" "}{t("Tambah warna")}
         </Btn>
         {custom && (
           <Btn onClick={onReset}>
-            <RefreshCw size={13} /> Bawaan template
+            <RefreshCw size={13} />{" "}{t("Bawaan template")}
           </Btn>
         )}
-        <span className={`ml-auto tabular-nums ${hintCls}`}>{colors.length}/{MAX_PALETTE} warna</span>
+        <span className={`ml-auto tabular-nums ${hintCls}`}>{t("{length}/{MAX_PALETTE} warna", { length: colors.length, MAX_PALETTE })}</span>
       </div>
 
       <div>
-        <p className={labelCls}>Pasangan siap pakai</p>
+        <p className={labelCls}>{t("Pasangan siap pakai")}</p>
         <div className="flex flex-wrap gap-2">
           {PALETTE_PRESETS.map((p) => (
             <button
               key={p.name}
               type="button"
-              aria-label={`Pakai pasangan ${p.name}`}
-              title={p.name}
+              aria-label={t("Pakai pasangan {name}", { name: t(p.name) })}
+              title={t(p.name)}
               onClick={() => onChange([...p.colors, ...colors.slice(2)])}
               className="pill inline-flex min-h-[40px] items-center gap-1 px-3"
             >

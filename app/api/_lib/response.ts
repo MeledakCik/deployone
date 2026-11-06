@@ -1,6 +1,18 @@
 import { NextResponse } from "next/server";
 import type { ApiError, ApiOk, ErrorGuide } from "@/types";
 import { recordServerError } from "@/app/api/_lib/error-log";
+import { headers } from "next/headers";
+import { LANG_HEADER, translateLoose } from "@/lib/i18n/core";
+import "@/lib/i18n/dict/all";
+
+/** Pesan error mengikuti bahasa pengguna (header dari middleware). */
+function localize(msg: string): string {
+  try {
+    return headers().get(LANG_HEADER) === "en" ? translateLoose("en", msg) : msg;
+  } catch {
+    return msg;
+  }
+}
 
 export function ok<T>(data: T, init?: number): NextResponse<ApiOk<T>> {
   return NextResponse.json({ ok: true, data }, { status: init ?? 200 });
@@ -12,7 +24,7 @@ export function fail(
   code?: ApiError["code"],
   guide?: ErrorGuide
 ): NextResponse<ApiError> {
-  return NextResponse.json({ ok: false, error, code, guide }, { status });
+  return NextResponse.json({ ok: false, error: localize(error), code, guide }, { status });
 }
 
 /** Wraps a route handler so unexpected throws never leak a raw 500 HTML page. */

@@ -1,3 +1,4 @@
+import { getT } from "@/lib/i18n/server";
 import { Github } from "lucide-react";
 import { CloudflareIcon, RailwayIcon, VercelIcon } from "@/components/ui/PlatformIcon";
 
@@ -9,9 +10,10 @@ const PLATFORMS = [
 ];
 
 export function SocialProof() {
+  const t = getT();
   return (
-    <section className="mx-auto flex max-w-6xl flex-col items-center gap-6 px-4 pt-14 sm:px-8 sm:pt-16" aria-label="Platform yang didukung">
-      <span className="text-[13px] font-medium text-text-muted">Terhubung dengan platform yang kamu pakai</span>
+    <section className="mx-auto flex max-w-6xl flex-col items-center gap-6 px-4 pt-14 sm:px-8 sm:pt-16" aria-label={t("Platform yang didukung")}>
+      <span className="text-[13px] font-medium text-text-muted">{t("Terhubung dengan platform yang kamu pakai")}</span>
       <ul className="flex flex-wrap items-center justify-center gap-2 sm:gap-3">
         {PLATFORMS.map(({ name, Icon, tone }) => (
           <li

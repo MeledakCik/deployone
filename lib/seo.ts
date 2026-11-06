@@ -26,6 +26,8 @@ export function pageMeta({
   path,
   type = "website",
   absoluteTitle = false,
+  lang = "id",
+  en,
 }: {
   title: string;
   description: string;
@@ -33,16 +35,30 @@ export function pageMeta({
   type?: "website" | "article";
   /** true = judul dipakai apa adanya (tanpa template " | Depup ..."), dipakai beranda. */
   absoluteTitle?: boolean;
+  /** Bahasa halaman ini. */
+  lang?: "id" | "en";
+  /**
+   * Pasangan bahasa (hreflang). Untuk halaman Indonesia: path versi Inggrisnya; untuk halaman Inggris: path versi
+   * Indonesianya. Kosong = halaman hanya tersedia dalam satu bahasa.
+   */
+  en?: string;
 }): Metadata {
   const url = `${SITE_URL}${path === "/" ? "" : path}`;
   const shareTitle = absoluteTitle ? title : `${title} | ${SITE_NAME}`;
   return {
     title: absoluteTitle ? { absolute: title } : title,
     description,
-    alternates: { canonical: path, languages: { "id-ID": path } },
+    alternates: {
+      canonical: path,
+      languages:
+        lang === "en"
+          ? { en: path, ...(en ? { "id-ID": en, "x-default": en } : { "x-default": path }) }
+          : { "id-ID": path, ...(en ? { en, "x-default": path } : {}) },
+    },
     openGraph: {
       type,
-      locale: "id_ID",
+      locale: lang === "en" ? "en_US" : "id_ID",
+      ...(en ? { alternateLocale: [lang === "en" ? "id_ID" : "en_US"] } : {}),
       siteName: SITE_NAME,
       url,
       title: shareTitle,
