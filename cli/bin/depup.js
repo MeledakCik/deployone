@@ -2,12 +2,17 @@
 "use strict";
 
 /**
- * depup — CLI Depup. Saat ini: `depup share [port]` (Link Gaib).
+ * depup — CLI Depup: `depup login`, lalu `depup share [port]` (Link Gaib).
+ * Yang membuat link wajib login (sekali saja, ala `ngrok authtoken`); yang membuka link tidak perlu login.
  * Tanpa dependensi, butuh Node.js >= 18.
  */
 
 const http = require("node:http");
 const net = require("node:net");
+const fs = require("node:fs");
+const os = require("node:os");
+const path = require("node:path");
+const { spawn } = require("node:child_process");
 
 const VERSION = require("../package.json").version;
 const DEFAULT_HOST = process.env.DEPUP_HOST || "https://depup.cloud";
@@ -41,26 +46,32 @@ function help() {
   ${bold("depup")} ${dim("v" + VERSION)}
 
   ${bold("Pemakaian")}
+    npx depup-cli login              ${dim("# sekali saja: hubungkan CLI ke akun Depup-mu")}
     npx depup-cli share [port] [opsi]
+    npx depup-cli whoami | logout
 
   ${bold("Contoh")}
     npx depup-cli share              ${dim("# deteksi otomatis port yang sedang jalan")}
     npx depup-cli share 8000
     npx depup-cli share localhost:5173 --name skripsi --ttl 240
+    npx depup-cli login --token <token>   ${dim("# server/CI tanpa browser (token dari Pengaturan)")}
 
   ${bold("Opsi")}
     --name <awalan>   awalan nama link (huruf/angka/-), bagian acak tetap ditambahkan
     --ttl <menit>     masa aktif link, default 120, maks 480
+    --token <token>   pakai token CLI ini (atau env DEPUP_TOKEN)
     --host <url>      server Depup (default ${DEFAULT_HOST}, atau env DEPUP_HOST)
     -h, --help        tampilkan bantuan
     -v, --version     tampilkan versi
+
+  ${dim("Hanya kamu (pembuat link) yang perlu login. Orang yang kamu kirimi link langsung bisa membukanya.")}
 `);
 }
 
 /* ---------- argumen ---------- */
 
 function parseArgs(argv) {
-  const out = { _: [], name: null, ttl: null, host: DEFAULT_HOST };
+  const out = { _: [], name: null, ttl: null, host: DEFAULT_HOST, token: null };
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i];
     if (a === "-h" || a === "--help") out.help = true;
@@ -68,6 +79,8 @@ function parseArgs(argv) {
     else if (a === "--name") out.name = argv[++i];
     else if (a === "--ttl") out.ttl = Number(argv[++i]);
     else if (a === "--host") out.host = argv[++i];
+    else if (a === "--token") out.token = argv[++i];
+    else if (a.startsWith("--token=")) out.token = a.slice(8);
     else if (a.startsWith("--name=")) out.name = a.slice(7);
     else if (a.startsWith("--ttl=")) out.ttl = Number(a.slice(6));
     else if (a.startsWith("--host=")) out.host = a.slice(7);
@@ -179,21 +192,169 @@ function logLine(method, path, status, ms) {
   console.log(`  ${dim(t)}  ${bold(method.padEnd(6))} ${p.padEnd(40)} ${col(String(status))} ${dim(ms + "ms")}`);
 }
 
+/* ---------- login (token pembuat link) ---------- */
+
+const CONFIG_DIR = path.join(os.homedir(), ".depup");
+const CONFIG_FILE = path.join(CONFIG_DIR, "config.json");
+
+function readConfig() {
+  try {
+    const j = JSON.parse(fs.readFileSync(CONFIG_FILE, "utf8"));
+    return j && typeof j === "object" ? j : {};
+  } catch {
+    return {};
+  }
+}
+
+function writeConfig(cfg) {
+  fs.mkdirSync(CONFIG_DIR, { recursive: true, mode: 0o700 });
+  fs.writeFileSync(CONFIG_FILE, JSON.stringify(cfg, null, 2) + "\n", { mode: 0o600 });
+  try { fs.chmodSync(CONFIG_FILE, 0o600); } catch { /* Windows */ }
+}
+
+/** Token disimpan per server Depup, supaya --host lain tidak memakai token yang salah. */
+function savedAuth(base) {
+  const a = (readConfig().auth || {})[base];
+  return a && typeof a.token === "string" ? a : null;
+}
+
+function saveAuth(base, token, email) {
+  const cfg = readConfig();
+  cfg.auth = { ...(cfg.auth || {}), [base]: { token, email: email || null, savedAt: new Date().toISOString() } };
+  writeConfig(cfg);
+}
+
+function clearAuth(base) {
+  const cfg = readConfig();
+  if (!cfg.auth || !cfg.auth[base]) return false;
+  delete cfg.auth[base];
+  writeConfig(cfg);
+  return true;
+}
+
+function baseOf(opts) {
+  const base = String(opts.host || "").replace(/\/+$/, "");
+  if (!/^https?:\/\//.test(base)) die(`--host harus diawali http:// atau https:// (dapat: "${opts.host}")`);
+  return base;
+}
+
+function openBrowser(url) {
+  if (process.env.DEPUP_NO_BROWSER) return false;
+  const cmd = process.platform === "darwin" ? "open" : process.platform === "win32" ? "cmd" : "xdg-open";
+  const args = process.platform === "win32" ? ["/c", "start", "", url] : [url];
+  try {
+    const p = spawn(cmd, args, { stdio: "ignore", detached: true });
+    p.on("error", () => {});
+    p.unref();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Login lewat browser (device flow). Mengembalikan { token, email }. */
+async function browserLogin(base) {
+  let start;
+  try {
+    const r = await api(base, "/api/cli/login/start", { method: "POST", body: {} });
+    if (!r.json || !r.json.ok) die((r.json && r.json.error) || `Server Depup menjawab HTTP ${r.status}.`);
+    start = r.json.data;
+  } catch (e) {
+    die(`Tidak bisa menghubungi ${base} (${e.message}). Periksa koneksi internet kamu.`);
+  }
+
+  console.log(`  ${bold("Login Depup CLI")} ${dim("— cukup sekali di komputer ini")}\n`);
+  console.log(`  Buka link ini lalu tekan ${bold("Izinkan")}:`);
+  console.log(`    ${bold(cyan(start.verifyUrl))}`);
+  console.log(`  Kode: ${bold(magenta(start.userCode))} ${dim("(pastikan sama dengan yang tampil di browser)")}\n`);
+  if (openBrowser(start.verifyUrl)) console.log(`  ${dim("Browser sudah dibuka. Menunggu persetujuan…")}`);
+  else console.log(`  ${dim("Menunggu persetujuan…")}`);
+
+  const deadline = Date.now() + (start.expiresIn || 600) * 1000;
+  const interval = Math.max(1, start.interval || 2) * 1000;
+  while (Date.now() < deadline) {
+    await sleep(interval);
+    let r;
+    try {
+      r = await api(base, "/api/cli/login/poll", { method: "POST", body: { deviceCode: start.deviceCode } });
+    } catch {
+      continue; // koneksi putus sebentar: coba lagi
+    }
+    if (r.status === 429) { await sleep(interval); continue; }
+    if (!r.json) continue;
+    if (!r.json.ok) die(r.json.error || `Login gagal (HTTP ${r.status}).`);
+    const d = r.json.data;
+    if (d && d.status === "approved" && d.token) {
+      saveAuth(base, d.token, d.email);
+      console.log(`  ${green("✔")} Login sebagai ${bold(d.email)}\n`);
+      return { token: d.token, email: d.email };
+    }
+  }
+  die("Waktu login habis. Jalankan lagi: depup login");
+}
+
+/** Token untuk membuat link: --token, env DEPUP_TOKEN, atau token tersimpan. null kalau belum login. */
+function currentAuth(opts, base) {
+  if (opts.token) return { token: opts.token, email: null, source: "--token" };
+  if (process.env.DEPUP_TOKEN) return { token: process.env.DEPUP_TOKEN.trim(), email: null, source: "DEPUP_TOKEN" };
+  const a = savedAuth(base);
+  return a ? { token: a.token, email: a.email, source: "config" } : null;
+}
+
+async function login(opts) {
+  const base = baseOf(opts);
+  console.log(`\n  ${bold("Depup")} ${dim("v" + VERSION)}\n`);
+  if (opts.token) {
+    saveAuth(base, opts.token.trim(), null);
+    console.log(`  ${green("✔")} Token disimpan di ${dim(CONFIG_FILE)}\n`);
+    return;
+  }
+  await browserLogin(base);
+  console.log(`  Sekarang jalankan: ${bold("npx depup-cli share")}\n`);
+}
+
+function logout(opts) {
+  const base = baseOf(opts);
+  const removed = clearAuth(base);
+  console.log(removed ? `\n  ${green("✔")} Logout. Token CLI dihapus dari komputer ini.\n` : `\n  ${dim("Belum login di " + base + ".")}\n`);
+}
+
+function whoami(opts) {
+  const base = baseOf(opts);
+  const a = currentAuth(opts, base);
+  if (!a) return console.log(`\n  ${dim("Belum login.")} Jalankan: ${bold("npx depup-cli login")}\n`);
+  console.log(`\n  ${a.email ? bold(a.email) : "Token dari " + a.source} ${dim("· " + base)}\n`);
+}
+
 /* ---------- share ---------- */
 
 async function share(opts) {
-  const base = opts.host.replace(/\/+$/, "");
-  if (!/^https?:\/\//.test(base)) die(`--host harus diawali http:// atau https:// (dapat: "${opts.host}")`);
+  const base = baseOf(opts);
 
   console.log(`\n  ${bold("Depup Share")} ${dim("v" + VERSION)}\n`);
   const target = await resolveTarget(opts._[0]);
 
-  let created;
-  try {
-    const r = await api(base, "/api/tunnel/create", {
+  // Pembuat link wajib login (sekali). Belum login -> langsung buka login di browser, lalu lanjut share.
+  let auth = currentAuth(opts, base);
+  if (!auth) auth = await browserLogin(base);
+
+  const createLink = () =>
+    api(base, "/api/tunnel/create", {
       method: "POST",
+      token: auth.token,
       body: { port: target.port, name: opts.name || undefined, ttlMinutes: Number.isFinite(opts.ttl) ? opts.ttl : undefined },
     });
+
+  let created;
+  try {
+    let r = await createLink();
+    // Token tersimpan kedaluwarsa/dicabut: login ulang sekali lalu coba lagi.
+    if (r.status === 401 && !opts.token && !process.env.DEPUP_TOKEN) {
+      clearAuth(base);
+      console.log(`  ${yellow("!")} ${(r.json && r.json.error) || "Login CLI tidak berlaku lagi."}\n`);
+      auth = await browserLogin(base);
+      r = await createLink();
+    }
     if (!r.json || !r.json.ok) {
       die(`${(r.json && r.json.error) || `Server Depup menjawab HTTP ${r.status}.`}`);
     }
@@ -205,7 +366,8 @@ async function share(opts) {
   const { id, token, publicBase } = created;
   const left = Math.round((created.expiresAt - Date.now()) / 60000);
   console.log(`  ${green("●")} ${bold("Online")}   localhost:${target.port}  ${dim("→")}  ${bold(cyan(created.url))}`);
-  console.log(`  ${dim("Aktif ±" + left + " menit · Ctrl+C untuk berhenti")}`);
+  console.log(`  ${dim("Aktif ±" + left + " menit · Ctrl+C untuk berhenti" + (created.owner ? " · milik " + created.owner : ""))}`);
+  console.log(`  ${dim("Siapa pun yang punya link bisa membukanya tanpa login.")}`);
   console.log(`  ${dim("Batas: tanpa WebSocket, body upload maks ~600 KB. Pengunjung melihat halaman peringatan sekali.")}\n`);
 
   let stopping = false;
@@ -351,6 +513,9 @@ async function main() {
   const cmd = opts._.shift();
   if (opts.help || !cmd || cmd === "help") return help();
   if (cmd === "share") return share(opts);
+  if (cmd === "login") return login(opts);
+  if (cmd === "logout") return logout(opts);
+  if (cmd === "whoami") return whoami(opts);
   die(`Perintah tidak dikenal: "${cmd}". Jalankan ${bold("depup --help")}.`);
 }
 

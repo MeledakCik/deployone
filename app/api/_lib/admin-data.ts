@@ -70,7 +70,7 @@ export async function listLiveLinks(host?: string | null): Promise<LiveLink[]> {
     out.push({
       slug,
       kind: "tunnel",
-      owner: null,
+      owner: typeof t.owner === "string" ? t.owner : null,
       name: `localhost:${t.port}`,
       status: "active",
       createdAt: t.createdAt,

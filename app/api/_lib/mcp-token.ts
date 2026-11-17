@@ -5,7 +5,8 @@ import crypto from "crypto";
  * token OAuth 2.1 tanpa-state + Custom OAuth Client + Long-Lived Bearer Token untuk konfigurasi CLI/IDE/Web.
  */
 
-export type McpTokenType = "client" | "code" | "at" | "rt";
+/** "cli" = token Depup CLI (`depup login`), lihat app/api/_lib/cli-auth.ts. */
+export type McpTokenType = "client" | "code" | "at" | "rt" | "cli";
 
 export const MCP_SCOPE = "sites";
 export const ACCESS_TTL_SECONDS = 60 * 60; // 1 jam (default alur OAuth standar)
@@ -379,9 +380,12 @@ export function verifyRefreshToken(token: unknown): GrantPayload | null {
 /* ---------------- login lalu kembali ke halaman izin ---------------- */
 
 const NEXT_AUTHORIZE_RE = /^\/connect\/authorize\?[A-Za-z0-9\-._~%=&+:/]{1,1800}$/;
+/** Layar izin `depup login` (CLI): /cli/login?code=ABCD-EFGH */
+const NEXT_CLI_LOGIN_RE = /^\/cli\/login\?code=[A-Z0-9-]{4,16}$/;
 
+/** `next` setelah login Google yang boleh dipakai: layar izin konektor MCP atau layar izin Depup CLI. */
 export function isMcpAuthorizeNext(value: unknown): value is string {
-  return typeof value === "string" && NEXT_AUTHORIZE_RE.test(value);
+  return typeof value === "string" && (NEXT_AUTHORIZE_RE.test(value) || NEXT_CLI_LOGIN_RE.test(value));
 }
 
 /* ---------------- origin kanonik ---------------- */

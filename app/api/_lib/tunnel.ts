@@ -54,6 +54,8 @@ export interface TunnelMeta {
   createdAt: number;
   expiresAt: number;
   port: number;
+  /** Email pembuat link (login CLI). Kosong untuk link lama sebelum CLI wajib login. */
+  owner?: string;
 }
 
 /** Envelope request yang diantre untuk CLI. */

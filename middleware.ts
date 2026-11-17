@@ -53,7 +53,8 @@ function isPublicPath(pathname: string): boolean {
     pathname.startsWith("/api/auth/") ||
     pathname === "/api/abuse" ||
     pathname === "/api/unsubscribe" ||
-    isTunnelClientPath(pathname)
+    isTunnelClientPath(pathname) ||
+    isCliLoginPath(pathname)
   );
 }
 
@@ -69,6 +70,10 @@ function isMcpOwnAuthPath(pathname: string): boolean {
 
 function isTunnelClientPath(pathname: string): boolean {
   return /^\/api\/tunnel\/(create|poll|respond|close)\/?$/.test(pathname);
+}
+/** Dipanggil `depup login` sebelum punya token. Persetujuan (/api/cli/login) tetap butuh session browser. */
+function isCliLoginPath(pathname: string): boolean {
+  return /^\/api\/cli\/login\/(start|poll)\/?$/.test(pathname);
 }
 function skipRateLimit(pathname: string): boolean {
   return (
@@ -90,6 +95,7 @@ const CUSTOM_LIMITS: Record<string, { limit: number; windowSeconds: number }> = 
   "ai/key": { limit: 10, windowSeconds: 60 },
   convert: { limit: 40, windowSeconds: 60 },
   "tunnel/create": { limit: 20, windowSeconds: 60 },
+  "cli/login": { limit: 90, windowSeconds: 60 }, // CLI poll tiap 2 dtk selama menunggu persetujuan
   abuse: { limit: 5, windowSeconds: 600 },
   unsubscribe: { limit: 20, windowSeconds: 600 },
 };

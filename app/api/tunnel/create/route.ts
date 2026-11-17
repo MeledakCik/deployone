@@ -2,6 +2,7 @@ import { kv } from "@vercel/kv";
 import { fail, ok, withErrorHandling } from "@/app/api/_lib/response";
 import { clientIp, rateLimit } from "@/app/api/_lib/rate-limit";
 import { getSettings, recordStat } from "@/app/api/_lib/admin";
+import { authenticateCli } from "@/app/api/_lib/cli-auth";
 import {
   SLUG_RE,
   TUNNEL_RESERVED,
@@ -25,8 +26,10 @@ export const dynamic = "force-dynamic";
 export const fetchCache = "force-no-store";
 
 /**
- * POST /api/tunnel/create — dipanggil CLI (`depup share`), TANPA session
- * browser (lihat isPublicPath di middleware.ts). Dibatasi per IP.
+ * POST /api/tunnel/create — dipanggil CLI (`depup share`), tanpa session browser
+ * (lihat isPublicPath di middleware.ts), tapi WAJIB token CLI milik pembuat link
+ * (`depup login`, header Authorization: Bearer). Pengunjung link tidak perlu login.
+ * Dibatasi per akun dan per IP.
  * Body: { port: number, name?: string, ttlMinutes?: number }
  */
 export const POST = withErrorHandling(async (req: Request) => {
@@ -34,7 +37,19 @@ export const POST = withErrorHandling(async (req: Request) => {
     return fail("Fitur Link Gaib sedang dimatikan oleh admin Depup.", 503, "tunnel_disabled");
   }
 
-  const rl = await rateLimit("tunnel-create-hourly", `ip:${clientIp(req)}`, 10, 3600);
+  const auth = await authenticateCli(req);
+  if (!auth.ok) return fail(auth.error, auth.status, "unauthorized");
+  const owner = auth.email;
+
+  const rlUser = await rateLimit("tunnel-create-user-hourly", `u:${owner}`, 30, 3600);
+  if (!rlUser.allowed) {
+    return fail(
+      `Terlalu banyak link dibuat dari akun ini. Coba lagi ${Math.ceil(rlUser.retryAfterSeconds / 60)} menit lagi.`,
+      429,
+      "rate_limited"
+    );
+  }
+  const rl = await rateLimit("tunnel-create-hourly", `ip:${clientIp(req)}`, 30, 3600);
   if (!rl.allowed) {
     return fail(
       `Terlalu banyak link dibuat dari jaringan ini. Coba lagi ${Math.ceil(rl.retryAfterSeconds / 60)} menit lagi.`,
@@ -64,6 +79,7 @@ export const POST = withErrorHandling(async (req: Request) => {
     createdAt: now,
     expiresAt: now + ttlSec * 1000,
     port,
+    owner,
   };
 
   // Cari slug unik: <prefix>-<5 karakter acak>. SET NX menjamin tidak menimpa tunnel orang lain.
@@ -101,5 +117,6 @@ export const POST = withErrorHandling(async (req: Request) => {
     mode: base ? "subdomain" : pathHost ? "path-host" : "path",
     expiresAt: meta.expiresAt,
     ttlMinutes: ttlMin,
+    owner,
   });
 });
