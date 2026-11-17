@@ -170,10 +170,10 @@ Lagi ngoding di komputermu dan dosen atau client mau lihat hasilnya? Tidak perlu
 2. Di terminal lain, ketik:
 
    ```bash
-   npx depup-cli share
+   npx depup-share share
    ```
 
-   (atau `npx depup-cli share 8000` kalau mau menyebut port-nya.)
+   (atau `npx depup-share share 8000` kalau mau menyebut port-nya.)
 3. Muncul link HTTPS seperti `https://cantik-depup-x7k2m.<domain-depup>`. Kirim ke siapa saja.
 4. Tekan **Ctrl+C** kalau selesai — link langsung mati. Kalau lupa, link mati sendiri setelah 2 jam.
 
@@ -205,7 +205,7 @@ Referer lalu diteruskan ke tunnel yang sama. Pengunjung tidak lagi dilempar ke h
 npm run kv:dev          # KV tiruan di memori, port 8079
 # .env.local: KV_REST_API_URL=http://127.0.0.1:8079  KV_REST_API_TOKEN=dev-local
 npm run dev
-npx depup-cli share 5173 --host http://localhost:3000
+npx depup-share share 5173 --host http://localhost:3000
 ```
 
 ---

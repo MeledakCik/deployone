@@ -253,15 +253,15 @@ export const FEATURES: Feature[] = [
     slug: "link-gaib",
     name: "Link Gaib (bagikan localhost)",
     summary:
-      "Jalankan npx depup-cli share untuk membagikan localhost lewat link HTTPS sementara tanpa deploy.",
-    seoTitle: "Link Gaib: Bagikan Localhost dengan npx depup-cli",
+      "Jalankan npx depup-share share untuk membagikan localhost lewat link HTTPS sementara tanpa deploy.",
+    seoTitle: "Link Gaib: Bagikan Localhost dengan npx depup-share",
     seoDescription:
-      "Bagikan project di localhost ke dosen atau klien lewat link HTTPS sementara. Cukup jalankan npx depup-cli share, tanpa deploy dan tanpa konfigurasi.",
+      "Bagikan project di localhost ke dosen atau klien lewat link HTTPS sementara. Cukup jalankan npx depup-share share, tanpa deploy dan tanpa konfigurasi.",
     tldr:
-      "Link Gaib membuat terowongan dari komputermu ke internet. Jalankan project seperti biasa, ketik npx depup-cli share di terminal lain, dan kamu mendapat link HTTPS untuk dikirim ke siapa saja. Link mati saat kamu menekan Ctrl+C atau otomatis setelah 2 jam.",
+      "Link Gaib membuat terowongan dari komputermu ke internet. Jalankan project seperti biasa, ketik npx depup-share share di terminal lain, dan kamu mendapat link HTTPS untuk dikirim ke siapa saja. Link mati saat kamu menekan Ctrl+C atau otomatis setelah 2 jam.",
     audience: "Developer yang ingin memamerkan hasil kerja yang masih berjalan di localhost.",
     points: [
-      "Satu perintah: npx depup-cli share, atau npx depup-cli share 8000 untuk port tertentu.",
+      "Satu perintah: npx depup-share share, atau npx depup-share share 8000 untuk port tertentu.",
       "Opsi --name untuk awalan nama link dan --ttl untuk masa aktif dalam menit.",
       "Link HTTPS sementara; mati otomatis setelah 2 jam secara bawaan (maksimal 8 jam).",
       "Pengunjung melihat halaman peringatan sekali sebelum lanjut ke websitemu.",
@@ -274,18 +274,18 @@ export const FEATURES: Feature[] = [
     ],
     steps: [
       "Jalankan project di komputermu, misalnya di localhost:8000.",
-      "Di terminal lain ketik npx depup-cli share.",
+      "Di terminal lain ketik npx depup-share share.",
       "Salin link HTTPS yang muncul dan kirim ke siapa saja.",
       "Tekan Ctrl+C bila selesai; link langsung mati.",
     ],
     faqs: [
       {
         q: "Bagaimana cara membagikan localhost tanpa deploy?",
-        a: "Jalankan project-mu, lalu di terminal lain ketik npx depup-cli share. Kamu mendapat link HTTPS sementara yang bisa dikirim ke dosen atau client.",
+        a: "Jalankan project-mu, lalu di terminal lain ketik npx depup-share share. Kamu mendapat link HTTPS sementara yang bisa dikirim ke dosen atau client.",
       },
       {
-        q: "Apakah depup-cli sama dengan paket npm depup untuk memperbarui dependency?",
-        a: "Bukan. Depup di sini adalah layanan web di depup.cloud, dan CLI resminya bernama depup-cli.",
+        q: "Apakah depup-share sama dengan paket npm depup untuk memperbarui dependency?",
+        a: "Bukan. Depup di sini adalah layanan web di depup.cloud, dan CLI resminya bernama depup-share.",
       },
     ],
     related: ["link-instan", "deploy-github"],
@@ -498,7 +498,7 @@ export const HOME_FAQS: FeatureFaq[] = [
   },
   {
     q: "Bisa membagikan localhost tanpa deploy?",
-    a: "Bisa lewat Link Gaib. Jalankan project-mu, lalu di terminal lain ketik npx depup-cli share. Kamu mendapat link HTTPS untuk dikirim ke dosen atau client. Link mati saat kamu menekan Ctrl+C, atau otomatis setelah 2 jam.",
+    a: "Bisa lewat Link Gaib. Jalankan project-mu, lalu di terminal lain ketik npx depup-share share. Kamu mendapat link HTTPS untuk dikirim ke dosen atau client. Link mati saat kamu menekan Ctrl+C, atau otomatis setelah 2 jam.",
   },
   {
     q: "Apakah ada database di Depup?",
@@ -527,7 +527,7 @@ export const HOME_FAQS: FeatureFaq[] = [
 /* ------------------------------------------------------------------ */
 
 const NAMING_NOTE =
-  'Catatan penamaan: "Depup" di sini adalah layanan web di depup.cloud. Ini BUKAN paket npm bernama "depup" untuk memperbarui dependency. CLI resmi Depup untuk Link Gaib bernama `depup-cli`.';
+  'Catatan penamaan: "Depup" di sini adalah layanan web di depup.cloud. Ini BUKAN paket npm bernama "depup" untuk memperbarui dependency. CLI resmi Depup untuk Link Gaib bernama `depup-share`.';
 
 const AI_NOTES = [
   "Domain resmi: `depup.cloud`. `www.depup.cloud` dialihkan (308) ke domain utama.",

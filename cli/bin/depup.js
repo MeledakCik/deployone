@@ -46,15 +46,15 @@ function help() {
   ${bold("depup")} ${dim("v" + VERSION)}
 
   ${bold("Pemakaian")}
-    npx depup-cli login              ${dim("# sekali saja: hubungkan CLI ke akun Depup-mu")}
-    npx depup-cli share [port] [opsi]
-    npx depup-cli whoami | logout
+    npx depup-share login            ${dim("# sekali saja: hubungkan CLI ke akun Depup-mu")}
+    npx depup-share share [port] [opsi]
+    npx depup-share whoami | logout
 
   ${bold("Contoh")}
-    npx depup-cli share              ${dim("# deteksi otomatis port yang sedang jalan")}
-    npx depup-cli share 8000
-    npx depup-cli share localhost:5173 --name skripsi --ttl 240
-    npx depup-cli login --token <token>   ${dim("# server/CI tanpa browser (token dari Pengaturan)")}
+    npx depup-share share            ${dim("# deteksi otomatis port yang sedang jalan")}
+    npx depup-share share 8000
+    npx depup-share share localhost:5173 --name skripsi --ttl 240
+    npx depup-share login --token <token>   ${dim("# server/CI tanpa browser (token dari Pengaturan)")}
 
   ${bold("Opsi")}
     --name <awalan>   awalan nama link (huruf/angka/-), bagian acak tetap ditambahkan
@@ -152,7 +152,7 @@ async function api(base, path, { method = "GET", token, body, timeout = 15_000 }
     headers: {
       ...(body ? { "content-type": "application/json" } : {}),
       ...(token ? { authorization: `Bearer ${token}` } : {}),
-      "user-agent": `depup-cli/${VERSION}`,
+      "user-agent": `depup-share/${VERSION}`,
     },
     body: body ? JSON.stringify(body) : undefined,
     signal: AbortSignal.timeout(timeout),
@@ -310,7 +310,7 @@ async function login(opts) {
     return;
   }
   await browserLogin(base);
-  console.log(`  Sekarang jalankan: ${bold("npx depup-cli share")}\n`);
+  console.log(`  Sekarang jalankan: ${bold("npx depup-share share")}\n`);
 }
 
 function logout(opts) {
@@ -322,7 +322,7 @@ function logout(opts) {
 function whoami(opts) {
   const base = baseOf(opts);
   const a = currentAuth(opts, base);
-  if (!a) return console.log(`\n  ${dim("Belum login.")} Jalankan: ${bold("npx depup-cli login")}\n`);
+  if (!a) return console.log(`\n  ${dim("Belum login.")} Jalankan: ${bold("npx depup-share login")}\n`);
   console.log(`\n  ${a.email ? bold(a.email) : "Token dari " + a.source} ${dim("· " + base)}\n`);
 }
 
@@ -484,7 +484,7 @@ async function share(opts) {
     try {
       const hot = Date.now() - lastActivity < 8000 ? 1 : 0;
       const res = await fetch(`${base}/api/tunnel/poll?id=${encodeURIComponent(id)}&hot=${hot}`, {
-        headers: { authorization: `Bearer ${token}`, "user-agent": `depup-cli/${VERSION}` },
+        headers: { authorization: `Bearer ${token}`, "user-agent": `depup-share/${VERSION}` },
         signal: AbortSignal.timeout(40_000),
       });
       if (res.status === 410 || res.status === 401) {

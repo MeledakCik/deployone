@@ -10,10 +10,10 @@ import { CodeBlock } from "@/components/dashboard/ClaudeConnectCard";
 import { useToast } from "@/components/ui/Toast";
 import { useDeploy } from "@/lib/deploy-context";
 
-const COMMANDS = `npx depup-cli@latest login   # sekali saja: hubungkan CLI ke akunmu
-npx depup-cli share          # deteksi otomatis port yang sedang jalan
-npx depup-cli share 8000     # atau sebutkan port-nya
-npx depup-cli share 5173 --name skripsi --ttl 240`;
+const COMMANDS = `npx depup-share@latest login   # sekali saja: hubungkan CLI ke akunmu
+npx depup-share share          # deteksi otomatis port yang sedang jalan
+npx depup-share share 8000     # atau sebutkan port-nya
+npx depup-share share 5173 --name skripsi --ttl 240`;
 
 const STEPS = [
   "Jalankan project-mu seperti biasa di komputer, misalnya npm run dev di localhost:5173.",
@@ -137,8 +137,8 @@ export function CliShareCard() {
           <div className="mt-3">
             <CodeBlock
               title={t("Jalankan di terminal")}
-              code={`npx depup-cli@latest login --token ${token}`}
-              onCopy={() => void copy(`npx depup-cli@latest login --token ${token}`)}
+              code={`npx depup-share@latest login --token ${token}`}
+              onCopy={() => void copy(`npx depup-share@latest login --token ${token}`)}
             />
           </div>
         ) : (

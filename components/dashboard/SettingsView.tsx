@@ -519,7 +519,7 @@ export function SettingsView() {
         {/* 2. Tampilan */}
         <AppearanceSettings />
 
-        {/* 3. MCP dan depup-cli share: satu kelompok "konektor" */}
+        {/* 3. MCP dan depup-share share: satu kelompok "konektor" */}
         <ClaudeConnectCard
           tokens={tokens}
           onTokensChange={(next) => {

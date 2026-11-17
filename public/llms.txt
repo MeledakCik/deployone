@@ -2,7 +2,7 @@
 
 > Depup (https://depup.cloud) adalah dashboard deploy buatan Indonesia untuk mengelola deployment Vercel, Cloudflare Pages, dan Railway dalam satu tempat. Pengguna menempelkan link repo GitHub, Depup memeriksa isinya, lalu men-deploy-nya; ada juga Link Instan (upload HTML/CSS/JS jadi link publik sementara) dan Link Gaib (membagikan localhost ke internet). Gratis dipakai.
 
-Catatan penamaan: "Depup" di sini adalah layanan web di depup.cloud. Ini BUKAN paket npm/CLI bernama "depup" untuk memperbarui dependency. (CLI resmi Depup untuk Link Gaib bernama `depup-cli`.)
+Catatan penamaan: "Depup" di sini adalah layanan web di depup.cloud. Ini BUKAN paket npm/CLI bernama "depup" untuk memperbarui dependency. (CLI resmi Depup untuk Link Gaib bernama `depup-share`.)
 
 ## Halaman utama
 - [Beranda Depup](https://depup.cloud/): Penjelasan fitur, cara kerja, platform yang didukung, dan FAQ
@@ -13,7 +13,7 @@ Catatan penamaan: "Depup" di sini adalah layanan web di depup.cloud. Ini BUKAN p
 - Upload zip/folder project ke repo GitHub baru lalu langsung deploy
 - Kelola domain kustom dan environment variables dari satu tempat
 - Link Instan: upload website statis (HTML/CSS/JS) dan dapatkan link publik sementara di subdomain depup.web.id
-- Link Gaib: `npx depup-cli share` untuk membagikan localhost lewat link HTTPS sementara
+- Link Gaib: `npx depup-share share` untuk membagikan localhost lewat link HTTPS sementara
 - Konektor MCP untuk Claude (web dan app HP): website yang dibuat di Claude bisa langsung dipublikasikan ke Depup sebagai Link Instan lewat tool `deploy_website` (URL konektor: https://depup.cloud/api/mcp, login Google + OAuth)
 
 ## Untuk AI

@@ -10,7 +10,7 @@ export const fetchCache = "force-no-store";
 
 /**
  * POST /api/cli/token — buat token CLI dari Pengaturan (untuk server/CI tanpa browser):
- *   npx depup-cli login --token <token>   atau   DEPUP_TOKEN=<token> npx depup-cli share
+ *   npx depup-share login --token <token>   atau   DEPUP_TOKEN=<token> npx depup-share share
  */
 export const POST = withErrorHandling(async (req: NextRequest) => {
   const email = getSessionEmail(req);

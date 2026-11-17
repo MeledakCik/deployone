@@ -1,12 +1,12 @@
-# depup-cli
+# depup-share
 
 Bagikan website yang jalan di `localhost` lewat link HTTPS sementara — tanpa deploy.
 Seperti ngrok: **hanya pembuat link yang login** (sekali saja), orang yang membuka link **tidak perlu login**.
 
 ```bash
-npx depup-cli@latest login   # sekali saja: browser terbuka, login Google, tekan "Izinkan"
-npx depup-cli share          # deteksi otomatis port yang sedang jalan
-npx depup-cli share 8000     # atau sebutkan port-nya
+npx depup-share@latest login   # sekali saja: browser terbuka, login Google, tekan "Izinkan"
+npx depup-share share          # deteksi otomatis port yang sedang jalan
+npx depup-share share 8000     # atau sebutkan port-nya
 ```
 
 ```

@@ -36,16 +36,16 @@ export type CliAuthResult = { ok: true; email: string } | { ok: false; status: n
 /** Verifikasi "Authorization: Bearer <token CLI>": tanda tangan, kedaluwarsa, epoch (pencabutan), dan blokir admin. */
 export async function authenticateCli(req: Request): Promise<CliAuthResult> {
   const m = /^Bearer\s+(\S+)$/i.exec(req.headers.get("authorization") ?? "");
-  const needLogin = "Perlu login dulu. Jalankan: npx depup-cli@latest login";
+  const needLogin = "Perlu login dulu. Jalankan: npx depup-share@latest login";
   if (!m) return { ok: false, status: 401, error: needLogin };
 
   const grant = verifyMcpToken<CliGrant>("cli", m[1]);
   if (!grant || typeof grant.email !== "string" || typeof grant.ep !== "number") {
-    return { ok: false, status: 401, error: "Login CLI tidak valid atau sudah kedaluwarsa. Jalankan: npx depup-cli@latest login" };
+    return { ok: false, status: 401, error: "Login CLI tidak valid atau sudah kedaluwarsa. Jalankan: npx depup-share@latest login" };
   }
   const email = grant.email.trim().toLowerCase();
   if ((await getEpoch(email)) !== grant.ep) {
-    return { ok: false, status: 401, error: "Akses CLI sudah dicabut. Jalankan: npx depup-cli@latest login" };
+    return { ok: false, status: 401, error: "Akses CLI sudah dicabut. Jalankan: npx depup-share@latest login" };
   }
   if (await isAccountBlocked(email)) {
     return { ok: false, status: 403, error: "Akun ini dinonaktifkan oleh admin Depup." };
