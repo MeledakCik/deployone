@@ -30,6 +30,28 @@ export const SITE_DEFINITION =
 export const SITE_DESCRIPTION =
   "Depup adalah dashboard deploy buatan Indonesia. Tempel link GitHub atau upload zip, Depup memeriksa isi repo lalu deploy ke Vercel, Cloudflare Pages, atau Railway. Ada juga Link Instan, AI Web Builder, Database, dan konektor MCP untuk Claude.";
 
+/**
+ * Judul & deskripsi beranda Inggris (/en). Ditulis khusus untuk kata kunci pencarian internasional, bukan
+ * terjemahan harfiah: orang luar Indonesia mencari "deploy to vercel", "free static hosting", dst.
+ */
+export const HOME_TITLE_EN = "Depup: Free Deploy Dashboard for Vercel, Cloudflare Pages & Railway";
+export const SITE_DESCRIPTION_EN =
+  "Deploy any GitHub repo or ZIP to Vercel, Cloudflare Pages, or Railway from one free dashboard. Depup checks your repo before deploying, and adds instant static hosting links, an AI website builder, SQLite databases, localhost sharing, and an MCP connector for Claude, Cursor & Codex.";
+
+/** Kata kunci per bahasa (meta keywords diabaikan Google, tetapi dipakai Bing, Yandex, Naver, dan Baidu). */
+export const KEYWORDS: Record<"id" | "en", string[]> = {
+  id: [
+    "depup", "depup.cloud", "dashboard deploy indonesia", "deploy vercel cloudflare railway", "link instan html",
+    "hosting html gratis", "kelola deployment", "ai web builder indonesia", "database sqlite gratis",
+    "mcp claude deploy", "bagikan localhost",
+  ],
+  en: [
+    "depup", "deploy dashboard", "deploy to vercel", "deploy to cloudflare pages", "deploy to railway",
+    "deploy github repo", "free static site hosting", "host html file online", "share localhost", "ngrok alternative",
+    "ai website builder", "free sqlite database", "mcp server deploy", "claude mcp connector", "vercel alternative dashboard",
+  ],
+};
+
 export const CONTACT_EMAIL = "depupdev@gmail.com";
 
 export const PLATFORMS = [
@@ -558,6 +580,14 @@ export function buildLlmsTxt(): string {
   }
   lines.push("", "## Platform tujuan deploy");
   for (const p of PLATFORMS) lines.push(`- ${p.name}: ${p.fit}`);
+  lines.push("", "## English version");
+  lines.push(`> ${SITE_DESCRIPTION_EN}`, "");
+  lines.push(`- [Home (English)](${SITE_URL}/en): Features, how it works, supported repos, FAQ`);
+  lines.push(`- [All features (English)](${SITE_URL}/en/fitur)`);
+  for (const f of FEATURES) lines.push(`- [${f.name} (English)](${SITE_URL}/en/fitur/${f.slug})`);
+  lines.push(`- [Docs (English)](${SITE_URL}/en/docs)`);
+  lines.push(`- [MCP connector docs (English)](${SITE_URL}/en/docs/mcp): Claude, Cursor, Codex, Gemini, OpenCode, DeepSeek`);
+  lines.push(`- [Privacy policy (English)](${SITE_URL}/en/privacy)`);
   lines.push("", "## Untuk AI");
   for (const n of AI_NOTES) lines.push(`- ${n}`);
   lines.push("");

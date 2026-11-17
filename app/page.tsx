@@ -1,4 +1,4 @@
-import { getT } from "@/lib/i18n/server";
+import { getLang } from "@/lib/i18n/server";
 import * as React from "react";
 import type { Metadata } from "next";
 import { Navbar } from "@/components/landing/Navbar";
@@ -14,18 +14,20 @@ import { FinalCTA } from "@/components/landing/FinalCTA";
 import { AtAGlance } from "@/components/landing/AtAGlance";
 import { Footer } from "@/components/landing/Footer";
 import { pageMeta } from "@/lib/seo";
-import { HOME_TITLE, SITE_DESCRIPTION } from "@/lib/site-content";
+import { HOME_TITLE, HOME_TITLE_EN, KEYWORDS, SITE_DESCRIPTION, SITE_DESCRIPTION_EN } from "@/lib/site-content";
 
 // Memakai pageMeta agar og:title, og:description, dan og:image tidak hilang
 // (openGraph di halaman menggantikan, bukan menggabung dengan, openGraph di layout).
 export function generateMetadata(): Metadata {
-  const t = getT();
+  // "/" = Indonesia, "/en" = Inggris (app/en/page.tsx memakai fungsi ini juga; bahasanya dari middleware).
+  const lang = getLang();
   return pageMeta({
-    title: t(HOME_TITLE),
-    description: t(SITE_DESCRIPTION),
+    title: lang === "en" ? HOME_TITLE_EN : HOME_TITLE,
+    description: lang === "en" ? SITE_DESCRIPTION_EN : SITE_DESCRIPTION,
     path: "/",
     absoluteTitle: true,
-    en: "/en",
+    lang,
+    keywords: KEYWORDS[lang],
   });
 }
 

@@ -1,10 +1,10 @@
-import { getT } from "@/lib/i18n/server";
+import { getLang, getT } from "@/lib/i18n/server";
 import * as React from "react";
 import Image from "next/image";
 import { DashboardLink } from "./DashboardLink";
 import { InstagramIcon, LinkedInIcon, TikTokIcon, WhatsAppIcon, XIcon } from "./SocialIcons";
 import { COMMUNITY_LINKS as COMMUNITY_LINKS_RAW, type CommunityKey } from "@/lib/community";
-import { tDeep } from "@/lib/i18n/core";
+import { localePath, tDeep } from "@/lib/i18n/core";
 import { Users } from "@/components/ui/icons";
 import { LanguageSwitch } from "@/components/ui/LanguageSwitch";
 
@@ -22,6 +22,7 @@ const ICONS: Record<CommunityKey, React.ComponentType<{ size?: number }>> = {
 /** Footer berada di atas kanvas ungu, jadi teksnya putih (token sidebar), bukan Ink. */
 export function Footer() {
   const t = getT();
+  const lp = (href: string) => localePath(getLang(), href);
   const COMMUNITY_LINKS = tDeep(COMMUNITY_LINKS_RAW, t);
   return (
     // Latar sedikit digelapkan (Ink 18%) di atas kanvas ungu: teks putih 13px jadi ≥ 5:1 (sebelumnya ±4,2:1, di bawah WCAG AA).
@@ -58,12 +59,12 @@ export function Footer() {
         </div>
 
         <nav aria-label={t("Footer")} className="flex flex-wrap items-center gap-x-7 gap-y-2 text-[13px] font-medium">
-          <a href="/fitur" className="underline-offset-4 transition-colors hover:underline">{t("Fitur")}</a>
-          <a href="/#faq" className="underline-offset-4 transition-colors hover:underline">FAQ</a>
+          <a href={lp("/fitur")} className="underline-offset-4 transition-colors hover:underline">{t("Fitur")}</a>
+          <a href={lp("/#faq")} className="underline-offset-4 transition-colors hover:underline">FAQ</a>
           <a href="https://github.com" target="_blank" rel="noopener noreferrer" className="underline-offset-4 transition-colors hover:underline">{t("GitHub")}</a>
-          <a href="/docs/mcp" className="underline-offset-4 transition-colors hover:underline">{t("Konektor Claude")}</a>
-          <a href="/docs" className="underline-offset-4 transition-colors hover:underline">{t("Dokumentasi")}</a>
-          <a href="/privacy" className="underline-offset-4 transition-colors hover:underline">{t("Privasi")}</a>
+          <a href={lp("/docs/mcp")} className="underline-offset-4 transition-colors hover:underline">{t("Konektor Claude")}</a>
+          <a href={lp("/docs")} className="underline-offset-4 transition-colors hover:underline">{t("Dokumentasi")}</a>
+          <a href={lp("/privacy")} className="underline-offset-4 transition-colors hover:underline">{t("Privasi")}</a>
                     <a href="/donate" target="_blank" rel="noopener noreferrer" className="underline-offset-4 transition-colors hover:underline">{t("Dukung lewat Saweria")}</a>
         </nav>
         <LanguageSwitch />

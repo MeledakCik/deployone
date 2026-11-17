@@ -1,8 +1,9 @@
-import { getT } from "@/lib/i18n/server";
+import { getLang, getT } from "@/lib/i18n/server";
 import type { Metadata } from "next";
 import { PublicDoc } from "@/components/public/PublicDoc";
 import { JsonLd } from "@/components/seo/JsonLd";
-import { breadcrumbLd, pageMeta } from "@/lib/seo";
+import { LD_LANG, absUrl, breadcrumbLd, pageMeta } from "@/lib/seo";
+import { localePath } from "@/lib/i18n/core";
 
 export function generateMetadata(): Metadata {
   const t = getT();
@@ -11,6 +12,7 @@ export function generateMetadata(): Metadata {
     description: t("Hubungkan Depup ke Claude, Cursor, Codex, Gemini, OpenCode, dan DeepSeek Harness lewat MCP: publish website sebagai Link Instan atau deploy repo GitHub."),
     path: "/docs/mcp",
     type: "article",
+    lang: getLang(),
   });
 }
 
@@ -19,22 +21,23 @@ const CONTACT = "depupdev@gmail.com";
 
 export default function McpDocsPage() {
   const t = getT();
+  const lang = getLang();
   return (
     <PublicDoc title={t("Konektor MCP (Claude, OpenCode, Cursor, Codex, Gemini & DeepSeek) untuk Depup")} updated="28 Oktober 2026">
       <JsonLd
         data={[
           breadcrumbLd([
             { name: "Depup", path: "/" },
-            { name: "Dokumentasi", path: "/docs" },
-            { name: "Konektor MCP", path: "/docs/mcp" },
-          ]),
+            { name: t("Dokumentasi"), path: "/docs" },
+            { name: t("Konektor MCP"), path: "/docs/mcp" },
+          ], lang),
           {
             "@context": "https://schema.org",
             "@type": "TechArticle",
             headline: t("Konektor MCP untuk Claude, Cursor, Codex, Gemini & DeepSeek"),
-            inLanguage: "id-ID",
+            inLanguage: LD_LANG[lang],
             dateModified: "2026-10-28",
-            mainEntityOfPage: `${SITE}/docs/mcp`,
+            mainEntityOfPage: absUrl(lang, "/docs/mcp"),
             author: { "@type": "Organization", name: "Depup", url: SITE },
             publisher: { "@type": "Organization", name: "Depup", url: SITE },
           },
@@ -87,7 +90,9 @@ export default function McpDocsPage() {
         </li>
         <li>
           <strong>{t("DeepSeek Harness (")}<code>dsh</code>)</strong>{t(": memakai paket resmi")}{" "}<code>@deepseek-ai/dsh-mcp-client</code>{" "}{t("dan Bearer Token (bukan OAuth otomatis). Buat token di")}{" "}<em>{t("Pengaturan → Konektor AI (MCP) → DeepSeek")}</em>{t(". DeepSeek Harness masih")}{" "}<em>{t("developer preview")}</em>{t(", jadi format konfigurasinya bisa berubah antar rilis. Urutannya: pasang paket dulu, baru tulis konfigurasi.")}
-          <pre>{`# 1) Pasang paket (ganti VERSI_DSH dengan hasil: dsh --version)\ndsh plugin --profile web add @deepseek-ai/dsh-mcp-client@VERSI_DSH\n\n# 2) Isi token lewat variabel lingkungan, bukan di file YAML\nexport DEPUP_MCP_AUTH="Bearer <TOKEN>"`}</pre>
+          <pre>{lang === "en"
+            ? `# 1) Install the package (replace DSH_VERSION with the output of: dsh --version)\ndsh plugin --profile web add @deepseek-ai/dsh-mcp-client@DSH_VERSION\n\n# 2) Pass the token through an environment variable, not the YAML file\nexport DEPUP_MCP_AUTH="Bearer <TOKEN>"`
+            : `# 1) Pasang paket (ganti VERSI_DSH dengan hasil: dsh --version)\ndsh plugin --profile web add @deepseek-ai/dsh-mcp-client@VERSI_DSH\n\n# 2) Isi token lewat variabel lingkungan, bukan di file YAML\nexport DEPUP_MCP_AUTH="Bearer <TOKEN>"`}</pre>
           {t("Lalu tambahkan ke")}{" "}<code>{t("~/.dsh/profiles/web/cordis.patch.yml")}</code>{" "}{t("(ganti")}{" "}<code>web</code>{" "}{t("dengan nama profilmu), dan restart")}{" "}<code>{t("dsh web")}</code>:
           <pre>{t("- insert:\n    - id: mcp-depup\n      name: '@deepseek-ai/dsh-mcp-client'\n      config:\n        serverName: 'depup'\n        transport: streamable-http\n        url: '{SITE}/api/mcp'\n        headers:\n          Authorization: !!js process.env.DEPUP_MCP_AUTH", { SITE })}</pre>
           {t("Cek hasilnya dengan")}{" "}<code>{t("dsh --profile web --dump-config | grep mcp-")}</code>{t(". Tool Depup muncul dengan nama seperti")}{" "}<code>{t("mcp__depup__deploy_website")}</code>.
@@ -110,7 +115,7 @@ export default function McpDocsPage() {
 
       <h2>{t("Dukungan")}</h2>
       <p>
-        {t("Pertanyaan dan masalah:")}{" "}<a href={`mailto:${CONTACT}`}>{CONTACT}</a>{t(". Penyalahgunaan Link Instan bisa dilaporkan di")}{" "}<a href="/laporkan">/laporkan</a>{t(". Lihat juga")}{" "}<a href="/privacy">{t("Kebijakan Privasi")}</a>.
+        {t("Pertanyaan dan masalah:")}{" "}<a href={`mailto:${CONTACT}`}>{CONTACT}</a>{t(". Penyalahgunaan Link Instan bisa dilaporkan di")}{" "}<a href="/laporkan">/laporkan</a>{t(". Lihat juga")}{" "}<a href={localePath(lang, "/privacy")}>{t("Kebijakan Privasi")}</a>.
       </p>
     </PublicDoc>
   );

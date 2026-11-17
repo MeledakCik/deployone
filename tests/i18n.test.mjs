@@ -2,7 +2,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import fs from "node:fs";
-import { detectLang, translate, translateLoose, registerEn, tDeep, makeT } from "../lib/i18n/core.ts";
+import { detectLang, translate, translateLoose, registerEn, tDeep, makeT, localePath, isLocalizedPath, stripLangPrefix } from "../lib/i18n/core.ts";
 import { generateSite, editSite, extractEn, classify } from "../lib/site-engine/core.ts";
 import { detectSiteLang, formatMoney, localizeRuntime } from "../lib/ai-site-i18n.ts";
 
@@ -88,4 +88,22 @@ test("harga & skrip keranjang mengikuti mata uang dan bahasa", () => {
   assert.equal(localizeRuntime(js, undefined, "IDR"), js);
   const ex = extractEn("Bloom Florist in Seattle, open 9am-6pm daily, flowers from $25");
   assert.equal(ex.hours, "Daily 09:00–18:00");
+});
+
+test("localePath: halaman publik punya pasangan /en, sisanya tidak berubah", () => {
+  assert.equal(localePath("en", "/"), "/en");
+  assert.equal(localePath("en", "/#faq"), "/en#faq");
+  assert.equal(localePath("en", "/fitur"), "/en/fitur");
+  assert.equal(localePath("en", "/fitur/link-instan"), "/en/fitur/link-instan");
+  assert.equal(localePath("en", "/docs/mcp"), "/en/docs/mcp");
+  assert.equal(localePath("en", "/privacy?x=1"), "/en/privacy?x=1");
+  assert.equal(localePath("en", "/dashboard"), "/dashboard");
+  assert.equal(localePath("en", "/laporkan"), "/laporkan");
+  assert.equal(localePath("en", "#fitur"), "#fitur");
+  assert.equal(localePath("id", "/fitur"), "/fitur");
+  assert.equal(isLocalizedPath("/m"), false);
+  assert.equal(isLocalizedPath("/docs/lain"), false);
+  assert.equal(stripLangPrefix("/en"), "/");
+  assert.equal(stripLangPrefix("/en/fitur"), "/fitur");
+  assert.equal(stripLangPrefix("/english"), "/english");
 });

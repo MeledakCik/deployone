@@ -1,12 +1,13 @@
 import { tDeep } from "@/lib/i18n/core";
-import { getT } from "@/lib/i18n/server";
+import { getLang, getT } from "@/lib/i18n/server";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { PublicShell } from "@/components/public/PublicShell";
 import { PublicAuthCta } from "@/components/public/PublicAuthCta";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { DashboardLink } from "@/components/landing/DashboardLink";
-import { breadcrumbLd, pageMeta } from "@/lib/seo";
+import { LD_LANG, absUrl, breadcrumbLd, pageMeta } from "@/lib/seo";
+import { localePath } from "@/lib/i18n/core";
 import { FEATURES as FEATURES_RAW, PLATFORMS as PLATFORMS_RAW, SITE_DEFINITION, SITE_NAME, SITE_URL } from "@/lib/site-content";
 
 export function generateMetadata(): Metadata {
@@ -15,25 +16,28 @@ export function generateMetadata(): Metadata {
     title: t("Semua Fitur Depup: Deploy, Link Instan, AI & Database"),
     description: t("Daftar lengkap fitur Depup: deploy ke Vercel, Cloudflare Pages, dan Railway, upload ZIP, Link Instan, AI Web Builder, Database, Link Gaib, dan konektor MCP."),
     path: "/fitur",
+    lang: getLang(),
   });
 }
 
 export default function FiturPage() {
   const t = getT();
+  const lang = getLang();
+  const lp = (href: string) => localePath(lang, href);
   const FEATURES = tDeep(FEATURES_RAW, t);
   const PLATFORMS = tDeep(PLATFORMS_RAW, t);
   const ld = [
     breadcrumbLd([
       { name: SITE_NAME, path: "/" },
-      { name: "Fitur", path: "/fitur" },
-    ]),
+      { name: t("Fitur"), path: "/fitur" },
+    ], lang),
     {
       "@context": "https://schema.org",
       "@type": "CollectionPage",
-      "@id": `${SITE_URL}/fitur#page`,
-      url: `${SITE_URL}/fitur`,
-      name: "Semua fitur Depup",
-      inLanguage: "id-ID",
+      "@id": `${absUrl(lang, "/fitur")}#page`,
+      url: absUrl(lang, "/fitur"),
+      name: t("Semua fitur Depup"),
+      inLanguage: LD_LANG[lang],
       isPartOf: { "@id": `${SITE_URL}/#website` },
       about: { "@id": `${SITE_URL}/#app` },
       mainEntity: {
@@ -41,7 +45,7 @@ export default function FiturPage() {
         itemListElement: FEATURES.map((f, i) => ({
           "@type": "ListItem",
           position: i + 1,
-          url: `${SITE_URL}/fitur/${f.slug}`,
+          url: absUrl(lang, `/fitur/${f.slug}`),
           name: f.name,
         })),
       },
@@ -53,7 +57,7 @@ export default function FiturPage() {
       <JsonLd data={ld} />
       <div>
         <nav aria-label={t("Jejak halaman")} className="mb-4 text-[13px] text-text-muted">
-          <Link href="/" className="underline-offset-4 hover:underline">{t("Depup")}</Link>
+          <Link href={lp("/")} className="underline-offset-4 hover:underline">{t("Depup")}</Link>
           <span aria-hidden="true"> / </span>
           <span>{t("Fitur")}</span>
         </nav>
@@ -80,13 +84,13 @@ export default function FiturPage() {
           {FEATURES.map((f) => (
             <li key={f.slug} className="surface-solid flex flex-col p-5 sm:p-6">
               <h2 className="text-[18px] font-bold tracking-tight">
-                <Link href={`/fitur/${f.slug}`} className="underline-offset-4 hover:underline">
+                <Link href={lp(`/fitur/${f.slug}`)} className="underline-offset-4 hover:underline">
                   {t(f.name)}
                 </Link>
               </h2>
               <p className="mt-2 flex-1 text-[14px] leading-relaxed text-text-muted">{t(f.summary)}</p>
               <Link
-                href={`/fitur/${f.slug}`}
+                href={lp(`/fitur/${f.slug}`)}
                 className="mt-4 text-[13px] font-semibold text-lav-text underline underline-offset-4"
                 aria-label={t("Selengkapnya tentang {name}", { name: t(f.name) })}
               >
@@ -104,8 +108,8 @@ export default function FiturPage() {
             {t("Coba Depup gratis")}
           </DashboardLink>
           <p className="text-[13px] text-text-muted">
-            {t("Butuh panduan? Lihat")}{" "}<Link href="/docs" className="font-medium text-lav-text underline underline-offset-4">{t("dokumentasi")}</Link>{" "}{t("atau")}{" "}
-            <Link href="/#faq" className="font-medium text-lav-text underline underline-offset-4">FAQ</Link>.
+            {t("Butuh panduan? Lihat")}{" "}<Link href={lp("/docs")} className="font-medium text-lav-text underline underline-offset-4">{t("dokumentasi")}</Link>{" "}{t("atau")}{" "}
+            <Link href={lp("/#faq")} className="font-medium text-lav-text underline underline-offset-4">FAQ</Link>.
           </p>
         </div>
       </div>

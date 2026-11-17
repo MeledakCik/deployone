@@ -1,4 +1,5 @@
-import { getT } from "@/lib/i18n/server";
+import { getLang, getT } from "@/lib/i18n/server";
+import { localePath } from "@/lib/i18n/core";
 import Link from "next/link";
 import { PublicShell } from "@/components/public/PublicShell";
 
@@ -13,10 +14,10 @@ export default function NotFound() {
           {t("Halaman yang kamu cari tidak ada, atau mungkin sudah dipindahkan.")}
         </p>
         <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-          <Link href="/" className="btn-primary btn-md">
+          <Link href={localePath(getLang(), "/")} className="btn-primary btn-md">
             {t("Kembali ke beranda")}
           </Link>
-          <Link href="/docs" className="pill btn-md font-medium">
+          <Link href={localePath(getLang(), "/docs")} className="pill btn-md font-medium">
             {t("Buka dokumentasi")}
           </Link>
         </div>

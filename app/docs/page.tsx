@@ -1,4 +1,4 @@
-import { getT } from "@/lib/i18n/server";
+import { getLang, getT } from "@/lib/i18n/server";
 import { DocsView } from "@/components/dashboard/DocsView";
 import type { Metadata } from "next";
 import { pageMeta, breadcrumbLd } from "@/lib/seo";
@@ -12,13 +12,15 @@ export function generateMetadata(): Metadata {
     title: t("Dokumentasi: Panduan Deploy, Token & Link Instan"),
     description: t("Panduan Depup: cara mendapatkan token Vercel, Cloudflare, dan Railway, men-deploy repo GitHub, memakai Link Instan, dan memecahkan deploy yang gagal."),
     path: "/docs",
+    lang: getLang(),
   });
 }
 
 export default function DocsPage() {
+  const t = getT();
   return (
     <PublicShell cta={<PublicAuthCta />}>
-      <JsonLd data={breadcrumbLd([{ name: "Depup", path: "/" }, { name: "Dokumentasi", path: "/docs" }])} />
+      <JsonLd data={breadcrumbLd([{ name: "Depup", path: "/" }, { name: t("Dokumentasi"), path: "/docs" }], getLang())} />
       <DocsView />
     </PublicShell>
   );

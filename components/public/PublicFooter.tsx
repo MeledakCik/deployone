@@ -1,4 +1,5 @@
-import { getT } from "@/lib/i18n/server";
+import { getLang, getT } from "@/lib/i18n/server";
+import { localePath } from "@/lib/i18n/core";
 import Link from "next/link";
 import { PUBLIC_LINKS } from "./links";
 
@@ -9,17 +10,18 @@ import { PUBLIC_LINKS } from "./links";
  */
 export function PublicFooter() {
   const t = getT();
+  const lp = (href: string) => localePath(getLang(), href);
   const linkCls = "underline-offset-4 transition-colors hover:text-text hover:underline";
   return (
     <footer className="px-4 pt-4 sm:px-6 lg:px-8" style={{ paddingBottom: "max(1.5rem, env(safe-area-inset-bottom))" }}>
       <div className="mx-auto max-w-4xl border-t border-[var(--line-strong)] pt-6 text-[13px] text-text-muted">
         <nav aria-label={t("Footer")} className="flex flex-wrap gap-x-5 gap-y-2 font-medium">
           {PUBLIC_LINKS.map((l) => (
-            <Link key={l.href} href={l.href} className={linkCls}>
+            <Link key={l.href} href={lp(l.href)} className={linkCls}>
               {t(l.label)}
             </Link>
           ))}
-          <Link href="/privacy" className={linkCls}>
+          <Link href={lp("/privacy")} className={linkCls}>
             {t("Privasi")}
           </Link>
           <Link href="/laporkan" className={linkCls}>

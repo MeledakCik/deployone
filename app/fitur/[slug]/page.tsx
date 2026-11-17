@@ -1,5 +1,5 @@
 import { tDeep } from "@/lib/i18n/core";
-import { getT } from "@/lib/i18n/server";
+import { getLang, getT } from "@/lib/i18n/server";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -7,7 +7,8 @@ import { PublicShell } from "@/components/public/PublicShell";
 import { PublicAuthCta } from "@/components/public/PublicAuthCta";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { DashboardLink } from "@/components/landing/DashboardLink";
-import { breadcrumbLd, pageMeta } from "@/lib/seo";
+import { LD_LANG, absUrl, breadcrumbLd, pageMeta } from "@/lib/seo";
+import { localePath } from "@/lib/i18n/core";
 import { FEATURES, SITE_NAME, SITE_URL, getFeature } from "@/lib/site-content";
 
 // Hanya slug yang terdaftar yang valid; sisanya 404 (bukan di-render dinamis).
@@ -21,24 +22,26 @@ export function generateMetadata({ params }: { params: { slug: string } }): Meta
   const fRaw0 = getFeature(params.slug);
   const f = fRaw0 ? tDeep(fRaw0, getT()) : fRaw0;
   if (!f) return {};
-  return pageMeta({ title: f.seoTitle, description: f.seoDescription, path: `/fitur/${f.slug}` });
+  return pageMeta({ title: f.seoTitle, description: f.seoDescription, path: `/fitur/${f.slug}`, lang: getLang() });
 }
 
 export default function FeaturePage({ params }: { params: { slug: string } }) {
   const t = getT();
+  const lang = getLang();
+  const lp = (href: string) => localePath(lang, href);
   const fRaw = getFeature(params.slug);
   const f = fRaw ? tDeep(fRaw, t) : fRaw;
   if (!f) notFound();
 
-  const url = `${SITE_URL}/fitur/${f.slug}`;
+  const url = absUrl(lang, `/fitur/${f.slug}`);
   const related = f.related.map((s) => getFeature(s)).filter((x): x is NonNullable<typeof x> => !!x).map((x) => tDeep(x, t));
 
   const ld: unknown[] = [
     breadcrumbLd([
       { name: SITE_NAME, path: "/" },
-      { name: "Fitur", path: "/fitur" },
+      { name: t("Fitur"), path: "/fitur" },
       { name: f.name, path: `/fitur/${f.slug}` },
-    ]),
+    ], lang),
     {
       "@context": "https://schema.org",
       "@type": "WebPage",
@@ -46,15 +49,15 @@ export default function FeaturePage({ params }: { params: { slug: string } }) {
       url,
       name: f.seoTitle,
       description: f.seoDescription,
-      inLanguage: "id-ID",
+      inLanguage: LD_LANG[lang],
       isPartOf: { "@id": `${SITE_URL}/#website` },
       about: { "@id": `${SITE_URL}/#app` },
     },
     {
       "@context": "https://schema.org",
       "@type": "HowTo",
-      name: `Cara memakai ${f.name} di Depup`,
-      inLanguage: "id-ID",
+      name: t("Cara memakai {name} di Depup", { name: f.name }),
+      inLanguage: LD_LANG[lang],
       step: f.steps.map((text, i) => ({ "@type": "HowToStep", position: i + 1, text })),
     },
   ];
@@ -75,9 +78,9 @@ export default function FeaturePage({ params }: { params: { slug: string } }) {
       <JsonLd data={ld} />
       <div>
         <nav aria-label={t("Jejak halaman")} className="mb-4 text-[13px] text-text-muted">
-          <Link href="/" className="underline-offset-4 hover:underline">{t("Depup")}</Link>
+          <Link href={lp("/")} className="underline-offset-4 hover:underline">{t("Depup")}</Link>
           <span aria-hidden="true"> / </span>
-          <Link href="/fitur" className="underline-offset-4 hover:underline">{t("Fitur")}</Link>
+          <Link href={lp("/fitur")} className="underline-offset-4 hover:underline">{t("Fitur")}</Link>
           <span aria-hidden="true"> / </span>
           <span>{f.name}</span>
         </nav>
@@ -139,7 +142,7 @@ export default function FeaturePage({ params }: { params: { slug: string } }) {
               {t("Coba {name}", { name: f.name })}
             </DashboardLink>
             {f.docsHref && (
-              <Link href={f.docsHref} className="pill btn-lg font-medium">
+              <Link href={lp(f.docsHref)} className="pill btn-lg font-medium">
                 {t("Baca dokumentasi")}
               </Link>
             )}
@@ -151,13 +154,13 @@ export default function FeaturePage({ params }: { params: { slug: string } }) {
               <ul className="mt-3 flex flex-wrap gap-2">
                 {related.map((r) => (
                   <li key={r.slug}>
-                    <Link href={`/fitur/${r.slug}`} className="pill inline-block px-4 py-2 text-[13px]">
+                    <Link href={lp(`/fitur/${r.slug}`)} className="pill inline-block px-4 py-2 text-[13px]">
                       {r.name}
                     </Link>
                   </li>
                 ))}
                 <li>
-                  <Link href="/fitur" className="pill inline-block px-4 py-2 text-[13px]">{t("Semua fitur")}</Link>
+                  <Link href={lp("/fitur")} className="pill inline-block px-4 py-2 text-[13px]">{t("Semua fitur")}</Link>
                 </li>
               </ul>
             </nav>

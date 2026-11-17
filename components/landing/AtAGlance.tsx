@@ -1,5 +1,6 @@
 import { tDeep } from "@/lib/i18n/core";
-import { getT } from "@/lib/i18n/server";
+import { getLang, getT } from "@/lib/i18n/server";
+import { localePath } from "@/lib/i18n/core";
 import Link from "next/link";
 import { FEATURES as FEATURES_RAW, PLATFORMS as PLATFORMS_RAW, SITE_DEFINITION } from "@/lib/site-content";
 
@@ -32,7 +33,7 @@ export function AtAGlance() {
             {FEATURES.map((f) => (
               <li key={f.slug}>
                 <Link
-                  href={`/fitur/${f.slug}`}
+                  href={localePath(getLang(), `/fitur/${f.slug}`)}
                   title={t(f.summary)}
                   className="pill inline-flex min-h-[40px] items-center px-4 text-[14px] font-semibold"
                 >
@@ -55,7 +56,7 @@ export function AtAGlance() {
           </ul>
           <p className="mt-4 text-[14px] leading-relaxed text-text-muted">
             {t("Gratis dipakai. Masuk dengan akun Google, tanpa password baru.")}{" "}
-            <Link href="/fitur" className="font-semibold text-text underline underline-offset-4">
+            <Link href={localePath(getLang(), "/fitur")} className="font-semibold text-text underline underline-offset-4">
               {t("Lihat semua fitur")}
             </Link>
           </p>

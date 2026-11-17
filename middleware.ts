@@ -4,7 +4,7 @@ import { rateLimit, clientIp } from "@/app/api/_lib/rate-limit";
 import { slugFromHost, slugFromReferer, isTunnelSlug, tunnelPathHost, sameHost, SLUG_RE } from "@/app/api/_lib/tunnel-host";
 import { isAdminEmail } from "@/app/api/_lib/admin-config";
 import { kv } from "@vercel/kv";
-import { LANG_COOKIE, LANG_HEADER, detectLang, isLang, type Lang } from "@/lib/i18n/core";
+import { LANG_COOKIE, LANG_HEADER, detectLang, isLang, isLocalizedPath, localePath, stripLangPrefix, type Lang } from "@/lib/i18n/core";
 export const config = {
   matcher: [
     "/((?!_next/static|_next/image|favicon\\.ico|robots\\.txt|sitemap\\.xml|manifest\\.webmanifest|apple-touch-icon\\.png|icon-128\\.png|icon-192\\.png|icon-512\\.png|icon-maskable-512\\.png|logo\\.png|logo-lime\\.png|logo-white\\.png|og-image\\.png|email/|glassmorphic_dashboard_hero\\.svg).*)",
@@ -210,6 +210,39 @@ function mwText(req: NextRequest, msg: string): string {
   return resolveLang(req).lang === "en" ? MW_EN[msg] ?? msg : msg;
 }
 
+const BOT_UA_RE = /bot|crawl|spider|slurp|bingpreview|facebookexternalhit|embedly|whatsapp|telegram|discord|lighthouse|google-inspectiontool|headless/i;
+
+/**
+ * Halaman publik punya URL per bahasa (/fitur = Indonesia, /en/fitur = Inggris). Pengunjung manusia diarahkan ke URL
+ * bahasanya, jadi isi halaman selalu cocok dengan canonical & hreflang-nya. Bot TIDAK pernah diarahkan: mereka
+ * menemukan kedua versi lewat hreflang dan sitemap (Google melarang redirect otomatis untuk crawler).
+ */
+function langRedirect(req: NextRequest): NextResponse | null {
+  if (req.method !== "GET" && req.method !== "HEAD") return null;
+  if (BOT_UA_RE.test(req.headers.get("user-agent") || "")) return null;
+  const { pathname, searchParams } = req.nextUrl;
+  const isEn = pathname === "/en" || pathname.startsWith("/en/");
+  const q = searchParams.get("lang");
+  let target: string | null = null;
+  let save: Lang | null = null;
+  if (isEn) {
+    // /en/...?lang=id -> versi Indonesia.
+    if (q === "id") { target = stripLangPrefix(pathname); save = "id"; }
+  } else if (isLocalizedPath(pathname)) {
+    const { lang, save: s } = resolveLang(req);
+    if (lang === "en") { target = localePath("en", pathname); if (s) save = "en"; }
+  }
+  if (!target) return null;
+  const url = req.nextUrl.clone();
+  url.pathname = target;
+  url.searchParams.delete("lang");
+  const res = NextResponse.redirect(url, 307);
+  res.headers.set("Vary", "Cookie, Accept-Language");
+  res.headers.set("Cache-Control", "private, no-store");
+  if (save) res.cookies.set(LANG_COOKIE, save, { path: "/", maxAge: 31536000, sameSite: "lax", secure: req.nextUrl.protocol === "https:" });
+  return res;
+}
+
 /** NextResponse.next() yang membawa bahasa request ini (header internal, selalu ditimpa) + menyimpan pilihan awal. */
 function nextWithLang(req: NextRequest, saveCookie = true): NextResponse {
   const { lang, save } = resolveLang(req);
@@ -334,6 +367,8 @@ export async function middleware(req: NextRequest) {
   }
 
   if (pathname !== "/api" && !pathname.startsWith("/api/")) {
+    const redirect = isDepushSubdomain ? null : langRedirect(req);
+    if (redirect) return redirect;
     const res = nextWithLang(req);
     if (isDepushSubdomain) res.headers.set("X-Robots-Tag", "noindex, nofollow");
     return res;

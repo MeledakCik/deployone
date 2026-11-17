@@ -1,4 +1,4 @@
-import { getT } from "@/lib/i18n/server";
+import { getLang, getT } from "@/lib/i18n/server";
 import type { Metadata } from "next";
 import { PublicDoc } from "@/components/public/PublicDoc";
 import { pageMeta } from "@/lib/seo";
@@ -9,6 +9,7 @@ export function generateMetadata(): Metadata {
     title: t("Kebijakan Privasi"),
     description: t("Data apa yang dikumpulkan Depup, bagaimana disimpan dan dipakai, siapa saja pihak ketiganya, dan berapa lama disimpan, termasuk untuk konektor Claude (MCP)."),
     path: "/privacy",
+    lang: getLang(),
   });
 }
 

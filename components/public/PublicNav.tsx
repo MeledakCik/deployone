@@ -1,6 +1,7 @@
 "use client";
 
-import { useT } from "@/lib/i18n";
+import { useLocalePath, useT } from "@/lib/i18n";
+import { stripLangPrefix } from "@/lib/i18n/core";
 import "@/lib/i18n/dict/public";
 import * as React from "react";
 import Image from "next/image";
@@ -20,13 +21,14 @@ import { PUBLIC_LINKS } from "./links";
  */
 export function PublicNav({ cta }: { cta?: React.ReactNode }) {
   const t = useT();
-  const pathname = usePathname() ?? "";
+  const lp = useLocalePath();
+  const pathname = stripLangPrefix(usePathname() ?? "");
   const isActive = (href: string) => (href === "/docs" ? pathname === "/docs" : pathname === href || pathname.startsWith(`${href}/`));
 
   return (
     <header className="sticky top-0 z-40 px-3 pb-2 sm:px-6" style={{ paddingTop: "max(12px, env(safe-area-inset-top))" }}>
       <div className="pub-nav mx-auto flex max-w-4xl flex-wrap items-center gap-x-3 gap-y-1 rounded-[28px] p-2 pl-3 md:flex-nowrap md:rounded-full">
-        <Link href="/" className="flex shrink-0 items-center gap-2.5" aria-label={t("Depup, beranda")}>
+        <Link href={lp("/")} className="flex shrink-0 items-center gap-2.5" aria-label={t("Depup, beranda")}>
           <Image src="/logo.png" alt="" width={32} height={32} priority className="h-8 w-8" />
           <span className="text-[18px] font-bold tracking-tight text-text">{t("Depup")}</span>
         </Link>
@@ -40,7 +42,7 @@ export function PublicNav({ cta }: { cta?: React.ReactNode }) {
             return (
               <Link
                 key={l.href}
-                href={l.href}
+                href={lp(l.href)}
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   "inline-flex shrink-0 items-center rounded-full px-3.5 py-2 text-[13px] font-medium transition-colors max-md:min-h-[40px]",

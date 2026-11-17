@@ -1,9 +1,9 @@
 "use client";
 
 import * as React from "react";
-import { LANG_COOKIE, makeT, setClientLang, type Lang, type TFn } from "./core";
+import { LANG_COOKIE, isLocalizedPath, localePath, makeT, setClientLang, stripLangPrefix, type Lang, type TFn } from "./core";
 
-export { type Lang, type TFn, LANG_NAMES, LANGS, tDeep, tl } from "./core";
+export { type Lang, type TFn, LANG_NAMES, LANGS, tDeep, tl, localePath } from "./core";
 
 const LangCtx = React.createContext<Lang>("id");
 
@@ -22,6 +22,12 @@ export function useT(): TFn {
   return React.useMemo(() => makeT(lang), [lang]);
 }
 
+/** href internal sesuai bahasa aktif: lp("/fitur") -> "/en/fitur" bila bahasa Inggris. */
+export function useLocalePath(): (href: string) => string {
+  const lang = React.useContext(LangCtx);
+  return React.useCallback((href: string) => localePath(lang, href), [lang]);
+}
+
 /** Simpan pilihan bahasa (1 tahun) lalu muat ulang supaya halaman server ikut berganti. */
 export function setLang(lang: Lang): void {
   try {
@@ -30,8 +36,10 @@ export function setLang(lang: Lang): void {
     /* cookie diblokir: tetap muat ulang */
   }
   const url = new URL(location.href);
-  // /en adalah halaman Inggris tetap; pilih Indonesia di sana -> kembali ke beranda.
-  if (lang === "id" && (url.pathname === "/en" || url.pathname.startsWith("/en/"))) url.pathname = url.pathname.slice(3) || "/";
+  // Halaman publik punya URL per bahasa: pindah ke pasangannya (/fitur <-> /en/fitur) supaya URL = bahasa.
+  const base = stripLangPrefix(url.pathname);
+  if (lang === "id") url.pathname = base;
+  else if (isLocalizedPath(base)) url.pathname = localePath("en", base);
   url.searchParams.delete("lang");
   location.replace(url.toString());
 }

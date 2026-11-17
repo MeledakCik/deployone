@@ -1,6 +1,6 @@
 "use client";
 
-import { useT } from "@/lib/i18n";
+import { useLocalePath, useT } from "@/lib/i18n";
 import { LanguageSwitch } from "@/components/ui/LanguageSwitch";
 import "@/lib/i18n/dict/public";
 import * as React from "react";
@@ -25,6 +25,7 @@ const NAV_LINKS = [
 
 export function Navbar() {
   const t = useT();
+  const lp = useLocalePath();
   const { user, ready } = useAuth();
   const { showToast } = useToast();
   const router = useRouter();
@@ -70,7 +71,7 @@ export function Navbar() {
     <>
       <header ref={headerRef} className="lp-header fixed inset-x-0 z-50">
         <div className="lp-nav mx-auto flex h-14 max-w-6xl items-center justify-between gap-3 rounded-full pl-2.5 pr-2 sm:h-16 sm:pl-3">
-          <Link href="/" className="flex items-center gap-2.5" aria-label={t("Depup, beranda")}>
+          <Link href={lp("/")} className="flex items-center gap-2.5" aria-label={t("Depup, beranda")}>
             <Image src="/logo.png" alt="" width={36} height={36} priority className="h-9 w-9" />
             <span className="text-[18px] font-bold tracking-tight text-text">{t("Depup")}</span>
           </Link>
@@ -82,7 +83,7 @@ export function Navbar() {
             {NAV_LINKS.map((l) => (
               <a
                 key={l.href}
-                href={l.href}
+                href={lp(l.href)}
                 className="rounded-full px-4 py-2 text-[13px] font-medium text-text-muted transition-colors hover:bg-[var(--surface-solid)] hover:text-text"
               >
                 {t(l.label)}
@@ -135,7 +136,7 @@ export function Navbar() {
             {NAV_LINKS.map((l) => (
               <a
                 key={l.href}
-                href={l.href}
+                href={lp(l.href)}
                 onClick={() => setMenuOpen(false)}
                 className="rounded-[14px] px-4 py-3 text-[15px] font-medium text-text-muted hover:bg-[var(--pill-bg)] hover:text-text"
               >

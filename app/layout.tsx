@@ -8,14 +8,16 @@ import { AuthProvider } from "@/lib/auth-context";
 import { ToastProvider } from "@/components/ui/Toast";
 import { LanguageProvider } from "@/lib/i18n";
 import { getLang } from "@/lib/i18n/server";
-import { makeT } from "@/lib/i18n/core";
 import { COMMUNITY_LINKS } from "@/lib/community";
-import { OG_IMAGE, jsonLdString } from "@/lib/seo";
+import { LD_LANG, OG_IMAGE, jsonLdString } from "@/lib/seo";
 import {
   CONTACT_EMAIL,
   FEATURE_LIST_SCHEMA,
   HOME_TITLE,
+  HOME_TITLE_EN,
+  KEYWORDS,
   SITE_DESCRIPTION,
+  SITE_DESCRIPTION_EN,
   SITE_NAME,
   SITE_TAGLINE,
   SITE_URL,
@@ -28,22 +30,7 @@ const BASE_METADATA: Metadata = {
     template: `%s | Depup`,
   },
   description: SITE_DESCRIPTION,
-  keywords: [
-    "depup",
-    "depup.cloud",
-    "depup dashboard",
-    "depup deploy",
-    "depup indonesia",
-    "deploy dashboard indonesia",
-    "deploy vercel cloudflare railway",
-    "link instan html",
-    "hosting html gratis",
-    "kelola deployment",
-    "ai web builder indonesia",
-    "database sqlite gratis",
-    "mcp claude deploy",
-    "bagikan localhost",
-  ],
+  keywords: KEYWORDS.id,
   applicationName: SITE_NAME,
   authors: [{ name: SITE_NAME, url: SITE_URL }],
   creator: SITE_NAME,
@@ -94,8 +81,14 @@ const BASE_METADATA: Metadata = {
 /** Judul & deskripsi bawaan mengikuti bahasa pengunjung; sisanya sama. */
 export function generateMetadata(): Metadata {
   if (getLang() !== "en") return BASE_METADATA;
-  const t = makeT("en");
-  return { ...BASE_METADATA, title: { default: t(HOME_TITLE), template: "%s | Depup" }, description: t(SITE_DESCRIPTION) };
+  return {
+    ...BASE_METADATA,
+    title: { default: HOME_TITLE_EN, template: "%s | Depup" },
+    description: SITE_DESCRIPTION_EN,
+    keywords: KEYWORDS.en,
+    openGraph: { ...BASE_METADATA.openGraph, locale: "en_US", alternateLocale: ["id_ID"], url: `${SITE_URL}/en`, title: HOME_TITLE_EN, description: SITE_DESCRIPTION_EN },
+    twitter: { ...BASE_METADATA.twitter, title: HOME_TITLE_EN, description: SITE_DESCRIPTION_EN },
+  };
 }
 export const viewport: Viewport = {
   width: "device-width",
@@ -110,6 +103,7 @@ export const viewport: Viewport = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const lang = getLang();
+  const desc = lang === "en" ? SITE_DESCRIPTION_EN : SITE_DESCRIPTION;
   const jsonLd = [
     {
       "@context": "https://schema.org",
@@ -118,8 +112,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       name: SITE_NAME,
       alternateName: ["Depup Indonesia", "Depup Deploy Dashboard", "depup.cloud"],
       url: SITE_URL,
-      inLanguage: "id-ID",
-      description: SITE_DESCRIPTION,
+      // Situs tersedia dalam dua bahasa; halaman ini sendiri memakai bahasa `lang`.
+      inLanguage: [LD_LANG.id, LD_LANG.en],
+      description: desc,
       publisher: { "@id": `${SITE_URL}/#organization` },
     },
     {
@@ -136,7 +131,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         "@type": "ContactPoint",
         contactType: "customer support",
         email: CONTACT_EMAIL,
-        availableLanguage: ["Indonesian"],
+        availableLanguage: ["Indonesian", "English"],
       },
     },
     {
@@ -146,14 +141,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       name: SITE_NAME,
       alternateName: "Depup Deploy Dashboard",
       applicationCategory: "DeveloperApplication",
-      operatingSystem: "Web",
-      inLanguage: "id-ID",
-      description: SITE_DESCRIPTION,
+      applicationSubCategory: "Deployment & Hosting",
+      operatingSystem: "Web, Android",
+      inLanguage: [LD_LANG.id, LD_LANG.en],
+      description: desc,
       url: SITE_URL,
       image: `${SITE_URL}/og-image.png`,
       publisher: { "@id": `${SITE_URL}/#organization` },
       isAccessibleForFree: true,
-      offers: { "@type": "Offer", price: "0", priceCurrency: "IDR" },
+      // Gratis di seluruh dunia; USD dipakai karena mata uang yang paling umum dibaca mesin pencari internasional.
+      offers: { "@type": "Offer", price: "0", priceCurrency: "USD", availability: "https://schema.org/InStock" },
       // Diambil dari lib/site-content.ts (sumber tunggal fitur), jadi selalu sama dengan halaman /fitur.
       featureList: FEATURE_LIST_SCHEMA,
     },

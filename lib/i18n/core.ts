@@ -128,3 +128,34 @@ export function setClientLang(lang: Lang): void {
 export function tl(key: string, vars?: Vars): string {
   return translate(typeof window === "undefined" ? "id" : CLIENT_LANG, key, vars);
 }
+
+/* ---------- URL per bahasa (SEO internasional) ---------- */
+
+/**
+ * Halaman publik yang punya versi Inggris di bawah /en (mis. /fitur -> /en/fitur). Satu URL = satu bahasa, supaya
+ * Google bisa mengindeks dan meranking versi Inggris secara terpisah lewat hreflang.
+ */
+const LOCALIZED_RE = /^\/(?:fitur(?:\/[a-z0-9-]+)?|docs(?:\/mcp)?|privacy)?$/;
+
+/** true bila path (tanpa query/hash) adalah halaman publik Indonesia yang punya pasangan /en. */
+export function isLocalizedPath(pathname: string): boolean {
+  return LOCALIZED_RE.test(pathname);
+}
+
+/** Path Indonesia untuk path apa pun ("/en/fitur" -> "/fitur", "/en" -> "/"). */
+export function stripLangPrefix(pathname: string): string {
+  if (pathname === "/en") return "/";
+  return pathname.startsWith("/en/") ? pathname.slice(3) : pathname;
+}
+
+/**
+ * Tautan internal sesuai bahasa: localePath("en", "/fitur") -> "/en/fitur", localePath("en", "/#faq") -> "/en#faq".
+ * Path yang tidak punya versi Inggris (dashboard, /laporkan, dst.) dikembalikan apa adanya.
+ */
+export function localePath(lang: Lang, href: string): string {
+  if (lang !== "en" || !href.startsWith("/")) return href;
+  const m = /^([^?#]*)(.*)$/.exec(href) as RegExpExecArray;
+  const path = m[1] || "/";
+  if (!isLocalizedPath(path)) return href;
+  return `${path === "/" ? "/en" : `/en${path}`}${m[2]}`;
+}
